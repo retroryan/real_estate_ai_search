@@ -1,0 +1,15 @@
+# Core dependencies for embedding pipeline
+llama-index-core==0.11.10
+llama-index-embeddings-ollama==0.3.1
+llama-index-embeddings-google==0.4.0
+google-generativeai>=0.3.0
+python-dotenv==1.0.0
+chromadb==0.4.22
+pydantic==2.5.3
+pyyaml==6.0.1
+
+# Vector store dependencies
+elasticsearch>=8.0.0
+
+# Note: ollama server must be running locally if using ollama provider
+# Install: brew install ollama (macOS) or see https://ollama.ai

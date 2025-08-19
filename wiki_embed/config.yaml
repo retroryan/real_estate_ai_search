@@ -1,0 +1,55 @@
+# Configuration for Wikipedia embedding pipeline
+# Simple, clean configuration focused on embeddings only (no RAG)
+
+embedding:
+  provider: ollama  # Options: ollama, gemini, voyage
+  # Ollama settings
+  ollama_base_url: "http://localhost:11434"
+  ollama_model: "nomic-embed-text"
+  # Gemini settings (if using)
+  gemini_api_key: null
+  gemini_model: "models/embedding-001"
+  # Voyage settings (if using)
+  voyage_api_key: null
+  voyage_model: "voyage-3"
+
+vector_store:
+  provider: elasticsearch  # Options: chromadb, elasticsearch
+  chromadb:
+    path: "./data/wiki_chroma_db"
+    collection_prefix: "wiki_embeddings"
+  elasticsearch:
+    host: "localhost"
+    port: 9200
+    index_prefix: "wiki_embeddings"
+    # Authentication (optional) - these will be loaded from environment variables:
+    # Set ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD in .env file
+    # username: null  # Will use ELASTICSEARCH_USERNAME env var if not specified
+    # password: null  # Will use ELASTICSEARCH_PASSWORD env var if not specified
+
+data:
+  source_dir: "./data/wikipedia/pages"
+  registry_path: "./data/wikipedia/REGISTRY.json"
+  attribution_path: "./data/wikipedia/attribution/WIKIPEDIA_ATTRIBUTION.json"
+  wikipedia_db: "./data/wikipedia/wikipedia.db"  # SQLite database with summaries
+
+chunking:
+  method: semantic  # semantic or simple
+  # Semantic parser settings (recommended for encyclopedia content)
+  breakpoint_percentile: 90
+  buffer_size: 2
+  # Simple parser settings (if method=simple)
+  chunk_size: 800  # Larger chunks for encyclopedia articles
+  chunk_overlap: 100
+  # Embedding method selection
+  embedding_method: traditional  # Options: traditional, augmented, both
+  # Augmented embedding settings
+  max_summary_words: 100  # Max words for summary context prepended to chunks
+  max_total_words: 500  # Max total words per augmented chunk (summary + content)
+  # Optional: Split chunks that are too large (set to true to enable)
+  split_oversized_chunks: false  # Set to true to automatically split large chunks
+
+testing:
+  queries_path: "./data/wiki_test_queries.json"
+  top_k: 5  # Number of results to retrieve per query
+  min_similarity: 0.3  # Minimum similarity score for results

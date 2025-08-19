@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "property-finder-rag"
+version = "0.1.0"
+description = "Real Estate RAG System with Semantic Chunking Evaluation"
+authors = [{name = "Property Finder Team", email = "team@propertyfinder.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["rag", "real-estate", "semantic-chunking", "llama-index", "ollama"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "llama-index==0.10.11",
+    "llama-index-embeddings-ollama==0.1.2",
+    "llama-index-vector-stores-chroma==0.1.6",
+    "pydantic==2.5.3",
+    "pydantic-settings==2.1.0",
+    "chromadb==0.4.22",
+    "numpy==1.26.2",
+    "pandas==2.1.4",
+    "scipy==1.11.4",
+    "python-dotenv==1.0.0",
+    "loguru==0.7.2",
+    "rich==13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.3",
+    "pytest-asyncio==0.23.2",
+    "pytest-cov==4.1.0",
+    "mypy==1.8.0",
+    "typing-extensions==4.9.0",
+]
+viz = [
+    "matplotlib==3.8.2",
+    "plotly==5.18.0",
+    "jupyter==1.0.0",
+    "ipykernel==6.29.0",
+]
+
+[project.scripts]
+property-finder-eval = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --cov=src --cov-report=term-missing"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "src/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

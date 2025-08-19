@@ -1,0 +1,28 @@
+# Core Dependencies
+elasticsearch>=8.0.0,<9.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# API Dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+
+# Utilities
+pyyaml>=6.0
+tenacity>=8.2.0  # For retry logic
+structlog>=23.0.0  # For structured logging
+rich>=13.0.0  # For beautiful console output in tests
+
+# Development Dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+mypy>=1.5.0
+black>=23.0.0
+pylint>=2.17.0
+pre-commit>=3.3.0
+
+# Optional Performance Dependencies
+orjson>=3.9.0  # Fast JSON serialization
+httpx>=0.24.0  # For async HTTP client

@@ -1,0 +1,6294 @@
+[
+  {
+    "listing_id": "prop-sf-001",
+    "neighborhood_id": "sf-pac-heights-001",
+    "address": {
+      "street": "2840 Broadway Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94115"
+    },
+    "coordinates": {
+      "latitude": 37.7934,
+      "longitude": -122.4401
+    },
+    "property_details": {
+      "square_feet": 4500,
+      "bedrooms": 5,
+      "bathrooms": 4.5,
+      "property_type": "single-family",
+      "year_built": 1895,
+      "lot_size": 0.12,
+      "stories": 3,
+      "garage_spaces": 2
+    },
+    "listing_price": 4250000,
+    "price_per_sqft": 944,
+    "description": "Exquisite Victorian masterpiece featuring original period details seamlessly blended with modern luxury. Soaring ceilings, intricate millwork, and restored hardwood floors throughout. Chef's kitchen with Carrara marble and professional appliances opens to family room. Master suite occupies entire top floor with Golden Gate views. Landscaped garden provides rare outdoor space. Located on premier block near Lafayette Park.",
+    "features": [
+      "Bay views",
+      "Original details",
+      "Chef's kitchen",
+      "Wine cellar",
+      "Garden",
+      "Smart home",
+      "Radiant heat",
+      "Elevator-ready"
+    ],
+    "listing_date": "2024-01-15",
+    "days_on_market": 12,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-001",
+    "images": [
+      "https://example.com/images/prop-sf-001-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-07",
+        "price": 4250000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.044,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 29
+    },
+    "buyer_persona": {
+      "profile": "international_buyer",
+      "interests": [
+        "high-end_amenities",
+        "luxury",
+        "walkability",
+        "investment_potential"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1118,
+      "saved_count": 92,
+      "inquiry_count": 9,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7457497306054705,
+      "cash_buyers_pct": 0.28119233134600946,
+      "first_time_buyers_pct": 0.022664346915683156
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Lafayette Park",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "park",
+        "name": "Alta Plaza Park",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Burke School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Stuart Hall High School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Fillmore Street",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Atelier Crenn",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Fillmore & Broadway Bus",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Bay Club SF",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-002",
+    "neighborhood_id": "sf-pac-heights-001",
+    "address": {
+      "street": "2555 Fillmore Street #301",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94115"
+    },
+    "coordinates": {
+      "latitude": 37.7921,
+      "longitude": -122.4351
+    },
+    "property_details": {
+      "square_feet": 2800,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "property_type": "condo",
+      "year_built": 2005,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 2850000,
+    "price_per_sqft": 1018,
+    "description": "Sophisticated penthouse condo with panoramic bay views from every room. Open floor plan features high-end finishes including marble countertops, custom cabinetry, and Brazilian cherry floors. Two private terraces overlook the Golden Gate Bridge and Alcatraz. Building amenities include concierge, gym, and rooftop deck. Prime Fillmore Street location steps from boutique shopping and dining.",
+    "features": [
+      "Panoramic views",
+      "Two terraces",
+      "High-end finishes",
+      "Concierge",
+      "Gym",
+      "Rooftop deck",
+      "Custom cabinetry",
+      "Marble counters"
+    ],
+    "listing_date": "2024-01-08",
+    "days_on_market": 19,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-002",
+    "images": [
+      "https://example.com/images/prop-sf-002-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-31",
+        "price": 2850000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.053,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 34
+    },
+    "buyer_persona": {
+      "profile": "finance_professional",
+      "interests": [
+        "investment_potential",
+        "privacy",
+        "high-end_amenities",
+        "views"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 638,
+      "saved_count": 33,
+      "inquiry_count": 11,
+      "showing_requests": 13
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4391661331085937,
+      "cash_buyers_pct": 0.30216893035033743,
+      "first_time_buyers_pct": 0.013859227725158097
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Lafayette Park",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Alta Plaza Park",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Burke School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Stuart Hall High School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Fillmore Street",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Atelier Crenn",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Fillmore & Broadway Bus",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Bay Club SF",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-003",
+    "neighborhood_id": "sf-mission-002",
+    "address": {
+      "street": "3338 19th Street #301",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94110"
+    },
+    "coordinates": {
+      "latitude": 37.7604,
+      "longitude": -122.4205
+    },
+    "property_details": {
+      "square_feet": 1200,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2018,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1150000,
+    "price_per_sqft": 958,
+    "description": "Modern industrial loft in converted warehouse building. Soaring 14-foot ceilings with exposed brick and steel beams. Floor-to-ceiling windows flood space with natural light. Open concept living with high-end finishes including quartz counters and German appliances. Private deck overlooks tree-lined street. Deeded parking and storage. Walker's paradise with Valencia Street dining and BART blocks away.",
+    "features": [
+      "High ceilings",
+      "Exposed brick",
+      "Private deck",
+      "In-unit laundry",
+      "Deeded parking",
+      "Storage",
+      "Pet-friendly",
+      "Low HOA"
+    ],
+    "listing_date": "2024-01-20",
+    "days_on_market": 7,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-003",
+    "images": [
+      "https://example.com/images/prop-sf-003-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-12",
+        "price": 1150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.07,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 19
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "dining",
+        "authenticity",
+        "walkability",
+        "culture"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1708,
+      "saved_count": 159,
+      "inquiry_count": 17,
+      "showing_requests": 14
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5503498062910006,
+      "cash_buyers_pct": 0.15849936660401054,
+      "first_time_buyers_pct": 0.2836259811674902
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Dolores Park",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "park",
+        "name": "Balmy Alley",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Synergy School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "transit",
+        "name": "16th St Mission BART",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "24th St Mission BART",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "dining",
+        "name": "Valencia Street Corridor",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "The Chapel",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "market",
+        "name": "Bi-Rite Market",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-004",
+    "neighborhood_id": "sf-mission-002",
+    "address": {
+      "street": "842 Valencia Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94110"
+    },
+    "coordinates": {
+      "latitude": 37.7586,
+      "longitude": -122.4208
+    },
+    "property_details": {
+      "square_feet": 2200,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1910,
+      "lot_size": 0.08,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1695000,
+    "price_per_sqft": 771,
+    "description": "Charming Edwardian home on vibrant Valencia Street corridor. Original character preserved with period details including crown molding, hardwood floors, and decorative fireplace. Updated kitchen with stainless appliances opens to sunny rear deck and garden. Walking distance to Dolores Park, BART, and Mission's renowned restaurant scene. Perfect for those seeking authentic neighborhood living with urban convenience.",
+    "features": [
+      "Period details",
+      "Updated kitchen",
+      "Rear garden",
+      "Hardwood floors",
+      "Decorative fireplace",
+      "Valencia Street location",
+      "Near BART",
+      "Original character"
+    ],
+    "listing_date": "2024-01-12",
+    "days_on_market": 15,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-004",
+    "images": [
+      "https://example.com/images/prop-sf-004-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-04",
+        "price": 1695000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.109,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 37
+    },
+    "buyer_persona": {
+      "profile": "artist",
+      "interests": [
+        "nightlife",
+        "transit_access",
+        "authenticity",
+        "dining"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 2307,
+      "saved_count": 246,
+      "inquiry_count": 45,
+      "showing_requests": 7
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7162730679769522,
+      "cash_buyers_pct": 0.16340341245382567,
+      "first_time_buyers_pct": 0.09940823862412669
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Dolores Park",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "park",
+        "name": "Balmy Alley",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Synergy School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "transit",
+        "name": "16th St Mission BART",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "24th St Mission BART",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "dining",
+        "name": "Valencia Street Corridor",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "The Chapel",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "market",
+        "name": "Bi-Rite Market",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-005",
+    "neighborhood_id": "sf-sunset-003",
+    "address": {
+      "street": "1847 46th Avenue",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94122"
+    },
+    "coordinates": {
+      "latitude": 37.7465,
+      "longitude": -122.5054
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1955,
+      "lot_size": 0.15,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1475000,
+    "price_per_sqft": 797,
+    "description": "Classic Sunset District family home with modern updates throughout. Bright living spaces with refinished hardwood floors and updated bathrooms. Large kitchen with granite counters and breakfast nook overlooks private backyard. Master bedroom suite with walk-in closet. Two-car garage plus additional storage. Short blocks to Ocean Beach, Golden Gate Park, and excellent schools. Perfect for families seeking value and community.",
+    "features": [
+      "Updated throughout",
+      "Private backyard",
+      "Two-car garage",
+      "Near Ocean Beach",
+      "Near Golden Gate Park",
+      "Family-friendly",
+      "Excellent schools",
+      "Storage space"
+    ],
+    "listing_date": "2024-01-18",
+    "days_on_market": 9,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-005",
+    "images": [
+      "https://example.com/images/prop-sf-005-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-10",
+        "price": 1475000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.068,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 27
+    },
+    "buyer_persona": {
+      "profile": "educator",
+      "interests": [
+        "value",
+        "quiet_streets",
+        "family_friendly",
+        "ocean_proximity"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1726,
+      "saved_count": 188,
+      "inquiry_count": 31,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.6228244634020557,
+      "cash_buyers_pct": 0.1964370593888607,
+      "first_time_buyers_pct": 0.11850269344229895
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Golden Gate Park",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "beach",
+        "name": "Ocean Beach",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "school",
+        "name": "Sunset Elementary",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "AP Giannini Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "N-Judah Line",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Irving Street",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "dining",
+        "name": "Inner Sunset Restaurants",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "market",
+        "name": "Andronico's Market",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-006",
+    "neighborhood_id": "sf-sunset-003",
+    "address": {
+      "street": "2134 Noriega Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94122"
+    },
+    "coordinates": {
+      "latitude": 37.7534,
+      "longitude": -122.4832
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1942,
+      "lot_size": 0.11,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1325000,
+    "price_per_sqft": 803,
+    "description": "Well-maintained Richmond-style home on quiet residential street. Four generous bedrooms accommodate growing families or home office needs. Recent updates include new roof, electrical, and plumbing. Kitchen features newer appliances and ample storage. Fenced backyard perfect for children and pets. Close to Irving Street shops, N-Judah line, and inner Sunset amenities. Great opportunity in desirable school district.",
+    "features": [
+      "Four bedrooms",
+      "Recent updates",
+      "Fenced backyard",
+      "Near N-Judah",
+      "Quiet street",
+      "Good schools",
+      "Storage",
+      "Family-friendly"
+    ],
+    "listing_date": "2024-01-25",
+    "days_on_market": 2,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-006",
+    "images": [
+      "https://example.com/images/prop-sf-006-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-17",
+        "price": 1325000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.07,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 41
+    },
+    "buyer_persona": {
+      "profile": "downsizing_couple",
+      "interests": [
+        "value",
+        "parks",
+        "ocean_proximity",
+        "schools"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1231,
+      "saved_count": 112,
+      "inquiry_count": 11,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7589220377580468,
+      "cash_buyers_pct": 0.0651104487764429,
+      "first_time_buyers_pct": 0.07347188832832104
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Golden Gate Park",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "beach",
+        "name": "Ocean Beach",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "school",
+        "name": "Sunset Elementary",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "AP Giannini Middle",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "N-Judah Line",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Irving Street",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Inner Sunset Restaurants",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Andronico's Market",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-007",
+    "neighborhood_id": "sf-soma-004",
+    "address": {
+      "street": "425 1st Street #4502",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94105"
+    },
+    "coordinates": {
+      "latitude": 37.7886,
+      "longitude": -122.3969
+    },
+    "property_details": {
+      "square_feet": 1100,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2015,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1250000,
+    "price_per_sqft": 1136,
+    "description": "Stunning high-rise condo with floor-to-ceiling windows showcasing breathtaking city and bay views. Modern open-plan design with premium finishes including quartz countertops and stainless steel appliances. Building amenities feature rooftop deck, fitness center, and 24-hour concierge. Walking distance to tech offices, Oracle Park, and Ferry Building. Perfect for urban professionals seeking luxury and convenience.",
+    "features": [
+      "City views",
+      "High-rise living",
+      "Rooftop deck",
+      "24-hour concierge",
+      "Fitness center",
+      "Near tech offices",
+      "Premium finishes",
+      "Urban convenience"
+    ],
+    "listing_date": "2024-01-22",
+    "days_on_market": 5,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-007",
+    "images": [
+      "https://example.com/images/prop-sf-007-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-14",
+        "price": 1250000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.103,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 33
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "tech_proximity",
+        "nightlife",
+        "investment_potential",
+        "modern_amenities"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1774,
+      "saved_count": 189,
+      "inquiry_count": 26,
+      "showing_requests": 13
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4476844076882971,
+      "cash_buyers_pct": 0.15097522655048326,
+      "first_time_buyers_pct": 0.1254712104781875
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Yerba Buena Gardens",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Montgomery BART",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "Caltrain Station",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "The Slanted Door",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "shopping",
+        "name": "Westfield Mall",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox SOMA",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Oracle Park",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods SOMA",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-008",
+    "neighborhood_id": "sf-soma-004",
+    "address": {
+      "street": "88 Townsend Street #1408",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94107"
+    },
+    "coordinates": {
+      "latitude": 37.7808,
+      "longitude": -122.3914
+    },
+    "property_details": {
+      "square_feet": 950,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "condo",
+      "year_built": 2008,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 895000,
+    "price_per_sqft": 942,
+    "description": "Contemporary loft-style condo in converted industrial building. Exposed concrete ceilings and polished concrete floors create modern aesthetic. Open living space maximizes square footage with clever storage solutions. Building features roof deck with 360-degree city views. Prime SOMA location near Caltrain, tech companies, and nightlife. Ideal for young professionals embracing urban living.",
+    "features": [
+      "Loft-style",
+      "Exposed concrete",
+      "Roof deck",
+      "Near Caltrain",
+      "Modern aesthetic",
+      "Storage solutions",
+      "Urban lifestyle",
+      "Tech proximity"
+    ],
+    "listing_date": "2024-01-14",
+    "days_on_market": 13,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-008",
+    "images": [
+      "https://example.com/images/prop-sf-008-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-06",
+        "price": 895000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.082,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 25
+    },
+    "buyer_persona": {
+      "profile": "investor",
+      "interests": [
+        "nightlife",
+        "modern_amenities",
+        "investment_potential",
+        "urban_lifestyle"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1394,
+      "saved_count": 84,
+      "inquiry_count": 23,
+      "showing_requests": 14
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.6091153774680081,
+      "cash_buyers_pct": 0.17935515749519038,
+      "first_time_buyers_pct": 0.07325946399958823
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Yerba Buena Gardens",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "Montgomery BART",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Caltrain Station",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "The Slanted Door",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "Westfield Mall",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox SOMA",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "entertainment",
+        "name": "Oracle Park",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods SOMA",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-009",
+    "neighborhood_id": "sf-noe-valley-005",
+    "address": {
+      "street": "1255 Sanchez Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94131"
+    },
+    "coordinates": {
+      "latitude": 37.7488,
+      "longitude": -122.4309
+    },
+    "property_details": {
+      "square_feet": 2400,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1925,
+      "lot_size": 0.09,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 2195000,
+    "price_per_sqft": 915,
+    "description": "Beautifully restored Craftsman home in the heart of family-friendly Noe Valley. Original architectural details include built-in cabinetry, hardwood floors, and decorative moldings. Updated kitchen with granite counters opens to dining room perfect for entertaining. Four bedrooms provide flexibility for growing families. Private garden sanctuary with mature landscaping. Steps from 24th Street shops, playgrounds, and excellent schools.",
+    "features": [
+      "Craftsman style",
+      "Original details",
+      "Updated kitchen",
+      "Private garden",
+      "Near 24th Street",
+      "Excellent schools",
+      "Family-friendly",
+      "Mature landscaping"
+    ],
+    "listing_date": "2024-01-11",
+    "days_on_market": 16,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-009",
+    "images": [
+      "https://example.com/images/prop-sf-009-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-03",
+        "price": 2195000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.064,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 15
+    },
+    "buyer_persona": {
+      "profile": "tech_executive",
+      "interests": [
+        "community",
+        "family_friendly",
+        "boutique_shopping",
+        "schools"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1512,
+      "saved_count": 85,
+      "inquiry_count": 20,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4757747481946032,
+      "cash_buyers_pct": 0.20046953341711804,
+      "first_time_buyers_pct": 0.09324068651986084
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Douglass Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Noe Valley Courts",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Alvarado Elementary",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "James Lick Middle",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "24th Street",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "J-Church Line",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Firefly Restaurant",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods Noe",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-010",
+    "neighborhood_id": "sf-noe-valley-005",
+    "address": {
+      "street": "736 Elizabeth Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94114"
+    },
+    "coordinates": {
+      "latitude": 37.7516,
+      "longitude": -122.4331
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1906,
+      "lot_size": 0.07,
+      "stories": 3,
+      "garage_spaces": 1
+    },
+    "listing_price": 1895000,
+    "price_per_sqft": 1024,
+    "description": "Charming Victorian cottage on quiet tree-lined street. Three levels provide excellent separation of living spaces. Main floor features formal living and dining rooms with period details intact. Kitchen opens to sunny deck overlooking garden. Upper level bedrooms capture morning light and neighborhood views. Basement level offers flexible space for office or recreation. Perfect blend of historic charm and modern convenience.",
+    "features": [
+      "Victorian cottage",
+      "Three levels",
+      "Period details",
+      "Sunny deck",
+      "Quiet street",
+      "Flexible basement",
+      "Historic charm",
+      "Garden views"
+    ],
+    "listing_date": "2024-01-09",
+    "days_on_market": 18,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-010",
+    "images": [
+      "https://example.com/images/prop-sf-010-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-01",
+        "price": 1895000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.082,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 18
+    },
+    "buyer_persona": {
+      "profile": "established_family",
+      "interests": [
+        "walkability",
+        "parks",
+        "schools",
+        "family_friendly"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1180,
+      "saved_count": 119,
+      "inquiry_count": 13,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.662275004659882,
+      "cash_buyers_pct": 0.19113789354312982,
+      "first_time_buyers_pct": 0.06674187539226471
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Douglass Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Noe Valley Courts",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Alvarado Elementary",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "James Lick Middle",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "24th Street",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "J-Church Line",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "Firefly Restaurant",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods Noe",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-011",
+    "neighborhood_id": "oak-temescal-006",
+    "address": {
+      "street": "5428 Telegraph Avenue #2",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94609"
+    },
+    "coordinates": {
+      "latitude": 37.8315,
+      "longitude": -122.2643
+    },
+    "property_details": {
+      "square_feet": 1050,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "condo",
+      "year_built": 2019,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 695000,
+    "price_per_sqft": 662,
+    "description": "Hip industrial loft above Telegraph Avenue's vibrant street life. Exposed brick walls, polished concrete floors, and oversized windows create urban sophistication. Open concept kitchen with stainless appliances and breakfast bar. Murphy bed maximizes living space flexibility. Deeded parking and bike storage. Walking distance to BART, breweries, vintage shops, and live music venues. Perfect for young professionals embracing Oakland's creative energy.",
+    "features": [
+      "Industrial design",
+      "Exposed brick",
+      "Murphy bed",
+      "Bike storage",
+      "BART access",
+      "Telegraph Avenue",
+      "Live music nearby",
+      "Creative community"
+    ],
+    "listing_date": "2024-01-19",
+    "days_on_market": 8,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-011",
+    "images": [
+      "https://example.com/images/prop-sf-011-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-11",
+        "price": 695000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.126,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 30
+    },
+    "buyer_persona": {
+      "profile": "artist",
+      "interests": [
+        "diversity",
+        "dining",
+        "creative_community",
+        "affordability"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1826,
+      "saved_count": 107,
+      "inquiry_count": 17,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7370316371021443,
+      "cash_buyers_pct": 0.17339439514116134,
+      "first_time_buyers_pct": 0.13653302895083785
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Temescal Regional Park",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "transit",
+        "name": "MacArthur BART",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Peralta Elementary",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "dining",
+        "name": "Telegraph Ave Restaurants",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Temescal Alley",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "nightlife",
+        "name": "The Legionnaire",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Berkeley Bowl West",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "brewery",
+        "name": "Temescal Brewing",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-012",
+    "neighborhood_id": "oak-temescal-006",
+    "address": {
+      "street": "418 51st Street",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94609"
+    },
+    "coordinates": {
+      "latitude": 37.8301,
+      "longitude": -122.2681
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1925,
+      "lot_size": 0.08,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 925000,
+    "price_per_sqft": 561,
+    "description": "Charming Craftsman bungalow with original character and modern updates. Restored hardwood floors, built-in cabinetry, and period light fixtures preserve historic charm. Updated kitchen with subway tile and farmhouse sink. Private backyard with fruit trees and garden beds. Front porch perfect for neighborhood watching. Walking distance to Temescal's restaurants, shops, and cultural venues.",
+    "features": [
+      "Craftsman style",
+      "Original details",
+      "Private backyard",
+      "Fruit trees",
+      "Front porch",
+      "Walkable",
+      "Historic charm",
+      "Updated kitchen"
+    ],
+    "listing_date": "2024-01-13",
+    "days_on_market": 14,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-012",
+    "images": [
+      "https://example.com/images/prop-sf-012-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-05",
+        "price": 925000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.127,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 34
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "dining",
+        "transit_access",
+        "diversity",
+        "creative_community"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1216,
+      "saved_count": 144,
+      "inquiry_count": 23,
+      "showing_requests": 3
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.776306619524403,
+      "cash_buyers_pct": 0.10852529997849611,
+      "first_time_buyers_pct": 0.07747552996791628
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Temescal Regional Park",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "transit",
+        "name": "MacArthur BART",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Peralta Elementary",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "dining",
+        "name": "Telegraph Ave Restaurants",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Temescal Alley",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "nightlife",
+        "name": "The Legionnaire",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Berkeley Bowl West",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "brewery",
+        "name": "Temescal Brewing",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-013",
+    "neighborhood_id": "oak-rockridge-007",
+    "address": {
+      "street": "6142 College Avenue",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94618"
+    },
+    "coordinates": {
+      "latitude": 37.8449,
+      "longitude": -122.2523
+    },
+    "property_details": {
+      "square_feet": 2200,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1910,
+      "lot_size": 0.14,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1385000,
+    "price_per_sqft": 630,
+    "description": "Classic Rockridge family home on tree-lined street near College Avenue. Mediterranean-style architecture features tile roof, arched doorways, and decorative ironwork. Formal living and dining rooms with original hardwood floors. Modern kitchen opens to family room and private patio. Three bedrooms upstairs include master with en-suite bathroom. Excellent schools, BART access, and neighborhood amenities make this ideal for families.",
+    "features": [
+      "Mediterranean style",
+      "Tree-lined street",
+      "Formal rooms",
+      "Private patio",
+      "Excellent schools",
+      "BART nearby",
+      "Family-friendly",
+      "Original details"
+    ],
+    "listing_date": "2024-01-16",
+    "days_on_market": 11,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-013",
+    "images": [
+      "https://example.com/images/prop-sf-013-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-08",
+        "price": 1385000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.077,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 23
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "transit_access",
+        "schools",
+        "value",
+        "walkability"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1803,
+      "saved_count": 151,
+      "inquiry_count": 22,
+      "showing_requests": 4
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7851043358491056,
+      "cash_buyers_pct": 0.18799370241308883,
+      "first_time_buyers_pct": 0.281244580276346
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Frog Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Rockridge BART",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Chabot Elementary",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Claremont Middle",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "College Avenue",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Oliveto Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "market",
+        "name": "Market Hall",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "library",
+        "name": "Rockridge Library",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-014",
+    "neighborhood_id": "oak-rockridge-007",
+    "address": {
+      "street": "5834 Chabot Road",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94618"
+    },
+    "coordinates": {
+      "latitude": 37.8467,
+      "longitude": -122.2495
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1928,
+      "lot_size": 0.11,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1225000,
+    "price_per_sqft": 662,
+    "description": "Beautifully maintained Craftsman home with four bedrooms and period details throughout. Living room features built-in bookcases and decorative fireplace. Dining room with wainscoting and original light fixtures. Updated kitchen maintains character with vintage-style appliances. Large backyard with mature trees and vegetable garden. Two-car garage with workshop space. Walk to Rockridge BART and College Avenue shopping.",
+    "features": [
+      "Four bedrooms",
+      "Built-in bookcases",
+      "Large backyard",
+      "Workshop space",
+      "Vegetable garden",
+      "Walk to BART",
+      "Period details",
+      "Mature trees"
+    ],
+    "listing_date": "2024-01-21",
+    "days_on_market": 6,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-014",
+    "images": [
+      "https://example.com/images/prop-sf-014-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-13",
+        "price": 1225000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.062,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 28
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "transit_access",
+        "family_friendly",
+        "value",
+        "community"
+      ],
+      "age_range": "35-55",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1821,
+      "saved_count": 202,
+      "inquiry_count": 25,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.40938529274285934,
+      "cash_buyers_pct": 0.14786367909792536,
+      "first_time_buyers_pct": 0.2234072184410999
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Frog Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Rockridge BART",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "school",
+        "name": "Chabot Elementary",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Claremont Middle",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "College Avenue",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Oliveto Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Market Hall",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "library",
+        "name": "Rockridge Library",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-015",
+    "neighborhood_id": "sj-willow-glen-008",
+    "address": {
+      "street": "1247 Lincoln Avenue",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95125"
+    },
+    "coordinates": {
+      "latitude": 37.3081,
+      "longitude": -121.8905
+    },
+    "property_details": {
+      "square_feet": 2600,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1924,
+      "lot_size": 0.16,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 2150000,
+    "price_per_sqft": 827,
+    "description": "Stunning Tudor Revival home on Lincoln Avenue's coveted tree-lined corridor. Original architectural details include leaded glass windows, beamed ceilings, and decorative stonework. Formal living and dining rooms flow to updated kitchen with island and breakfast nook. Four bedrooms upstairs include master suite with sitting area. Private backyard features pool and entertaining area. Walking distance to Willow Glen's shops, restaurants, and parks.",
+    "features": [
+      "Tudor Revival",
+      "Leaded glass",
+      "Beamed ceilings",
+      "Pool",
+      "Lincoln Avenue",
+      "Entertaining area",
+      "Walking distance",
+      "Historic details"
+    ],
+    "listing_date": "2024-01-10",
+    "days_on_market": 17,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-015",
+    "images": [
+      "https://example.com/images/prop-sf-015-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-02",
+        "price": 2150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.084,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 24
+    },
+    "buyer_persona": {
+      "profile": "established_family",
+      "interests": [
+        "suburban_lifestyle",
+        "schools",
+        "family_friendly",
+        "space"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 684,
+      "saved_count": 49,
+      "inquiry_count": 8,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.553006279742572,
+      "cash_buyers_pct": 0.3393052492872968,
+      "first_time_buyers_pct": 0.043668698644785967
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Willow Street Park",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen Elementary",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen High",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Lincoln Avenue",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Willow Street Pizza",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "VTA Light Rail",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "market",
+        "name": "Zanotto's Market",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "community",
+        "name": "Willow Glen Community Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-016",
+    "neighborhood_id": "sj-willow-glen-008",
+    "address": {
+      "street": "1534 Minnesota Avenue",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95125"
+    },
+    "coordinates": {
+      "latitude": 37.3069,
+      "longitude": -121.8887
+    },
+    "property_details": {
+      "square_feet": 1950,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1948,
+      "lot_size": 0.13,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 1775000,
+    "price_per_sqft": 910,
+    "description": "Mid-century ranch home with original character and modern conveniences. Post-and-beam construction features vaulted ceilings and walls of glass overlooking mature garden. Open floor plan includes living room with stone fireplace and dining area. Updated kitchen with stainless appliances and granite counters. Master bedroom with en-suite bathroom and garden access. Two-car garage and workshop. Excellent Willow Glen schools and neighborhood amenities.",
+    "features": [
+      "Mid-century modern",
+      "Post-and-beam",
+      "Vaulted ceilings",
+      "Stone fireplace",
+      "Mature garden",
+      "Workshop",
+      "Excellent schools",
+      "Single-level"
+    ],
+    "listing_date": "2024-01-24",
+    "days_on_market": 3,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-016",
+    "images": [
+      "https://example.com/images/prop-sf-016-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-16",
+        "price": 1775000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.081,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 25
+    },
+    "buyer_persona": {
+      "profile": "established_family",
+      "interests": [
+        "space",
+        "value",
+        "community",
+        "family_friendly"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 775,
+      "saved_count": 49,
+      "inquiry_count": 13,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5509513298919907,
+      "cash_buyers_pct": 0.05876581019796136,
+      "first_time_buyers_pct": 0.0927760110986504
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Willow Street Park",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen Elementary",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen High",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Lincoln Avenue",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Willow Street Pizza",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "VTA Light Rail",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "market",
+        "name": "Zanotto's Market",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "community",
+        "name": "Willow Glen Community Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-017",
+    "neighborhood_id": "sj-santana-row-009",
+    "address": {
+      "street": "3088 The Plaza #415",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95128"
+    },
+    "coordinates": {
+      "latitude": 37.3203,
+      "longitude": -121.9489
+    },
+    "property_details": {
+      "square_feet": 1450,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2015,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 1650000,
+    "price_per_sqft": 1138,
+    "description": "Luxury high-rise condominium in the heart of Santana Row. Floor-to-ceiling windows provide city and mountain views from every room. Open concept design features premium finishes including quartz countertops and European appliances. Master suite with walk-in closet and spa bathroom. Building amenities include 24-hour concierge, fitness center, rooftop pool, and valet parking. Walking distance to shops, restaurants, and entertainment.",
+    "features": [
+      "City views",
+      "High-rise living",
+      "Premium finishes",
+      "Rooftop pool",
+      "24-hour concierge",
+      "Valet parking",
+      "Walking distance",
+      "Luxury amenities"
+    ],
+    "listing_date": "2024-01-17",
+    "days_on_market": 10,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-017",
+    "images": [
+      "https://example.com/images/prop-sf-017-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-09",
+        "price": 1650000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.08,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 36
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "urban_convenience",
+        "modern_amenities",
+        "shopping",
+        "luxury"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 830,
+      "saved_count": 74,
+      "inquiry_count": 7,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7025733291436904,
+      "cash_buyers_pct": 0.18432476534951842,
+      "first_time_buyers_pct": 0.07992895899999586
+    },
+    "nearby_amenities": [
+      {
+        "type": "shopping",
+        "name": "Santana Row",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Left Bank Brasserie",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "entertainment",
+        "name": "CineArts Theatre",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Santana Row Park",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox San Jose",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Winchester Light Rail",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Valley Fair Mall",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "hotel",
+        "name": "Hotel Valencia",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-018",
+    "neighborhood_id": "sj-santana-row-009",
+    "address": {
+      "street": "3200 Park Center Drive #1204",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95128"
+    },
+    "coordinates": {
+      "latitude": 37.3191,
+      "longitude": -121.9477
+    },
+    "property_details": {
+      "square_feet": 1100,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "condo",
+      "year_built": 2018,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 995000,
+    "price_per_sqft": 905,
+    "description": "Modern studio-style condominium with luxury finishes and resort-style amenities. Open living space maximizes square footage with clever storage and multi-functional furniture. High-end kitchen with waterfall island and integrated appliances. Spa bathroom with soaking tub and separate shower. Private balcony overlooks courtyard pool area. Building features fitness center, business center, and 24-hour security. Perfect for young professionals seeking urban lifestyle.",
+    "features": [
+      "Studio-style",
+      "Clever storage",
+      "Waterfall island",
+      "Private balcony",
+      "Resort amenities",
+      "24-hour security",
+      "Urban lifestyle",
+      "Young professional"
+    ],
+    "listing_date": "2024-01-23",
+    "days_on_market": 4,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-018",
+    "images": [
+      "https://example.com/images/prop-sf-018-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-15",
+        "price": 995000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.075,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 38
+    },
+    "buyer_persona": {
+      "profile": "empty_nester",
+      "interests": [
+        "shopping",
+        "luxury",
+        "modern_amenities",
+        "urban_convenience"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1786,
+      "saved_count": 149,
+      "inquiry_count": 17,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5462349052608252,
+      "cash_buyers_pct": 0.11379991450070759,
+      "first_time_buyers_pct": 0.2919413218907408
+    },
+    "nearby_amenities": [
+      {
+        "type": "shopping",
+        "name": "Santana Row",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Left Bank Brasserie",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "entertainment",
+        "name": "CineArts Theatre",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Santana Row Park",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox San Jose",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "Winchester Light Rail",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Valley Fair Mall",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "hotel",
+        "name": "Hotel Valencia",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-019",
+    "neighborhood_id": "sal-oldtown-010",
+    "address": {
+      "street": "328 Main Street",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93901"
+    },
+    "coordinates": {
+      "latitude": 36.6783,
+      "longitude": -121.6561
+    },
+    "property_details": {
+      "square_feet": 1450,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1935,
+      "lot_size": 0.09,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 585000,
+    "price_per_sqft": 403,
+    "description": "Charming Spanish Colonial bungalow in historic Old Town Salinas. Original architectural details include tile roof, arched doorways, and decorative ironwork. Living room features beamed ceilings and original hardwood floors. Updated kitchen with tile counters and vintage-style appliances. Three bedrooms include master with en-suite bathroom. Private courtyard with mature landscaping. Walking distance to downtown restaurants, art galleries, and community events.",
+    "features": [
+      "Spanish Colonial",
+      "Tile roof",
+      "Beamed ceilings",
+      "Private courtyard",
+      "Historic district",
+      "Art galleries nearby",
+      "Community events",
+      "Vintage charm"
+    ],
+    "listing_date": "2024-01-12",
+    "days_on_market": 15,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-019",
+    "images": [
+      "https://example.com/images/prop-sf-019-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-04",
+        "price": 585000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.039,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 41
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "cultural_heritage",
+        "community",
+        "historic_charm",
+        "family_friendly"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1121,
+      "saved_count": 122,
+      "inquiry_count": 15,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5334783761433949,
+      "cash_buyers_pct": 0.05410876311136089,
+      "first_time_buyers_pct": 0.05171991779330305
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Closter Park",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Sacred Heart School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "market",
+        "name": "Old Town Farmers Market",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "First Awakenings",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "cultural",
+        "name": "National Steinbeck Center",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Salinas Transit Center",
+        "distance_miles": 0.4,
+        "rating": 6,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "community",
+        "name": "Salinas Community Center",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "library",
+        "name": "Cesar Chavez Library",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-020",
+    "neighborhood_id": "sal-oldtown-010",
+    "address": {
+      "street": "512 Cayuga Street",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93901"
+    },
+    "coordinates": {
+      "latitude": 36.6771,
+      "longitude": -121.6548
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1942,
+      "lot_size": 0.11,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 675000,
+    "price_per_sqft": 409,
+    "description": "Well-maintained family home with four bedrooms and period character. Traditional floor plan includes formal living room, dining room, and family kitchen. Hardwood floors throughout main level with updated bathrooms. Four bedrooms upstairs provide flexibility for growing families. Large backyard with fruit trees and vegetable garden space. One-car garage plus off-street parking. Close to schools, parks, and agricultural heritage sites.",
+    "features": [
+      "Four bedrooms",
+      "Period character",
+      "Hardwood floors",
+      "Large backyard",
+      "Fruit trees",
+      "Vegetable garden",
+      "Close to schools",
+      "Agricultural heritage"
+    ],
+    "listing_date": "2024-01-20",
+    "days_on_market": 7,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-020",
+    "images": [
+      "https://example.com/images/prop-sf-020-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-12",
+        "price": 675000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.042,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 23
+    },
+    "buyer_persona": {
+      "profile": "agricultural_worker",
+      "interests": [
+        "affordability",
+        "community",
+        "value",
+        "family_friendly"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 979,
+      "saved_count": 116,
+      "inquiry_count": 12,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.54669681676459,
+      "cash_buyers_pct": 0.19901509323081173,
+      "first_time_buyers_pct": 0.18070370837842725
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Closter Park",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Sacred Heart School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Old Town Farmers Market",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "First Awakenings",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "cultural",
+        "name": "National Steinbeck Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "Salinas Transit Center",
+        "distance_miles": 0.4,
+        "rating": 6,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "community",
+        "name": "Salinas Community Center",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "library",
+        "name": "Cesar Chavez Library",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-021",
+    "neighborhood_id": "sal-creekbridge-011",
+    "address": {
+      "street": "1247 Creekside Drive",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93905"
+    },
+    "coordinates": {
+      "latitude": 36.6948,
+      "longitude": -121.6384
+    },
+    "property_details": {
+      "square_feet": 2200,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2008,
+      "lot_size": 0.18,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 825000,
+    "price_per_sqft": 375,
+    "description": "Modern two-story home in family-friendly Creekbridge community. Open floor plan features great room with vaulted ceilings and gas fireplace. Gourmet kitchen with granite counters, stainless appliances, and breakfast nook. Four bedrooms upstairs include master suite with walk-in closet and spa bathroom. Private backyard with covered patio and mature landscaping. Two-car garage and additional storage. Community amenities include parks, trails, and recreation center.",
+    "features": [
+      "Modern design",
+      "Vaulted ceilings",
+      "Granite counters",
+      "Master suite",
+      "Covered patio",
+      "Community amenities",
+      "Parks and trails",
+      "Family-friendly"
+    ],
+    "listing_date": "2024-01-18",
+    "days_on_market": 9,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-021",
+    "images": [
+      "https://example.com/images/prop-sf-021-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-10",
+        "price": 825000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.069,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 44
+    },
+    "buyer_persona": {
+      "profile": "suburban_buyer",
+      "interests": [
+        "space",
+        "value",
+        "schools",
+        "family_friendly"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1077,
+      "saved_count": 65,
+      "inquiry_count": 14,
+      "showing_requests": 4
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4518198287982301,
+      "cash_buyers_pct": 0.10196077592081364,
+      "first_time_buyers_pct": 0.21702057567528765
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Creekbridge Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Creekside Elementary",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Harden Middle School",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Northridge Mall",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "fitness",
+        "name": "In-Shape Health Club",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "trails",
+        "name": "Creekside Walking Trails",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "community",
+        "name": "Recreation Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "market",
+        "name": "Safeway",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-022",
+    "neighborhood_id": "sal-creekbridge-011",
+    "address": {
+      "street": "865 Valley Vista Court",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93905"
+    },
+    "coordinates": {
+      "latitude": 36.6936,
+      "longitude": -121.6372
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 2012,
+      "lot_size": 0.15,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 745000,
+    "price_per_sqft": 403,
+    "description": "Contemporary home on quiet cul-de-sac with mountain views. Open concept main level includes living room, dining area, and kitchen with quartz countertops. Sliding doors lead to private patio and fenced backyard. Three bedrooms upstairs include master with en-suite bathroom and walk-in closet. Two-car garage with epoxy floors and built-in storage. Energy-efficient features include solar panels and dual-pane windows. Excellent schools and community facilities nearby.",
+    "features": [
+      "Mountain views",
+      "Quiet cul-de-sac",
+      "Quartz countertops",
+      "Solar panels",
+      "Energy efficient",
+      "Built-in storage",
+      "Excellent schools",
+      "Community facilities"
+    ],
+    "listing_date": "2024-01-14",
+    "days_on_market": 13,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-022",
+    "images": [
+      "https://example.com/images/prop-sf-022-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-06",
+        "price": 745000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.045,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 24
+    },
+    "buyer_persona": {
+      "profile": "commuter",
+      "interests": [
+        "new_construction",
+        "space",
+        "family_friendly",
+        "value"
+      ],
+      "age_range": "25-40",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 965,
+      "saved_count": 64,
+      "inquiry_count": 11,
+      "showing_requests": 14
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4712343757446645,
+      "cash_buyers_pct": 0.09904383812917114,
+      "first_time_buyers_pct": 0.11418489347362708
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Creekbridge Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Creekside Elementary",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "school",
+        "name": "Harden Middle School",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Northridge Mall",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "fitness",
+        "name": "In-Shape Health Club",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "trails",
+        "name": "Creekside Walking Trails",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "community",
+        "name": "Recreation Center",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "market",
+        "name": "Safeway",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-023",
+    "neighborhood_id": "sf-pac-heights-001",
+    "address": {
+      "street": "2635 Divisadero Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94115"
+    },
+    "coordinates": {
+      "latitude": 37.7912,
+      "longitude": -122.4378
+    },
+    "property_details": {
+      "square_feet": 3200,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 1902,
+      "lot_size": 0.09,
+      "stories": 3,
+      "garage_spaces": 1
+    },
+    "listing_price": 3850000,
+    "price_per_sqft": 1203,
+    "description": "Elegant Edwardian home on prestigious Divisadero with Golden Gate Bridge views from upper floors. Beautifully preserved period details include bay windows, crown molding, and original parquet floors. Updated chef's kitchen with marble island flows to formal dining room. Four spacious bedrooms include master suite with bridge views and marble bathroom. Private garden with mature plantings. One-car garage plus additional storage. Prime location near Union Street boutiques and Fillmore jazz clubs.",
+    "features": [
+      "Bridge views",
+      "Period details",
+      "Chef's kitchen",
+      "Private garden",
+      "Union Street nearby",
+      "Jazz clubs proximity",
+      "Crown molding",
+      "Parquet floors"
+    ],
+    "listing_date": "2024-01-26",
+    "days_on_market": 1,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-023",
+    "images": [
+      "https://example.com/images/prop-sf-023-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-18",
+        "price": 3850000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.061,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 30
+    },
+    "buyer_persona": {
+      "profile": "finance_professional",
+      "interests": [
+        "walkability",
+        "investment_potential",
+        "views",
+        "high-end_amenities"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 995,
+      "saved_count": 118,
+      "inquiry_count": 15,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7826507014422146,
+      "cash_buyers_pct": 0.29560213428390303,
+      "first_time_buyers_pct": 0.0310045057412772
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Lafayette Park",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "Alta Plaza Park",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Burke School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Stuart Hall High School",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "shopping",
+        "name": "Fillmore Street",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Atelier Crenn",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Fillmore & Broadway Bus",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Bay Club SF",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-024",
+    "neighborhood_id": "sf-pac-heights-001",
+    "address": {
+      "street": "1950 Jackson Street #4",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94115"
+    },
+    "coordinates": {
+      "latitude": 37.7933,
+      "longitude": -122.4295
+    },
+    "property_details": {
+      "square_feet": 2100,
+      "bedrooms": 2,
+      "bathrooms": 2.5,
+      "property_type": "condo",
+      "year_built": 1995,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 2195000,
+    "price_per_sqft": 1045,
+    "description": "Sophisticated penthouse duplex with panoramic city and bay views. Contemporary design features floor-to-ceiling windows, hardwood floors, and high-end finishes. Open concept main level flows to private rooftop terrace with stunning vistas. Gourmet kitchen with SubZero appliances and butler's pantry. Two luxurious bedroom suites with spa-like bathrooms. Building amenities include doorman and fitness center. Steps from Lafayette Park and Fillmore Street shopping.",
+    "features": [
+      "Penthouse duplex",
+      "Rooftop terrace",
+      "Panoramic views",
+      "SubZero appliances",
+      "Doorman",
+      "Fitness center",
+      "Lafayette Park",
+      "Fillmore Street"
+    ],
+    "listing_date": "2024-01-25",
+    "days_on_market": 2,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-024",
+    "images": [
+      "https://example.com/images/prop-sf-024-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-17",
+        "price": 2195000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.064,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 44
+    },
+    "buyer_persona": {
+      "profile": "finance_professional",
+      "interests": [
+        "walkability",
+        "privacy",
+        "views",
+        "investment_potential"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1145,
+      "saved_count": 90,
+      "inquiry_count": 9,
+      "showing_requests": 15
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7757443133662825,
+      "cash_buyers_pct": 0.21024149085245655,
+      "first_time_buyers_pct": 0.05401919175320419
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Lafayette Park",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Alta Plaza Park",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Burke School",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Stuart Hall High School",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Fillmore Street",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Atelier Crenn",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Fillmore & Broadway Bus",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "fitness",
+        "name": "Bay Club SF",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-025",
+    "neighborhood_id": "sf-mission-002",
+    "address": {
+      "street": "758 South Van Ness Avenue",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94110"
+    },
+    "coordinates": {
+      "latitude": 37.7558,
+      "longitude": -122.4189
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1908,
+      "lot_size": 0.06,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1485000,
+    "price_per_sqft": 803,
+    "description": "Restored Victorian home with modern updates in vibrant Mission location. Original details include pocket doors, medallion ceilings, and refinished hardwood floors. Updated kitchen with quartz counters opens to sunny dining room. Three bedrooms include master with en-suite bathroom. Private backyard perfect for entertaining. One-car garage with workshop space. Walking distance to Mission Dolores Park, Valencia Street restaurants, and 16th Street BART station.",
+    "features": [
+      "Victorian restoration",
+      "Pocket doors",
+      "Medallion ceilings",
+      "Private backyard",
+      "Workshop space",
+      "Mission Dolores Park",
+      "Valencia Street",
+      "BART access"
+    ],
+    "listing_date": "2024-01-24",
+    "days_on_market": 3,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-025",
+    "images": [
+      "https://example.com/images/prop-sf-025-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-16",
+        "price": 1485000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.071,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 42
+    },
+    "buyer_persona": {
+      "profile": "tech_worker",
+      "interests": [
+        "nightlife",
+        "culture",
+        "dining",
+        "transit_access"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1796,
+      "saved_count": 107,
+      "inquiry_count": 32,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5581315377003969,
+      "cash_buyers_pct": 0.07210371045724444,
+      "first_time_buyers_pct": 0.2897167715634415
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Dolores Park",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "park",
+        "name": "Balmy Alley",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Synergy School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "16th St Mission BART",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "24th St Mission BART",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "dining",
+        "name": "Valencia Street Corridor",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "The Chapel",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "market",
+        "name": "Bi-Rite Market",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-026",
+    "neighborhood_id": "sf-mission-002",
+    "address": {
+      "street": "2847 Mission Street #201",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94110"
+    },
+    "coordinates": {
+      "latitude": 37.7515,
+      "longitude": -122.4183
+    },
+    "property_details": {
+      "square_feet": 950,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "condo",
+      "year_built": 2019,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 0
+    },
+    "listing_price": 785000,
+    "price_per_sqft": 826,
+    "description": "Modern industrial loft in the heart of Mission's cultural corridor. Exposed concrete walls and polished floors create contemporary aesthetic. Open living space with floor-to-ceiling windows and custom millwork. European-style kitchen with integrated appliances. Spa bathroom with designer fixtures. Building features rooftop deck and bike storage. Steps from 24th Street BART, Mission murals, and acclaimed taquerias. Perfect for urban professionals seeking authentic neighborhood living.",
+    "features": [
+      "Industrial loft",
+      "Exposed concrete",
+      "Floor-to-ceiling windows",
+      "Rooftop deck",
+      "Bike storage",
+      "24th Street BART",
+      "Mission murals",
+      "Taquerias"
+    ],
+    "listing_date": "2024-01-22",
+    "days_on_market": 5,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-026",
+    "images": [
+      "https://example.com/images/prop-sf-026-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-14",
+        "price": 785000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.087,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 26
+    },
+    "buyer_persona": {
+      "profile": "creative_couple",
+      "interests": [
+        "transit_access",
+        "dining",
+        "nightlife",
+        "culture"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 2284,
+      "saved_count": 206,
+      "inquiry_count": 32,
+      "showing_requests": 15
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5521828310038841,
+      "cash_buyers_pct": 0.14251376188336068,
+      "first_time_buyers_pct": 0.05114680780735599
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Dolores Park",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Balmy Alley",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Synergy School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "transit",
+        "name": "16th St Mission BART",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "24th St Mission BART",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Valencia Street Corridor",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "The Chapel",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "market",
+        "name": "Bi-Rite Market",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-027",
+    "neighborhood_id": "sf-sunset-003",
+    "address": {
+      "street": "2734 Taraval Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94116"
+    },
+    "coordinates": {
+      "latitude": 37.7423,
+      "longitude": -122.4891
+    },
+    "property_details": {
+      "square_feet": 2150,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1938,
+      "lot_size": 0.13,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1595000,
+    "price_per_sqft": 742,
+    "description": "Charming Richmond District-style home on quiet Taraval corridor. Classic layout features living room with bay windows, formal dining room, and updated eat-in kitchen. Four bedrooms provide flexibility for families or home office. Hardwood floors throughout with period details preserved. Private backyard with fruit trees and garden space. One-car garage plus additional parking. Close to L-Taraval line, Stern Grove concerts, and excellent dim sum restaurants.",
+    "features": [
+      "Bay windows",
+      "Formal dining",
+      "Four bedrooms",
+      "Fruit trees",
+      "Garden space",
+      "L-Taraval line",
+      "Stern Grove",
+      "Dim sum restaurants"
+    ],
+    "listing_date": "2024-01-21",
+    "days_on_market": 6,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-027",
+    "images": [
+      "https://example.com/images/prop-sf-027-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-13",
+        "price": 1595000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.084,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 17
+    },
+    "buyer_persona": {
+      "profile": "first_time_buyer",
+      "interests": [
+        "value",
+        "schools",
+        "ocean_proximity",
+        "family_friendly"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 806,
+      "saved_count": 87,
+      "inquiry_count": 14,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4602196575305708,
+      "cash_buyers_pct": 0.11788197441266969,
+      "first_time_buyers_pct": 0.030862909027807875
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Golden Gate Park",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "beach",
+        "name": "Ocean Beach",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "school",
+        "name": "Sunset Elementary",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "AP Giannini Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "N-Judah Line",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Irving Street",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Inner Sunset Restaurants",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "market",
+        "name": "Andronico's Market",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-028",
+    "neighborhood_id": "sf-sunset-003",
+    "address": {
+      "street": "3642 Lawton Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94122"
+    },
+    "coordinates": {
+      "latitude": 37.7572,
+      "longitude": -122.5023
+    },
+    "property_details": {
+      "square_feet": 1450,
+      "bedrooms": 3,
+      "bathrooms": 1.5,
+      "property_type": "single-family",
+      "year_built": 1948,
+      "lot_size": 0.08,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1285000,
+    "price_per_sqft": 886,
+    "description": "Mid-century single-story home with original character and modern updates. Open floor plan features living room with picture windows and dining area. Galley kitchen with subway tile and stainless appliances. Three bedrooms include master with en-suite half bath. Finished basement provides additional living space and storage. Private backyard with deck and mature landscaping. One-car garage with workshop area. Blocks from Golden Gate Park and Ocean Beach.",
+    "features": [
+      "Single-story",
+      "Picture windows",
+      "Galley kitchen",
+      "Finished basement",
+      "Private deck",
+      "Workshop area",
+      "Golden Gate Park",
+      "Ocean Beach"
+    ],
+    "listing_date": "2024-01-20",
+    "days_on_market": 7,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-028",
+    "images": [
+      "https://example.com/images/prop-sf-028-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-12",
+        "price": 1285000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.081,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 28
+    },
+    "buyer_persona": {
+      "profile": "downsizing_couple",
+      "interests": [
+        "quiet_streets",
+        "schools",
+        "parks",
+        "ocean_proximity"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1991,
+      "saved_count": 121,
+      "inquiry_count": 17,
+      "showing_requests": 4
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5940270548303452,
+      "cash_buyers_pct": 0.12941573426308434,
+      "first_time_buyers_pct": 0.16602377843359983
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Golden Gate Park",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "beach",
+        "name": "Ocean Beach",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "school",
+        "name": "Sunset Elementary",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "AP Giannini Middle",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "transit",
+        "name": "N-Judah Line",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Irving Street",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Inner Sunset Restaurants",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Andronico's Market",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-029",
+    "neighborhood_id": "sf-soma-004",
+    "address": {
+      "street": "350 11th Street #628",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94103"
+    },
+    "coordinates": {
+      "latitude": 37.7703,
+      "longitude": -122.4142
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2014,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1350000,
+    "price_per_sqft": 818,
+    "description": "Modern loft-style condo in vibrant SOMA location. Floor-to-ceiling windows showcase city views and flood space with natural light. Open concept design features exposed ductwork and polished concrete floors. Chef's kitchen with waterfall island and Bosch appliances. Two bedrooms include master with walk-in closet. Building amenities include roof deck, fitness center, and dog run. Walking distance to Twitter headquarters, whole Foods, and nightlife venues.",
+    "features": [
+      "City views",
+      "Exposed ductwork",
+      "Waterfall island",
+      "Roof deck",
+      "Dog run",
+      "Twitter nearby",
+      "Whole Foods",
+      "Nightlife"
+    ],
+    "listing_date": "2024-01-19",
+    "days_on_market": 8,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-029",
+    "images": [
+      "https://example.com/images/prop-sf-029-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-11",
+        "price": 1350000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.077,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 31
+    },
+    "buyer_persona": {
+      "profile": "investor",
+      "interests": [
+        "tech_proximity",
+        "urban_lifestyle",
+        "nightlife",
+        "modern_amenities"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1054,
+      "saved_count": 99,
+      "inquiry_count": 18,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7695565849768008,
+      "cash_buyers_pct": 0.1325974196256171,
+      "first_time_buyers_pct": 0.11603056872441904
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Yerba Buena Gardens",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Montgomery BART",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Caltrain Station",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "dining",
+        "name": "The Slanted Door",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Westfield Mall",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox SOMA",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "entertainment",
+        "name": "Oracle Park",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods SOMA",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-030",
+    "neighborhood_id": "sf-soma-004",
+    "address": {
+      "street": "201 Folsom Street #12C",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94105"
+    },
+    "coordinates": {
+      "latitude": 37.7882,
+      "longitude": -122.3962
+    },
+    "property_details": {
+      "square_feet": 750,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "condo",
+      "year_built": 2016,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 0
+    },
+    "listing_price": 895000,
+    "price_per_sqft": 1193,
+    "description": "Contemporary studio-style condo with high-end finishes and urban convenience. Smart layout maximizes every square foot with Murphy bed and custom storage solutions. Gourmet kitchenette with quartz counters and premium appliances. Luxury bathroom with rain shower and designer tiles. Building features 24-hour concierge, fitness center, and rooftop terrace. Prime SOMA location near Oracle Park, Ferry Building, and Embarcadero waterfront.",
+    "features": [
+      "Studio-style",
+      "Murphy bed",
+      "Custom storage",
+      "24-hour concierge",
+      "Rooftop terrace",
+      "Oracle Park",
+      "Ferry Building",
+      "Embarcadero"
+    ],
+    "listing_date": "2024-01-18",
+    "days_on_market": 9,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-030",
+    "images": [
+      "https://example.com/images/prop-sf-030-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-10",
+        "price": 895000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.107,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 26
+    },
+    "buyer_persona": {
+      "profile": "tech_worker",
+      "interests": [
+        "investment_potential",
+        "modern_amenities",
+        "urban_lifestyle",
+        "tech_proximity"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1194,
+      "saved_count": 119,
+      "inquiry_count": 19,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4503004319598911,
+      "cash_buyers_pct": 0.12128291121901079,
+      "first_time_buyers_pct": 0.13666495776970777
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Yerba Buena Gardens",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Montgomery BART",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Caltrain Station",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "The Slanted Door",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "Westfield Mall",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox SOMA",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Oracle Park",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods SOMA",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-031",
+    "neighborhood_id": "sf-noe-valley-005",
+    "address": {
+      "street": "847 27th Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94131"
+    },
+    "coordinates": {
+      "latitude": 37.7468,
+      "longitude": -122.4285
+    },
+    "property_details": {
+      "square_feet": 2650,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1912,
+      "lot_size": 0.11,
+      "stories": 3,
+      "garage_spaces": 1
+    },
+    "listing_price": 2485000,
+    "price_per_sqft": 938,
+    "description": "Stunning Edwardian home on tree-lined street in coveted Noe Valley. Three levels of elegant living with period details and modern amenities. Main floor features living room with decorative fireplace, formal dining room, and updated kitchen opening to garden. Four bedrooms include master suite with private bathroom. Lower level family room with separate entrance perfect for au pair or office. Private garden with mature landscaping and entertaining area.",
+    "features": [
+      "Three levels",
+      "Decorative fireplace",
+      "Garden kitchen",
+      "Master suite",
+      "Family room",
+      "Separate entrance",
+      "Private garden",
+      "Mature landscaping"
+    ],
+    "listing_date": "2024-01-17",
+    "days_on_market": 10,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-031",
+    "images": [
+      "https://example.com/images/prop-sf-031-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-09",
+        "price": 2485000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.07,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 33
+    },
+    "buyer_persona": {
+      "profile": "tech_executive",
+      "interests": [
+        "community",
+        "walkability",
+        "family_friendly",
+        "schools"
+      ],
+      "age_range": "25-40",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1341,
+      "saved_count": 122,
+      "inquiry_count": 23,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.458777672472765,
+      "cash_buyers_pct": 0.2785023505112916,
+      "first_time_buyers_pct": 0.07011251237489079
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Douglass Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Noe Valley Courts",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Alvarado Elementary",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "James Lick Middle",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "shopping",
+        "name": "24th Street",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "J-Church Line",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "Firefly Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods Noe",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-032",
+    "neighborhood_id": "sf-noe-valley-005",
+    "address": {
+      "street": "4127 24th Street",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "CA",
+      "zip": "94114"
+    },
+    "coordinates": {
+      "latitude": 37.7518,
+      "longitude": -122.4342
+    },
+    "property_details": {
+      "square_feet": 1950,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1898,
+      "lot_size": 0.05,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 2150000,
+    "price_per_sqft": 1103,
+    "description": "Classic Victorian cottage on famous 24th Street shopping corridor. Meticulously restored with period details including original hardwood floors, wainscoting, and built-in cabinetry. Modern kitchen with marble counters and breakfast nook. Three bedrooms include master with en-suite bathroom. Compact but charming garden with brick patio. One-car garage plus storage. Walk to organic markets, boutique shops, and acclaimed restaurants. Perfect blend of historic character and modern convenience.",
+    "features": [
+      "24th Street location",
+      "Victorian restoration",
+      "Wainscoting",
+      "Built-in cabinetry",
+      "Marble counters",
+      "Brick patio",
+      "Organic markets",
+      "Boutique shops"
+    ],
+    "listing_date": "2024-01-16",
+    "days_on_market": 11,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-032",
+    "images": [
+      "https://example.com/images/prop-sf-032-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-08",
+        "price": 2150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.066,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 22
+    },
+    "buyer_persona": {
+      "profile": "tech_executive",
+      "interests": [
+        "boutique_shopping",
+        "family_friendly",
+        "community",
+        "parks"
+      ],
+      "age_range": "25-40",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1593,
+      "saved_count": 89,
+      "inquiry_count": 26,
+      "showing_requests": 13
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5904895557014862,
+      "cash_buyers_pct": 0.3519093632410434,
+      "first_time_buyers_pct": 0.06534523605426863
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Douglass Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Noe Valley Courts",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Alvarado Elementary",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "James Lick Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "24th Street",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "J-Church Line",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "Firefly Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "market",
+        "name": "Whole Foods Noe",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-033",
+    "neighborhood_id": "oak-temescal-006",
+    "address": {
+      "street": "5125 Shattuck Avenue",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94609"
+    },
+    "coordinates": {
+      "latitude": 37.8342,
+      "longitude": -122.2658
+    },
+    "property_details": {
+      "square_feet": 1350,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2020,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 775000,
+    "price_per_sqft": 574,
+    "description": "Brand new modern condo in the heart of Temescal's vibrant corridor. Contemporary design features floor-to-ceiling windows, quartz countertops, and premium finishes. Open concept living flows to private balcony overlooking tree-lined street. Two bedrooms include master with walk-in closet and spa bathroom. In-unit laundry and deeded parking space. Building amenities include roof deck and bike storage. Steps from MacArthur BART, craft breweries, and innovative restaurants.",
+    "features": [
+      "Brand new",
+      "Floor-to-ceiling windows",
+      "Private balcony",
+      "In-unit laundry",
+      "Roof deck",
+      "MacArthur BART",
+      "Craft breweries",
+      "Innovative restaurants"
+    ],
+    "listing_date": "2024-01-15",
+    "days_on_market": 12,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-033",
+    "images": [
+      "https://example.com/images/prop-sf-033-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-07",
+        "price": 775000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.1,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 40
+    },
+    "buyer_persona": {
+      "profile": "artist",
+      "interests": [
+        "diversity",
+        "culture",
+        "creative_community",
+        "transit_access"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1953,
+      "saved_count": 203,
+      "inquiry_count": 35,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4132519907807939,
+      "cash_buyers_pct": 0.0966739044791886,
+      "first_time_buyers_pct": 0.21062420801825832
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Temescal Regional Park",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "transit",
+        "name": "MacArthur BART",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Peralta Elementary",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "dining",
+        "name": "Telegraph Ave Restaurants",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Temescal Alley",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "The Legionnaire",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Berkeley Bowl West",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "brewery",
+        "name": "Temescal Brewing",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-034",
+    "neighborhood_id": "oak-temescal-006",
+    "address": {
+      "street": "526 45th Street",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94609"
+    },
+    "coordinates": {
+      "latitude": 37.8289,
+      "longitude": -122.2675
+    },
+    "property_details": {
+      "square_feet": 1800,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1920,
+      "lot_size": 0.09,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 985000,
+    "price_per_sqft": 547,
+    "description": "Charming Craftsman bungalow with period details and thoughtful updates. Living room features built-in bookcases, decorative fireplace, and original hardwood floors. Dining room with coffered ceiling leads to updated kitchen with farmhouse sink. Three bedrooms upstairs include master with garden views. Private backyard with vegetable garden and chicken coop. One-car garage with workshop space. Walking distance to Temescal's trendy shops and eateries.",
+    "features": [
+      "Built-in bookcases",
+      "Coffered ceiling",
+      "Farmhouse sink",
+      "Vegetable garden",
+      "Chicken coop",
+      "Workshop space",
+      "Trendy shops",
+      "Walkable"
+    ],
+    "listing_date": "2024-01-14",
+    "days_on_market": 13,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-034",
+    "images": [
+      "https://example.com/images/prop-sf-034-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-06",
+        "price": 985000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.099,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 34
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "dining",
+        "culture",
+        "diversity",
+        "affordability"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1081,
+      "saved_count": 65,
+      "inquiry_count": 17,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5379056714638694,
+      "cash_buyers_pct": 0.15311012954473113,
+      "first_time_buyers_pct": 0.17235449548954845
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Temescal Regional Park",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "transit",
+        "name": "MacArthur BART",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Peralta Elementary",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "dining",
+        "name": "Telegraph Ave Restaurants",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Temescal Alley",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "nightlife",
+        "name": "The Legionnaire",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Berkeley Bowl West",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "brewery",
+        "name": "Temescal Brewing",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-035",
+    "neighborhood_id": "oak-rockridge-007",
+    "address": {
+      "street": "6255 Colby Street",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94618"
+    },
+    "coordinates": {
+      "latitude": 37.8436,
+      "longitude": -122.2541
+    },
+    "property_details": {
+      "square_feet": 2450,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1925,
+      "lot_size": 0.12,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1485000,
+    "price_per_sqft": 606,
+    "description": "Elegant Colonial Revival home on premier Rockridge street. Grand foyer leads to formal living and dining rooms with original moldings and hardwood floors. Updated kitchen with granite counters opens to family room and private patio. Four bedrooms include master suite with en-suite bathroom and walk-in closet. Finished basement provides additional living space. Two-car garage and mature garden. Walk to Rockridge BART and College Avenue amenities.",
+    "features": [
+      "Colonial Revival",
+      "Grand foyer",
+      "Formal rooms",
+      "Private patio",
+      "Finished basement",
+      "Mature garden",
+      "Rockridge BART",
+      "College Avenue"
+    ],
+    "listing_date": "2024-01-13",
+    "days_on_market": 14,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-035",
+    "images": [
+      "https://example.com/images/prop-sf-035-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-05",
+        "price": 1485000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.079,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 37
+    },
+    "buyer_persona": {
+      "profile": "downsizing_couple",
+      "interests": [
+        "walkability",
+        "schools",
+        "community",
+        "family_friendly"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1404,
+      "saved_count": 137,
+      "inquiry_count": 18,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5459250673434208,
+      "cash_buyers_pct": 0.17791482759280336,
+      "first_time_buyers_pct": 0.18262716402214024
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Frog Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "transit",
+        "name": "Rockridge BART",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Chabot Elementary",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Claremont Middle",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "College Avenue",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Oliveto Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Market Hall",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "library",
+        "name": "Rockridge Library",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-036",
+    "neighborhood_id": "oak-rockridge-007",
+    "address": {
+      "street": "5938 Lawton Avenue",
+      "city": "Oakland",
+      "county": "Alameda",
+      "state": "CA",
+      "zip": "94618"
+    },
+    "coordinates": {
+      "latitude": 37.8458,
+      "longitude": -122.2487
+    },
+    "property_details": {
+      "square_feet": 1750,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1915,
+      "lot_size": 0.08,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 1195000,
+    "price_per_sqft": 683,
+    "description": "Delightful Craftsman home with original charm and modern conveniences. Living room features box beam ceilings, built-in window seat, and period lighting. Formal dining room with wainscoting and bay windows. Updated kitchen with subway tile and butcher block counters. Three bedrooms include master with reading nook. Private backyard with deck and fruit trees. One-car garage with studio potential. Close to excellent schools and transit.",
+    "features": [
+      "Box beam ceilings",
+      "Built-in window seat",
+      "Bay windows",
+      "Subway tile",
+      "Reading nook",
+      "Fruit trees",
+      "Studio potential",
+      "Excellent schools"
+    ],
+    "listing_date": "2024-01-12",
+    "days_on_market": 15,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-036",
+    "images": [
+      "https://example.com/images/prop-sf-036-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-04",
+        "price": 1195000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.072,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 31
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "schools",
+        "family_friendly",
+        "walkability",
+        "transit_access"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1929,
+      "saved_count": 106,
+      "inquiry_count": 20,
+      "showing_requests": 4
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.6623859114202915,
+      "cash_buyers_pct": 0.1889891361975895,
+      "first_time_buyers_pct": 0.18403437921665838
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Frog Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Rockridge BART",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Chabot Elementary",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Claremont Middle",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "shopping",
+        "name": "College Avenue",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Oliveto Restaurant",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Market Hall",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "library",
+        "name": "Rockridge Library",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-037",
+    "neighborhood_id": "sj-willow-glen-008",
+    "address": {
+      "street": "1156 Meridian Avenue",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95125"
+    },
+    "coordinates": {
+      "latitude": 37.3089,
+      "longitude": -121.8923
+    },
+    "property_details": {
+      "square_feet": 2350,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1935,
+      "lot_size": 0.14,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1985000,
+    "price_per_sqft": 845,
+    "description": "Classic Tudor-style home on tree-lined Meridian Avenue. Living room features vaulted ceilings, exposed beams, and stone fireplace. Formal dining room with leaded glass windows. Updated kitchen with granite counters and breakfast nook. Four bedrooms include master suite with sitting area. Private backyard with pool and mature oak trees. Two-car garage with workshop. Walking distance to Lincoln Avenue shops and Willow Glen's charming downtown.",
+    "features": [
+      "Tudor-style",
+      "Vaulted ceilings",
+      "Stone fireplace",
+      "Leaded glass",
+      "Pool",
+      "Oak trees",
+      "Workshop",
+      "Lincoln Avenue"
+    ],
+    "listing_date": "2024-01-11",
+    "days_on_market": 16,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-037",
+    "images": [
+      "https://example.com/images/prop-sf-037-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-03",
+        "price": 1985000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.072,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 21
+    },
+    "buyer_persona": {
+      "profile": "established_family",
+      "interests": [
+        "family_friendly",
+        "value",
+        "schools",
+        "space"
+      ],
+      "age_range": "35-55",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1168,
+      "saved_count": 89,
+      "inquiry_count": 16,
+      "showing_requests": 13
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5166058159618254,
+      "cash_buyers_pct": 0.1292436648380938,
+      "first_time_buyers_pct": 0.09569059484400437
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Willow Street Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen Elementary",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen High",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "shopping",
+        "name": "Lincoln Avenue",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Willow Street Pizza",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "VTA Light Rail",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "market",
+        "name": "Zanotto's Market",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "community",
+        "name": "Willow Glen Community Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-038",
+    "neighborhood_id": "sj-willow-glen-008",
+    "address": {
+      "street": "1867 Bird Avenue",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95125"
+    },
+    "coordinates": {
+      "latitude": 37.3097,
+      "longitude": -121.8934
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1952,
+      "lot_size": 0.11,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 1675000,
+    "price_per_sqft": 905,
+    "description": "Mid-century ranch home with post-and-beam construction and walls of glass. Open floor plan features living room with vaulted ceilings and clerestory windows. Galley kitchen with original cabinetry and terrazzo floors. Three bedrooms include master with en-suite bathroom and garden access. Private backyard with entertaining patio and mature landscaping. Two-car garage with workshop area. Excellent Willow Glen schools and community amenities.",
+    "features": [
+      "Mid-century ranch",
+      "Post-and-beam",
+      "Clerestory windows",
+      "Terrazzo floors",
+      "Garden access",
+      "Entertaining patio",
+      "Workshop area",
+      "Excellent schools"
+    ],
+    "listing_date": "2024-01-10",
+    "days_on_market": 17,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-038",
+    "images": [
+      "https://example.com/images/prop-sf-038-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-02",
+        "price": 1675000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.054,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 29
+    },
+    "buyer_persona": {
+      "profile": "tech_professional",
+      "interests": [
+        "suburban_lifestyle",
+        "family_friendly",
+        "value",
+        "space"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 730,
+      "saved_count": 55,
+      "inquiry_count": 12,
+      "showing_requests": 14
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.40647884569804643,
+      "cash_buyers_pct": 0.07976730476216125,
+      "first_time_buyers_pct": 0.007609684558851926
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Willow Street Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen Elementary",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Willow Glen High",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Lincoln Avenue",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Willow Street Pizza",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "VTA Light Rail",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 12
+      },
+      {
+        "type": "market",
+        "name": "Zanotto's Market",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "community",
+        "name": "Willow Glen Community Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-039",
+    "neighborhood_id": "sj-santana-row-009",
+    "address": {
+      "street": "3000 The Alameda #312",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95128"
+    },
+    "coordinates": {
+      "latitude": 37.3185,
+      "longitude": -121.9465
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "condo",
+      "year_built": 2017,
+      "lot_size": 0,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1750000,
+    "price_per_sqft": 946,
+    "description": "Luxury townhome-style condo in prestigious Santana Row community. Two-story layout features great room with soaring ceilings and fireplace. Gourmet kitchen with waterfall island and premium appliances. Three bedrooms include master suite with private balcony and walk-in closet. Two-car garage with direct access. Building amenities include concierge, fitness center, and resort-style pool. Walking distance to upscale shopping, dining, and entertainment.",
+    "features": [
+      "Townhome-style",
+      "Soaring ceilings",
+      "Waterfall island",
+      "Private balcony",
+      "Direct garage access",
+      "Concierge",
+      "Resort pool",
+      "Upscale shopping"
+    ],
+    "listing_date": "2024-01-09",
+    "days_on_market": 18,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-039",
+    "images": [
+      "https://example.com/images/prop-sf-039-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-01",
+        "price": 1750000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.099,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 45
+    },
+    "buyer_persona": {
+      "profile": "young_professional",
+      "interests": [
+        "urban_convenience",
+        "investment",
+        "modern_amenities",
+        "luxury"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 1226,
+      "saved_count": 126,
+      "inquiry_count": 17,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.6018033488022252,
+      "cash_buyers_pct": 0.08535780390104239,
+      "first_time_buyers_pct": 0.09321541736759233
+    },
+    "nearby_amenities": [
+      {
+        "type": "shopping",
+        "name": "Santana Row",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Left Bank Brasserie",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "CineArts Theatre",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "Santana Row Park",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox San Jose",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Winchester Light Rail",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "shopping",
+        "name": "Valley Fair Mall",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "hotel",
+        "name": "Hotel Valencia",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-040",
+    "neighborhood_id": "sj-santana-row-009",
+    "address": {
+      "street": "3250 Park Center Drive #805",
+      "city": "San Jose",
+      "county": "Santa Clara",
+      "state": "CA",
+      "zip": "95128"
+    },
+    "coordinates": {
+      "latitude": 37.3199,
+      "longitude": -121.9491
+    },
+    "property_details": {
+      "square_feet": 1200,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2019,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1195000,
+    "price_per_sqft": 996,
+    "description": "Contemporary high-rise condo with floor-to-ceiling windows and city views. Open concept living with premium finishes including quartz countertops and hardwood floors. Gourmet kitchen with integrated appliances and breakfast bar. Two bedrooms include master with spa bathroom and walk-in closet. Private balcony perfect for morning coffee. Building features 24-hour concierge, fitness center, and rooftop amenities. Steps from world-class shopping and dining.",
+    "features": [
+      "High-rise",
+      "City views",
+      "Premium finishes",
+      "Integrated appliances",
+      "Spa bathroom",
+      "24-hour concierge",
+      "Rooftop amenities",
+      "World-class shopping"
+    ],
+    "listing_date": "2024-01-08",
+    "days_on_market": 19,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-040",
+    "images": [
+      "https://example.com/images/prop-sf-040-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-31",
+        "price": 1195000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.071,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 20
+    },
+    "buyer_persona": {
+      "profile": "international_buyer",
+      "interests": [
+        "dining",
+        "modern_amenities",
+        "investment",
+        "luxury"
+      ],
+      "age_range": "25-40",
+      "motivation": "downsize"
+    },
+    "viewing_statistics": {
+      "total_views": 1359,
+      "saved_count": 76,
+      "inquiry_count": 22,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.672627117124036,
+      "cash_buyers_pct": 0.18701383127852672,
+      "first_time_buyers_pct": 0.1263512143821966
+    },
+    "nearby_amenities": [
+      {
+        "type": "shopping",
+        "name": "Santana Row",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Left Bank Brasserie",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "CineArts Theatre",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "Santana Row Park",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "fitness",
+        "name": "Equinox San Jose",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "transit",
+        "name": "Winchester Light Rail",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Valley Fair Mall",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "hotel",
+        "name": "Hotel Valencia",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-041",
+    "neighborhood_id": "sal-oldtown-010",
+    "address": {
+      "street": "224 Central Avenue",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93901"
+    },
+    "coordinates": {
+      "latitude": 36.6791,
+      "longitude": -121.6573
+    },
+    "property_details": {
+      "square_feet": 1280,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1928,
+      "lot_size": 0.07,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 525000,
+    "price_per_sqft": 410,
+    "description": "Charming Spanish-style bungalow in historic Old Town district. Original features include arched doorways, tile accents, and hardwood floors. Updated kitchen with granite counters and stainless appliances. Two comfortable bedrooms share updated bathroom. Private courtyard with fountain and mature citrus trees. One-car garage plus off-street parking. Walking distance to farmers market, art galleries, and community theater. Perfect starter home or investment property.",
+    "features": [
+      "Spanish-style",
+      "Arched doorways",
+      "Tile accents",
+      "Private courtyard",
+      "Citrus trees",
+      "Farmers market",
+      "Art galleries",
+      "Community theater"
+    ],
+    "listing_date": "2024-01-26",
+    "days_on_market": 1,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-041",
+    "images": [
+      "https://example.com/images/prop-sf-041-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-18",
+        "price": 525000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.057,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 28
+    },
+    "buyer_persona": {
+      "profile": "first_time_buyer",
+      "interests": [
+        "historic_charm",
+        "value",
+        "affordability",
+        "community"
+      ],
+      "age_range": "25-40",
+      "motivation": "upgrade"
+    },
+    "viewing_statistics": {
+      "total_views": 791,
+      "saved_count": 54,
+      "inquiry_count": 15,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5630037231409014,
+      "cash_buyers_pct": 0.08356765088150526,
+      "first_time_buyers_pct": 0.24106344410017944
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Closter Park",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Sacred Heart School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "market",
+        "name": "Old Town Farmers Market",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "First Awakenings",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "cultural",
+        "name": "National Steinbeck Center",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Salinas Transit Center",
+        "distance_miles": 0.3,
+        "rating": 6,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "community",
+        "name": "Salinas Community Center",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "library",
+        "name": "Cesar Chavez Library",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-042",
+    "neighborhood_id": "sal-oldtown-010",
+    "address": {
+      "street": "418 Lincoln Avenue",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93901"
+    },
+    "coordinates": {
+      "latitude": 36.6785,
+      "longitude": -121.6567
+    },
+    "property_details": {
+      "square_feet": 1750,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1940,
+      "lot_size": 0.1,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 645000,
+    "price_per_sqft": 369,
+    "description": "Traditional two-story home with period charm and modern conveniences. Living room features original hardwood floors and decorative fireplace. Dining room with built-in hutch leads to updated kitchen. Three bedrooms upstairs include master with en-suite bathroom. Large backyard with workshop and storage shed. One-car garage with additional parking. Close to historic sites, local restaurants, and agricultural heritage attractions.",
+    "features": [
+      "Two-story",
+      "Decorative fireplace",
+      "Built-in hutch",
+      "Large backyard",
+      "Workshop",
+      "Storage shed",
+      "Historic sites",
+      "Agricultural heritage"
+    ],
+    "listing_date": "2024-01-25",
+    "days_on_market": 2,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-042",
+    "images": [
+      "https://example.com/images/prop-sf-042-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-17",
+        "price": 645000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.06,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 28
+    },
+    "buyer_persona": {
+      "profile": "agricultural_worker",
+      "interests": [
+        "community",
+        "value",
+        "cultural_heritage",
+        "family_friendly"
+      ],
+      "age_range": "25-40",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 634,
+      "saved_count": 36,
+      "inquiry_count": 11,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.7098754603306554,
+      "cash_buyers_pct": 0.15526151121248039,
+      "first_time_buyers_pct": 0.12586176832511997
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Closter Park",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Sacred Heart School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "market",
+        "name": "Old Town Farmers Market",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "First Awakenings",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "cultural",
+        "name": "National Steinbeck Center",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "transit",
+        "name": "Salinas Transit Center",
+        "distance_miles": 0.5,
+        "rating": 6,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "community",
+        "name": "Salinas Community Center",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "library",
+        "name": "Cesar Chavez Library",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-043",
+    "neighborhood_id": "sal-creekbridge-011",
+    "address": {
+      "street": "1534 Valley Creek Drive",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93905"
+    },
+    "coordinates": {
+      "latitude": 36.6954,
+      "longitude": -121.6396
+    },
+    "property_details": {
+      "square_feet": 1950,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 2015,
+      "lot_size": 0.16,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 795000,
+    "price_per_sqft": 408,
+    "description": "Modern two-story home in family-friendly Creekbridge community. Open floor plan features great room with vaulted ceilings and fireplace. Gourmet kitchen with granite island and stainless appliances. Four bedrooms upstairs include master suite with walk-in closet. Private backyard with covered patio and low-maintenance landscaping. Two-car garage with epoxy floors. Community amenities include parks, playground, and walking trails.",
+    "features": [
+      "Modern two-story",
+      "Vaulted ceilings",
+      "Granite island",
+      "Master suite",
+      "Covered patio",
+      "Epoxy floors",
+      "Community parks",
+      "Walking trails"
+    ],
+    "listing_date": "2024-01-24",
+    "days_on_market": 3,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-043",
+    "images": [
+      "https://example.com/images/prop-sf-043-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-16",
+        "price": 795000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.055,
+      "seasonality_factor": "high_spring",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 16
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "new_construction",
+        "schools",
+        "family_friendly",
+        "value"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1383,
+      "saved_count": 111,
+      "inquiry_count": 25,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4325756948898993,
+      "cash_buyers_pct": 0.05658929680899966,
+      "first_time_buyers_pct": 0.26451744184988096
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Creekbridge Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Creekside Elementary",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Harden Middle School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "shopping",
+        "name": "Northridge Mall",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "fitness",
+        "name": "In-Shape Health Club",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "trails",
+        "name": "Creekside Walking Trails",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "community",
+        "name": "Recreation Center",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Safeway",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-sf-044",
+    "neighborhood_id": "sal-creekbridge-011",
+    "address": {
+      "street": "925 Harvest Court",
+      "city": "Salinas",
+      "county": "Monterey",
+      "state": "CA",
+      "zip": "93905"
+    },
+    "coordinates": {
+      "latitude": 36.6961,
+      "longitude": -121.6403
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 2018,
+      "lot_size": 0.12,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 715000,
+    "price_per_sqft": 433,
+    "description": "Contemporary single-story home on quiet cul-de-sac with mountain views. Open concept design features living room with fireplace and dining area. Modern kitchen with quartz countertops and breakfast bar. Three bedrooms include master with en-suite bathroom. Private backyard with patio and room for pool. Two-car garage with built-in storage. Energy-efficient features include solar panels and dual-pane windows. Excellent schools and community facilities.",
+    "features": [
+      "Single-story",
+      "Mountain views",
+      "Quartz countertops",
+      "Room for pool",
+      "Built-in storage",
+      "Solar panels",
+      "Dual-pane windows",
+      "Excellent schools"
+    ],
+    "listing_date": "2024-01-23",
+    "days_on_market": 4,
+    "virtual_tour_url": "https://example.com/tours/prop-sf-044",
+    "images": [
+      "https://example.com/images/prop-sf-044-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-15",
+        "price": 715000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.07,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 27
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "space",
+        "family_friendly",
+        "community_amenities",
+        "schools"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1148,
+      "saved_count": 111,
+      "inquiry_count": 21,
+      "showing_requests": 15
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.5534515542630922,
+      "cash_buyers_pct": 0.15466768185151852,
+      "first_time_buyers_pct": 0.298364468896324
+    },
+    "nearby_amenities": [
+      {
+        "type": "park",
+        "name": "Creekbridge Park",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Creekside Elementary",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "school",
+        "name": "Harden Middle School",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "shopping",
+        "name": "Northridge Mall",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "fitness",
+        "name": "In-Shape Health Club",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "trails",
+        "name": "Creekside Walking Trails",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "community",
+        "name": "Recreation Center",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "market",
+        "name": "Safeway",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 8
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  }
+]

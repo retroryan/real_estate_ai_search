@@ -1,0 +1,5706 @@
+[
+  {
+    "listing_id": "prop-pc-001",
+    "neighborhood_id": "pc-old-town-001",
+    "address": {
+      "street": "545 Main Street",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6455,
+      "longitude": -111.4976
+    },
+    "property_details": {
+      "square_feet": 2800,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 1885,
+      "lot_size": 0.08,
+      "stories": 3,
+      "garage_spaces": 1
+    },
+    "listing_price": 3250000,
+    "price_per_sqft": 1161,
+    "description": "Historic miners' cottage completely renovated while preserving authentic Victorian charm. Original hardwood floors, exposed beams, and period windows blend seamlessly with modern luxury amenities. Gourmet kitchen features custom cabinetry and professional appliances. Master suite with mountain views and spa-like bathroom. Private courtyard perfect for apr\u00e8s-ski gatherings. Walk to Town Lift for direct slope access.",
+    "features": [
+      "Historic charm",
+      "Completely renovated",
+      "Ski-in/ski-out",
+      "Mountain views",
+      "Private courtyard",
+      "Gourmet kitchen",
+      "Period details",
+      "Town Lift access"
+    ],
+    "listing_date": "2024-01-16",
+    "days_on_market": 11,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-001",
+    "images": [
+      "https://example.com/images/prop-pc-001-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-08",
+        "price": 3250000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.067,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 36
+    },
+    "buyer_persona": {
+      "profile": "vacation_buyer",
+      "interests": [
+        "cultural_events",
+        "ski_access",
+        "walkability",
+        "historic_charm"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1858,
+      "saved_count": 111,
+      "inquiry_count": 25,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.28091367866147937,
+      "cash_buyers_pct": 0.2936425778377273,
+      "first_time_buyers_pct": 0.0010148887449677735,
+      "vacation_buyers_pct": 0.13586249599662084
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_lift",
+        "name": "Town Lift",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "ski_lift",
+        "name": "Quit'n Time Lift",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Main Street Boutiques",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Egyptian Theatre",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "Free Transit Hub",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "nightlife",
+        "name": "Main Street Bars",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-002",
+    "neighborhood_id": "pc-old-town-001",
+    "address": {
+      "street": "1120 Park Avenue #202",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6471,
+      "longitude": -111.4988
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2010,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1850000,
+    "price_per_sqft": 1121,
+    "description": "Sophisticated mountain modern condo in boutique Old Town building. Floor-to-ceiling windows frame stunning Wasatch Mountain views. Open concept living with contemporary finishes including stone fireplace and hardwood floors. Chef's kitchen with granite counters and stainless appliances. Private balcony overlooks historic Main Street. Building offers concierge services and ski storage. Walking distance to slopes, dining, and nightlife.",
+    "features": [
+      "Mountain views",
+      "Contemporary design",
+      "Stone fireplace",
+      "Private balcony",
+      "Concierge services",
+      "Ski storage",
+      "Main Street location",
+      "Walk to slopes"
+    ],
+    "listing_date": "2024-01-21",
+    "days_on_market": 6,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-002",
+    "images": [
+      "https://example.com/images/prop-pc-002-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-13",
+        "price": 1850000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.077,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 52
+    },
+    "buyer_persona": {
+      "profile": "festival_goer",
+      "interests": [
+        "nightlife",
+        "investment_potential",
+        "ski_access",
+        "walkability"
+      ],
+      "age_range": "35-55",
+      "motivation": "rental_income"
+    },
+    "viewing_statistics": {
+      "total_views": 963,
+      "saved_count": 95,
+      "inquiry_count": 22,
+      "showing_requests": 2
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.29982298445443356,
+      "cash_buyers_pct": 0.18408199820121685,
+      "first_time_buyers_pct": 0.0010935550415116235,
+      "vacation_buyers_pct": 0.2039092020301758
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_lift",
+        "name": "Town Lift",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "ski_lift",
+        "name": "Quit'n Time Lift",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Main Street Boutiques",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Egyptian Theatre",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "Free Transit Hub",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nightlife",
+        "name": "Main Street Bars",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-003",
+    "neighborhood_id": "pc-deer-valley-002",
+    "address": {
+      "street": "7815 Royal Street East",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6381,
+      "longitude": -111.4791
+    },
+    "property_details": {
+      "square_feet": 6500,
+      "bedrooms": 6,
+      "bathrooms": 7,
+      "property_type": "single-family",
+      "year_built": 2018,
+      "lot_size": 0.45,
+      "stories": 3,
+      "garage_spaces": 3
+    },
+    "listing_price": 8950000,
+    "price_per_sqft": 1377,
+    "description": "Architectural masterpiece offering unparalleled luxury and ski-in/ski-out access to Deer Valley Resort. Contemporary mountain design features floor-to-ceiling windows, vaulted ceilings, and premium materials throughout. Gourmet kitchen with waterfall island opens to great room with dramatic fireplace. Master wing includes private deck, spa-like bathroom, and walk-in closets. Wine cellar, home theater, and heated three-car garage complete this exceptional estate.",
+    "features": [
+      "Ski-in/ski-out",
+      "Architectural design",
+      "Wine cellar",
+      "Home theater",
+      "Master wing",
+      "Heated garage",
+      "Premium materials",
+      "Deer Valley access"
+    ],
+    "listing_date": "2024-01-05",
+    "days_on_market": 22,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-003",
+    "images": [
+      "https://example.com/images/prop-pc-003-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-28",
+        "price": 8950000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.055,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 29
+    },
+    "buyer_persona": {
+      "profile": "luxury_buyer",
+      "interests": [
+        "resort_amenities",
+        "privacy",
+        "investment",
+        "ultra_luxury"
+      ],
+      "age_range": "45-65",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 481,
+      "saved_count": 40,
+      "inquiry_count": 13,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.24438660673053395,
+      "cash_buyers_pct": 0.5090325538982562,
+      "first_time_buyers_pct": 0.013628187019223038,
+      "vacation_buyers_pct": 0.24722667462937725
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_resort",
+        "name": "Deer Valley Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "hotel",
+        "name": "St. Regis Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "hotel",
+        "name": "Montage Deer Valley",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Glitretind Restaurant",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "spa",
+        "name": "Rem\u00e8de Spa",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "golf",
+        "name": "Deer Valley Golf Course",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "shopping",
+        "name": "Silver Lake Village",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "ski_school",
+        "name": "Deer Valley Ski School",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-004",
+    "neighborhood_id": "pc-deer-valley-002",
+    "address": {
+      "street": "2900 Deer Valley Drive #3301",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6365,
+      "longitude": -111.4773
+    },
+    "property_details": {
+      "square_feet": 2200,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "property_type": "condo",
+      "year_built": 2020,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 3450000,
+    "price_per_sqft": 1568,
+    "description": "Ultra-luxury ski-in/ski-out residence at the exclusive Montage Deer Valley. Impeccable finishes include custom millwork, natural stone, and designer fixtures throughout. Spacious living areas flow seamlessly to private terrace with mountain vistas. Gourmet kitchen features top-tier appliances and butler's pantry. Resort amenities include spa, pools, dining, and personalized concierge services. Turn-key investment opportunity with rental program.",
+    "features": [
+      "Montage resort",
+      "Ski-in/ski-out",
+      "Ultra-luxury",
+      "Private terrace",
+      "Resort amenities",
+      "Spa access",
+      "Rental program",
+      "Concierge services"
+    ],
+    "listing_date": "2024-01-13",
+    "days_on_market": 14,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-004",
+    "images": [
+      "https://example.com/images/prop-pc-004-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-05",
+        "price": 3450000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.07,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 54
+    },
+    "buyer_persona": {
+      "profile": "ceo_executive",
+      "interests": [
+        "privacy",
+        "investment",
+        "ultra_luxury",
+        "resort_amenities"
+      ],
+      "age_range": "35-55",
+      "motivation": "ski_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 826,
+      "saved_count": 52,
+      "inquiry_count": 23,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.22680418721941945,
+      "cash_buyers_pct": 0.3948537409908451,
+      "first_time_buyers_pct": 0.008331497288644801,
+      "vacation_buyers_pct": 0.271098995547304
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_resort",
+        "name": "Deer Valley Resort",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "hotel",
+        "name": "St. Regis Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "hotel",
+        "name": "Montage Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Glitretind Restaurant",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "spa",
+        "name": "Rem\u00e8de Spa",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "golf",
+        "name": "Deer Valley Golf Course",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Silver Lake Village",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "ski_school",
+        "name": "Deer Valley Ski School",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-005",
+    "neighborhood_id": "pc-park-meadows-003",
+    "address": {
+      "street": "1456 Silver King Drive",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6595,
+      "longitude": -111.4875
+    },
+    "property_details": {
+      "square_feet": 2600,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2015,
+      "lot_size": 0.18,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1595000,
+    "price_per_sqft": 613,
+    "description": "Modern mountain family home in desirable Park Meadows neighborhood. Open floor plan perfect for entertaining with great room, dining area, and updated kitchen featuring quartz counters and stainless appliances. Four bedrooms provide flexibility for families or guests. Private backyard with hot tub and mountain views. Two-car garage plus storage. Close to Rail Trail, schools, and free transit to ski resorts.",
+    "features": [
+      "Modern design",
+      "Open floor plan",
+      "Private backyard",
+      "Hot tub",
+      "Mountain views",
+      "Near Rail Trail",
+      "Free transit",
+      "Family-friendly"
+    ],
+    "listing_date": "2024-01-19",
+    "days_on_market": 8,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-005",
+    "images": [
+      "https://example.com/images/prop-pc-005-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-11",
+        "price": 1595000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.05,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 41
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "family_friendly",
+        "schools",
+        "year_round_living",
+        "transit_access"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 690,
+      "saved_count": 63,
+      "inquiry_count": 18,
+      "showing_requests": 5
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3833106809525867,
+      "cash_buyers_pct": 0.18576765168714746,
+      "first_time_buyers_pct": 0.013138496866331985,
+      "vacation_buyers_pct": 0.25189163959763805
+    },
+    "nearby_amenities": [
+      {
+        "type": "trail",
+        "name": "Rail Trail",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Willow Creek Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Park City High School",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "school",
+        "name": "Treasure Mountain Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "Free Shuttle Stop",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "recreation",
+        "name": "Basin Recreation Center",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "shopping",
+        "name": "Fresh Market",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "sports",
+        "name": "Sports Complex",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-006",
+    "neighborhood_id": "pc-park-meadows-003",
+    "address": {
+      "street": "2134 Sidewinder Drive #24",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6583,
+      "longitude": -111.4861
+    },
+    "property_details": {
+      "square_feet": 1450,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "townhouse",
+      "year_built": 2012,
+      "lot_size": 0,
+      "stories": 3,
+      "garage_spaces": 2
+    },
+    "listing_price": 925000,
+    "price_per_sqft": 638,
+    "description": "Well-maintained townhome offering affordable Park City living. Three levels provide excellent separation with main floor living, upper bedrooms, and lower recreation room. Updated kitchen with granite counters and breakfast bar. Private deck overlooks open space and mountains. Two-car garage with additional storage. Community amenities include pool and clubhouse. Perfect for first-time buyers or investment property.",
+    "features": [
+      "Three levels",
+      "Updated kitchen",
+      "Private deck",
+      "Open space views",
+      "Community pool",
+      "Affordable entry",
+      "Investment potential",
+      "Storage"
+    ],
+    "listing_date": "2024-01-24",
+    "days_on_market": 3,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-006",
+    "images": [
+      "https://example.com/images/prop-pc-006-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-16",
+        "price": 925000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.068,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 47
+    },
+    "buyer_persona": {
+      "profile": "full_time_resident",
+      "interests": [
+        "community",
+        "schools",
+        "transit_access",
+        "family_friendly"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1267,
+      "saved_count": 155,
+      "inquiry_count": 30,
+      "showing_requests": 3
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2978922719798125,
+      "cash_buyers_pct": 0.26883944811556604,
+      "first_time_buyers_pct": 0.04484868946026964,
+      "vacation_buyers_pct": 0.2620636448640097
+    },
+    "nearby_amenities": [
+      {
+        "type": "trail",
+        "name": "Rail Trail",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Willow Creek Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Park City High School",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Treasure Mountain Middle",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "transit",
+        "name": "Free Shuttle Stop",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "recreation",
+        "name": "Basin Recreation Center",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Fresh Market",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "sports",
+        "name": "Sports Complex",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-007",
+    "neighborhood_id": "pc-promontory-004",
+    "address": {
+      "street": "8155 Glenwild Drive",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7105,
+      "longitude": -111.4428
+    },
+    "property_details": {
+      "square_feet": 4800,
+      "bedrooms": 5,
+      "bathrooms": 5.5,
+      "property_type": "single-family",
+      "year_built": 2019,
+      "lot_size": 0.65,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 4250000,
+    "price_per_sqft": 885,
+    "description": "Stunning mountain contemporary estate in exclusive Promontory golf community. Soaring ceilings and walls of glass showcase dramatic mountain and valley views. Great room with linear fireplace flows to gourmet kitchen featuring waterfall island and butler's pantry. Master suite with private deck and spa bathroom. Lower level includes recreation room, wine cellar, and guest quarters. Expansive outdoor living with infinity pool and spa.",
+    "features": [
+      "Golf community",
+      "Mountain views",
+      "Infinity pool",
+      "Wine cellar",
+      "Guest quarters",
+      "Outdoor living",
+      "Private deck",
+      "Contemporary design"
+    ],
+    "listing_date": "2024-01-07",
+    "days_on_market": 20,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-007",
+    "images": [
+      "https://example.com/images/prop-pc-007-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-30",
+        "price": 4250000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.059,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 49
+    },
+    "buyer_persona": {
+      "profile": "luxury_family",
+      "interests": [
+        "family_amenities",
+        "golf",
+        "luxury",
+        "privacy"
+      ],
+      "age_range": "45-65",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 436,
+      "saved_count": 53,
+      "inquiry_count": 5,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.42866329466272746,
+      "cash_buyers_pct": 0.4194232551687471,
+      "first_time_buyers_pct": 0.013907125899512207,
+      "vacation_buyers_pct": 0.10230546136104653
+    },
+    "nearby_amenities": [
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Dye Canyon",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Painted Valley",
+        "distance_miles": 0.5,
+        "rating": 10,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "clubhouse",
+        "name": "Ranch Club",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "equestrian",
+        "name": "Equestrian Center",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "recreation",
+        "name": "Kids Cabin",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "fitness",
+        "name": "Fitness Center",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "trails",
+        "name": "Private Trail System",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "spa",
+        "name": "Spa Services",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-008",
+    "neighborhood_id": "pc-promontory-004",
+    "address": {
+      "street": "9876 N Promontory Ranch Road",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7091,
+      "longitude": -111.4435
+    },
+    "property_details": {
+      "square_feet": 3200,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 2021,
+      "lot_size": 0.85,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 2895000,
+    "price_per_sqft": 905,
+    "description": "New construction ranch-style home on premium golf course lot. Single-level living with vaulted ceilings and abundant natural light. Open concept design flows from kitchen to great room to covered outdoor living space. Master suite with walk-in closet and luxury bathroom. Three additional bedrooms provide flexibility for family and guests. Oversized three-car garage with workshop space. Access to two championship golf courses and club amenities.",
+    "features": [
+      "New construction",
+      "Ranch style",
+      "Golf course lot",
+      "Single level",
+      "Covered outdoor space",
+      "Workshop",
+      "Club amenities",
+      "Championship golf"
+    ],
+    "listing_date": "2024-01-17",
+    "days_on_market": 10,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-008",
+    "images": [
+      "https://example.com/images/prop-pc-008-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-09",
+        "price": 2895000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.067,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 34
+    },
+    "buyer_persona": {
+      "profile": "golf_enthusiast",
+      "interests": [
+        "space",
+        "golf",
+        "club_lifestyle",
+        "luxury"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1046,
+      "saved_count": 118,
+      "inquiry_count": 21,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.48535886948819873,
+      "cash_buyers_pct": 0.20161374579473068,
+      "first_time_buyers_pct": 0.02438238453765841,
+      "vacation_buyers_pct": 0.13681508728384234
+    },
+    "nearby_amenities": [
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Dye Canyon",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Painted Valley",
+        "distance_miles": 0.5,
+        "rating": 10,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "clubhouse",
+        "name": "Ranch Club",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "equestrian",
+        "name": "Equestrian Center",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "recreation",
+        "name": "Kids Cabin",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "fitness",
+        "name": "Fitness Center",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "trails",
+        "name": "Private Trail System",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "spa",
+        "name": "Spa Services",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-009",
+    "neighborhood_id": "pc-canyons-005",
+    "address": {
+      "street": "4000 Canyons Resort Drive #3A-404",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.6858,
+      "longitude": -111.5575
+    },
+    "property_details": {
+      "square_feet": 1350,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "condo",
+      "year_built": 2017,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1425000,
+    "price_per_sqft": 1056,
+    "description": "Luxury ski-in/ski-out condo at Canyons Village with direct gondola access. Modern mountain design features floor-to-ceiling windows, stone fireplace, and high-end finishes throughout. Open living area flows to private balcony with mountain views. Gourmet kitchen with granite counters and stainless appliances. Building amenities include rooftop hot tub, fitness center, and ski valet. Prime location steps from village dining and shopping.",
+    "features": [
+      "Ski-in/ski-out",
+      "Gondola access",
+      "Mountain views",
+      "Stone fireplace",
+      "Rooftop hot tub",
+      "Ski valet",
+      "Village location",
+      "Modern design"
+    ],
+    "listing_date": "2024-01-15",
+    "days_on_market": 12,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-009",
+    "images": [
+      "https://example.com/images/prop-pc-009-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-07",
+        "price": 1425000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.076,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 55
+    },
+    "buyer_persona": {
+      "profile": "ski_enthusiast",
+      "interests": [
+        "resort_amenities",
+        "investment",
+        "rental_income",
+        "ski_in_ski_out"
+      ],
+      "age_range": "35-55",
+      "motivation": "ski_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 939,
+      "saved_count": 114,
+      "inquiry_count": 17,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3398232197468096,
+      "cash_buyers_pct": 0.23522776551286753,
+      "first_time_buyers_pct": 0.02777396088863271,
+      "vacation_buyers_pct": 0.2401819646754932
+    },
+    "nearby_amenities": [
+      {
+        "type": "gondola",
+        "name": "Orange Bubble Express",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Canyons Village Dining",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Village Market",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "hotel",
+        "name": "Grand Summit Hotel",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Canyons Golf Course",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "bike_park",
+        "name": "Mountain Bike Park",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Summer Concert Series",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-010",
+    "neighborhood_id": "pc-canyons-005",
+    "address": {
+      "street": "3551 N Escala Court #330",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.6864,
+      "longitude": -111.5562
+    },
+    "property_details": {
+      "square_feet": 2100,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "property_type": "townhouse",
+      "year_built": 2020,
+      "lot_size": 0,
+      "stories": 3,
+      "garage_spaces": 2
+    },
+    "listing_price": 2150000,
+    "price_per_sqft": 1024,
+    "description": "Contemporary mountain townhome with ski-in/ski-out access to Park City Mountain Resort. Three levels of thoughtfully designed living space with premium finishes and modern amenities. Main level features open concept kitchen, dining, and living areas with gas fireplace. Upper level bedrooms include master suite with private deck. Lower level recreation room with wet bar perfect for apr\u00e8s-ski entertaining. Private two-car garage with ski storage.",
+    "features": [
+      "Ski-in/ski-out",
+      "Three levels",
+      "Gas fireplace",
+      "Private deck",
+      "Wet bar",
+      "Ski storage",
+      "Contemporary design",
+      "Premium finishes"
+    ],
+    "listing_date": "2024-01-10",
+    "days_on_market": 17,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-010",
+    "images": [
+      "https://example.com/images/prop-pc-010-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-02",
+        "price": 2150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.099,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 48
+    },
+    "buyer_persona": {
+      "profile": "ski_enthusiast",
+      "interests": [
+        "modern_living",
+        "investment",
+        "ski_in_ski_out",
+        "convenience"
+      ],
+      "age_range": "35-55",
+      "motivation": "rental_income"
+    },
+    "viewing_statistics": {
+      "total_views": 1861,
+      "saved_count": 193,
+      "inquiry_count": 23,
+      "showing_requests": 5
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.47736758389776857,
+      "cash_buyers_pct": 0.3400539651436368,
+      "first_time_buyers_pct": 0.01183524692398057,
+      "vacation_buyers_pct": 0.24751803599459815
+    },
+    "nearby_amenities": [
+      {
+        "type": "gondola",
+        "name": "Orange Bubble Express",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Canyons Village Dining",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Village Market",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "hotel",
+        "name": "Grand Summit Hotel",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Canyons Golf Course",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "bike_park",
+        "name": "Mountain Bike Park",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "entertainment",
+        "name": "Summer Concert Series",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-011",
+    "neighborhood_id": "sp-summit-park-006",
+    "address": {
+      "street": "4785 Pine Canyon Road",
+      "city": "Summit Park",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7428,
+      "longitude": -111.5742
+    },
+    "property_details": {
+      "square_feet": 2400,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1978,
+      "lot_size": 0.75,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 925000,
+    "price_per_sqft": 385,
+    "description": "Mountain retreat on large wooded lot with privacy and tranquility. Original cedar and stone construction blends naturally with forest setting. Vaulted ceilings and floor-to-ceiling windows showcase mature trees and mountain views. Updated kitchen with granite counters and stainless appliances. Four bedrooms include master suite with private deck. Large family room with stone fireplace perfect for gathering. Two-car garage plus workshop space. Minutes to Park City but feels worlds away.",
+    "features": [
+      "Wooded lot",
+      "Mountain views",
+      "Stone fireplace",
+      "Private deck",
+      "Workshop space",
+      "Forest setting",
+      "Privacy",
+      "Updated kitchen"
+    ],
+    "listing_date": "2024-01-22",
+    "days_on_market": 5,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-011",
+    "images": [
+      "https://example.com/images/prop-pc-011-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-14",
+        "price": 925000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.035,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 42
+    },
+    "buyer_persona": {
+      "profile": "value_buyer",
+      "interests": [
+        "nature",
+        "quiet",
+        "mountain_living",
+        "value"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 953,
+      "saved_count": 125,
+      "inquiry_count": 21,
+      "showing_requests": 4
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.420574196846202,
+      "cash_buyers_pct": 0.17299478282499786,
+      "first_time_buyers_pct": 0.04384793691592331,
+      "vacation_buyers_pct": 0.23664897768852106
+    },
+    "nearby_amenities": [
+      {
+        "type": "trails",
+        "name": "Hiking Trails",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nature",
+        "name": "Wildlife Viewing Areas",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "Jeremy Ranch Elementary",
+        "distance_miles": 2.1,
+        "rating": 8,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Kimball Junction",
+        "distance_miles": 4.0,
+        "rating": 7,
+        "driving_time_mins": 9
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain",
+        "distance_miles": 7.9,
+        "rating": 10,
+        "driving_time_mins": 19
+      },
+      {
+        "type": "market",
+        "name": "Local Market",
+        "distance_miles": 3.2,
+        "rating": 6,
+        "driving_time_mins": 7
+      },
+      {
+        "type": "recreation",
+        "name": "Pinebrook Park",
+        "distance_miles": 2.0,
+        "rating": 7,
+        "driving_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-012",
+    "neighborhood_id": "sp-summit-park-006",
+    "address": {
+      "street": "3926 Aspen Drive",
+      "city": "Summit Park",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7416,
+      "longitude": -111.573
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 2015,
+      "lot_size": 0.82,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 795000,
+    "price_per_sqft": 430,
+    "description": "Contemporary mountain home with single-level living and modern amenities. Open floor plan features great room with vaulted ceilings and gas fireplace. Gourmet kitchen with quartz countertops and breakfast bar. Master suite with walk-in closet and spa bathroom. Two additional bedrooms and full bathroom. Large covered deck overlooks private backyard with mature aspens. Two-car garage with additional storage. Perfect for year-round or seasonal living.",
+    "features": [
+      "Single-level",
+      "Vaulted ceilings",
+      "Gas fireplace",
+      "Covered deck",
+      "Mature aspens",
+      "Modern amenities",
+      "Additional storage",
+      "Year-round living"
+    ],
+    "listing_date": "2024-01-18",
+    "days_on_market": 9,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-012",
+    "images": [
+      "https://example.com/images/prop-pc-012-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-10",
+        "price": 795000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.052,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 27
+    },
+    "buyer_persona": {
+      "profile": "remote_worker",
+      "interests": [
+        "value",
+        "privacy",
+        "quiet",
+        "nature"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 920,
+      "saved_count": 132,
+      "inquiry_count": 17,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.387416501757926,
+      "cash_buyers_pct": 0.21281520983952484,
+      "first_time_buyers_pct": 0.023253939707999983,
+      "vacation_buyers_pct": 0.14018978300783486
+    },
+    "nearby_amenities": [
+      {
+        "type": "trails",
+        "name": "Hiking Trails",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nature",
+        "name": "Wildlife Viewing Areas",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Jeremy Ranch Elementary",
+        "distance_miles": 2.2,
+        "rating": 8,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Kimball Junction",
+        "distance_miles": 3.9,
+        "rating": 7,
+        "driving_time_mins": 9
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain",
+        "distance_miles": 7.9,
+        "rating": 10,
+        "driving_time_mins": 19
+      },
+      {
+        "type": "market",
+        "name": "Local Market",
+        "distance_miles": 3.9,
+        "rating": 6,
+        "driving_time_mins": 9
+      },
+      {
+        "type": "recreation",
+        "name": "Pinebrook Park",
+        "distance_miles": 2.4,
+        "rating": 7,
+        "driving_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-013",
+    "neighborhood_id": "coal-downtown-007",
+    "address": {
+      "street": "125 South Main Street",
+      "city": "Coalville",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84017"
+    },
+    "coordinates": {
+      "latitude": 40.9181,
+      "longitude": -111.4
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 1925,
+      "lot_size": 0.18,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 485000,
+    "price_per_sqft": 294,
+    "description": "Historic brick home on Main Street with original character and modern updates. Living room features original hardwood floors and decorative fireplace. Dining room with built-in china cabinet leads to updated kitchen. Three bedrooms upstairs include master with en-suite bathroom. Large backyard with mature trees and garden space. One-car garage plus off-street parking. Walking distance to shops, restaurants, and community events. Perfect for those seeking small-town charm and affordability.",
+    "features": [
+      "Historic brick",
+      "Original character",
+      "Built-in china cabinet",
+      "Large backyard",
+      "Mature trees",
+      "Walking distance",
+      "Small-town charm",
+      "Affordable"
+    ],
+    "listing_date": "2024-01-15",
+    "days_on_market": 12,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-013",
+    "images": [
+      "https://example.com/images/prop-pc-013-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-07",
+        "price": 485000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.072,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 38
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "small_town",
+        "affordability",
+        "authentic_living",
+        "community"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 724,
+      "saved_count": 61,
+      "inquiry_count": 19,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2706728801574275,
+      "cash_buyers_pct": 0.21322003809263826,
+      "first_time_buyers_pct": 0.05161402528900717,
+      "vacation_buyers_pct": 0.1980928486676039
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Echo Reservoir",
+        "distance_miles": 3.0,
+        "rating": 9,
+        "driving_time_mins": 7
+      },
+      {
+        "type": "lake",
+        "name": "Rockport Lake",
+        "distance_miles": 5.2,
+        "rating": 9,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Diner",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Local Shops",
+        "distance_miles": 0.1,
+        "rating": 6,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "North Summit High School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 1.5,
+        "rating": 8,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-014",
+    "neighborhood_id": "coal-downtown-007",
+    "address": {
+      "street": "428 East 200 North",
+      "city": "Coalville",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84017"
+    },
+    "coordinates": {
+      "latitude": 40.9189,
+      "longitude": -111.3987
+    },
+    "property_details": {
+      "square_feet": 2100,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2005,
+      "lot_size": 0.25,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 525000,
+    "price_per_sqft": 250,
+    "description": "Spacious family home with four bedrooms and modern amenities. Open floor plan features great room with vaulted ceilings and gas fireplace. Kitchen with granite counters, stainless appliances, and breakfast nook. Four bedrooms upstairs include master suite with walk-in closet. Large family room in basement with additional storage. Private backyard with covered patio and mountain views. Two-car garage and RV parking. Close to schools and outdoor recreation.",
+    "features": [
+      "Four bedrooms",
+      "Vaulted ceilings",
+      "Master suite",
+      "Basement family room",
+      "Mountain views",
+      "RV parking",
+      "Close to schools",
+      "Outdoor recreation"
+    ],
+    "listing_date": "2024-01-19",
+    "days_on_market": 8,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-014",
+    "images": [
+      "https://example.com/images/prop-pc-014-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-11",
+        "price": 525000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.071,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 39
+    },
+    "buyer_persona": {
+      "profile": "first_time_buyer",
+      "interests": [
+        "value",
+        "small_town",
+        "authentic_living",
+        "community"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 760,
+      "saved_count": 53,
+      "inquiry_count": 20,
+      "showing_requests": 2
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.23921892034449335,
+      "cash_buyers_pct": 0.23123867387706898,
+      "first_time_buyers_pct": 0.11620094316388964,
+      "vacation_buyers_pct": 0.2888708096064606
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Echo Reservoir",
+        "distance_miles": 3.4,
+        "rating": 9,
+        "driving_time_mins": 8
+      },
+      {
+        "type": "lake",
+        "name": "Rockport Lake",
+        "distance_miles": 5.0,
+        "rating": 9,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Diner",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Local Shops",
+        "distance_miles": 0.1,
+        "rating": 6,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "North Summit High School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.7,
+        "rating": 8,
+        "walking_time_mins": 14
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.3,
+        "rating": 7,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-015",
+    "neighborhood_id": "oak-oakley-008",
+    "address": {
+      "street": "6247 Weber Canyon Road",
+      "city": "Oakley",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84055"
+    },
+    "coordinates": {
+      "latitude": 40.7153,
+      "longitude": -111.302
+    },
+    "property_details": {
+      "square_feet": 2800,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1995,
+      "lot_size": 2.15,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 775000,
+    "price_per_sqft": 277,
+    "description": "Ranch-style home on over two acres with horse facilities and mountain valley views. Open floor plan features great room with stone fireplace and dining area. Country kitchen with granite counters and breakfast nook. Four bedrooms include master suite with private bathroom. Finished basement with family room and additional bedroom. Horse barn with four stalls, tack room, and hay storage. Fenced pastures and irrigation rights. Three-car garage and workshop.",
+    "features": [
+      "Over two acres",
+      "Horse facilities",
+      "Mountain valley views",
+      "Horse barn",
+      "Fenced pastures",
+      "Irrigation rights",
+      "Three-car garage",
+      "Ranch style"
+    ],
+    "listing_date": "2024-01-11",
+    "days_on_market": 16,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-015",
+    "images": [
+      "https://example.com/images/prop-pc-015-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-03",
+        "price": 775000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.045,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 32
+    },
+    "buyer_persona": {
+      "profile": "rural_buyer",
+      "interests": [
+        "horses",
+        "acreage",
+        "privacy",
+        "agricultural"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 456,
+      "saved_count": 46,
+      "inquiry_count": 12,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2787203624107469,
+      "cash_buyers_pct": 0.24324767602906783,
+      "first_time_buyers_pct": 0.11160374080869799,
+      "vacation_buyers_pct": 0.14702819239036735
+    },
+    "nearby_amenities": [
+      {
+        "type": "river",
+        "name": "Weber River Access",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "equestrian",
+        "name": "Riding Trails",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 1.4,
+        "rating": 7,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Country Store",
+        "distance_miles": 0.8,
+        "rating": 6,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Resorts",
+        "distance_miles": 18.3,
+        "rating": 10,
+        "driving_time_mins": 45
+      },
+      {
+        "type": "agricultural",
+        "name": "Feed Store",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "recreation",
+        "name": "Rodeo Grounds",
+        "distance_miles": 1.5,
+        "rating": 8,
+        "driving_time_mins": 3
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-016",
+    "neighborhood_id": "oak-oakley-008",
+    "address": {
+      "street": "3584 SR-32",
+      "city": "Oakley",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84055"
+    },
+    "coordinates": {
+      "latitude": 40.7141,
+      "longitude": -111.3008
+    },
+    "property_details": {
+      "square_feet": 1950,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "property_type": "single-family",
+      "year_built": 2012,
+      "lot_size": 1.25,
+      "stories": 1,
+      "garage_spaces": 2
+    },
+    "listing_price": 625000,
+    "price_per_sqft": 321,
+    "description": "Modern single-level home on spacious lot with agricultural views. Open concept design features living room with gas fireplace and dining area. Updated kitchen with granite counters and stainless appliances. Three bedrooms include master with en-suite bathroom and walk-in closet. Large covered patio perfect for entertaining. Two-car garage with workshop area. Room for horses, garden, or recreational vehicles. Close to Weber River access and mountain recreation.",
+    "features": [
+      "Single-level",
+      "Spacious lot",
+      "Agricultural views",
+      "Covered patio",
+      "Workshop area",
+      "Room for horses",
+      "Weber River access",
+      "Mountain recreation"
+    ],
+    "listing_date": "2024-01-25",
+    "days_on_market": 2,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-016",
+    "images": [
+      "https://example.com/images/prop-pc-016-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-17",
+        "price": 625000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.031,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 35
+    },
+    "buyer_persona": {
+      "profile": "agricultural_worker",
+      "interests": [
+        "agricultural",
+        "horses",
+        "value",
+        "rural_lifestyle"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 504,
+      "saved_count": 38,
+      "inquiry_count": 11,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3301225654763202,
+      "cash_buyers_pct": 0.20619293059117252,
+      "first_time_buyers_pct": 0.09848764061202733,
+      "vacation_buyers_pct": 0.18460477739782488
+    },
+    "nearby_amenities": [
+      {
+        "type": "river",
+        "name": "Weber River Access",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "equestrian",
+        "name": "Riding Trails",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "market",
+        "name": "Country Store",
+        "distance_miles": 0.9,
+        "rating": 6,
+        "walking_time_mins": 17
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Resorts",
+        "distance_miles": 17.5,
+        "rating": 10,
+        "driving_time_mins": 43
+      },
+      {
+        "type": "agricultural",
+        "name": "Feed Store",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "recreation",
+        "name": "Rodeo Grounds",
+        "distance_miles": 1.2,
+        "rating": 8,
+        "driving_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-017",
+    "neighborhood_id": "kam-kamas-009",
+    "address": {
+      "street": "1847 Mirror Lake Highway",
+      "city": "Kamas",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84036"
+    },
+    "coordinates": {
+      "latitude": 40.6437,
+      "longitude": -111.2812
+    },
+    "property_details": {
+      "square_feet": 3200,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 2018,
+      "lot_size": 5.0,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 985000,
+    "price_per_sqft": 308,
+    "description": "Custom mountain contemporary home on five pastoral acres with Uinta Mountain views. Great room features soaring ceilings and floor-to-ceiling stone fireplace. Gourmet kitchen with waterfall island and butler's pantry. Four bedrooms include master suite with private deck and spa bathroom. Finished walkout basement with family room and wet bar. Horse barn with three stalls and equipment storage. Fenced pastures with irrigation water. Three-car garage with RV bay.",
+    "features": [
+      "Five acres",
+      "Uinta Mountain views",
+      "Custom design",
+      "Horse barn",
+      "Fenced pastures",
+      "Irrigation water",
+      "RV bay",
+      "Walkout basement"
+    ],
+    "listing_date": "2024-01-08",
+    "days_on_market": 19,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-017",
+    "images": [
+      "https://example.com/images/prop-pc-017-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-31",
+        "price": 985000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.076,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 32
+    },
+    "buyer_persona": {
+      "profile": "equestrian",
+      "interests": [
+        "mountain_access",
+        "rural_living",
+        "agriculture",
+        "acreage"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 777,
+      "saved_count": 107,
+      "inquiry_count": 9,
+      "showing_requests": 5
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4677960467450321,
+      "cash_buyers_pct": 0.2467915839888512,
+      "first_time_buyers_pct": 0.10123553097396593,
+      "vacation_buyers_pct": 0.15192000220640936
+    },
+    "nearby_amenities": [
+      {
+        "type": "mountains",
+        "name": "Uinta Mountains Access",
+        "distance_miles": 5.0,
+        "rating": 10,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "scenic",
+        "name": "Mirror Lake Highway",
+        "distance_miles": 2.3,
+        "rating": 10,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "equestrian",
+        "name": "Horse Properties",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Farmers Market",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 0.9,
+        "rating": 7,
+        "walking_time_mins": 17
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "recreation",
+        "name": "Fishing Access",
+        "distance_miles": 1.3,
+        "rating": 9,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.7,
+        "rating": 7,
+        "walking_time_mins": 13
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-018",
+    "neighborhood_id": "kam-kamas-009",
+    "address": {
+      "street": "925 Bench Creek Road",
+      "city": "Kamas",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84036"
+    },
+    "coordinates": {
+      "latitude": 40.6425,
+      "longitude": -111.28
+    },
+    "property_details": {
+      "square_feet": 2600,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 2008,
+      "lot_size": 2.75,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 795000,
+    "price_per_sqft": 306,
+    "description": "Rustic mountain home with log and stone construction on nearly three acres. Open living area features exposed beam ceilings and river rock fireplace. Country kitchen with granite counters and farmhouse sink. Three bedrooms include master loft with mountain views. Covered porches wrap around home for outdoor living. Two-car garage with workshop space. Horse facilities include barn and fenced paddocks. Creek runs through property providing water rights.",
+    "features": [
+      "Log and stone",
+      "Nearly three acres",
+      "Exposed beams",
+      "River rock fireplace",
+      "Master loft",
+      "Covered porches",
+      "Horse facilities",
+      "Creek on property"
+    ],
+    "listing_date": "2024-01-13",
+    "days_on_market": 14,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-018",
+    "images": [
+      "https://example.com/images/prop-pc-018-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-05",
+        "price": 795000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.057,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 39
+    },
+    "buyer_persona": {
+      "profile": "pastoral_buyer",
+      "interests": [
+        "horses",
+        "pastoral",
+        "rural_living",
+        "acreage"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 394,
+      "saved_count": 40,
+      "inquiry_count": 7,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.279251828998233,
+      "cash_buyers_pct": 0.2728746865507334,
+      "first_time_buyers_pct": 0.13009210552812334,
+      "vacation_buyers_pct": 0.11616031628517565
+    },
+    "nearby_amenities": [
+      {
+        "type": "mountains",
+        "name": "Uinta Mountains Access",
+        "distance_miles": 4.8,
+        "rating": 10,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "scenic",
+        "name": "Mirror Lake Highway",
+        "distance_miles": 1.6,
+        "rating": 10,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "equestrian",
+        "name": "Horse Properties",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Farmers Market",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 0.8,
+        "rating": 7,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "recreation",
+        "name": "Fishing Access",
+        "distance_miles": 1.1,
+        "rating": 9,
+        "driving_time_mins": 2
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 12
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-019",
+    "neighborhood_id": "heb-heber-010",
+    "address": {
+      "street": "2847 Deer Creek Drive",
+      "city": "Heber City",
+      "county": "Wasatch",
+      "state": "UT",
+      "zip": "84032"
+    },
+    "coordinates": {
+      "latitude": 40.5075,
+      "longitude": -111.4139
+    },
+    "property_details": {
+      "square_feet": 2950,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2016,
+      "lot_size": 0.35,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 1150000,
+    "price_per_sqft": 390,
+    "description": "Stunning mountain modern home with Deer Creek Reservoir and mountain views. Open concept main level features great room with linear fireplace and dining area. Gourmet kitchen with waterfall quartz island and high-end appliances. Four bedrooms include master suite with private deck overlooking reservoir. Finished basement with family room, bedroom, and bathroom. Three-car garage with workshop area. Close to championship golf course and recreation facilities.",
+    "features": [
+      "Reservoir views",
+      "Mountain modern",
+      "Linear fireplace",
+      "Waterfall island",
+      "Private deck",
+      "Finished basement",
+      "Championship golf",
+      "Recreation facilities"
+    ],
+    "listing_date": "2024-01-17",
+    "days_on_market": 10,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-019",
+    "images": [
+      "https://example.com/images/prop-pc-019-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-09",
+        "price": 1150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.099,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 50
+    },
+    "buyer_persona": {
+      "profile": "lake_lover",
+      "interests": [
+        "family_friendly",
+        "value",
+        "valley_living",
+        "four_season"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1449,
+      "saved_count": 146,
+      "inquiry_count": 18,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2762506099841106,
+      "cash_buyers_pct": 0.31636829609802186,
+      "first_time_buyers_pct": 0.02907728993561275,
+      "vacation_buyers_pct": 0.23326488750917648
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Deer Creek Reservoir",
+        "distance_miles": 1.7,
+        "rating": 10,
+        "driving_time_mins": 4
+      },
+      {
+        "type": "golf",
+        "name": "Soldier Hollow Golf",
+        "distance_miles": 2.7,
+        "rating": 9,
+        "driving_time_mins": 6
+      },
+      {
+        "type": "golf",
+        "name": "Wasatch Golf Course",
+        "distance_miles": 1.3,
+        "rating": 8,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "railroad",
+        "name": "Heber Valley Railroad",
+        "distance_miles": 1.3,
+        "rating": 8,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "school",
+        "name": "Wasatch High School",
+        "distance_miles": 0.8,
+        "rating": 8,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "ski_resort",
+        "name": "Sundance Resort",
+        "distance_miles": 11.5,
+        "rating": 9,
+        "driving_time_mins": 28
+      },
+      {
+        "type": "recreation",
+        "name": "Recreation Center",
+        "distance_miles": 0.7,
+        "rating": 8,
+        "walking_time_mins": 13
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-020",
+    "neighborhood_id": "heb-heber-010",
+    "address": {
+      "street": "1534 Valley View Drive",
+      "city": "Heber City",
+      "county": "Wasatch",
+      "state": "UT",
+      "zip": "84032"
+    },
+    "coordinates": {
+      "latitude": 40.5063,
+      "longitude": -111.4127
+    },
+    "property_details": {
+      "square_feet": 2400,
+      "bedrooms": 5,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2011,
+      "lot_size": 0.28,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 875000,
+    "price_per_sqft": 365,
+    "description": "Traditional mountain home with five bedrooms and valley views. Formal living and dining rooms feature hardwood floors and mountain vistas. Family kitchen with granite counters opens to family room with stone fireplace. Five bedrooms include master suite with en-suite bathroom. Finished basement provides additional living space and storage. Private backyard with covered patio and mature landscaping. Two-car garage with additional parking. Walking distance to schools and community facilities.",
+    "features": [
+      "Five bedrooms",
+      "Valley views",
+      "Hardwood floors",
+      "Stone fireplace",
+      "Finished basement",
+      "Covered patio",
+      "Walking distance",
+      "Community facilities"
+    ],
+    "listing_date": "2024-01-21",
+    "days_on_market": 6,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-020",
+    "images": [
+      "https://example.com/images/prop-pc-020-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-13",
+        "price": 875000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.083,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 33
+    },
+    "buyer_persona": {
+      "profile": "growing_family",
+      "interests": [
+        "valley_living",
+        "golf",
+        "lake_recreation",
+        "value"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1362,
+      "saved_count": 168,
+      "inquiry_count": 40,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3175670553883966,
+      "cash_buyers_pct": 0.21442977520851103,
+      "first_time_buyers_pct": 0.04665255927288451,
+      "vacation_buyers_pct": 0.21093950389266689
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Deer Creek Reservoir",
+        "distance_miles": 2.1,
+        "rating": 10,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Soldier Hollow Golf",
+        "distance_miles": 2.6,
+        "rating": 9,
+        "driving_time_mins": 6
+      },
+      {
+        "type": "golf",
+        "name": "Wasatch Golf Course",
+        "distance_miles": 1.5,
+        "rating": 8,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "railroad",
+        "name": "Heber Valley Railroad",
+        "distance_miles": 1.1,
+        "rating": 8,
+        "driving_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "Wasatch High School",
+        "distance_miles": 0.8,
+        "rating": 8,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "ski_resort",
+        "name": "Sundance Resort",
+        "distance_miles": 11.8,
+        "rating": 9,
+        "driving_time_mins": 29
+      },
+      {
+        "type": "recreation",
+        "name": "Recreation Center",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-021",
+    "neighborhood_id": "pc-old-town-001",
+    "address": {
+      "street": "625 Woodside Avenue",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6448,
+      "longitude": -111.4965
+    },
+    "property_details": {
+      "square_feet": 3500,
+      "bedrooms": 5,
+      "bathrooms": 4.5,
+      "property_type": "single-family",
+      "year_built": 1892,
+      "lot_size": 0.1,
+      "stories": 3,
+      "garage_spaces": 1
+    },
+    "listing_price": 4150000,
+    "price_per_sqft": 1186,
+    "description": "Magnificent Victorian mansion completely restored with museum-quality attention to detail. Original features include hand-carved millwork, stained glass windows, and ornate fireplaces. Modern luxury includes gourmet kitchen, wine cellar, and spa-like master suite. Five bedrooms accommodate family and guests with period furnishings and modern conveniences. Private courtyard garden provides mountain views and entertaining space. One-car garage plus additional parking. Steps from Main Street dining and Park City Mountain Resort.",
+    "features": [
+      "Victorian mansion",
+      "Museum restoration",
+      "Stained glass",
+      "Wine cellar",
+      "Spa master suite",
+      "Mountain views",
+      "Main Street proximity",
+      "Resort access"
+    ],
+    "listing_date": "2024-01-26",
+    "days_on_market": 1,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-021",
+    "images": [
+      "https://example.com/images/prop-pc-021-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-18",
+        "price": 4150000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.072,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "moderate",
+      "average_dom": 30
+    },
+    "buyer_persona": {
+      "profile": "ski_enthusiast",
+      "interests": [
+        "historic_charm",
+        "cultural_events",
+        "investment_potential",
+        "ski_access"
+      ],
+      "age_range": "35-55",
+      "motivation": "rental_income"
+    },
+    "viewing_statistics": {
+      "total_views": 2156,
+      "saved_count": 232,
+      "inquiry_count": 32,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.21268930356738666,
+      "cash_buyers_pct": 0.4615932099948313,
+      "first_time_buyers_pct": 0.016754303513008013,
+      "vacation_buyers_pct": 0.21186027928767512
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_lift",
+        "name": "Town Lift",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "ski_lift",
+        "name": "Quit'n Time Lift",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Main Street Boutiques",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Egyptian Theatre",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "transit",
+        "name": "Free Transit Hub",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "nightlife",
+        "name": "Main Street Bars",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-022",
+    "neighborhood_id": "pc-old-town-001",
+    "address": {
+      "street": "824 Empire Avenue",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6462,
+      "longitude": -111.4993
+    },
+    "property_details": {
+      "square_feet": 2200,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1898,
+      "lot_size": 0.06,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 2450000,
+    "price_per_sqft": 1114,
+    "description": "Charming historic cottage with modern mountain luxury updates. Original hardwood floors and exposed beam ceilings blend with contemporary finishes. Open concept kitchen features waterfall quartz island and professional appliances. Three bedrooms include master with private deck and mountain views. Lower level recreation room with wet bar and fireplace. Private garden with hot tub and mature landscaping. Walking distance to Town Lift and Main Street amenities.",
+    "features": [
+      "Historic cottage",
+      "Exposed beams",
+      "Waterfall island",
+      "Private deck",
+      "Recreation room",
+      "Hot tub",
+      "Town Lift access",
+      "Walking distance"
+    ],
+    "listing_date": "2024-01-25",
+    "days_on_market": 2,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-022",
+    "images": [
+      "https://example.com/images/prop-pc-022-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-17",
+        "price": 2450000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.095,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 47
+    },
+    "buyer_persona": {
+      "profile": "vacation_buyer",
+      "interests": [
+        "ski_access",
+        "historic_charm",
+        "walkability",
+        "cultural_events"
+      ],
+      "age_range": "35-55",
+      "motivation": "rental_income"
+    },
+    "viewing_statistics": {
+      "total_views": 1180,
+      "saved_count": 100,
+      "inquiry_count": 16,
+      "showing_requests": 2
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3576113761430473,
+      "cash_buyers_pct": 0.342987141190038,
+      "first_time_buyers_pct": 0.01787797299832314,
+      "vacation_buyers_pct": 0.24826941744419453
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_lift",
+        "name": "Town Lift",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "ski_lift",
+        "name": "Quit'n Time Lift",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Main Street Boutiques",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "entertainment",
+        "name": "Egyptian Theatre",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "transit",
+        "name": "Free Transit Hub",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "nightlife",
+        "name": "Main Street Bars",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-023",
+    "neighborhood_id": "pc-deer-valley-002",
+    "address": {
+      "street": "2775 Deer Valley Drive East",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6358,
+      "longitude": -111.4765
+    },
+    "property_details": {
+      "square_feet": 7200,
+      "bedrooms": 7,
+      "bathrooms": 8.5,
+      "property_type": "single-family",
+      "year_built": 2020,
+      "lot_size": 0.85,
+      "stories": 3,
+      "garage_spaces": 4
+    },
+    "listing_price": 12500000,
+    "price_per_sqft": 1736,
+    "description": "Ultra-luxury mountain estate with unobstructed ski-in/ski-out access to Deer Valley Resort. Contemporary architecture features floor-to-ceiling windows, vaulted ceilings, and premium natural materials. Gourmet kitchen with butler's pantry opens to great room with dramatic stone fireplace. Seven bedroom suites each with en-suite bathrooms and mountain views. Lower level includes home theater, wine cellar, and recreation room. Four-car heated garage and ski storage. Private elevator and smart home technology throughout.",
+    "features": [
+      "Ultra-luxury estate",
+      "Ski-in/ski-out",
+      "Seven suites",
+      "Home theater",
+      "Wine cellar",
+      "Heated garage",
+      "Private elevator",
+      "Smart home"
+    ],
+    "listing_date": "2024-01-24",
+    "days_on_market": 3,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-023",
+    "images": [
+      "https://example.com/images/prop-pc-023-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-16",
+        "price": 12500000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.074,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 48
+    },
+    "buyer_persona": {
+      "profile": "luxury_buyer",
+      "interests": [
+        "resort_amenities",
+        "investment",
+        "ultra_luxury",
+        "exclusivity"
+      ],
+      "age_range": "45-65",
+      "motivation": "ski_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1039,
+      "saved_count": 64,
+      "inquiry_count": 10,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4511612887769833,
+      "cash_buyers_pct": 0.30116118681335147,
+      "first_time_buyers_pct": 0.01324803880743184,
+      "vacation_buyers_pct": 0.1113985289268197
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_resort",
+        "name": "Deer Valley Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "hotel",
+        "name": "St. Regis Deer Valley",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "hotel",
+        "name": "Montage Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "dining",
+        "name": "Glitretind Restaurant",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "spa",
+        "name": "Rem\u00e8de Spa",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "golf",
+        "name": "Deer Valley Golf Course",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "shopping",
+        "name": "Silver Lake Village",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "ski_school",
+        "name": "Deer Valley Ski School",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-024",
+    "neighborhood_id": "pc-deer-valley-002",
+    "address": {
+      "street": "7650 Sterling Court",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6375,
+      "longitude": -111.4798
+    },
+    "property_details": {
+      "square_feet": 4800,
+      "bedrooms": 5,
+      "bathrooms": 6,
+      "property_type": "single-family",
+      "year_built": 2017,
+      "lot_size": 0.65,
+      "stories": 3,
+      "garage_spaces": 3
+    },
+    "listing_price": 6850000,
+    "price_per_sqft": 1427,
+    "description": "Stunning mountain contemporary home with panoramic valley and ski slope views. Open concept design features soaring ceilings, walls of glass, and natural stone accents. Gourmet kitchen with oversized island flows to outdoor living with infinity pool and spa. Five bedroom suites include master retreat with private deck and fireplace. Lower level entertainment area with bar, theater, and guest quarters. Three-car garage with workshop space. Ski-in/ski-out access to Deer Valley's pristine slopes.",
+    "features": [
+      "Mountain contemporary",
+      "Panoramic views",
+      "Infinity pool",
+      "Master retreat",
+      "Entertainment area",
+      "Workshop space",
+      "Ski-in/ski-out",
+      "Pristine slopes"
+    ],
+    "listing_date": "2024-01-23",
+    "days_on_market": 4,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-024",
+    "images": [
+      "https://example.com/images/prop-pc-024-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-15",
+        "price": 6850000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.078,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 45
+    },
+    "buyer_persona": {
+      "profile": "international_investor",
+      "interests": [
+        "ultra_luxury",
+        "resort_amenities",
+        "investment",
+        "privacy"
+      ],
+      "age_range": "35-55",
+      "motivation": "ski_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 636,
+      "saved_count": 58,
+      "inquiry_count": 17,
+      "showing_requests": 2
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2186484570771885,
+      "cash_buyers_pct": 0.4298937482934949,
+      "first_time_buyers_pct": 0.020732959497203253,
+      "vacation_buyers_pct": 0.29906431581587745
+    },
+    "nearby_amenities": [
+      {
+        "type": "ski_resort",
+        "name": "Deer Valley Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "hotel",
+        "name": "St. Regis Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "hotel",
+        "name": "Montage Deer Valley",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "dining",
+        "name": "Glitretind Restaurant",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "spa",
+        "name": "Rem\u00e8de Spa",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "golf",
+        "name": "Deer Valley Golf Course",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "shopping",
+        "name": "Silver Lake Village",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "ski_school",
+        "name": "Deer Valley Ski School",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-025",
+    "neighborhood_id": "pc-park-meadows-003",
+    "address": {
+      "street": "1847 Meadow Loop Road",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6598,
+      "longitude": -111.4883
+    },
+    "property_details": {
+      "square_feet": 2850,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 2019,
+      "lot_size": 0.22,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1795000,
+    "price_per_sqft": 630,
+    "description": "Brand new modern mountain home in desirable Park Meadows neighborhood. Open floor plan features great room with vaulted ceilings and gas fireplace. Contemporary kitchen with waterfall quartz island and premium appliances. Four bedrooms include master suite with spa bathroom and walk-in closet. Private backyard with covered deck and mountain views. Two-car garage with mudroom entry. Close to Rail Trail access and free transit to ski resorts. Excellent Park City schools and community amenities.",
+    "features": [
+      "Brand new",
+      "Vaulted ceilings",
+      "Waterfall island",
+      "Spa bathroom",
+      "Covered deck",
+      "Rail Trail access",
+      "Free transit",
+      "Excellent schools"
+    ],
+    "listing_date": "2024-01-22",
+    "days_on_market": 5,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-025",
+    "images": [
+      "https://example.com/images/prop-pc-025-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-14",
+        "price": 1795000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.063,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 40
+    },
+    "buyer_persona": {
+      "profile": "first_time_buyer",
+      "interests": [
+        "family_friendly",
+        "transit_access",
+        "year_round_living",
+        "value"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 1369,
+      "saved_count": 194,
+      "inquiry_count": 31,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2713130990941234,
+      "cash_buyers_pct": 0.21231972789510298,
+      "first_time_buyers_pct": 0.01516336277561397,
+      "vacation_buyers_pct": 0.27473798644922515
+    },
+    "nearby_amenities": [
+      {
+        "type": "trail",
+        "name": "Rail Trail",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "park",
+        "name": "Willow Creek Park",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "school",
+        "name": "Park City High School",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "school",
+        "name": "Treasure Mountain Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "Free Shuttle Stop",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "recreation",
+        "name": "Basin Recreation Center",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 12
+      },
+      {
+        "type": "shopping",
+        "name": "Fresh Market",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "sports",
+        "name": "Sports Complex",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-026",
+    "neighborhood_id": "pc-park-meadows-003",
+    "address": {
+      "street": "2156 Lucky John Drive #48",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84060"
+    },
+    "coordinates": {
+      "latitude": 40.6576,
+      "longitude": -111.4847
+    },
+    "property_details": {
+      "square_feet": 1650,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "townhouse",
+      "year_built": 2010,
+      "lot_size": 0,
+      "stories": 3,
+      "garage_spaces": 2
+    },
+    "listing_price": 1085000,
+    "price_per_sqft": 658,
+    "description": "Well-maintained townhome offering affordable Park City living with mountain town charm. Three levels provide excellent separation with main floor living, upper bedrooms, and lower recreation room. Updated kitchen with granite counters and stainless appliances. Private deck overlooks open space with mountain views. Two-car garage with storage. Community amenities include pool, hot tub, and clubhouse. Perfect for first-time buyers, families, or investment property. Free shuttle to ski resorts.",
+    "features": [
+      "Three levels",
+      "Affordable living",
+      "Open space views",
+      "Community pool",
+      "Hot tub",
+      "Clubhouse",
+      "First-time buyer",
+      "Free shuttle"
+    ],
+    "listing_date": "2024-01-21",
+    "days_on_market": 6,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-026",
+    "images": [
+      "https://example.com/images/prop-pc-026-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-13",
+        "price": 1085000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.046,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 40
+    },
+    "buyer_persona": {
+      "profile": "first_time_buyer",
+      "interests": [
+        "transit_access",
+        "year_round_living",
+        "schools",
+        "family_friendly"
+      ],
+      "age_range": "35-55",
+      "motivation": "ranch_property"
+    },
+    "viewing_statistics": {
+      "total_views": 1129,
+      "saved_count": 163,
+      "inquiry_count": 31,
+      "showing_requests": 11
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4410519720174938,
+      "cash_buyers_pct": 0.31357899712676174,
+      "first_time_buyers_pct": 0.039990509037345336,
+      "vacation_buyers_pct": 0.10619326480657461
+    },
+    "nearby_amenities": [
+      {
+        "type": "trail",
+        "name": "Rail Trail",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "park",
+        "name": "Willow Creek Park",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Park City High School",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "school",
+        "name": "Treasure Mountain Middle",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "transit",
+        "name": "Free Shuttle Stop",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "recreation",
+        "name": "Basin Recreation Center",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "shopping",
+        "name": "Fresh Market",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "sports",
+        "name": "Sports Complex",
+        "distance_miles": 0.3,
+        "rating": 8,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-027",
+    "neighborhood_id": "pc-promontory-004",
+    "address": {
+      "street": "9247 Dye Cabins Court",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7112,
+      "longitude": -111.4445
+    },
+    "property_details": {
+      "square_feet": 5200,
+      "bedrooms": 6,
+      "bathrooms": 6.5,
+      "property_type": "single-family",
+      "year_built": 2021,
+      "lot_size": 1.25,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 4985000,
+    "price_per_sqft": 958,
+    "description": "New construction mountain estate on premium golf course lot with panoramic Uinta Mountain views. Rustic contemporary design features reclaimed wood, natural stone, and floor-to-ceiling windows. Great room with soaring ceilings flows to gourmet kitchen with oversized island. Six bedroom suites include master wing with private office and spa bathroom. Lower level recreation room with wet bar and wine storage. Covered outdoor living with kitchen and fireplace. Three-car garage and golf cart storage.",
+    "features": [
+      "New construction",
+      "Golf course lot",
+      "Panoramic views",
+      "Reclaimed wood",
+      "Master wing",
+      "Wine storage",
+      "Outdoor kitchen",
+      "Golf cart storage"
+    ],
+    "listing_date": "2024-01-20",
+    "days_on_market": 7,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-027",
+    "images": [
+      "https://example.com/images/prop-pc-027-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-12",
+        "price": 4985000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.059,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 35
+    },
+    "buyer_persona": {
+      "profile": "golf_enthusiast",
+      "interests": [
+        "family_amenities",
+        "luxury",
+        "club_lifestyle",
+        "space"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 704,
+      "saved_count": 67,
+      "inquiry_count": 8,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3205419701701574,
+      "cash_buyers_pct": 0.44257123389489994,
+      "first_time_buyers_pct": 0.004125923327215958,
+      "vacation_buyers_pct": 0.2760493188536862
+    },
+    "nearby_amenities": [
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Dye Canyon",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Painted Valley",
+        "distance_miles": 0.4,
+        "rating": 10,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "clubhouse",
+        "name": "Ranch Club",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "equestrian",
+        "name": "Equestrian Center",
+        "distance_miles": 0.6,
+        "rating": 9,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "recreation",
+        "name": "Kids Cabin",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "fitness",
+        "name": "Fitness Center",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "trails",
+        "name": "Private Trail System",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "spa",
+        "name": "Spa Services",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 6
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-028",
+    "neighborhood_id": "pc-promontory-004",
+    "address": {
+      "street": "8734 Northside Drive",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7089,
+      "longitude": -111.4412
+    },
+    "property_details": {
+      "square_feet": 3850,
+      "bedrooms": 4,
+      "bathrooms": 4.5,
+      "property_type": "single-family",
+      "year_built": 2018,
+      "lot_size": 0.95,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 3450000,
+    "price_per_sqft": 896,
+    "description": "Elegant mountain transitional home with sophisticated finishes and golf course views. Open concept main level features living room with linear fireplace and dining area. Chef's kitchen with butler's pantry and walk-in pantry. Four bedroom suites include master with sitting area and private deck. Lower level includes family room, office, and guest bedroom. Covered outdoor living with built-in BBQ and seating area. Three-car garage with workshop. Access to Promontory's world-class amenities.",
+    "features": [
+      "Mountain transitional",
+      "Golf course views",
+      "Butler's pantry",
+      "Private deck",
+      "Family room",
+      "Built-in BBQ",
+      "Workshop",
+      "World-class amenities"
+    ],
+    "listing_date": "2024-01-19",
+    "days_on_market": 8,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-028",
+    "images": [
+      "https://example.com/images/prop-pc-028-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-11",
+        "price": 3450000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.055,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 29
+    },
+    "buyer_persona": {
+      "profile": "luxury_family",
+      "interests": [
+        "luxury",
+        "privacy",
+        "club_lifestyle",
+        "family_amenities"
+      ],
+      "age_range": "45-65",
+      "motivation": "ranch_property"
+    },
+    "viewing_statistics": {
+      "total_views": 420,
+      "saved_count": 59,
+      "inquiry_count": 12,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4165390658495833,
+      "cash_buyers_pct": 0.38615330171229023,
+      "first_time_buyers_pct": 0.04111163805173912,
+      "vacation_buyers_pct": 0.2034688219319631
+    },
+    "nearby_amenities": [
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Dye Canyon",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "golf",
+        "name": "Promontory Golf Club - Painted Valley",
+        "distance_miles": 0.3,
+        "rating": 10,
+        "walking_time_mins": 6
+      },
+      {
+        "type": "clubhouse",
+        "name": "Ranch Club",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "equestrian",
+        "name": "Equestrian Center",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "recreation",
+        "name": "Kids Cabin",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "fitness",
+        "name": "Fitness Center",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "trails",
+        "name": "Private Trail System",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "spa",
+        "name": "Spa Services",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-029",
+    "neighborhood_id": "pc-canyons-005",
+    "address": {
+      "street": "4080 Canyons Resort Drive #2C-401",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.6862,
+      "longitude": -111.5582
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "property_type": "condo",
+      "year_built": 2018,
+      "lot_size": 0,
+      "stories": 1,
+      "garage_spaces": 1
+    },
+    "listing_price": 1875000,
+    "price_per_sqft": 1014,
+    "description": "Luxury ski-in/ski-out condo with direct gondola access and mountain views. Contemporary mountain design features natural materials, stone fireplace, and premium finishes. Open living area flows to private balcony overlooking ski slopes. Gourmet kitchen with granite counters and Viking appliances. Three bedrooms include master suite with spa bathroom. Building amenities include concierge, fitness center, and rooftop hot tub. Prime Canyons Village location steps from restaurants and shops.",
+    "features": [
+      "Ski-in/ski-out",
+      "Gondola access",
+      "Stone fireplace",
+      "Ski slope views",
+      "Viking appliances",
+      "Concierge",
+      "Rooftop hot tub",
+      "Village location"
+    ],
+    "listing_date": "2024-01-18",
+    "days_on_market": 9,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-029",
+    "images": [
+      "https://example.com/images/prop-pc-029-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-10",
+        "price": 1875000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.079,
+      "seasonality_factor": "high_winter",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 44
+    },
+    "buyer_persona": {
+      "profile": "ski_enthusiast",
+      "interests": [
+        "ski_in_ski_out",
+        "modern_living",
+        "convenience",
+        "resort_amenities"
+      ],
+      "age_range": "35-55",
+      "motivation": "rental_income"
+    },
+    "viewing_statistics": {
+      "total_views": 910,
+      "saved_count": 86,
+      "inquiry_count": 11,
+      "showing_requests": 10
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.4614008173577526,
+      "cash_buyers_pct": 0.20147393099744335,
+      "first_time_buyers_pct": 0.006277700701110656,
+      "vacation_buyers_pct": 0.14006783298518555
+    },
+    "nearby_amenities": [
+      {
+        "type": "gondola",
+        "name": "Orange Bubble Express",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Canyons Village Dining",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "shopping",
+        "name": "Village Market",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "hotel",
+        "name": "Grand Summit Hotel",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "golf",
+        "name": "Canyons Golf Course",
+        "distance_miles": 0.4,
+        "rating": 8,
+        "walking_time_mins": 8
+      },
+      {
+        "type": "bike_park",
+        "name": "Mountain Bike Park",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "entertainment",
+        "name": "Summer Concert Series",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-030",
+    "neighborhood_id": "pc-canyons-005",
+    "address": {
+      "street": "3724 Blackstone Drive #22",
+      "city": "Park City",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.6873,
+      "longitude": -111.5595
+    },
+    "property_details": {
+      "square_feet": 2450,
+      "bedrooms": 4,
+      "bathrooms": 4,
+      "property_type": "townhouse",
+      "year_built": 2019,
+      "lot_size": 0,
+      "stories": 3,
+      "garage_spaces": 2
+    },
+    "listing_price": 2650000,
+    "price_per_sqft": 1082,
+    "description": "Contemporary mountain townhome with ski-in/ski-out access and resort amenities. Three levels of thoughtfully designed living space with high-end finishes. Main level features open concept kitchen, dining, and living areas with gas fireplace. Upper level bedrooms include master suite with private balcony and mountain views. Lower level recreation room with wet bar and guest bedroom. Private two-car garage with ski storage. Access to Canyons Village amenities and Park City Mountain Resort.",
+    "features": [
+      "Ski-in/ski-out",
+      "Three levels",
+      "High-end finishes",
+      "Private balcony",
+      "Wet bar",
+      "Ski storage",
+      "Village amenities",
+      "Resort access"
+    ],
+    "listing_date": "2024-01-17",
+    "days_on_market": 10,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-030",
+    "images": [
+      "https://example.com/images/prop-pc-030-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-09",
+        "price": 2650000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.074,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 40
+    },
+    "buyer_persona": {
+      "profile": "ski_enthusiast",
+      "interests": [
+        "modern_living",
+        "resort_amenities",
+        "investment",
+        "ski_in_ski_out"
+      ],
+      "age_range": "35-55",
+      "motivation": "ski_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1250,
+      "saved_count": 101,
+      "inquiry_count": 23,
+      "showing_requests": 3
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.41360393284108227,
+      "cash_buyers_pct": 0.21436529008449523,
+      "first_time_buyers_pct": 0.045272161019179205,
+      "vacation_buyers_pct": 0.19478419908644037
+    },
+    "nearby_amenities": [
+      {
+        "type": "gondola",
+        "name": "Orange Bubble Express",
+        "distance_miles": 0.2,
+        "rating": 10,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain Resort",
+        "distance_miles": 0.1,
+        "rating": 10,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "dining",
+        "name": "Canyons Village Dining",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Village Market",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "hotel",
+        "name": "Grand Summit Hotel",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "golf",
+        "name": "Canyons Golf Course",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "bike_park",
+        "name": "Mountain Bike Park",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "entertainment",
+        "name": "Summer Concert Series",
+        "distance_miles": 0.1,
+        "rating": 8,
+        "walking_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-031",
+    "neighborhood_id": "sp-summit-park-006",
+    "address": {
+      "street": "4926 Mountain View Drive",
+      "city": "Summit Park",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7435,
+      "longitude": -111.5758
+    },
+    "property_details": {
+      "square_feet": 2650,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 1985,
+      "lot_size": 1.15,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 1085000,
+    "price_per_sqft": 409,
+    "description": "Mountain retreat on over one acre with mature trees and privacy. Cedar and stone construction blends naturally with forest setting. Vaulted ceilings and large windows showcase mountain views and wildlife. Updated kitchen with granite counters and stainless appliances. Four bedrooms include master with private deck and en-suite bathroom. Large family room with wood-burning fireplace. Two-car garage plus workshop space. Private well and septic system. Minutes to Park City but feels worlds away.",
+    "features": [
+      "Over one acre",
+      "Mature trees",
+      "Mountain views",
+      "Wildlife viewing",
+      "Private deck",
+      "Wood-burning fireplace",
+      "Workshop space",
+      "Private utilities"
+    ],
+    "listing_date": "2024-01-16",
+    "days_on_market": 11,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-031",
+    "images": [
+      "https://example.com/images/prop-pc-031-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-08",
+        "price": 1085000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.036,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 45
+    },
+    "buyer_persona": {
+      "profile": "value_buyer",
+      "interests": [
+        "mountain_living",
+        "value",
+        "quiet",
+        "privacy"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 704,
+      "saved_count": 72,
+      "inquiry_count": 11,
+      "showing_requests": 7
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3233492371412134,
+      "cash_buyers_pct": 0.17659419240194604,
+      "first_time_buyers_pct": 0.012341042896325122,
+      "vacation_buyers_pct": 0.12286661781202655
+    },
+    "nearby_amenities": [
+      {
+        "type": "trails",
+        "name": "Hiking Trails",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nature",
+        "name": "Wildlife Viewing Areas",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "Jeremy Ranch Elementary",
+        "distance_miles": 2.0,
+        "rating": 8,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "shopping",
+        "name": "Kimball Junction",
+        "distance_miles": 3.7,
+        "rating": 7,
+        "driving_time_mins": 9
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain",
+        "distance_miles": 7.7,
+        "rating": 10,
+        "driving_time_mins": 19
+      },
+      {
+        "type": "market",
+        "name": "Local Market",
+        "distance_miles": 3.3,
+        "rating": 6,
+        "driving_time_mins": 8
+      },
+      {
+        "type": "recreation",
+        "name": "Pinebrook Park",
+        "distance_miles": 1.7,
+        "rating": 7,
+        "driving_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-032",
+    "neighborhood_id": "sp-summit-park-006",
+    "address": {
+      "street": "4185 Timber Lakes Drive",
+      "city": "Summit Park",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84098"
+    },
+    "coordinates": {
+      "latitude": 40.7441,
+      "longitude": -111.5771
+    },
+    "property_details": {
+      "square_feet": 1950,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 2016,
+      "lot_size": 0.95,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 895000,
+    "price_per_sqft": 459,
+    "description": "Modern mountain home with contemporary amenities and natural setting. Open floor plan features great room with vaulted ceilings and gas fireplace. Kitchen with quartz countertops and breakfast bar opens to dining area. Three bedrooms include master suite with walk-in closet and spa bathroom. Lower level bonus room with wet bar and game area. Large deck overlooks private backyard with fire pit area. Two-car garage with additional storage. Perfect for year-round or seasonal living.",
+    "features": [
+      "Modern mountain",
+      "Vaulted ceilings",
+      "Quartz countertops",
+      "Bonus room",
+      "Fire pit area",
+      "Additional storage",
+      "Year-round living",
+      "Seasonal option"
+    ],
+    "listing_date": "2024-01-15",
+    "days_on_market": 12,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-032",
+    "images": [
+      "https://example.com/images/prop-pc-032-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-07",
+        "price": 895000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.038,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "high",
+      "average_dom": 52
+    },
+    "buyer_persona": {
+      "profile": "remote_worker",
+      "interests": [
+        "space",
+        "value",
+        "mountain_living",
+        "privacy"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 1327,
+      "saved_count": 161,
+      "inquiry_count": 24,
+      "showing_requests": 8
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.27438550107731413,
+      "cash_buyers_pct": 0.21854035965713856,
+      "first_time_buyers_pct": 0.06195270099653462,
+      "vacation_buyers_pct": 0.24173067745027618
+    },
+    "nearby_amenities": [
+      {
+        "type": "trails",
+        "name": "Hiking Trails",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "nature",
+        "name": "Wildlife Viewing Areas",
+        "distance_miles": 0.2,
+        "rating": 8,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "school",
+        "name": "Jeremy Ranch Elementary",
+        "distance_miles": 2.7,
+        "rating": 8,
+        "driving_time_mins": 6
+      },
+      {
+        "type": "shopping",
+        "name": "Kimball Junction",
+        "distance_miles": 4.1,
+        "rating": 7,
+        "driving_time_mins": 10
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Mountain",
+        "distance_miles": 8.2,
+        "rating": 10,
+        "driving_time_mins": 20
+      },
+      {
+        "type": "market",
+        "name": "Local Market",
+        "distance_miles": 3.5,
+        "rating": 6,
+        "driving_time_mins": 8
+      },
+      {
+        "type": "recreation",
+        "name": "Pinebrook Park",
+        "distance_miles": 2.0,
+        "rating": 7,
+        "driving_time_mins": 5
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-033",
+    "neighborhood_id": "coal-downtown-007",
+    "address": {
+      "street": "248 North Main Street",
+      "city": "Coalville",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84017"
+    },
+    "coordinates": {
+      "latitude": 40.9185,
+      "longitude": -111.4007
+    },
+    "property_details": {
+      "square_feet": 1850,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 1920,
+      "lot_size": 0.25,
+      "stories": 2,
+      "garage_spaces": 1
+    },
+    "listing_price": 525000,
+    "price_per_sqft": 284,
+    "description": "Historic brick home on Main Street with original character and modern updates. Living room features original hardwood floors and decorative fireplace. Formal dining room with built-in china cabinet leads to updated kitchen with granite counters. Four bedrooms upstairs include master with en-suite bathroom. Large backyard with mature trees, garden space, and storage shed. One-car garage plus off-street parking. Walking distance to shops, restaurants, and community events. Perfect for those seeking small-town charm and affordability.",
+    "features": [
+      "Historic brick",
+      "Original character",
+      "Built-in china cabinet",
+      "Large backyard",
+      "Mature trees",
+      "Storage shed",
+      "Walking distance",
+      "Small-town charm"
+    ],
+    "listing_date": "2024-01-14",
+    "days_on_market": 13,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-033",
+    "images": [
+      "https://example.com/images/prop-pc-033-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-06",
+        "price": 525000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.081,
+      "seasonality_factor": "high_summer",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 34
+    },
+    "buyer_persona": {
+      "profile": "outdoor_enthusiast",
+      "interests": [
+        "small_town",
+        "authentic_living",
+        "community",
+        "outdoor_recreation"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 641,
+      "saved_count": 53,
+      "inquiry_count": 9,
+      "showing_requests": 5
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3951375597962917,
+      "cash_buyers_pct": 0.17313090084535174,
+      "first_time_buyers_pct": 0.05003264279853962,
+      "vacation_buyers_pct": 0.17831152638514688
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Echo Reservoir",
+        "distance_miles": 3.4,
+        "rating": 9,
+        "driving_time_mins": 8
+      },
+      {
+        "type": "lake",
+        "name": "Rockport Lake",
+        "distance_miles": 5.1,
+        "rating": 9,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Diner",
+        "distance_miles": 0.1,
+        "rating": 7,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "shopping",
+        "name": "Local Shops",
+        "distance_miles": 0.1,
+        "rating": 6,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "North Summit High School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 1.0,
+        "rating": 8,
+        "walking_time_mins": 19
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-034",
+    "neighborhood_id": "coal-downtown-007",
+    "address": {
+      "street": "356 East 100 South",
+      "city": "Coalville",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84017"
+    },
+    "coordinates": {
+      "latitude": 40.9172,
+      "longitude": -111.3978
+    },
+    "property_details": {
+      "square_feet": 2350,
+      "bedrooms": 5,
+      "bathrooms": 3,
+      "property_type": "single-family",
+      "year_built": 2008,
+      "lot_size": 0.35,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 595000,
+    "price_per_sqft": 253,
+    "description": "Spacious family home with five bedrooms and modern amenities on large lot. Open floor plan features great room with vaulted ceilings and gas fireplace. Kitchen with granite counters, stainless appliances, and breakfast nook opens to family room. Five bedrooms upstairs include master suite with walk-in closet and spa bathroom. Finished basement with family room, bedroom, and full bathroom. Large backyard with covered patio, playset, and mountain views. Two-car garage with workshop area and RV parking.",
+    "features": [
+      "Five bedrooms",
+      "Large lot",
+      "Vaulted ceilings",
+      "Finished basement",
+      "Covered patio",
+      "Playset",
+      "Workshop area",
+      "RV parking"
+    ],
+    "listing_date": "2024-01-13",
+    "days_on_market": 14,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-034",
+    "images": [
+      "https://example.com/images/prop-pc-034-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-05",
+        "price": 595000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.081,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 46
+    },
+    "buyer_persona": {
+      "profile": "young_family",
+      "interests": [
+        "value",
+        "community",
+        "small_town",
+        "authentic_living"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 530,
+      "saved_count": 44,
+      "inquiry_count": 7,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3041876990445995,
+      "cash_buyers_pct": 0.29166077319343064,
+      "first_time_buyers_pct": 0.08926890885027011,
+      "vacation_buyers_pct": 0.26097915258030024
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Echo Reservoir",
+        "distance_miles": 3.1,
+        "rating": 9,
+        "driving_time_mins": 7
+      },
+      {
+        "type": "lake",
+        "name": "Rockport Lake",
+        "distance_miles": 5.0,
+        "rating": 9,
+        "driving_time_mins": 12
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Diner",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "shopping",
+        "name": "Local Shops",
+        "distance_miles": 0.1,
+        "rating": 6,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "North Summit High School",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.8,
+        "rating": 8,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.2,
+        "rating": 7,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "park",
+        "name": "City Park",
+        "distance_miles": 0.4,
+        "rating": 7,
+        "walking_time_mins": 7
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-035",
+    "neighborhood_id": "oak-oakley-008",
+    "address": {
+      "street": "7125 East Highway 32",
+      "city": "Oakley",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84055"
+    },
+    "coordinates": {
+      "latitude": 40.7159,
+      "longitude": -111.3035
+    },
+    "property_details": {
+      "square_feet": 3200,
+      "bedrooms": 5,
+      "bathrooms": 4,
+      "property_type": "single-family",
+      "year_built": 1998,
+      "lot_size": 3.85,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 925000,
+    "price_per_sqft": 289,
+    "description": "Country estate on nearly four acres with horse facilities and stunning mountain valley views. Ranch-style home features open floor plan with great room, stone fireplace, and dining area. Country kitchen with granite counters, farmhouse sink, and breakfast nook. Five bedrooms include master suite with private bathroom and mountain views. Finished basement with family room, bedroom, and full bathroom. Horse barn with six stalls, tack room, and hay storage. Fenced pastures, arena, and irrigation rights. Three-car garage and workshop.",
+    "features": [
+      "Nearly four acres",
+      "Horse facilities",
+      "Mountain valley views",
+      "Stone fireplace",
+      "Horse barn",
+      "Six stalls",
+      "Fenced pastures",
+      "Irrigation rights"
+    ],
+    "listing_date": "2024-01-12",
+    "days_on_market": 15,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-035",
+    "images": [
+      "https://example.com/images/prop-pc-035-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-04",
+        "price": 925000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.044,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 27
+    },
+    "buyer_persona": {
+      "profile": "rural_buyer",
+      "interests": [
+        "privacy",
+        "horses",
+        "rural_lifestyle",
+        "agricultural"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 454,
+      "saved_count": 46,
+      "inquiry_count": 12,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.39439557459365093,
+      "cash_buyers_pct": 0.17826322804453573,
+      "first_time_buyers_pct": 0.1374360811303167,
+      "vacation_buyers_pct": 0.19778673325513613
+    },
+    "nearby_amenities": [
+      {
+        "type": "river",
+        "name": "Weber River Access",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "equestrian",
+        "name": "Riding Trails",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 1.3,
+        "rating": 7,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Country Store",
+        "distance_miles": 0.9,
+        "rating": 6,
+        "walking_time_mins": 17
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Resorts",
+        "distance_miles": 17.7,
+        "rating": 10,
+        "driving_time_mins": 44
+      },
+      {
+        "type": "agricultural",
+        "name": "Feed Store",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "recreation",
+        "name": "Rodeo Grounds",
+        "distance_miles": 1.9,
+        "rating": 8,
+        "driving_time_mins": 4
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-036",
+    "neighborhood_id": "oak-oakley-008",
+    "address": {
+      "street": "4247 East 2000 North",
+      "city": "Oakley",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84055"
+    },
+    "coordinates": {
+      "latitude": 40.7164,
+      "longitude": -111.3051
+    },
+    "property_details": {
+      "square_feet": 2150,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "property_type": "single-family",
+      "year_built": 2014,
+      "lot_size": 1.75,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 685000,
+    "price_per_sqft": 319,
+    "description": "Modern single-level home on spacious lot with agricultural and mountain views. Open concept design features living room with gas fireplace and dining area. Updated kitchen with granite counters, stainless appliances, and breakfast bar. Four bedrooms include master with en-suite bathroom and walk-in closet. Finished basement provides additional living space and storage. Large covered patio perfect for entertaining and mountain viewing. Two-car garage with workshop area. Room for horses, garden, or recreational vehicles.",
+    "features": [
+      "Single-level",
+      "Spacious lot",
+      "Agricultural views",
+      "Finished basement",
+      "Covered patio",
+      "Mountain viewing",
+      "Workshop area",
+      "Room for horses"
+    ],
+    "listing_date": "2024-01-11",
+    "days_on_market": 16,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-036",
+    "images": [
+      "https://example.com/images/prop-pc-036-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-03",
+        "price": 685000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.038,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 27
+    },
+    "buyer_persona": {
+      "profile": "rancher",
+      "interests": [
+        "value",
+        "agricultural",
+        "rural_lifestyle",
+        "privacy"
+      ],
+      "age_range": "35-55",
+      "motivation": "retirement"
+    },
+    "viewing_statistics": {
+      "total_views": 600,
+      "saved_count": 36,
+      "inquiry_count": 7,
+      "showing_requests": 5
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.2510583781971115,
+      "cash_buyers_pct": 0.1870524938421204,
+      "first_time_buyers_pct": 0.133104604113934,
+      "vacation_buyers_pct": 0.2531559269399932
+    },
+    "nearby_amenities": [
+      {
+        "type": "river",
+        "name": "Weber River Access",
+        "distance_miles": 0.5,
+        "rating": 9,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "equestrian",
+        "name": "Riding Trails",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 4
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 1.0,
+        "rating": 7,
+        "walking_time_mins": 19
+      },
+      {
+        "type": "market",
+        "name": "Country Store",
+        "distance_miles": 0.8,
+        "rating": 6,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "ski_resort",
+        "name": "Park City Resorts",
+        "distance_miles": 18.5,
+        "rating": 10,
+        "driving_time_mins": 46
+      },
+      {
+        "type": "agricultural",
+        "name": "Feed Store",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "recreation",
+        "name": "Rodeo Grounds",
+        "distance_miles": 1.1,
+        "rating": 8,
+        "driving_time_mins": 2
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-037",
+    "neighborhood_id": "kam-kamas-009",
+    "address": {
+      "street": "2156 Mirror Lake Highway",
+      "city": "Kamas",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84036"
+    },
+    "coordinates": {
+      "latitude": 40.6451,
+      "longitude": -111.2835
+    },
+    "property_details": {
+      "square_feet": 3850,
+      "bedrooms": 5,
+      "bathrooms": 4.5,
+      "property_type": "single-family",
+      "year_built": 2020,
+      "lot_size": 8.5,
+      "stories": 2,
+      "garage_spaces": 4
+    },
+    "listing_price": 1285000,
+    "price_per_sqft": 334,
+    "description": "Custom mountain estate on over eight pastoral acres with breathtaking Uinta Mountain views. Contemporary ranch design features great room with soaring ceilings and floor-to-ceiling stone fireplace. Gourmet kitchen with waterfall island, butler's pantry, and walk-in pantry. Five bedroom suites include master wing with private office, spa bathroom, and mountain deck. Finished walkout basement with family room, wet bar, and guest quarters. Horse barn with eight stalls, equipment storage, and hay loft. Fenced pastures with irrigation water.",
+    "features": [
+      "Over eight acres",
+      "Uinta Mountain views",
+      "Contemporary ranch",
+      "Master wing",
+      "Walkout basement",
+      "Horse barn",
+      "Eight stalls",
+      "Irrigation water"
+    ],
+    "listing_date": "2024-01-10",
+    "days_on_market": 17,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-037",
+    "images": [
+      "https://example.com/images/prop-pc-037-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-02",
+        "price": 1285000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.069,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "low",
+      "average_dom": 32
+    },
+    "buyer_persona": {
+      "profile": "nature_lover",
+      "interests": [
+        "pastoral",
+        "agriculture",
+        "rural_living",
+        "acreage"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 824,
+      "saved_count": 107,
+      "inquiry_count": 13,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.38639240238489003,
+      "cash_buyers_pct": 0.3402858654513288,
+      "first_time_buyers_pct": 0.03762257147501298,
+      "vacation_buyers_pct": 0.19431574790026485
+    },
+    "nearby_amenities": [
+      {
+        "type": "mountains",
+        "name": "Uinta Mountains Access",
+        "distance_miles": 5.3,
+        "rating": 10,
+        "driving_time_mins": 13
+      },
+      {
+        "type": "scenic",
+        "name": "Mirror Lake Highway",
+        "distance_miles": 2.3,
+        "rating": 10,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "equestrian",
+        "name": "Horse Properties",
+        "distance_miles": 0.1,
+        "rating": 9,
+        "walking_time_mins": 2
+      },
+      {
+        "type": "market",
+        "name": "Farmers Market",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 9
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 0.8,
+        "rating": 7,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.3,
+        "rating": 9,
+        "walking_time_mins": 5
+      },
+      {
+        "type": "recreation",
+        "name": "Fishing Access",
+        "distance_miles": 0.8,
+        "rating": 9,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-038",
+    "neighborhood_id": "kam-kamas-009",
+    "address": {
+      "street": "1234 Woodland Creek Road",
+      "city": "Kamas",
+      "county": "Summit",
+      "state": "UT",
+      "zip": "84036"
+    },
+    "coordinates": {
+      "latitude": 40.6438,
+      "longitude": -111.2821
+    },
+    "property_details": {
+      "square_feet": 2850,
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "property_type": "single-family",
+      "year_built": 2015,
+      "lot_size": 4.25,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 975000,
+    "price_per_sqft": 342,
+    "description": "Rustic mountain home with log and stone construction on over four acres. Open living area features exposed beam ceilings, river rock fireplace, and walls of glass overlooking meadows. Country kitchen with granite counters, farmhouse sink, and breakfast nook. Four bedrooms include master loft with mountain views and spa bathroom. Covered porches wrap around home for outdoor living and entertaining. Three-car garage with workshop space. Horse facilities include barn, fenced paddocks, and creek running through property.",
+    "features": [
+      "Log and stone",
+      "Over four acres",
+      "Exposed beams",
+      "River rock fireplace",
+      "Master loft",
+      "Covered porches",
+      "Horse facilities",
+      "Creek on property"
+    ],
+    "listing_date": "2024-01-09",
+    "days_on_market": 18,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-038",
+    "images": [
+      "https://example.com/images/prop-pc-038-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-08-01",
+        "price": 975000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.06,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "low",
+      "average_dom": 57
+    },
+    "buyer_persona": {
+      "profile": "nature_lover",
+      "interests": [
+        "agriculture",
+        "pastoral",
+        "rural_living",
+        "mountain_access"
+      ],
+      "age_range": "35-55",
+      "motivation": "investment"
+    },
+    "viewing_statistics": {
+      "total_views": 533,
+      "saved_count": 50,
+      "inquiry_count": 15,
+      "showing_requests": 9
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.47684828470846036,
+      "cash_buyers_pct": 0.30171222912980034,
+      "first_time_buyers_pct": 0.11629400083028736,
+      "vacation_buyers_pct": 0.1494509746061415
+    },
+    "nearby_amenities": [
+      {
+        "type": "mountains",
+        "name": "Uinta Mountains Access",
+        "distance_miles": 5.4,
+        "rating": 10,
+        "driving_time_mins": 13
+      },
+      {
+        "type": "scenic",
+        "name": "Mirror Lake Highway",
+        "distance_miles": 1.9,
+        "rating": 10,
+        "driving_time_mins": 4
+      },
+      {
+        "type": "equestrian",
+        "name": "Horse Properties",
+        "distance_miles": 0.2,
+        "rating": 9,
+        "walking_time_mins": 3
+      },
+      {
+        "type": "market",
+        "name": "Farmers Market",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "school",
+        "name": "South Summit Elementary",
+        "distance_miles": 0.7,
+        "rating": 7,
+        "walking_time_mins": 14
+      },
+      {
+        "type": "trails",
+        "name": "Trail System",
+        "distance_miles": 0.4,
+        "rating": 9,
+        "walking_time_mins": 7
+      },
+      {
+        "type": "recreation",
+        "name": "Fishing Access",
+        "distance_miles": 1.3,
+        "rating": 9,
+        "driving_time_mins": 3
+      },
+      {
+        "type": "community",
+        "name": "Community Center",
+        "distance_miles": 0.6,
+        "rating": 7,
+        "walking_time_mins": 11
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-039",
+    "neighborhood_id": "heb-heber-010",
+    "address": {
+      "street": "3156 Lake Creek Drive",
+      "city": "Heber City",
+      "county": "Wasatch",
+      "state": "UT",
+      "zip": "84032"
+    },
+    "coordinates": {
+      "latitude": 40.5089,
+      "longitude": -111.4152
+    },
+    "property_details": {
+      "square_feet": 3450,
+      "bedrooms": 5,
+      "bathrooms": 4,
+      "property_type": "single-family",
+      "year_built": 2018,
+      "lot_size": 0.45,
+      "stories": 2,
+      "garage_spaces": 3
+    },
+    "listing_price": 1385000,
+    "price_per_sqft": 402,
+    "description": "Stunning mountain modern home with Deer Creek Reservoir and mountain views. Open concept main level features great room with linear fireplace, dining area, and gourmet kitchen. Kitchen features waterfall quartz island, butler's pantry, and high-end appliances. Five bedrooms include master suite with private deck overlooking reservoir and spa bathroom. Finished basement with family room, bedroom, bathroom, and wet bar. Three-car garage with workshop area. Close to championship golf course, boating, and recreation facilities.",
+    "features": [
+      "Mountain modern",
+      "Reservoir views",
+      "Linear fireplace",
+      "Butler's pantry",
+      "Private deck",
+      "Finished basement",
+      "Championship golf",
+      "Boating access"
+    ],
+    "listing_date": "2024-01-08",
+    "days_on_market": 19,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-039",
+    "images": [
+      "https://example.com/images/prop-pc-039-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-31",
+        "price": 1385000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.091,
+      "seasonality_factor": "year_round",
+      "price_per_sqft_trend": "rising",
+      "inventory_level": "moderate",
+      "average_dom": 43
+    },
+    "buyer_persona": {
+      "profile": "golf_enthusiast",
+      "interests": [
+        "family_friendly",
+        "value",
+        "lake_recreation",
+        "valley_living"
+      ],
+      "age_range": "35-55",
+      "motivation": "primary_residence"
+    },
+    "viewing_statistics": {
+      "total_views": 1179,
+      "saved_count": 70,
+      "inquiry_count": 21,
+      "showing_requests": 12
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3397213097517249,
+      "cash_buyers_pct": 0.2175312733734578,
+      "first_time_buyers_pct": 0.03268429258560508,
+      "vacation_buyers_pct": 0.11858879902691688
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Deer Creek Reservoir",
+        "distance_miles": 1.9,
+        "rating": 10,
+        "driving_time_mins": 4
+      },
+      {
+        "type": "golf",
+        "name": "Soldier Hollow Golf",
+        "distance_miles": 3.1,
+        "rating": 9,
+        "driving_time_mins": 7
+      },
+      {
+        "type": "golf",
+        "name": "Wasatch Golf Course",
+        "distance_miles": 1.7,
+        "rating": 8,
+        "driving_time_mins": 4
+      },
+      {
+        "type": "railroad",
+        "name": "Heber Valley Railroad",
+        "distance_miles": 0.7,
+        "rating": 8,
+        "walking_time_mins": 13
+      },
+      {
+        "type": "school",
+        "name": "Wasatch High School",
+        "distance_miles": 0.8,
+        "rating": 8,
+        "walking_time_mins": 16
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "ski_resort",
+        "name": "Sundance Resort",
+        "distance_miles": 11.9,
+        "rating": 9,
+        "driving_time_mins": 29
+      },
+      {
+        "type": "recreation",
+        "name": "Recreation Center",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 12
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  },
+  {
+    "listing_id": "prop-pc-040",
+    "neighborhood_id": "heb-heber-010",
+    "address": {
+      "street": "1847 Valley Meadow Drive",
+      "city": "Heber City",
+      "county": "Wasatch",
+      "state": "UT",
+      "zip": "84032"
+    },
+    "coordinates": {
+      "latitude": 40.5076,
+      "longitude": -111.4141
+    },
+    "property_details": {
+      "square_feet": 2750,
+      "bedrooms": 6,
+      "bathrooms": 4,
+      "property_type": "single-family",
+      "year_built": 2013,
+      "lot_size": 0.38,
+      "stories": 2,
+      "garage_spaces": 2
+    },
+    "listing_price": 995000,
+    "price_per_sqft": 362,
+    "description": "Traditional mountain home with six bedrooms and valley views perfect for large families. Formal living and dining rooms feature hardwood floors and mountain vistas. Family kitchen with granite counters opens to family room with stone fireplace. Six bedrooms include master suite with en-suite bathroom and walk-in closet. Finished basement provides additional family room, bedroom, and storage. Private backyard with covered patio, play area, and mature landscaping. Two-car garage with workshop. Walking distance to schools and community facilities.",
+    "features": [
+      "Six bedrooms",
+      "Valley views",
+      "Stone fireplace",
+      "Finished basement",
+      "Play area",
+      "Workshop",
+      "Walking distance",
+      "Community facilities"
+    ],
+    "listing_date": "2024-01-07",
+    "days_on_market": 20,
+    "virtual_tour_url": "https://example.com/tours/prop-pc-040",
+    "images": [
+      "https://example.com/images/prop-pc-040-1.jpg"
+    ],
+    "price_history": [
+      {
+        "date": "2025-07-30",
+        "price": 995000,
+        "event": "listed"
+      }
+    ],
+    "market_trends": {
+      "appreciation_rate": 0.065,
+      "seasonality_factor": "stable",
+      "price_per_sqft_trend": "stable",
+      "inventory_level": "high",
+      "average_dom": 29
+    },
+    "buyer_persona": {
+      "profile": "retiree",
+      "interests": [
+        "four_season",
+        "golf",
+        "lake_recreation",
+        "value"
+      ],
+      "age_range": "35-55",
+      "motivation": "ranch_property"
+    },
+    "viewing_statistics": {
+      "total_views": 999,
+      "saved_count": 136,
+      "inquiry_count": 21,
+      "showing_requests": 6
+    },
+    "buyer_demographics": {
+      "local_buyers_pct": 0.3492414024917956,
+      "cash_buyers_pct": 0.1716234570265102,
+      "first_time_buyers_pct": 0.04929081608004233,
+      "vacation_buyers_pct": 0.16861990279686062
+    },
+    "nearby_amenities": [
+      {
+        "type": "lake",
+        "name": "Deer Creek Reservoir",
+        "distance_miles": 2.2,
+        "rating": 10,
+        "driving_time_mins": 5
+      },
+      {
+        "type": "golf",
+        "name": "Soldier Hollow Golf",
+        "distance_miles": 3.4,
+        "rating": 9,
+        "driving_time_mins": 8
+      },
+      {
+        "type": "golf",
+        "name": "Wasatch Golf Course",
+        "distance_miles": 1.7,
+        "rating": 8,
+        "driving_time_mins": 4
+      },
+      {
+        "type": "railroad",
+        "name": "Heber Valley Railroad",
+        "distance_miles": 0.6,
+        "rating": 8,
+        "walking_time_mins": 11
+      },
+      {
+        "type": "school",
+        "name": "Wasatch High School",
+        "distance_miles": 0.8,
+        "rating": 8,
+        "walking_time_mins": 15
+      },
+      {
+        "type": "dining",
+        "name": "Main Street Restaurants",
+        "distance_miles": 0.5,
+        "rating": 7,
+        "walking_time_mins": 10
+      },
+      {
+        "type": "ski_resort",
+        "name": "Sundance Resort",
+        "distance_miles": 11.8,
+        "rating": 9,
+        "driving_time_mins": 29
+      },
+      {
+        "type": "recreation",
+        "name": "Recreation Center",
+        "distance_miles": 0.5,
+        "rating": 8,
+        "walking_time_mins": 10
+      }
+    ],
+    "future_enhancements": {
+      "comparables": "To be implemented - will include similar properties and similarity scores",
+      "agent_info": "To be implemented - will include listing agent and agency details",
+      "property_insights": "To be implemented - will include ML-generated insights and recommendations"
+    }
+  }
+]

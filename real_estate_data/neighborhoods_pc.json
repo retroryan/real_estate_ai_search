@@ -1,0 +1,222 @@
+[
+  {
+    "neighborhood_id": "pc-old-town-001",
+    "name": "Old Town",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.6461, "longitude": -111.4980},
+    "description": "Old Town Park City preserves the charm of a 19th-century silver mining town while serving as a world-class ski destination. Historic Main Street features colorful Victorian buildings housing art galleries, boutiques, and acclaimed restaurants. The neighborhood transforms seasonally, from winter ski hub with direct mountain access to summer festival grounds hosting Sundance Film Festival. Original miners' cottages sit alongside luxury renovations and new builds designed to match historic architecture. Residents walk everywhere, from morning coffee to après-ski venues. The Town Lift provides ski-in/ski-out access to Park City Mountain Resort. Despite tourist traffic, locals maintain a strong community through year-round events and gathering spots.",
+    "characteristics": {
+      "walkability_score": 10,
+      "transit_score": 8,
+      "school_rating": 8,
+      "safety_rating": 9,
+      "nightlife_score": 8,
+      "family_friendly_score": 7
+    },
+    "amenities": ["Main Street", "Town Lift", "City Park", "Sundance venues", "Mining museum", "Free transit"],
+    "lifestyle_tags": ["historic", "ski-in/ski-out", "walkable", "cultural", "tourist-friendly", "mountain town"],
+    "median_home_price": 2800000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "35-60", "vibe": "historic mountain charm"}
+  },
+  {
+    "neighborhood_id": "pc-deer-valley-002",
+    "name": "Deer Valley",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.6373, "longitude": -111.4784},
+    "description": "Deer Valley represents the pinnacle of luxury mountain living. Built around the exclusive Deer Valley Resort, known for limited ticket sales, impeccable grooming, and no snowboarding policy, the area caters to discerning buyers. Ski-in/ski-out estates and condominiums blend seamlessly into the mountainside. St. Regis, Montage, and other five-star properties provide world-class amenities. The neighborhood maintains strict architectural guidelines ensuring mountain modern aesthetics. Summer offers championship golf, mountain biking, and hiking trails. Residents include Fortune 500 executives, celebrities, and international buyers seeking privacy and exclusivity. While removed from Park City's bustling Main Street, private shuttles and proximity to amenities ensure convenience without compromising tranquility.",
+    "characteristics": {
+      "walkability_score": 5,
+      "transit_score": 6,
+      "school_rating": 9,
+      "safety_rating": 10,
+      "nightlife_score": 4,
+      "family_friendly_score": 8
+    },
+    "amenities": ["Deer Valley Resort", "Luxury hotels", "Golf courses", "Fine dining", "Spa services", "Private ski access"],
+    "lifestyle_tags": ["ultra-luxury", "ski-in/ski-out", "exclusive", "private", "resort-living", "mountain modern"],
+    "median_home_price": 4500000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "45-65", "vibe": "exclusive luxury"}
+  },
+  {
+    "neighborhood_id": "pc-park-meadows-003",
+    "name": "Park Meadows",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.6589, "longitude": -111.4869},
+    "description": "Park Meadows offers a more accessible entry into Park City living while maintaining mountain town appeal. Located between Old Town and Kimball Junction, the neighborhood provides convenient access to both ski resorts and everyday amenities. Single-family homes, townhomes, and condos create diverse housing options. The area attracts full-time residents, particularly families, drawn by good schools and community feel. Rail Trail access provides year-round recreation opportunities for biking, running, and cross-country skiing. While lacking ski-in/ski-out access, free transit connects to slopes within minutes. Local parks, sports fields, and community events foster neighborhood connections. The mix of primary residences creates authentic community often missing in resort-dominated areas.",
+    "characteristics": {
+      "walkability_score": 6,
+      "transit_score": 7,
+      "school_rating": 8,
+      "safety_rating": 9,
+      "nightlife_score": 3,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Rail Trail", "City parks", "Sports complex", "Transit routes", "Local schools", "Community center"],
+    "lifestyle_tags": ["family-friendly", "affordable", "community", "convenient", "year-round", "local"],
+    "median_home_price": 1200000,
+    "price_trend": "stable",
+    "demographics": {"primary_age_group": "30-50", "vibe": "family community"}
+  },
+  {
+    "neighborhood_id": "pc-promontory-004",
+    "name": "Promontory",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.7098, "longitude": -111.4421},
+    "description": "Promontory stands as Utah's premier private golf and recreational community. Spanning 7,000 acres with only 900 homesites, the development prioritizes space and privacy. Two Pete Dye golf courses anchor extensive amenities including equestrian facilities, kids' camps, and multiple clubhouses. Architecture ranges from mountain contemporary to ranch style, all meeting strict design standards. The community attracts successful entrepreneurs and executives seeking four-season mountain living with country club amenities. While removed from Park City's ski slopes, private shuttles provide mountain access. The emphasis remains on golf, family activities, and outdoor recreation. Residents form tight-knit community through club events and shared facilities, creating exclusive yet welcoming atmosphere.",
+    "characteristics": {
+      "walkability_score": 3,
+      "transit_score": 4,
+      "school_rating": 9,
+      "safety_rating": 10,
+      "nightlife_score": 2,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Golf courses", "Equestrian center", "Kids camps", "Multiple clubhouses", "Fitness centers", "Trail system"],
+    "lifestyle_tags": ["golf-community", "luxury", "private", "spacious", "family-oriented", "exclusive"],
+    "median_home_price": 3200000,
+    "price_trend": "stable",
+    "demographics": {"primary_age_group": "40-60", "vibe": "private club"}
+  },
+  {
+    "neighborhood_id": "pc-canyons-005",
+    "name": "Canyons Village",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.6851, "longitude": -111.5569},
+    "description": "Canyons Village has transformed from sleepy base area to vibrant resort community following Vail Resorts' massive investment. The pedestrian village core features hotels, restaurants, shops, and direct gondola access to Park City Mountain Resort's Canyons side. New luxury condominiums and townhomes offer modern ski-in/ski-out living with resort amenities. The area appeals to vacation home buyers seeking convenience and rental potential. Year-round activities include golf, hiking, and mountain biking on extensive trail networks. While newer and less established than Old Town, planned development ensures consistent growth. The village atmosphere combines resort convenience with emerging community feel as more full-time residents discover the area's potential.",
+    "characteristics": {
+      "walkability_score": 8,
+      "transit_score": 7,
+      "school_rating": 7,
+      "safety_rating": 9,
+      "nightlife_score": 6,
+      "family_friendly_score": 8
+    },
+    "amenities": ["Gondola access", "Village shops", "Resort dining", "Golf course", "Hiking trails", "Bike park"],
+    "lifestyle_tags": ["ski-in/ski-out", "resort-village", "modern", "convenient", "investment-friendly", "growing"],
+    "median_home_price": 1800000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "35-55", "vibe": "resort convenience"}
+  },
+  {
+    "neighborhood_id": "sp-summit-park-006",
+    "name": "Summit Park",
+    "city": "Summit Park",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.7422, "longitude": -111.5736},
+    "description": "Summit Park offers mountain living with a more relaxed pace compared to Park City's resort atmosphere. This unincorporated community features larger lots, mature trees, and a mix of older cabins alongside newer custom homes. Residents appreciate the privacy and natural setting while maintaining reasonable commute times to Park City and Salt Lake City. The area attracts families, retirees, and remote workers seeking authentic mountain lifestyle without resort pricing. Local amenities include hiking trails, wildlife viewing, and strong sense of community. While utilities and services require more self-reliance, residents value the independence and connection to nature.",
+    "characteristics": {
+      "walkability_score": 3,
+      "transit_score": 2,
+      "school_rating": 7,
+      "safety_rating": 9,
+      "nightlife_score": 1,
+      "family_friendly_score": 8
+    },
+    "amenities": ["Large lots", "Mature trees", "Hiking trails", "Wildlife viewing", "Privacy", "Natural setting"],
+    "wlifestyle_tags": ["rural", "private", "affordable", "nature-focused", "quiet", "community-oriented", "mountain living"],
+    "median_home_price": 850000,
+    "price_trend": "stable",
+    "demographics": {"primary_age_group": "35-65", "vibe": "rural mountain"}
+  },
+  {
+    "neighborhood_id": "coal-downtown-007",
+    "name": "Downtown Coalville",
+    "city": "Coalville",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.9175, "longitude": -111.3994},
+    "description": "Downtown Coalville preserves small-town Utah charm as the historic county seat of Summit County. Main Street features original brick buildings housing local businesses, restaurants, and community services. The town serves as a gateway to outdoor recreation with easy access to Echo Reservoir, Rockport Lake, and extensive trail systems. Residents enjoy significantly lower cost of living while maintaining proximity to Park City employment and recreation. The community attracts families seeking authentic small-town life, retirees valuing peace and affordability, and outdoor enthusiasts drawn by world-class fishing and hunting. Local events and festivals foster strong community bonds throughout the year.",
+    "characteristics": {
+      "walkability_score": 6,
+      "transit_score": 2,
+      "school_rating": 7,
+      "safety_rating": 9,
+      "nightlife_score": 2,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Historic Main Street", "Echo Reservoir", "Rockport Lake", "Trail systems", "Community events", "Local businesses"],
+    "lifestyle_tags": ["small-town", "historic", "affordable", "outdoor recreation", "family-friendly", "community-oriented"],
+    "median_home_price": 450000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "30-60", "vibe": "small town authentic"}
+  },
+  {
+    "neighborhood_id": "oak-oakley-008",
+    "name": "Oakley",
+    "city": "Oakley",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.7147, "longitude": -111.3014},
+    "description": "Oakley embodies rural Utah living with agricultural heritage and stunning mountain valley setting. The community balances working ranches with residential development, creating unique blend of country and convenience. Residents include multi-generational farming families alongside newcomers seeking space, privacy, and outdoor lifestyle. The town provides excellent value for those prioritizing acreage and mountain views over urban amenities. Local attractions include Weber River access, horseback riding, and proximity to world-class skiing and recreation. The tight-knit community maintains small-town values while welcoming growth and new residents.",
+    "characteristics": {
+      "walkability_score": 2,
+      "transit_score": 1,
+      "school_rating": 7,
+      "safety_rating": 10,
+      "nightlife_score": 1,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Weber River", "Agricultural heritage", "Mountain views", "Horseback riding", "Large lots", "Rural setting"],
+    "lifestyle_tags": ["rural", "agricultural", "spacious", "affordable", "family-friendly", "quiet", "outdoor recreation"],
+    "median_home_price": 675000,
+    "price_trend": "stable",
+    "demographics": {"primary_age_group": "25-55", "vibe": "rural agricultural"}
+  },
+  {
+    "neighborhood_id": "kam-kamas-009",
+    "name": "Kamas Valley",
+    "city": "Kamas",
+    "county": "Summit",
+    "state": "UT",
+    "coordinates": {"latitude": 40.6431, "longitude": -111.2806},
+    "description": "Kamas Valley offers pastoral mountain living with working farms, horse properties, and custom homes spread across scenic valley floor. The area serves as gateway to Uinta Mountains and Mirror Lake Highway, providing access to pristine wilderness and recreation. Residents appreciate the rural lifestyle, larger lots, and strong sense of community while maintaining reasonable access to Park City and Salt Lake Valley employment. Local amenities include equestrian facilities, farmers markets, and community events celebrating agricultural heritage. The valley attracts families seeking space for animals, gardeners valuing growing seasons, and outdoor enthusiasts drawn by nearby recreation opportunities.",
+    "characteristics": {
+      "walkability_score": 2,
+      "transit_score": 1,
+      "school_rating": 7,
+      "safety_rating": 10,
+      "nightlife_score": 1,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Uinta Mountains access", "Mirror Lake Highway", "Horse properties", "Farmers markets", "Equestrian facilities", "Pastoral setting"],
+    "lifestyle_tags": ["rural", "pastoral", "equestrian", "agricultural", "outdoor recreation", "spacious", "family-friendly"],
+    "median_home_price": 725000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "30-60", "vibe": "pastoral mountain"}
+  },
+  {
+    "neighborhood_id": "heb-heber-010",
+    "name": "Heber Valley",
+    "city": "Heber City",
+    "county": "Wasatch",
+    "state": "UT",
+    "coordinates": {"latitude": 40.5069, "longitude": -111.4133},
+    "description": "Heber Valley combines stunning natural beauty with recreational opportunities and growing residential development. The valley floor features working ranches, golf courses, and new subdivisions surrounded by mountain peaks and Deer Creek Reservoir. Residents enjoy four-season recreation including world-class skiing at nearby resorts, fishing, boating, and hiking. The area attracts families seeking mountain lifestyle with valley amenities, retirees valuing natural beauty and recreation, and commuters to Salt Lake Valley and Park City. Local amenities include championship golf, historic railroad, and community events. Growth brings modern conveniences while preserving rural character and agricultural heritage.",
+    "characteristics": {
+      "walkability_score": 4,
+      "transit_score": 3,
+      "school_rating": 8,
+      "safety_rating": 9,
+      "nightlife_score": 3,
+      "family_friendly_score": 9
+    },
+    "amenities": ["Deer Creek Reservoir", "Championship golf", "Historic railroad", "Mountain recreation", "Working ranches", "Community events"],
+    "lifestyle_tags": ["valley living", "recreational", "golf community", "family-friendly", "natural beauty", "four-season recreation"],
+    "median_home_price": 950000,
+    "price_trend": "rising",
+    "demographics": {"primary_age_group": "35-65", "vibe": "valley recreation"}
+  }
+]
