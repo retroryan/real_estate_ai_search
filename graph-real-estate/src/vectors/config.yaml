@@ -1,0 +1,45 @@
+# Configuration for property vector embeddings
+# Adapted from wiki_embed patterns for consistency
+
+embedding:
+  provider: ollama  # Options: ollama, openai, gemini
+  
+  # Ollama settings
+  ollama_base_url: "http://localhost:11434"
+  ollama_model: "nomic-embed-text"  # or mxbai-embed-large
+  
+  # OpenAI settings (if using)
+  openai_api_key: null  # Set via OPENAI_API_KEY env var
+  openai_model: "text-embedding-3-small"
+  
+  # Gemini settings (if using)
+  gemini_api_key: null  # Set via GEMINI_API_KEY env var
+  gemini_model: "models/embedding-001"
+  
+  # Processing settings
+  batch_size: 100
+  show_progress: true
+
+vector_index:
+  index_name: "property_embeddings"
+  vector_dimensions: 768  # Auto-set based on model
+  similarity_function: "cosine"  # or euclidean
+  node_label: "Property"
+  embedding_property: "descriptionEmbedding"
+  source_property: "description"
+
+search:
+  default_top_k: 10
+  use_graph_boost: true
+  vector_weight: 0.6
+  graph_weight: 0.2
+  features_weight: 0.2
+  min_similarity: 0.3
+
+# Text generation settings for property embeddings
+property_text:
+  include_address: true
+  include_details: true
+  include_features: true
+  include_neighborhood_context: true
+  max_features: 10  # Limit number of features to include

@@ -4,3 +4,12 @@ pandas==2.2.1
 numpy>=1.26.2,<2.0.0
 pydantic==2.5.3
 tabulate==0.9.0
+
+# Vector embedding dependencies
+llama-index-core==0.11.23
+llama-index-embeddings-ollama==0.3.1
+llama-index-embeddings-openai==0.2.5
+llama-index-embeddings-google==0.2.1
+PyYAML==6.0.1
+tqdm==4.66.4
+requests==2.31.0
