@@ -1,24 +1,24 @@
-# Property Finder
+# Real Estate AI Search
 
-A comprehensive suite of tools for real estate data analysis, Wikipedia content processing, and semantic search using generative AI and embeddings. This repository demonstrates building advanced RAG (Retrieval-Augmented Generation) data pipelines with Elasticsearch and GraphRAG with Neo4j, showcasing how to prepare, process, and serve data for generative AI applications.
+An AI-powered suite of tools for real estate data analysis, Wikipedia content processing, and intelligent semantic search using state-of-the-art generative AI and embeddings. This repository demonstrates building advanced AI-driven RAG (Retrieval-Augmented Generation) data pipelines with Elasticsearch and GraphRAG with Neo4j, showcasing how to prepare, process, and serve data for cutting-edge generative AI applications.
 
-## 🏗️ Project Overview
+## Project Overview
 
 This repository provides a complete generative AI-powered toolkit for building production-ready RAG and GraphRAG data pipelines:
 
-### Core Capabilities
-- **Generative AI Embeddings**: Uses AI models to create and store semantic embeddings for real estate properties and Wikipedia content
-- **Content Classification Pipeline**: Employs generative AI with DSPy for intelligent content extraction and classification
+### Core AI Capabilities
+- **Generative AI Embeddings**: Uses cutting-edge AI models to create and store semantic embeddings for real estate properties and Wikipedia content
+- **AI Content Classification Pipeline**: Employs advanced generative AI with DSPy framework for intelligent content extraction and classification
 - **RAG Pipeline Development**: Demonstrates building retrieval-augmented generation pipelines with Elasticsearch for vector search
 - **GraphRAG Integration**: Showcases knowledge graph construction for Neo4j-based GraphRAG implementations
 - **Multi-Model Comparison**: Benchmarks various embedding models (Ollama, OpenAI, Gemini) for optimal performance
 
-### Key Features
-- **Real Estate Analysis**: AI-powered embedding generation and comparison for property and neighborhood data
-- **Wikipedia Data Acquisition**: Intelligent crawling and processing of Wikipedia articles for locations
-- **Content Summarization**: LLM-powered extraction of structured information with confidence scoring
-- **Semantic Search**: Vector-based retrieval using AI-generated embeddings from encyclopedia content
-- **Production Search**: Elasticsearch-based property search with AI-enhanced relevance scoring
+### Key AI-Driven Features
+- **AI-Powered Real Estate Analysis**: Advanced AI embedding generation and comparison for property and neighborhood data
+- **Intelligent Wikipedia Data Acquisition**: AI-guided crawling and processing of Wikipedia articles for locations
+- **LLM Content Summarization**: State-of-the-art LLM-powered extraction of structured information with AI confidence scoring
+- **AI Semantic Search**: Vector-based retrieval using cutting-edge AI-generated embeddings from encyclopedia content
+- **AI-Enhanced Production Search**: Elasticsearch-based property search with intelligent relevance scoring
 
 ## Generative AI Technologies
 
@@ -30,14 +30,22 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 |-----------|---------|-----------------|
 | **LlamaIndex** | Document processing, embedding generation, semantic chunking | `real_estate_embed`, `wiki_embed` |
 | **DSPy (Stanford)** | LLM programming, Chain-of-Thought reasoning, prompt optimization | `wiki_summary` |
-| **ChromaDB** | Vector database for embedding storage and similarity search | `real_estate_embed`, `wiki_embed` |
+
+### Infrastructure & Storage
+
+| System | Purpose | Modules Using It |
+|--------|---------|-----------------|
 | **Elasticsearch** | Hybrid text/vector search, RAG retrieval layer | `real_estate_search`, `wiki_embed` |
+| **ChromaDB** | Vector database for embedding storage and similarity search | `real_estate_embed`, `wiki_embed` |
+| **Neo4j** | Graph database for knowledge graph construction and GraphRAG | `wiki_summary` (preparation) |
+| **SQLite** | Lightweight relational database for article metadata | `wiki_crawl`, `wiki_summary` |
 
 ### Embedding Models & Providers
 
 | Provider | Models | Capabilities | Use Cases |
 |----------|--------|--------------|-----------|
 | **Ollama (Local)** | `nomic-embed-text` (768d), `mxbai-embed-large` (1024d) | Privacy-preserving, no API costs | Development, sensitive data |
+| **Claude (Anthropic)** | Claude 4 Opus, Sonnet | Advanced reasoning, long context, tool calling | Complex analysis, summarization |
 | **Google Gemini** | `models/embedding-001` | Cloud-scale, multilingual | Production deployments |
 | **VoyageAI** | `voyage-3`, `voyage-finance-2` | Domain-optimized embeddings | Specialized search |
 | **OpenAI** | `text-embedding-3-*` | Industry standard | Baseline comparisons |
@@ -59,11 +67,11 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 - **Hybrid Search**: Combining BM25 text scoring with vector similarity
 - **Multi-Model Benchmarking**: Automated comparison across embedding providers
 
-#### Content Intelligence
-- **Chain-of-Thought (CoT) Reasoning**: Multi-step logical analysis for classification
-- **Structured Data Extraction**: Converting unstructured text to typed schemas
-- **Confidence Scoring**: Probabilistic quality assessment of extractions
-- **Content Classification Pipeline**: Multi-stage filtering and categorization
+#### AI Content Intelligence
+- **Chain-of-Thought (CoT) Reasoning**: Multi-step AI logical analysis for classification
+- **AI Structured Data Extraction**: Converting unstructured text to typed schemas using LLMs
+- **AI Confidence Scoring**: Probabilistic quality assessment of extractions
+- **AI Content Classification Pipeline**: Multi-stage AI filtering and categorization
 
 #### RAG & GraphRAG Preparation
 - **Document Preprocessing**: Optimized chunking for LLM context windows
@@ -156,14 +164,14 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 
 ---
 
-### [5. Real Estate Search Engine](./real_estate_search/)
-**Purpose**: Production-ready Elasticsearch-based property search system for synthetic data  
+### [5. AI-Enhanced Real Estate Search Engine](./real_estate_search/)
+**Purpose**: Production-ready AI-powered Elasticsearch-based property search system for synthetic data  
 **Key Features**:
-- Full-text search with multi-field queries and relevance scoring
-- Geographic radius search with coordinates
-- Faceted search and dynamic filtering
+- AI-enhanced full-text search with multi-field queries and relevance scoring
+- Intelligent geographic radius search with coordinate-based ranking
+- AI-driven faceted search and dynamic filtering
 - REST API with FastAPI and OpenAPI documentation
-- Type-safe Pydantic models and comprehensive error handling
+- Type-safe Pydantic models with AI validation and comprehensive error handling
 - Circuit breaker and retry logic for production resilience
 
 **Quick Start**: `python scripts/setup_index.py --data-dir ../real_estate_data && python real_estate_search/api/run.py`
