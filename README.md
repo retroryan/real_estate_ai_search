@@ -17,26 +17,26 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 ### Integration Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Generative AI Pipeline                       │
+┌────────────────────────────────────────────────────────────────┐
+│                    Generative AI Pipeline                      │
 ├───────────────┬──────────────┬──────────────┬──────────────────┤
 │ Data Sources  │  Processing  │  AI Models   │   Storage        │
 ├───────────────┼──────────────┼──────────────┼──────────────────┤
-│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • NEO4J GRAPHRAG │
+│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • NEO4J GraphRAG │
 │ • Real Estate │ • LlamaIndex │ • OpenRouter │ • Elasticsearch  │
 │ • User Queries│ • Chunking   │ • Gemini     │ • ChromaDB       │
 │               │ • Filtering  │ • VoyageAI   │ • SQLite         │
 └───────────────┴──────────────┴──────────────┴──────────────────┘
                               ↓
-        ┌─────────────────────────────────────────────┐
-        │         NEO4J GRAPHRAG SYSTEM               │
-        ├─────────────────────────────────────────────┤
-        │ • Knowledge Graph Construction              │
-        │ • Native Vector Indexing                    │
+        ┌────────────────────────────────────────────┐
+        │         NEO4J GRAPHRAG SYSTEM              │
+        ├────────────────────────────────────────────┤
+        │ • Knowledge Graph Construction             │
+        │ • Native Vector Indexing                   │
         │ • Hybrid Graph + Vector Search             │
         │ • Relationship-Aware Retrieval             │
         │ • Graph Centrality Scoring                 │
-        └─────────────────────────────────────────────┘
+        └────────────────────────────────────────────┘
                               ↓
                     ┌──────────────────┐
                     │   RAG/GraphRAG   │
