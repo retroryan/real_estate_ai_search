@@ -1,6 +1,6 @@
 # Real Estate AI Search
 
-This repository provides a comprehensive toolkit for real estate data analysis, Wikipedia content processing, and semantic search using generative AI and embeddings. It demonstrates how to build AI-driven data pipelines for both GraphRAG using Neo4j with knowledge graphs and RAG using Elasticsearch with vector search, showing how to prepare, process, and serve data for generative AI applications using either approach.
+This repository demonstrates both **GraphRAG** and **RAG** architectures through two production-ready real estate search implementations, alongside comprehensive tools for Wikipedia content processing and semantic search using generative AI and embeddings. The core modules showcase how to build AI-driven data pipelines for both approaches. GraphRAG uses Neo4j where embeddings are stored as node properties within the graph database for unified hybrid search. RAG leverages Elasticsearch with vector search capabilities. Both implementations demonstrate how to prepare, process, and serve data for generative AI applications.
 
 ### Core AI Capabilities
 - **Neo4j GraphRAG Implementation**: Graph-based retrieval system with native vector search, combining knowledge graph relationships with semantic embeddings for enhanced accuracy
