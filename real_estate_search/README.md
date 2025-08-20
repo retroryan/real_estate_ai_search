@@ -1,6 +1,6 @@
 # Property Search System
 
-A production-ready Elasticsearch-based property search engine designed as the retrieval layer for RAG (Retrieval-Augmented Generation) and GraphRAG pipelines. While this module focuses on traditional search capabilities, it provides the essential infrastructure for hybrid search systems that combine keyword matching with vector embeddings from the other generative AI modules in this project.
+An Elasticsearch-based property search engine that serves as the foundational retrieval infrastructure for RAG (Retrieval-Augmented Generation). This module provides core hybrid search capabilities that seamlessly integrate vector embeddings with BM25 relevance scoring, geographic queries, and faceted filtering - delivering the essential retrieval layer that powers context-aware AI applications. Built with production resilience, it forms the backbone for advanced AI search systems.
 
 ## Features
 
