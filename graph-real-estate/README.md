@@ -1,14 +1,14 @@
 # Real Estate Graph Builder
 
-A sophisticated graph database application that demonstrates cutting-edge GraphRAG (Graph Retrieval-Augmented Generation) techniques for real estate search and discovery. This system combines Neo4j's powerful graph database capabilities with state-of-the-art vector embeddings from LlamaIndex to create a hybrid search engine that understands both semantic meaning and structural relationships. The modular architecture showcases best practices for building production-ready AI applications with clean separation of concerns, full type safety through Pydantic validation, and support for multiple embedding providers including local (Ollama) and cloud-based (OpenAI, Gemini) models.
+A GraphRAG (Graph Retrieval-Augmented Generation) implementation that combines Neo4j graph database with vector embeddings to enable semantic search across real estate data. The system creates a knowledge graph of properties, neighborhoods, and features, then enhances it with vector representations for natural language querying. This foundation enables RAG applications to leverage both structured relationships and semantic similarity when generating contextual responses about properties.
 
-## 🤖 Generative AI Features
+## Generative AI Features
 
 - **GraphRAG Architecture**: Combines knowledge graphs with vector embeddings for enhanced retrieval-augmented generation, enabling richer context for LLM applications
 - **Multi-Model Embeddings**: Supports Ollama (local), OpenAI, and Google Gemini embedding models with configurable dimensions (768-1536)
 - **Semantic Vector Search**: Natural language property search using LlamaIndex-generated embeddings stored in Neo4j's native vector indexes
-- **Hybrid Scoring Algorithm**: Intelligent ranking that combines vector similarity (60%), graph centrality (20%), and feature richness (20%) for superior results
-- **LlamaIndex Integration**: Enterprise-grade embedding pipeline with automatic chunking, batching, and error handling
+- **Hybrid Scoring Algorithm**: Intelligent ranking that combines vector similarity, graph centrality, and feature richness for improved results
+- **LlamaIndex Integration**: Embedding pipeline with automatic chunking, batching, and error handling
 - **Neo4j Vector Indexes**: Native Approximate Nearest Neighbor (ANN) search with HNSW algorithm for sub-100ms query performance
 - **Embedding Flexibility**: Easy switching between providers and models through configuration without code changes
 - **Pydantic Validation**: All data structures validated with Pydantic models
