@@ -4,19 +4,19 @@ A production-ready Elasticsearch-based property search engine designed as the re
 
 ## Features
 
-- 🔍 **Full-Text Search**: Multi-field search across property descriptions, features, and amenities
-- 📍 **Geographic Search**: Find properties within a radius of any location
-- 🏷️ **Faceted Search**: Dynamic filters for price ranges, property types, locations, and more
-- 🔗 **Similar Properties**: Find properties similar to any listing using more-like-this queries
-- 🛡️ **Type Safety**: 100% Pydantic models and enums - no magic strings
-- 🔄 **Zero-Downtime Updates**: Versioned indices with atomic alias switching
-- 🔐 **Authentication**: Built-in support for Elasticsearch authentication
-- 💪 **Resilient**: Circuit breaker and retry logic for production reliability
-- ⚡ **Performance**: Bulk indexing, lazy connections, and optimized mappings
+-  **Full-Text Search**: Multi-field search across property descriptions, features, and amenities
+- **Geographic Search**: Find properties within a radius of any location
+- **Faceted Search**: Dynamic filters for price ranges, property types, locations, and more
+- **Similar Properties**: Find properties similar to any listing using more-like-this queries
+- **Type Safety**: 100% Pydantic models and enums - no magic strings
+- **Zero-Downtime Updates**: Versioned indices with atomic alias switching
+- **Authentication**: Built-in support for Elasticsearch authentication
+- **Resilient**: Circuit breaker and retry logic for production reliability
+- **Performance**: Bulk indexing, lazy connections, and optimized mappings
 
 ## 🤖 Role in the RAG/GraphRAG Pipeline
 
-While this module doesn't directly use generative AI, it serves as a critical component in the overall RAG architecture:
+This module serves as a critical component in the overall RAG architecture:
 
 ### Integration with Generative AI Modules
 
@@ -55,35 +55,10 @@ This module provides robust traditional search as the foundation for hybrid RAG 
 - Elasticsearch 8.x running locally or remotely
 - Virtual environment (recommended)
 
-### Finding Elasticsearch Password (Docker Compose Setup)
-
-If Elasticsearch is running via Docker Compose (e.g., in `/Users/ryanknight/projects/elastic/elastic-start-local/`):
-
-1. **Check the `.env` file** in the Docker Compose directory:
-   ```bash
-   cat /Users/ryanknight/projects/elastic/elastic-start-local/.env | grep ES_LOCAL_PASSWORD
-   ```
-
-2. **The password is configured** in `docker-compose.yml` via the `ES_LOCAL_PASSWORD` environment variable
-
-3. **Update your project's `.env`** with the password found:
-   ```
-   ES_PASSWORD=<password-from-docker-compose>
-   ELASTICSEARCH_PASSWORD=<password-from-docker-compose>
-   ```
-
-**Current Docker Setup:**
-- Host: localhost
-- Port: 9200  
-- Username: elastic
-- Password: Check `ES_LOCAL_PASSWORD` in `/Users/ryanknight/projects/elastic/elastic-start-local/.env`
 
 ### 2. Installation
 
 ```bash
-# Clone the repository
-cd real_estate_search
-
 # Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -111,8 +86,8 @@ cp .env.example .env
 # Create index and load sample data
 python scripts/setup_index.py --data-dir ../real_estate_data
 
-# Or load your own data
-python scripts/setup_index.py --data-dir /path/to/your/data
+# Force recreate index (deletes existing index if present)
+python scripts/setup_index.py --data-dir ../real_estate_data --force
 ```
 
 ### 5. Test the System

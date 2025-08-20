@@ -88,8 +88,7 @@ def _get_field_mappings() -> Dict[str, Any]:
                 "normalizer": "lowercase_normalizer"
             },
             FieldName.PRICE: {
-                "type": "scaled_float",
-                "scaling_factor": 100
+                "type": "float"  # Changed from scaled_float for better performance
             },
             FieldName.BEDROOMS: {
                 "type": "short"
@@ -158,7 +157,13 @@ def _get_field_mappings() -> Dict[str, Any]:
             },
             FieldName.DESCRIPTION: {
                 "type": "text",
-                "analyzer": AnalyzerName.PROPERTY_ANALYZER
+                "analyzer": AnalyzerName.PROPERTY_ANALYZER,
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
             },
             FieldName.FEATURES: {
                 "type": "keyword",
@@ -184,8 +189,7 @@ def _get_field_mappings() -> Dict[str, Any]:
                 "type": "float"
             },
             FieldName.HOA_FEE: {
-                "type": "scaled_float",
-                "scaling_factor": 100
+                "type": "float"  # Changed from scaled_float for better performance
             },
             "parking": {
                 "type": "object",
@@ -200,11 +204,13 @@ def _get_field_mappings() -> Dict[str, Any]:
             },
             FieldName.VIRTUAL_TOUR_URL: {
                 "type": "keyword",
-                "index": False
+                "index": False,
+                "doc_values": False  # Not used for sorting/aggregations, save disk space
             },
             FieldName.IMAGES: {
                 "type": "keyword",
-                "index": False
+                "index": False,
+                "doc_values": False  # Not used for sorting/aggregations, save disk space
             },
             FieldName.MLS_NUMBER: {
                 "type": "keyword"
@@ -213,8 +219,7 @@ def _get_field_mappings() -> Dict[str, Any]:
                 "type": "long"
             },
             FieldName.ANNUAL_TAX: {
-                "type": "scaled_float",
-                "scaling_factor": 100
+                "type": "float"  # Changed from scaled_float for better performance
             },
             FieldName.SEARCH_TAGS: {
                 "type": "text",

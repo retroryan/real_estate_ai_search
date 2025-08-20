@@ -163,15 +163,23 @@ class SearchDemo:
     def demo_text_search(self):
         """Demonstrate text search across multiple fields."""
         self.print_section_header(
-            "TEXT SEARCH",
+            "DEMONSTRATION 1: TEXT SEARCH",
             "Search across all text fields (description, features, amenities, etc.)"
         )
+        
+        console.print("[bold]What this does:[/bold]")
+        console.print("  • Searches for 'mountain views' across multiple text fields")
+        console.print("  • Uses fuzzy matching to handle typos")
+        console.print("  • Boosts matches in description and search_tags fields")
+        console.print("  • Highlights matching terms in the results\n")
         
         # Example 1: Search for mountain views
         self.print_query_info(
             "Full-text search",
             {"query": "mountain views", "size": 5}
         )
+        
+        console.print("[dim]Executing search now (debug log will appear below)...[/dim]")
         
         request = SearchRequest(
             query_type=QueryType.TEXT,
@@ -181,14 +189,22 @@ class SearchDemo:
         )
         
         response = self.search_engine.search(request)
+        
+        console.print("\n[bold green]Search Results:[/bold green]")
         self.print_results(response)
     
     def demo_filter_search(self):
         """Demonstrate filtered search with multiple criteria."""
         self.print_section_header(
-            "FILTERED SEARCH",
+            "DEMONSTRATION 2: FILTERED SEARCH",
             "Search using specific property criteria (price, bedrooms, type, etc.)"
         )
+        
+        console.print("[bold]What this does:[/bold]")
+        console.print("  • Filters properties by exact criteria (no text matching)")
+        console.print("  • Combines multiple filters with AND logic")
+        console.print("  • Sorts results by price (ascending)")
+        console.print("  • Returns only properties matching ALL criteria\n")
         
         # Example: Find 3+ bedroom homes under $1M
         self.print_query_info(
@@ -201,6 +217,8 @@ class SearchDemo:
                 "sort": "price ascending"
             }
         )
+        
+        console.print("[dim]Executing filtered search now...[/dim]")
         
         filters = SearchFilters(
             min_bedrooms=3,
@@ -217,14 +235,22 @@ class SearchDemo:
         )
         
         response = self.search_engine.search(request)
+        
+        console.print("\n[bold green]Filtered Results:[/bold green]")
         self.print_results(response)
     
     def demo_combined_search(self):
         """Demonstrate combining text search with filters."""
         self.print_section_header(
-            "COMBINED TEXT + FILTER SEARCH",
+            "DEMONSTRATION 3: COMBINED TEXT + FILTER SEARCH",
             "Combine full-text search with property filters"
         )
+        
+        console.print("[bold]What this does:[/bold]")
+        console.print("  • Searches for 'modern kitchen' in text fields")
+        console.print("  • ALSO applies property filters (price range, bedrooms)")
+        console.print("  • Results must match BOTH text query AND filters")
+        console.print("  • Shows how to narrow down text search results\n")
         
         self.print_query_info(
             "Text search with filters",
@@ -236,6 +262,8 @@ class SearchDemo:
                 "property_status": "active"
             }
         )
+        
+        console.print("[dim]Executing combined search now...[/dim]")
         
         filters = SearchFilters(
             min_price=500000,
@@ -253,14 +281,22 @@ class SearchDemo:
         )
         
         response = self.search_engine.search(request)
+        
+        console.print("\n[bold green]Combined Search Results:[/bold green]")
         self.print_results(response)
     
     def demo_geo_search(self):
         """Demonstrate geographic radius search."""
         self.print_section_header(
-            "GEOGRAPHIC SEARCH",
+            "DEMONSTRATION 4: GEOGRAPHIC SEARCH",
             "Find properties within a radius of a location"
         )
+        
+        console.print("[bold]What this does:[/bold]")
+        console.print("  • Searches within 5km radius of downtown Park City")
+        console.print("  • Calculates distance from center point")
+        console.print("  • Sorts results by distance (closest first)")
+        console.print("  • Can combine with price and other filters\n")
         
         # Search near downtown Park City
         self.print_query_info(
@@ -273,6 +309,8 @@ class SearchDemo:
             }
         )
         
+        console.print("[dim]Executing geographic search now...[/dim]")
+        
         filters = SearchFilters(max_price=2000000)
         
         response = self.search_engine.geo_search(
@@ -284,6 +322,7 @@ class SearchDemo:
             size=5
         )
         
+        console.print("\n[bold green]Geographic Search Results:[/bold green]")
         self.print_results(response)
     
     def demo_aggregation_search(self):
@@ -537,11 +576,15 @@ class SearchDemo:
             console.print("="*80)
             
             # Check index has data
+            console.print("\n[bold yellow]STEP 1: Verifying Elasticsearch Index[/bold yellow]")
+            console.print("[dim]Running a test query to check if the index has data...[/dim]\n")
+            
             test_request = SearchRequest(
                 query_type=QueryType.FILTER,
                 filters=SearchFilters(),
                 size=1
             )
+            console.print("[dim]Note: The debug log below shows the actual Elasticsearch query being executed:[/dim]")
             test_response = self.search_engine.search(test_request)
             
             if test_response.total == 0:
@@ -549,8 +592,30 @@ class SearchDemo:
                 console.print("[yellow]python scripts/setup_index.py --data-dir ../real_estate_data[/yellow]\n")
                 return
             
-            console.print(f"\n[green]✅ Index contains {test_response.total} properties[/green]")
-            console.print("[dim]Starting demonstrations...[/dim]")
+            console.print(f"\n[green]✅ SUCCESS: Index contains {test_response.total} properties[/green]")
+            
+            # Show first property as sample
+            if test_response.hits:
+                sample = test_response.hits[0].property
+                console.print("\n[bold]Sample property found in index:[/bold]")
+                console.print(f"  • Address: {sample.address.street}, {sample.address.city}")
+                console.print(f"  • Type: {sample.property_type.value if hasattr(sample.property_type, 'value') else sample.property_type}")
+                console.print(f"  • Price: ${sample.price:,.0f}")
+                console.print(f"  • Bedrooms: {sample.bedrooms}, Bathrooms: {sample.bathrooms}")
+                if sample.square_feet:
+                    console.print(f"  • Size: {sample.square_feet:,} sq ft")
+            
+            console.print("\n" + "="*80)
+            console.print("[bold cyan]STEP 2: Running Search Demonstrations[/bold cyan]")
+            console.print("="*80)
+            console.print("\n[dim]Each demonstration will:[/dim]")
+            console.print("[dim]  1. Explain what type of search is being performed[/dim]")
+            console.print("[dim]  2. Show the search parameters being used[/dim]")
+            console.print("[dim]  3. Execute the search (you'll see debug logs)[/dim]")
+            console.print("[dim]  4. Display the results in formatted tables[/dim]")
+            console.print("\n[bold yellow]Note:[/bold yellow] The [dim]gray debug logs[/dim] show the actual Elasticsearch queries")
+            console.print("being sent to the server. This is useful for understanding how searches work.\n")
+            console.print("[dim]" + "-"*80 + "[/dim]")
             
             # Run each demo
             demos = [
@@ -564,8 +629,10 @@ class SearchDemo:
                 ("Similar Properties", self.demo_similar_properties)
             ]
             
+            total_demos = len(demos)
             for i, (name, demo_func) in enumerate(demos, 1):
                 try:
+                    console.print(f"\n[bold cyan]Running demo {i} of {total_demos}...[/bold cyan]")
                     time.sleep(0.5)  # Brief pause between demos
                     demo_func()
                 except Exception as e:
