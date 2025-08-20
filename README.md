@@ -169,16 +169,6 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 - **Knowledge Graph Structuring**: Preparing data for Neo4j relationships
 - **Relevance Filtering**: Domain-specific content evaluation
 
-### Performance & Optimization
-
-| Technique | Implementation  |
-|-----------|---------------|-------|
-| **Semantic Caching** | Content-hash based LLM response caching |
-| **Batch Processing** | Parallel embedding generation |
-| **Smart Chunking** | Embedding-based boundaries |
-| **Model Selection** | Automated A/B testing |
-
-
 ## Getting Started
 
 ### System Requirements
