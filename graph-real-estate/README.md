@@ -1,6 +1,6 @@
 # Real Estate Graph Builder
 
-A GraphRAG (Graph Retrieval-Augmented Generation) implementation that combines Neo4j graph database with vector embeddings to enable semantic search across real estate data. The system creates a knowledge graph of properties, neighborhoods, and features, then enhances it with vector representations for natural language querying. This foundation enables RAG applications to leverage both structured relationships and semantic similarity when generating contextual responses about properties.
+A GraphRAG system built on Neo4j's built-in vector indexes, where property embeddings are stored as node properties alongside graph data, enabling unified hybrid search that seamlessly blends graph traversal with vector similarity. The system creates a knowledge graph of properties, neighborhoods, and features, then enhances it with vector representations for natural language querying. This foundation enables RAG applications to leverage both structured relationships and semantic similarity when generating contextual responses about properties.
 
 ## Generative AI Features
 
