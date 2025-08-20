@@ -1,8 +1,6 @@
 # Real Estate AI Search
 
-An AI-powered suite of tools for real estate data analysis, Wikipedia content processing, and intelligent semantic search using state-of-the-art generative AI and embeddings. This repository demonstrates building advanced AI-driven RAG (Retrieval-Augmented Generation) data pipelines with Elasticsearch and GraphRAG with Neo4j, showcasing how to prepare, process, and serve data for cutting-edge generative AI applications.
-
-## Project Overview
+An AI-powered suite of tools for real estate data analysis, Wikipedia content processing, and intelligent semantic search using advanced generative AI and embeddings. This repository demonstrates building advanced AI-driven RAG (Retrieval-Augmented Generation) data pipelines with Elasticsearch and GraphRAG with Neo4j, showcasing how to prepare, process, and serve data for cutting-edge generative AI applications.
 
 This repository provides a complete generative AI-powered toolkit for building production-ready RAG and GraphRAG data pipelines:
 
@@ -88,6 +86,8 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 | **Smart Chunking** | Embedding-based boundaries | 30% better retrieval accuracy |
 | **Model Selection** | Automated A/B testing | Optimal model per use case |
 
+## 📁 Project Modules
+
 ### Integration Architecture
 
 ```
@@ -107,8 +107,6 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
                     │   Applications   │
                     └──────────────────┘
 ```
-
-## 📁 Project Modules
 
 ### [1. Real Estate Embedding Pipeline](./real_estate_embed/)
 **Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
@@ -175,6 +173,24 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 - Circuit breaker and retry logic for production resilience
 
 **Quick Start**: `python scripts/setup_index.py --data-dir ../real_estate_data && python real_estate_search/api/run.py`
+
+## Project Overview
+
+This repository provides a complete generative AI-powered toolkit for building production-ready RAG and GraphRAG data pipelines:
+
+### Core AI Capabilities
+- **Generative AI Embeddings**: Uses cutting-edge AI models to create and store semantic embeddings for real estate properties and Wikipedia content
+- **AI Content Classification Pipeline**: Employs advanced generative AI with DSPy framework for intelligent content extraction and classification
+- **RAG Pipeline Development**: Demonstrates building retrieval-augmented generation pipelines with Elasticsearch for vector search
+- **GraphRAG Integration**: Showcases knowledge graph construction for Neo4j-based GraphRAG implementations
+- **Multi-Model Comparison**: Benchmarks various embedding models (Ollama, OpenAI, Gemini) for optimal performance
+
+### Key AI-Driven Features
+- **AI-Powered Real Estate Analysis**: Advanced AI embedding generation and comparison for property and neighborhood data
+- **Intelligent Wikipedia Data Acquisition**: AI-guided crawling and processing of Wikipedia articles for locations
+- **LLM Content Summarization**: State-of-the-art LLM-powered extraction of structured information with AI confidence scoring
+- **AI Semantic Search**: Vector-based retrieval using cutting-edge AI-generated embeddings from encyclopedia content
+- **AI-Enhanced Production Search**: Elasticsearch-based property search with intelligent relevance scoring
 
 ## 🚀 Getting Started
 

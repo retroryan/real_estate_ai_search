@@ -1,7 +1,7 @@
 """Graph builder controller for real estate data"""
 from typing import List, Dict, Any
 from src.database import get_neo4j_driver, close_neo4j_driver, run_query, clear_database, print_stats
-from src.data import (
+from src.data_loader import (
     load_property_data, 
     validate_property_data, 
     get_unique_neighborhoods, 

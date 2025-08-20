@@ -1,32 +1,28 @@
 """Neo4j database client and utilities"""
 import os
 from typing import Dict, List, Any, Optional
-from neo4j import GraphDatabase
 from dotenv import load_dotenv
+
+# Import from new connection module
+from .connection import get_neo4j_driver, close_neo4j_driver
+from .transaction_manager import TransactionManager
 
 # Load environment variables
 load_dotenv('.env', override=True)
 
-def get_neo4j_driver():
-    """Create and return Neo4j driver instance"""
-    uri = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
-    username = os.getenv('NEO4J_USERNAME', 'neo4j')
-    password = os.getenv('NEO4J_PASSWORD', 'password')
-    
-    driver = GraphDatabase.driver(uri, auth=(username, password))
-    return driver
-
-def close_neo4j_driver(driver):
-    """Close Neo4j driver connection"""
-    if driver:
-        driver.close()
-
 def run_query(driver, query: str, params: Optional[Dict[str, Any]] = None, database: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Execute a Cypher query and return results"""
+    """Execute a Cypher query and return results with retry logic"""
     db = database or os.getenv('NEO4J_DATABASE', 'neo4j')
-    with driver.session(database=db) as session:
-        result = session.run(query, params)
-        return [dict(record) for record in result]
+    manager = TransactionManager(driver)
+    
+    # Determine if this is a write operation based on query keywords
+    write_keywords = ['CREATE', 'DELETE', 'SET', 'MERGE', 'REMOVE', 'DETACH']
+    is_write = any(keyword in query.upper() for keyword in write_keywords)
+    
+    if is_write:
+        return manager.execute_write(query, **(params or {}))
+    else:
+        return manager.execute_read(query, **(params or {}))
 
 def clear_database(driver):
     """Clear all nodes and relationships from database"""

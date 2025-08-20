@@ -261,10 +261,12 @@ class PropertyEmbeddingPipeline:
         return "unknown"
     
     def _get_all_properties(self) -> List[Dict[str, Any]]:
-        """Get all properties from the database"""
+        """Get all properties from the database with their features"""
         query = """
         MATCH (p:Property)
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
+        WITH p, n, c, collect(DISTINCT f.name) as features
         RETURN p.listing_id as listing_id,
                p.description as description,
                p.address as address,
@@ -273,7 +275,7 @@ class PropertyEmbeddingPipeline:
                p.bathrooms as bathrooms,
                p.square_feet as square_feet,
                p.property_type as property_type,
-               p.features as features,
+               features,
                n.name as neighborhood,
                c.name as city
         """

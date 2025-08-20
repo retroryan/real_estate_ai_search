@@ -91,18 +91,19 @@ ollama pull nomic-embed-text
 
 ### 1. Build the Graph Database
 ```bash
-# Run all phases
+# Run complete setup
 python main.py all
 
-# Run individual phases
-python main.py phase1    # Environment setup
-python main.py phase2    # Build schema
-python main.py phase3    # Create relationships
+# Run individual steps
+python main.py setup          # Environment setup & data validation
+python main.py schema         # Create core graph schema (nodes & properties)
+python main.py relationships  # Create graph relationships
 
 # Utilities
-python main.py queries   # Run sample queries
-python main.py stats     # View statistics
-python main.py clear     # Clear database
+python main.py queries        # Run sample queries
+python main.py interactive    # Interactive query mode
+python main.py stats          # View database statistics
+python main.py clear          # Clear all data
 ```
 
 ### 2. Create Vector Embeddings
@@ -139,6 +140,16 @@ The search combines multiple signals:
 - **Vector Similarity (60%)**: Semantic similarity between query and property descriptions
 - **Graph Centrality (20%)**: Importance based on graph connections
 - **Feature Richness (20%)**: Number and quality of property features
+
+**Note**: These weights (60/20/20) were implemented as a first-pass estimate. Future work should test and optimize these values using data-driven approaches:
+- **A/B Testing** - Compare different weight combinations with real users
+- **Reciprocal Rank Fusion (RRF)** - Weight-free ranking combination
+- **Grid Search Optimization** - Systematic parameter tuning
+- **Learned Weights** - Machine learning based on relevance feedback
+- **Query-Adaptive Weights** - Different weights for different query types
+- **Bayesian Optimization** - Efficient hyperparameter search
+
+See `HYBRID_SEARCH.md` for detailed implementation proposals.
 
 ### Supported Filters
 - `--price-min` / `--price-max`: Price range filtering

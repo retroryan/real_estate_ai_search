@@ -22,17 +22,30 @@ class PropertyVectorManager:
     def create_vector_index(self) -> bool:
         """
         Create or recreate vector index for property embeddings
+        Following Neo4j best practices from official documentation
         
         Returns:
             True if successful, False otherwise
         """
         try:
             with self.driver.session() as session:
-                # Drop existing index if it exists
-                drop_query = f"DROP INDEX {self.config.index_name} IF EXISTS"
-                session.run(drop_query)
+                # Check if index exists first
+                check_query = """
+                SHOW INDEXES 
+                YIELD name 
+                WHERE name = $index_name
+                RETURN count(*) as exists
+                """
+                result = session.run(check_query, index_name=self.config.index_name)
+                exists = result.single()['exists'] > 0
                 
-                # Create new vector index
+                if exists:
+                    # Drop existing index if it exists
+                    drop_query = f"DROP INDEX `{self.config.index_name}`"
+                    session.run(drop_query)
+                    print(f"✓ Dropped existing index '{self.config.index_name}'")
+                
+                # Create new vector index following Neo4j 5.18+ best practices
                 create_query = f"""
                 CREATE VECTOR INDEX `{self.config.index_name}` IF NOT EXISTS
                 FOR (n:{self.config.node_label}) 
@@ -47,6 +60,14 @@ class PropertyVectorManager:
                 
                 session.run(create_query)
                 print(f"✓ Created vector index '{self.config.index_name}' with {self.config.vector_dimensions} dimensions")
+                
+                # Wait for index to come online
+                wait_query = """
+                CALL db.awaitIndexes(300)
+                """
+                session.run(wait_query)
+                print(f"✓ Vector index '{self.config.index_name}' is online and ready")
+                
                 return True
                 
         except Exception as e:
@@ -131,11 +152,11 @@ class PropertyVectorManager:
             List of search results with property details and scores
         """
         try:
-            # Neo4j vector search query
+            # Modern Neo4j vector search query (5.18+)
             query = f"""
             CALL db.index.vector.queryNodes(
-                '{self.config.index_name}', 
-                {top_k}, 
+                $index_name, 
+                $top_k, 
                 $query_embedding
             ) 
             YIELD node, score
@@ -157,6 +178,8 @@ class PropertyVectorManager:
             with self.driver.session() as session:
                 results = session.run(
                     query, 
+                    index_name=self.config.index_name,
+                    top_k=top_k,
                     query_embedding=query_embedding,
                     min_score=min_score
                 )
@@ -236,6 +259,8 @@ class PropertyVectorManager:
             MATCH (p:{self.config.node_label})
             WHERE p.{self.config.embedding_property} IS NULL
             OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+            OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
+            WITH p, n, c, collect(DISTINCT f.name) as features
             RETURN p.listing_id as listing_id,
                    p.{self.config.source_property} as description,
                    p.address as address,
@@ -244,7 +269,7 @@ class PropertyVectorManager:
                    p.bathrooms as bathrooms,
                    p.square_feet as square_feet,
                    p.property_type as property_type,
-                   p.features as features,
+                   features,
                    n.name as neighborhood,
                    c.name as city
             LIMIT $limit
