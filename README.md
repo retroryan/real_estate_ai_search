@@ -1,22 +1,137 @@
 # Real Estate AI Search
 
-An AI-powered suite of tools for real estate data analysis, Wikipedia content processing, and intelligent semantic search using advanced generative AI and embeddings. This repository demonstrates building advanced AI-driven RAG (Retrieval-Augmented Generation) data pipelines with Elasticsearch and GraphRAG with Neo4j, showcasing how to prepare, process, and serve data for cutting-edge generative AI applications.
-
-This repository provides a complete generative AI-powered toolkit for building production-ready RAG and GraphRAG data pipelines:
+This repository provides a comprehensive toolkit for real estate data analysis, Wikipedia content processing, and semantic search using generative AI and embeddings. It demonstrates how to build AI-driven data pipelines for both GraphRAG using Neo4j with knowledge graphs and RAG using Elasticsearch with vector search, showing how to prepare, process, and serve data for generative AI applications using either approach.
 
 ### Core AI Capabilities
-- **Generative AI Embeddings**: Uses cutting-edge AI models to create and store semantic embeddings for real estate properties and Wikipedia content
-- **AI Content Classification Pipeline**: Employs advanced generative AI with DSPy framework for intelligent content extraction and classification
-- **RAG Pipeline Development**: Demonstrates building retrieval-augmented generation pipelines with Elasticsearch for vector search
-- **GraphRAG Integration**: Showcases knowledge graph construction for Neo4j-based GraphRAG implementations
-- **Multi-Model Comparison**: Benchmarks various embedding models (Ollama, OpenAI, Gemini) for optimal performance
+- **Neo4j GraphRAG Implementation**: Graph-based retrieval system with native vector search, combining knowledge graph relationships with semantic embeddings for enhanced accuracy
+- **Elasticsearch RAG Implementation**: RAG pipeline with hybrid text and vector search, faceted filtering, and relevance scoring for scalable retrieval
+- **DSPy Content Classification**: Advanced generative AI framework for intelligent content extraction with Chain-of-Thought reasoning
+- **Multi-Model Embeddings**: Support for Ollama, OpenAI, Gemini, and Voyage AI models with automated benchmarking
+- **LLM Summarization Pipeline**: Structured information extraction from Wikipedia with confidence scoring
+- **Hybrid Scoring Algorithm**: Combines vector similarity, graph centrality, and feature richness for optimal search relevance
+- **Semantic Chunking**: AI-powered text segmentation using embedding similarity boundaries
+- **Real Estate Property Analysis**: Embedding generation and comparison for synthetic property and neighborhood data
 
-### Key AI-Driven Features
-- **AI-Powered Real Estate Analysis**: Advanced AI embedding generation and comparison for property and neighborhood data
-- **Intelligent Wikipedia Data Acquisition**: AI-guided crawling and processing of Wikipedia articles for locations
-- **LLM Content Summarization**: State-of-the-art LLM-powered extraction of structured information with AI confidence scoring
-- **AI Semantic Search**: Vector-based retrieval using cutting-edge AI-generated embeddings from encyclopedia content
-- **AI-Enhanced Production Search**: Elasticsearch-based property search with intelligent relevance scoring
+## Project Modules
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Generative AI Pipeline                       │
+├───────────────┬──────────────┬──────────────┬──────────────────┤
+│ Data Sources  │  Processing  │  AI Models   │   Storage        │
+├───────────────┼──────────────┼──────────────┼──────────────────┤
+│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • NEO4J GRAPHRAG │
+│ • Real Estate │ • LlamaIndex │ • OpenRouter │ • Elasticsearch  │
+│ • User Queries│ • Chunking   │ • Gemini     │ • ChromaDB       │
+│               │ • Filtering  │ • VoyageAI   │ • SQLite         │
+└───────────────┴──────────────┴──────────────┴──────────────────┘
+                              ↓
+        ┌─────────────────────────────────────────────┐
+        │         NEO4J GRAPHRAG SYSTEM               │
+        ├─────────────────────────────────────────────┤
+        │ • Knowledge Graph Construction              │
+        │ • Native Vector Indexing                    │
+        │ • Hybrid Graph + Vector Search             │
+        │ • Relationship-Aware Retrieval             │
+        │ • Graph Centrality Scoring                 │
+        └─────────────────────────────────────────────┘
+                              ↓
+                    ┌──────────────────┐
+                    │   RAG/GraphRAG   │
+                    │   Applications   │
+                    └──────────────────┘
+```
+
+### [1. Real Estate Embedding Pipeline](./real_estate_embed/)
+**Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
+**Key Features**:
+- **AI Embedding Generation**: Uses generative AI models to create semantic embeddings from synthetic property descriptions
+- **Multi-Model Support**: Compare embeddings from nomic-embed-text, mxbai-embed-large, and other AI models
+- **Vector Storage**: Stores AI-generated embeddings in ChromaDB for efficient similarity search
+- **RAG Preparation**: Prepares embeddings for use in retrieval-augmented generation pipelines
+- **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
+- **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
+
+**Quick Start**: `python -m real_estate_embed.main compare`
+
+---
+
+### [2. Wikipedia Crawler](./wiki_crawl/)
+**Purpose**: Acquire Wikipedia data for location-based analysis  
+**Key Features**:
+- BFS crawling with depth control
+- Relevance scoring for location articles
+- Multiple output formats (SQLite, CSV, JSON, HTML)
+- Neighborhood-specific search capabilities
+
+**Quick Start**: `python wiki_crawl/wikipedia_location_crawler.py crawl "Park City" "Utah"`
+
+---
+
+### [3. Wikipedia Summarization](./wiki_summary/)
+**Purpose**: Use generative AI with DSPy for intelligent content classification and summarization  
+**Key Features**:
+- **AI Content Classification**: Employs generative AI models to classify and extract relevant content
+- **DSPy Pipeline**: Uses DSPy framework for structured Chain-of-Thought reasoning and prompt optimization
+- **Dual Processing**: Combines HTML parsing with LLM understanding for accurate extraction
+- **Confidence Scoring**: AI-generated confidence scores for location data and topic relevance
+- **Key Topic Extraction**: Generative AI identifies and categorizes main topics from articles
+
+**Quick Start**: `python wiki_summary/summarize_main.py`
+
+---
+
+### [4. Wikipedia Embedding System](./wiki_embed/)
+**Purpose**: Generate and store AI embeddings from Wikipedia articles for semantic search  
+**Key Features**:
+- **Generative AI Embeddings**: Creates semantic embeddings using multiple AI providers (Ollama, Gemini, Voyage, OpenAI)
+- **Vector Database Storage**: Stores AI-generated embeddings in ChromaDB for fast similarity search
+- **RAG Integration**: Prepares embeddings for retrieval-augmented generation workflows
+- **Multi-Query Testing**: Tests 6 query types (geographic, landmark, historical, recreational, cultural, administrative)
+- **AI Model Comparison**: Benchmarks different embedding models for optimal retrieval performance
+- **Location-Aware Retrieval**: Uses AI to understand spatial and semantic relationships
+
+**Quick Start**: `python -m wiki_embed.main create`
+
+---
+
+### [5. AI-Enhanced Real Estate Search Engine](./real_estate_search/)
+**Purpose**: AI-powered Elasticsearch-based property search system for synthetic data  
+**Key Features**:
+- AI-enhanced full-text search with multi-field queries and relevance scoring
+- Intelligent geographic radius search with coordinate-based ranking
+- AI-driven faceted search and dynamic filtering
+- REST API with FastAPI and OpenAPI documentation
+- Type-safe Pydantic models with AI validation and comprehensive error handling
+- Circuit breaker and retry logic for resilience
+
+**Quick Start**: `python scripts/setup_index.py --data-dir ../real_estate_data && python real_estate_search/api/run.py`
+
+---
+
+### [6. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
+**Purpose**: Neo4j-based GraphRAG system for intelligent property search with knowledge graph relationships  
+**Key Features**:
+- **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
+- **Hybrid Scoring Algorithm**: Combines vector similarity, graph centrality, and feature richness
+- **Knowledge Graph Structure**: 84 properties, 387 features, 21 neighborhoods, 1,267 relationships
+- **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
+- **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
+- **Performance**: < 100ms search response, supports 100K+ properties
+- **Natural Language Search**: "modern condo with city views", "family home near schools"
+
+**Quick Start**: 
+```bash
+# Build graph and create embeddings
+python graph-real-estate/main.py all
+python graph-real-estate/create_embeddings.py
+
+# Search properties
+python graph-real-estate/search_properties.py "luxury property with mountain views"
+```
+
 
 ## Generative AI Technologies
 
@@ -33,9 +148,9 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 
 | System | Purpose | Modules Using It |
 |--------|---------|-----------------|
+| **Neo4j** | Graph database with native vector indexing for GraphRAG, hybrid search, and relationship-aware retrieval | `graph-real-estate` |
 | **Elasticsearch** | Hybrid text/vector search, RAG retrieval layer | `real_estate_search`, `wiki_embed` |
 | **ChromaDB** | Vector database for embedding storage and similarity search | `real_estate_embed`, `wiki_embed` |
-| **Neo4j** | Graph database for knowledge graph construction and GraphRAG | `wiki_summary` (preparation) |
 | **SQLite** | Lightweight relational database for article metadata | `wiki_crawl`, `wiki_summary` |
 
 ### Embedding Models & Providers
@@ -79,120 +194,15 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 
 ### Performance & Optimization
 
-| Technique | Implementation | Impact |
-|-----------|---------------|--------|
-| **Semantic Caching** | Content-hash based LLM response caching | 90% cost reduction in development |
-| **Batch Processing** | Parallel embedding generation | 5x throughput improvement |
-| **Smart Chunking** | Embedding-based boundaries | 30% better retrieval accuracy |
-| **Model Selection** | Automated A/B testing | Optimal model per use case |
+| Technique | Implementation  |
+|-----------|---------------|-------|
+| **Semantic Caching** | Content-hash based LLM response caching |
+| **Batch Processing** | Parallel embedding generation |
+| **Smart Chunking** | Embedding-based boundaries |
+| **Model Selection** | Automated A/B testing |
 
-## 📁 Project Modules
 
-### Integration Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Generative AI Pipeline                    │
-├───────────────┬──────────────┬──────────────┬──────────────┤
-│ Data Sources  │  Processing  │  AI Models   │   Storage    │
-├───────────────┼──────────────┼──────────────┼──────────────┤
-│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • ChromaDB   │
-│ • Real Estate │ • LlamaIndex │ • OpenRouter │ • Elasticsearch│
-│ • User Queries│ • Chunking   │ • Gemini     │ • SQLite     │
-│               │ • Filtering  │ • VoyageAI   │ • File Cache │
-└───────────────┴──────────────┴──────────────┴──────────────┘
-                              ↓
-                    ┌──────────────────┐
-                    │   RAG/GraphRAG   │
-                    │   Applications   │
-                    └──────────────────┘
-```
-
-### [1. Real Estate Embedding Pipeline](./real_estate_embed/)
-**Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
-**Key Features**:
-- **AI Embedding Generation**: Uses generative AI models to create semantic embeddings from synthetic property descriptions
-- **Multi-Model Support**: Compare embeddings from nomic-embed-text, mxbai-embed-large, and other AI models
-- **Vector Storage**: Stores AI-generated embeddings in ChromaDB for efficient similarity search
-- **RAG Preparation**: Prepares embeddings for use in retrieval-augmented generation pipelines
-- **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
-- **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
-
-**Quick Start**: `python -m real_estate_embed.main compare`
-
----
-
-### [2. Wikipedia Crawler](./wiki_crawl/)
-**Purpose**: Acquire Wikipedia data for location-based analysis  
-**Key Features**:
-- BFS crawling with depth control
-- Relevance scoring for location articles
-- Multiple output formats (SQLite, CSV, JSON, HTML)
-- Neighborhood-specific search capabilities
-
-**Quick Start**: `python wiki_crawl/wikipedia_location_crawler.py crawl "Park City" "Utah"`
-
----
-
-### [3. Wikipedia Summarization](./wiki_summary/)
-**Purpose**: Use generative AI with DSPy for intelligent content classification and summarization  
-**Key Features**:
-- **AI Content Classification**: Employs generative AI models to classify and extract relevant content
-- **DSPy Pipeline**: Uses DSPy framework for structured Chain-of-Thought reasoning and prompt optimization
-- **Dual Processing**: Combines HTML parsing with LLM understanding for accurate extraction
-- **Confidence Scoring**: AI-generated confidence scores for location data and topic relevance
-- **Key Topic Extraction**: Generative AI identifies and categorizes main topics from articles
-- **GraphRAG Preparation**: Structures data for knowledge graph construction in Neo4j
-
-**Quick Start**: `python wiki_summary/summarize_main.py`
-
----
-
-### [4. Wikipedia Embedding System](./wiki_embed/)
-**Purpose**: Generate and store AI embeddings from Wikipedia articles for semantic search  
-**Key Features**:
-- **Generative AI Embeddings**: Creates semantic embeddings using multiple AI providers (Ollama, Gemini, Voyage, OpenAI)
-- **Vector Database Storage**: Stores AI-generated embeddings in ChromaDB for fast similarity search
-- **RAG Integration**: Prepares embeddings for retrieval-augmented generation workflows
-- **Multi-Query Testing**: Tests 6 query types (geographic, landmark, historical, recreational, cultural, administrative)
-- **AI Model Comparison**: Benchmarks different embedding models for optimal retrieval performance
-- **Location-Aware Retrieval**: Uses AI to understand spatial and semantic relationships
-
-**Quick Start**: `python -m wiki_embed.main create`
-
----
-
-### [5. AI-Enhanced Real Estate Search Engine](./real_estate_search/)
-**Purpose**: Production-ready AI-powered Elasticsearch-based property search system for synthetic data  
-**Key Features**:
-- AI-enhanced full-text search with multi-field queries and relevance scoring
-- Intelligent geographic radius search with coordinate-based ranking
-- AI-driven faceted search and dynamic filtering
-- REST API with FastAPI and OpenAPI documentation
-- Type-safe Pydantic models with AI validation and comprehensive error handling
-- Circuit breaker and retry logic for production resilience
-
-**Quick Start**: `python scripts/setup_index.py --data-dir ../real_estate_data && python real_estate_search/api/run.py`
-
-## Project Overview
-
-This repository provides a complete generative AI-powered toolkit for building production-ready RAG and GraphRAG data pipelines:
-
-### Core AI Capabilities
-- **Generative AI Embeddings**: Uses cutting-edge AI models to create and store semantic embeddings for real estate properties and Wikipedia content
-- **AI Content Classification Pipeline**: Employs advanced generative AI with DSPy framework for intelligent content extraction and classification
-- **RAG Pipeline Development**: Demonstrates building retrieval-augmented generation pipelines with Elasticsearch for vector search
-- **GraphRAG Integration**: Showcases knowledge graph construction for Neo4j-based GraphRAG implementations
-- **Multi-Model Comparison**: Benchmarks various embedding models (Ollama, OpenAI, Gemini) for optimal performance
-
-### Key AI-Driven Features
-- **AI-Powered Real Estate Analysis**: Advanced AI embedding generation and comparison for property and neighborhood data
-- **Intelligent Wikipedia Data Acquisition**: AI-guided crawling and processing of Wikipedia articles for locations
-- **LLM Content Summarization**: State-of-the-art LLM-powered extraction of structured information with AI confidence scoring
-- **AI Semantic Search**: Vector-based retrieval using cutting-edge AI-generated embeddings from encyclopedia content
-- **AI-Enhanced Production Search**: Elasticsearch-based property search with intelligent relevance scoring
-
-## 🚀 Getting Started
+## Getting Started
 
 ### System Requirements
 
@@ -203,12 +213,6 @@ This repository provides a complete generative AI-powered toolkit for building p
 - **Elasticsearch**: 8.x (optional, for real estate search engine)
 
 ### Installation
-
-#### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/property_finder.git
-cd property_finder
-```
 
 #### 2. Set Up Python Environment
 ```bash
@@ -261,21 +265,7 @@ cp .env.example .env
 # VOYAGE_API_KEY=your-key-here
 ```
 
-### Quick Verification
-
-Verify your installation:
-```bash
-# Check Python version
-python --version
-
-# Check Ollama is running
-curl http://localhost:11434
-
-# Run a simple test
-python -c "import llama_index; import chromadb; print('Setup successful!')"
-```
-
-## 📊 Data Organization
+## Data Organization
 
 ```
 property_finder/
@@ -287,6 +277,15 @@ property_finder/
 │   │   └── wikipedia.db      # SQLite database
 │   └── test_queries.json      # Test queries for evaluation
 │
+├── graph-real-estate/         # Neo4j GraphRAG module
+│   ├── src/                  # Source code
+│   │   ├── models/          # Pydantic models
+│   │   ├── vectors/         # Embedding pipeline
+│   │   └── database/        # Neo4j client
+│   ├── main.py              # Graph builder
+│   ├── create_embeddings.py # Vector generation
+│   └── search_properties.py # Hybrid search
+│
 ├── real_estate_data/          # Synthetic property data (AI-generated for demo purposes)
 │   ├── properties_sf.json    # Synthetic San Francisco properties
 │   ├── properties_pc.json    # Synthetic Park City properties
@@ -297,9 +296,26 @@ property_finder/
     └── comparison.json        # Model comparison metrics
 ```
 
-## 🔧 Common Workflows
+## Common Workflows
 
-### Complete Pipeline Example
+### Neo4j GraphRAG Pipeline
+Build a complete GraphRAG system with Neo4j:
+
+```bash
+# 1. Setup Neo4j with Docker
+docker-compose up -d
+
+# 2. Build the knowledge graph
+python graph-real-estate/main.py all
+
+# 3. Generate vector embeddings
+python graph-real-estate/create_embeddings.py
+
+# 4. Test hybrid search
+python graph-real-estate/search_properties.py "modern condo with city views" --demo
+```
+
+### Complete Wikipedia Pipeline
 Process Wikipedia data from crawling to searchable embeddings:
 
 ```bash
@@ -344,6 +360,9 @@ python wiki_crawl/wikipedia_location_crawler.py quick real_estate_data/neighborh
 Core dependencies (see `requirements.txt` for complete list):
 
 ```txt
+# Graph Database
+neo4j>=5.0.0
+
 # LLM and Embeddings
 llama-index>=0.9.0
 ollama>=0.1.0
@@ -386,16 +405,7 @@ python -m wiki_embed.test_eval
 python -m pytest tests/
 ```
 
-## 📈 Performance Benchmarks
-
-| Module | Metric | Performance |
-|--------|--------|------------|
-| Real Estate Embed | F1 Score | 64.4% (nomic-embed-text) |
-| Wiki Crawler | Articles/min | ~20 with depth=2 |
-| Wiki Summary | Pages/min | ~30 with OpenRouter |
-| Wiki Embed | Chunks/sec | ~25 with Ollama |
-
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please:
 1. Fork the repository
@@ -404,11 +414,11 @@ Contributions are welcome! Please:
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## License
 
 MIT License for code. Wikipedia content is under CC BY-SA 3.0.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **LlamaIndex**: For the embedding framework
 - **Ollama**: For local LLM support
@@ -416,16 +426,17 @@ MIT License for code. Wikipedia content is under CC BY-SA 3.0.
 - **Wikipedia**: For content (CC BY-SA 3.0)
 - **DSPy**: For structured LLM interactions
 
-## 📚 Documentation
+## Documentation
 
 For detailed documentation on each module:
+- [Neo4j GraphRAG Documentation](./graph-real-estate/README.md)
 - [Real Estate Embeddings Documentation](./real_estate_embed/README.md)
 - [Wikipedia Crawler Documentation](./wiki_crawl/README.md)
 - [Wikipedia Summarization Documentation](./wiki_summary/README.md)
 - [Wikipedia Embeddings Documentation](./wiki_embed/README.md)
 - [Real Estate Search Engine Documentation](./real_estate_search/README.md)
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
