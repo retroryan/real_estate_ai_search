@@ -54,8 +54,6 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
 - **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
 
-**Quick Start**: `python -m real_estate_embed.main compare`
-
 ---
 
 ### [2. Wikipedia Crawler](./wiki_crawl/)
@@ -63,10 +61,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 **Key Features**:
 - BFS crawling with depth control
 - Relevance scoring for location articles
-- Multiple output formats (SQLite, CSV, JSON, HTML)
 - Neighborhood-specific search capabilities
-
-**Quick Start**: `python wiki_crawl/wikipedia_location_crawler.py crawl "Park City" "Utah"`
 
 ---
 
@@ -78,8 +73,6 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - **Dual Processing**: Combines HTML parsing with LLM understanding for accurate extraction
 - **Confidence Scoring**: AI-generated confidence scores for location data and topic relevance
 - **Key Topic Extraction**: Generative AI identifies and categorizes main topics from articles
-
-**Quick Start**: `python wiki_summary/summarize_main.py`
 
 ---
 
@@ -93,11 +86,9 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - **AI Model Comparison**: Benchmarks different embedding models for optimal retrieval performance
 - **Location-Aware Retrieval**: Uses AI to understand spatial and semantic relationships
 
-**Quick Start**: `python -m wiki_embed.main create`
-
 ---
 
-### [5. AI-Enhanced Real Estate Search Engine](./real_estate_search/)
+### [5. AI-Enhanced Real Estate Search Engine with Elasticsearc](./real_estate_search/)
 **Purpose**: AI-powered Elasticsearch-based property search system for synthetic data  
 **Key Features**:
 - AI-enhanced full-text search with multi-field queries and relevance scoring
@@ -106,8 +97,6 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - REST API with FastAPI and OpenAPI documentation
 - Type-safe Pydantic models with AI validation and comprehensive error handling
 - Circuit breaker and retry logic for resilience
-
-**Quick Start**: `python scripts/setup_index.py --data-dir ../real_estate_data && python real_estate_search/api/run.py`
 
 ---
 
@@ -119,19 +108,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - **Knowledge Graph Structure**: 84 properties, 387 features, 21 neighborhoods, 1,267 relationships
 - **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
 - **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
-- **Performance**: < 100ms search response, supports 100K+ properties
 - **Natural Language Search**: "modern condo with city views", "family home near schools"
-
-**Quick Start**: 
-```bash
-# Build graph and create embeddings
-python graph-real-estate/main.py all
-python graph-real-estate/create_embeddings.py
-
-# Search properties
-python graph-real-estate/search_properties.py "luxury property with mountain views"
-```
-
 
 ## Generative AI Technologies
 
@@ -355,39 +332,7 @@ python wiki_crawl/wikipedia_location_crawler.py search real_estate_data/neighbor
 python wiki_crawl/wikipedia_location_crawler.py quick real_estate_data/neighborhoods_pc.json
 ```
 
-## 📝 Dependencies
-
-Core dependencies (see `requirements.txt` for complete list):
-
-```txt
-# Graph Database
-neo4j>=5.0.0
-
-# LLM and Embeddings
-llama-index>=0.9.0
-ollama>=0.1.0
-openai>=1.0.0
-dspy-ai>=2.0.0
-
-# Vector Storage
-chromadb>=0.4.0
-
-# Data Processing
-beautifulsoup4>=4.12.0
-pydantic>=2.0.0
-pandas>=2.0.0
-
-# Wikipedia API
-requests>=2.31.0
-wikipedia-api>=0.5.0
-
-# Utilities
-python-dotenv>=1.0.0
-tqdm>=4.65.0
-click>=8.1.0
-```
-
-## 🧪 Testing
+## Testing
 
 Each module includes its own test suite:
 
@@ -425,50 +370,3 @@ MIT License for code. Wikipedia content is under CC BY-SA 3.0.
 - **ChromaDB**: For vector storage
 - **Wikipedia**: For content (CC BY-SA 3.0)
 - **DSPy**: For structured LLM interactions
-
-## Documentation
-
-For detailed documentation on each module:
-- [Neo4j GraphRAG Documentation](./graph-real-estate/README.md)
-- [Real Estate Embeddings Documentation](./real_estate_embed/README.md)
-- [Wikipedia Crawler Documentation](./wiki_crawl/README.md)
-- [Wikipedia Summarization Documentation](./wiki_summary/README.md)
-- [Wikipedia Embeddings Documentation](./wiki_embed/README.md)
-- [Real Estate Search Engine Documentation](./real_estate_search/README.md)
-
-## Troubleshooting
-
-### Common Issues
-
-**Ollama Connection Error**
-```bash
-# Ensure Ollama is running
-ollama serve
-
-# Verify connection
-curl http://localhost:11434
-```
-
-**Missing Model**
-```bash
-# Pull required models
-ollama pull nomic-embed-text
-ollama pull mxbai-embed-large
-```
-
-**Memory Issues**
-- Reduce batch sizes in configuration files
-- Process fewer articles at once
-- Use `--limit` flags where available
-
-**API Key Issues**
-- Check `.env` file exists and contains valid keys
-- Ensure environment variables are loaded
-- Verify API quotas and limits
-
-## 📮 Support
-
-For issues and questions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review module-specific READMEs
