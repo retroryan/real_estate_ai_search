@@ -2,7 +2,7 @@
 
 ## Brief Overview
 
-The Real Estate Embedding Pipeline is a sophisticated generative AI system that demonstrates advanced embedding generation, storage, and retrieval techniques for real estate data. Built on **LlamaIndex**, the leading framework for LLM applications, this module showcases how to leverage multiple state-of-the-art embedding models to transform property and neighborhood descriptions into high-dimensional vector representations suitable for semantic search and RAG (Retrieval-Augmented Generation) applications.
+The Real Estate Embedding Pipeline is a generative AI system that demonstrates advanced embedding generation, storage, and retrieval techniques for real estate data. Built on **LlamaIndex**, this module showcases how to leverage multiple state-of-the-art embedding models to transform property and neighborhood descriptions into high-dimensional vector representations suitable for semantic search and RAG (Retrieval-Augmented Generation) applications.
 
 ### 🤖 Generative AI Technologies
 
@@ -83,32 +83,6 @@ python -m real_estate_embed.main create
 python -m real_estate_embed.main create
 ```
 
-Expected output:
-```
-============================================================
-EMBEDDING CREATION
-============================================================
-Loading configuration...
-Provider: ollama
-Model: nomic-embed-text
-
-Loading documents from ./real_estate_data...
-Loaded X documents
-Creating semantic chunks...
-Created Y chunks
-Generating embeddings...
-  Progress: 10/Y embeddings created
-  ...
-✓ Created Y embeddings
-
-✅ Done! Y embeddings ready
-```
-
-**Note**: Embeddings are cached! Running again will show:
-```
-✓ Using existing Y embeddings
-```
-
 To force recreation:
 ```bash
 python -m real_estate_embed.main create --force-recreate
@@ -120,61 +94,11 @@ python -m real_estate_embed.main create --force-recreate
 python -m real_estate_embed.main test
 ```
 
-Output shows metrics for each query:
-```
-=== Testing nomic-embed-text ===
-
-Testing query 1/10: luxury homes in Pacific Heights...
-  Precision: 0.667, Recall: 0.500
-...
-
---- Results for nomic-embed-text ---
-Average Precision: 0.725
-Average Recall:    0.580
-Average F1 Score:  0.644
-```
-
 #### 3️⃣ Compare Models
 
 Compare all available embedding collections:
 ```bash
 python -m real_estate_embed.main compare
-```
-
-Output shows comparison of all models:
-```
-============================================================
-MODEL COMPARISON
-============================================================
-
-Available collections: embeddings_mxbai-embed-large, embeddings_nomic-embed-text
-Comparing: embeddings_mxbai-embed-large, embeddings_nomic-embed-text
-
---- Testing mxbai-embed-large ---
-Found 63 embeddings in embeddings_mxbai-embed-large
-...
-
---- Testing nomic-embed-text ---
-Found 63 embeddings in embeddings_nomic-embed-text
-...
-
-============================================================
-FINAL COMPARISON
-============================================================
-
-mxbai-embed-large:
-  Precision: 0.090
-  Recall:    0.500
-  F1 Score:  0.149
-
-nomic-embed-text:
-  Precision: 0.110
-  Recall:    0.600
-  F1 Score:  0.183
-
-🏆 Winner: nomic-embed-text (F1: 0.183)
-
-Results saved to: results/comparison.json
 ```
 
 **Advanced Usage:**
@@ -215,33 +139,27 @@ Each query has expected result IDs used to calculate accuracy metrics.
 
 ## ⚙️ Configuration
 
-Edit `config.yaml` in this directory to adjust settings:
+The `config.yaml` file in this directory controls all pipeline settings. Here are the available options:
 
-```yaml
-embedding:
-  provider: ollama  # Options: ollama, gemini, voyage
-  # Ollama settings
-  ollama_base_url: "http://localhost:11434"
-  ollama_model: nomic-embed-text  # Options: nomic-embed-text, mxbai-embed-large
-  # Gemini settings (set GOOGLE_API_KEY env variable)
-  gemini_model: "models/embedding-001"
-  # Voyage settings (set VOYAGE_API_KEY env variable)
-  voyage_model: "voyage-3"
+**Embedding Settings:**
+- `provider`: Choose between `ollama` (local), `gemini` (Google Cloud), or `voyage` (VoyageAI)
+- `ollama_model`: Select `nomic-embed-text` (768 dims) or `mxbai-embed-large` (1024 dims)
+- `gemini_model`: Uses `models/embedding-001` (requires GOOGLE_API_KEY environment variable)
+- `voyage_model`: Options include `voyage-3`, `voyage-3-lite`, or `voyage-finance-2` (requires VOYAGE_API_KEY)
 
-chromadb:
-  path: "./data/real_estate_chroma_db"
-  collection_prefix: "embeddings"
+**ChromaDB Settings:**
+- `path`: Directory for storing vector database (default: `./data/real_estate_chroma_db`)
+- `collection_prefix`: Naming prefix for collections (default: `embeddings`)
 
-data:
-  source_dir: "./real_estate_data"
+**Data Settings:**
+- `source_dir`: Location of JSON property and neighborhood files (default: `./real_estate_data`)
 
-chunking:
-  method: simple  # Options: simple (fast), semantic (slow but better boundaries)
-  chunk_size: 512
-  chunk_overlap: 50
-  breakpoint_percentile: 95
-  buffer_size: 1
-```
+**Chunking Settings:**
+- `method`: Choose `simple` for fast splitting or `semantic` for intelligent boundaries
+- `chunk_size`: Target size for each chunk in tokens (default: 512)
+- `chunk_overlap`: Number of overlapping tokens between chunks (default: 50)
+- `breakpoint_percentile`: Similarity threshold for semantic splitting (default: 95)
+- `buffer_size`: Context window overlap for semantic chunks (default: 1)
 
 ## 📈 How It Works
 
@@ -260,15 +178,6 @@ chunking:
 - **Query response**: < 200ms per query
 - **Smart caching**: Embeddings reused between runs
 - **Storage**: Separate ChromaDB collection per model
-
-## 🔧 Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| Ollama connection error | Run `ollama serve` |
-| Model not found | Run `ollama pull nomic-embed-text` |
-| No documents loaded | Check `real_estate_data/` has JSON files |
-| Collection not found | Run create command first |
 
 ## Architecture and Implementation
 
@@ -313,127 +222,68 @@ Real Estate JSON Data
 ### Core Components
 
 #### 1. Pipeline Module (`pipeline.py`)
-- **Purpose**: Orchestrates embedding creation workflow
-- **Key Classes**:
-  - `EmbeddingPipeline`: Main pipeline controller
-  - `DocumentLoader`: Loads and merges JSON data
-  - `ChunkCreator`: Semantic text splitting
-- **Implementation**:
-  ```python
-  class EmbeddingPipeline:
-      def create_embeddings(self, model_name: str):
-          # 1. Load documents
-          docs = self.load_documents()
-          # 2. Create semantic chunks  
-          chunks = self.create_chunks(docs)
-          # 3. Generate embeddings
-          embeddings = self.embed_chunks(chunks, model_name)
-          # 4. Store in ChromaDB
-          self.store_embeddings(embeddings, model_name)
-  ```
+- **Purpose**: Orchestrates the embedding creation workflow from data loading to storage
+- **Key Classes**: `EmbeddingPipeline`, `DocumentLoader`, `ChunkCreator`
+- **Description**: Manages the complete pipeline for loading real estate data, creating semantic chunks using LlamaIndex, generating embeddings through various providers, and storing them in ChromaDB collections
 
 #### 2. Query Module (`query.py`)
-- **Purpose**: Tests retrieval accuracy
-- **Metrics Calculation**:
-  ```python
-  def calculate_metrics(retrieved, expected):
-      precision = len(retrieved ∩ expected) / len(retrieved)
-      recall = len(retrieved ∩ expected) / len(expected)
-      f1 = 2 * (precision * recall) / (precision + recall)
-      return precision, recall, f1
-  ```
-- **Query Types**: 10 realistic real estate queries testing different aspects
+- **Purpose**: Tests and evaluates embedding retrieval accuracy with precision, recall, and F1 metrics
+- **Key Classes**: `QueryEngine`, `MetricsCalculator`
+- **Description**: Executes test queries against embedded collections, retrieves similar documents, and calculates performance metrics by comparing retrieved results with expected ground truth
 
 #### 3. Models Module (`models.py`)
-- **Pydantic Models**:
-  - `Property`: Real estate listing with validation
-  - `Neighborhood`: Area demographics and features
-  - `TestQuery`: Query with expected results
-  - `QueryResult`: Metrics and retrieved documents
-- **Type Safety**: Full validation for all data structures
+- **Purpose**: Provides type-safe data structures with full validation for the entire system
+- **Key Classes**: `Property`, `Neighborhood`, `TestQuery`, `QueryResult`
+- **Description**: Defines Pydantic models that validate real estate listings, neighborhood data, test queries with expected results, and query performance metrics
 
 #### 4. Main CLI (`main.py`)
-- **Commands**:
-  - `create`: Generate embeddings for a model
-  - `test`: Evaluate a single model
-  - `compare`: Compare all configured models
-- **Implementation**: Clean Click-based CLI with progress bars
+- **Purpose**: Provides a clean command-line interface for all embedding operations
+- **Key Classes**: `CLI` with commands for `create`, `test`, and `compare`
+- **Description**: Implements a Click-based CLI that orchestrates embedding creation, single model testing, and multi-model comparison with progress tracking and result visualization
 
 ### Key Algorithms
 
 #### Semantic Chunking Algorithm
-```python
-def create_semantic_chunks(documents):
-    splitter = SemanticSplitterNodeParser(
-        breakpoint_percentile=95,  # High similarity threshold
-        buffer_size=1,              # Context overlap
-        embed_model=embedding_model
-    )
-    return splitter.get_nodes_from_documents(documents)
-```
+- **Purpose**: Splits documents into semantically coherent chunks for better embedding quality
+- **Key Classes**: `SemanticSplitterNodeParser` from LlamaIndex
+- **Description**: Uses embedding similarity to identify natural break points in text, maintaining semantic boundaries with a 95th percentile threshold for similarity and a buffer size of 1 for context overlap between chunks
 
 #### Embedding Caching Strategy
-```python
-def get_or_create_embeddings(model_name):
-    collection_name = f"embeddings_{model_name}"
-    
-    # Check if collection exists
-    if collection_exists(collection_name):
-        print(f"✓ Using existing {count} embeddings")
-        return load_collection(collection_name)
-    
-    # Create new embeddings
-    embeddings = create_embeddings(model_name)
-    save_to_chromadb(embeddings, collection_name)
-    return embeddings
-```
+- **Purpose**: Efficiently manages embedding storage and reuse across multiple runs
+- **Key Classes**: ChromaDB collection management utilities
+- **Description**: Checks for existing embeddings in ChromaDB collections before creating new ones, automatically loads cached embeddings when available, and creates new embeddings only when necessary, saving significant computation time
 
 #### Model Comparison Logic
-```python
-def compare_models(models):
-    results = {}
-    for model in models:
-        # Create embeddings if needed
-        create_embeddings(model)
-        # Run test queries
-        metrics = test_model(model)
-        results[model] = metrics
-    
-    # Determine winner by F1 score
-    winner = max(results.items(), key=lambda x: x[1]['f1'])
-    return results, winner
-```
+- **Purpose**: Evaluates and compares multiple embedding models on the same test set
+- **Key Classes**: Model evaluator and metrics aggregator
+- **Description**: Iterates through available models to create embeddings if needed, runs standardized test queries against each model, calculates precision/recall/F1 metrics, and determines the best performing model based on F1 score
 
 ### Data Processing Pipeline
 
-1. **Document Loading**:
-   - Reads JSON files from `real_estate_data/`
-   - Merges properties and neighborhoods
-   - Creates structured documents with metadata
+1. **Document Loading**
+   - Reads JSON files from `real_estate_data/` directory
+   - Merges properties and neighborhoods into unified dataset
+   - Creates structured documents with metadata including ID, type, and location
 
-2. **Text Preparation**:
-   ```python
-   def prepare_document_text(item):
-       if item.type == "property":
-           return f"{item.address}, {item.features}, ${item.price}"
-       else:  # neighborhood
-           return f"{item.name}: {item.description}, {item.amenities}"
-   ```
+2. **Text Preparation**
+   - Formats property listings with address, features, and price information
+   - Structures neighborhood data with name, description, and amenities
+   - Generates searchable text representations optimized for embedding
 
-3. **Chunk Creation**:
-   - Uses LlamaIndex's `SemanticSplitterNodeParser`
-   - Creates semantically coherent chunks
-   - Preserves metadata (ID, type, location)
+3. **Chunk Creation**
+   - Uses LlamaIndex's `SemanticSplitterNodeParser` for intelligent splitting
+   - Creates semantically coherent chunks maintaining context
+   - Preserves metadata (ID, type, location) for each chunk
 
-4. **Embedding Generation**:
-   - Uses Ollama API for local models
-   - Batch processing with progress tracking
-   - ~0.5 seconds per chunk
+4. **Embedding Generation**
+   - Connects to Ollama API for local model processing
+   - Performs batch processing with progress tracking
+   - Generates embeddings at approximately 0.5 seconds per chunk
 
-5. **Storage**:
-   - ChromaDB with persistent storage
-   - Separate collection per model
-   - Metadata indexing for filtering
+5. **Storage**
+   - Saves to ChromaDB with persistent storage capabilities
+   - Creates separate collection for each embedding model
+   - Implements metadata indexing for efficient filtering and retrieval
 
 ### Performance Characteristics
 

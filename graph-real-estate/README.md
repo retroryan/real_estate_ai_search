@@ -1,61 +1,42 @@
 # Real Estate Graph Builder
 
-A modular Neo4j graph database application for real estate data with Pydantic validation and vector embedding search capabilities.
+A sophisticated graph database application that demonstrates cutting-edge GraphRAG (Graph Retrieval-Augmented Generation) techniques for real estate search and discovery. This system combines Neo4j's powerful graph database capabilities with state-of-the-art vector embeddings from LlamaIndex to create a hybrid search engine that understands both semantic meaning and structural relationships. The modular architecture showcases best practices for building production-ready AI applications with clean separation of concerns, full type safety through Pydantic validation, and support for multiple embedding providers including local (Ollama) and cloud-based (OpenAI, Gemini) models.
 
-## Architecture
+## 🤖 Generative AI Features
 
-This application follows a **clean, modular architecture** designed for maintainability and growth:
-
-```
-graph-real-estate/
-├── src/                    # Source code (modular organization)
-│   ├── models/            # Pydantic data models
-│   │   ├── property.py    # Property-related models
-│   │   ├── graph.py       # Graph node models
-│   │   └── relationships.py # Relationship models
-│   ├── data/              # Data loading and processing
-│   │   └── loader.py      # JSON data loader with validation
-│   ├── database/          # Database layer
-│   │   └── neo4j_client.py # Neo4j connection and utilities
-│   ├── controllers/       # Business logic
-│   │   └── graph_builder.py # Main graph building logic
-│   └── vectors/           # Vector embeddings and search
-│       ├── models.py      # Embedding configuration models
-│       ├── vector_manager.py # Neo4j vector index management
-│       ├── embedding_pipeline.py # LlamaIndex embedding generation
-│       ├── hybrid_search.py # Combined vector + graph search
-│       └── config.yaml    # Vector configuration
-├── config/                # Configuration
-│   └── settings.py        # Application settings
-├── main.py               # Entry point for graph building
-├── create_embeddings.py  # Generate vector embeddings
-├── search_properties.py  # Semantic search interface
-├── requirements.txt      # Dependencies
-├── .env                  # Environment variables
-└── README.md            # This file
-```
-
-##  Features
-
+- **GraphRAG Architecture**: Combines knowledge graphs with vector embeddings for enhanced retrieval-augmented generation, enabling richer context for LLM applications
+- **Multi-Model Embeddings**: Supports Ollama (local), OpenAI, and Google Gemini embedding models with configurable dimensions (768-1536)
+- **Semantic Vector Search**: Natural language property search using LlamaIndex-generated embeddings stored in Neo4j's native vector indexes
+- **Hybrid Scoring Algorithm**: Intelligent ranking that combines vector similarity (60%), graph centrality (20%), and feature richness (20%) for superior results
+- **LlamaIndex Integration**: Enterprise-grade embedding pipeline with automatic chunking, batching, and error handling
+- **Neo4j Vector Indexes**: Native Approximate Nearest Neighbor (ANN) search with HNSW algorithm for sub-100ms query performance
+- **Embedding Flexibility**: Easy switching between providers and models through configuration without code changes
 - **Pydantic Validation**: All data structures validated with Pydantic models
 - **Modular Design**: Clean separation of concerns for easy maintenance
 - **Type Safety**: Full type hints throughout the codebase
-- **Vector Embeddings**: Semantic search using LlamaIndex and Neo4j vector indexes
-- **Hybrid Search**: Combines vector similarity with graph relationships
-- **Multi-Provider Support**: Ollama, OpenAI, and Gemini embedding models
 - **Advanced Filtering**: Price, location, and property detail filters
 - **Scalable Architecture**: Ready for future enhancements
 - **Neo4j Community Edition**: Uses free version of Neo4j with native vector support
 
-##  Data Model
+## Graph Data Model
 
-The graph consists of:
-- **84 Properties** (44 San Francisco, 40 Park City)
-- **387 Features** organized in 8 categories
-- **21 Neighborhoods** across 2 cities
-- **1,267 Relationships** connecting the data
-- **768-dimensional vector embeddings** for each property
-- **Neo4j native vector index** for similarity search
+The Neo4j graph database uses a rich, interconnected model that captures the complex relationships between properties, neighborhoods, and features:
+
+**Node Types:**
+- **Properties**: Core entities representing individual real estate listings with attributes like price, square footage, bedrooms, bathrooms, and descriptive text
+- **Neighborhoods**: Geographic areas with demographic data, lifestyle characteristics, median prices, and walkability scores
+- **Features**: Granular property attributes organized into categories (interior, exterior, amenities, location, smart home, sustainability, luxury, views)
+- **Cities**: High-level geographic nodes connecting neighborhoods and providing regional context
+
+**Relationship Types:**
+- **LOCATED_IN**: Connects properties to their neighborhoods and neighborhoods to their cities
+- **HAS_FEATURE**: Links properties to their specific features, enabling feature-based discovery
+- **SIMILAR_TO**: Dynamic relationships created based on vector similarity for recommendation systems
+
+**Vector Layer:**
+- **Property Embeddings**: High-dimensional vector representations of property descriptions stored directly on property nodes
+- **Native Vector Index**: Neo4j's HNSW-based similarity search index for efficient nearest neighbor queries
+- **Hybrid Attributes**: Each node contains both structured data (for filtering) and unstructured embeddings (for semantic search)
 
 ##  Installation
 
@@ -177,7 +158,40 @@ After building the graph, you can run queries to explore:
 - **Lifestyle queries**: "family-friendly home near schools"
 - **Investment queries**: "affordable property with rental potential"
 
-##  Why Modular Architecture?
+## Architecture
+
+This application follows a **clean, modular architecture** designed for maintainability and growth.
+
+### Project Structure
+
+```
+graph-real-estate/
+├── src/                    # Source code (modular organization)
+│   ├── models/            # Pydantic data models
+│   │   ├── property.py    # Property-related models
+│   │   ├── graph.py       # Graph node models
+│   │   └── relationships.py # Relationship models
+│   ├── data/              # Data loading and processing
+│   │   └── loader.py      # JSON data loader with validation
+│   ├── database/          # Database layer
+│   │   └── neo4j_client.py # Neo4j connection and utilities
+│   ├── controllers/       # Business logic
+│   │   └── graph_builder.py # Main graph building logic
+│   └── vectors/           # Vector embeddings and search
+│       ├── models.py      # Embedding configuration models
+│       ├── vector_manager.py # Neo4j vector index management
+│       ├── embedding_pipeline.py # LlamaIndex embedding generation
+│       ├── hybrid_search.py # Combined vector + graph search
+│       └── config.yaml    # Vector configuration
+├── config/                # Configuration
+│   └── settings.py        # Application settings
+├── main.py               # Entry point for graph building
+├── create_embeddings.py  # Generate vector embeddings
+├── search_properties.py  # Semantic search interface
+├── requirements.txt      # Dependencies
+├── .env                  # Environment variables
+└── README.md            # This file
+```
 
 ### Benefits:
 1. **Separation of Concerns**: Each module has a single responsibility

@@ -47,8 +47,6 @@ The pipeline leverages multiple generative AI technologies to transform unstruct
 
 ### Installation (Virtual Environment Required)
 
-⚠️ **IMPORTANT**: This module requires specific dependency versions. Always use a virtual environment to avoid conflicts.
-
 ```bash
 # Navigate to wiki_summary directory
 cd wiki_summary
@@ -599,9 +597,6 @@ source venv/bin/activate  # On macOS/Linux
 # OR
 venv\Scripts\activate     # On Windows
 
-# Your prompt should now show (venv)
-# Example: (venv) ryanknight@mac wiki_summary %
-
 # Run the module (from wiki_summary directory)
 python main.py --limit 10
 
@@ -614,17 +609,6 @@ python main.py --limit 600 --force-reprocess
 ```bash
 # When done, deactivate the virtual environment
 deactivate
-```
-
-### Dependency Management
-
-#### Required Versions (Tested and Working)
-```
-pydantic==2.5.3
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
-dspy-ai>=2.4.0
-litellm>=1.46.0
 ```
 
 #### If You Encounter Version Conflicts
@@ -659,15 +643,6 @@ python3.10 -m venv venv
 ```bash
 # If you get permission errors, use --user flag
 pip install --user -r requirements.txt
-```
-
-### Running from Outside Directory
-
-If you need to run from property_finder root:
-
-```bash
-# From property_finder/ directory
-cd wiki_summary && source venv/bin/activate && python main.py --limit 10 && deactivate && cd ..
 ```
 
 ### Automation Script
