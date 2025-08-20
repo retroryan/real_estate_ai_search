@@ -5,6 +5,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 ### Core AI Capabilities
 - **Neo4j GraphRAG Implementation**: Graph-based retrieval system with native vector search, combining knowledge graph relationships with semantic embeddings for enhanced accuracy
 - **Elasticsearch RAG Implementation**: RAG pipeline with hybrid text and vector search, faceted filtering, and relevance scoring for scalable retrieval
+- **ChromaDB Embedding Prototyping**: Rapid prototyping environment for comparing embedding models directly with built-in benchmarking and evaluation metrics
 - **DSPy Content Classification**: Advanced generative AI framework for intelligent content extraction with Chain-of-Thought reasoning
 - **Multi-Model Embeddings**: Support for Ollama, OpenAI, Gemini, and Voyage AI models with automated benchmarking
 - **LLM Summarization Pipeline**: Structured information extraction from Wikipedia with confidence scoring
@@ -44,19 +45,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
                     └──────────────────┘
 ```
 
-### [1. Real Estate Embedding Pipeline](./real_estate_embed/)
-**Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
-**Key Features**:
-- **AI Embedding Generation**: Uses generative AI models to create semantic embeddings from synthetic property descriptions
-- **Multi-Model Support**: Compare embeddings from nomic-embed-text, mxbai-embed-large, and other AI models
-- **Vector Storage**: Stores AI-generated embeddings in ChromaDB for efficient similarity search
-- **RAG Preparation**: Prepares embeddings for use in retrieval-augmented generation pipelines
-- **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
-- **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
-
----
-
-### [2. Wikipedia Crawler](./wiki_crawl/)
+### [1. Wikipedia Crawler](./wiki_crawl/)
 **Purpose**: Acquire Wikipedia data for location-based analysis  
 **Key Features**:
 - BFS crawling with depth control
@@ -65,7 +54,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 
 ---
 
-### [3. Wikipedia Summarization](./wiki_summary/)
+### [2. Wikipedia Summarization](./wiki_summary/)
 **Purpose**: Use generative AI with DSPy for intelligent content classification and summarization  
 **Key Features**:
 - **AI Content Classification**: Employs generative AI models to classify and extract relevant content
@@ -76,7 +65,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 
 ---
 
-### [4. Wikipedia Embedding System](./wiki_embed/)
+### [3. Wikipedia Embedding System](./wiki_embed/)
 **Purpose**: Generate and store AI embeddings from Wikipedia articles for semantic search  
 **Key Features**:
 - **Generative AI Embeddings**: Creates semantic embeddings using multiple AI providers (Ollama, Gemini, Voyage, OpenAI)
@@ -88,7 +77,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 
 ---
 
-### [5. AI-Enhanced Real Estate Search Engine with Elasticsearc](./real_estate_search/)
+### [4. AI-Enhanced Real Estate Search Engine with Elasticsearch](./real_estate_search/)
 **Purpose**: AI-powered Elasticsearch-based property search system for synthetic data  
 **Key Features**:
 - AI-enhanced full-text search with multi-field queries and relevance scoring
@@ -100,7 +89,7 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 
 ---
 
-### [6. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
+### [5. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
 **Purpose**: Neo4j-based GraphRAG system for intelligent property search with knowledge graph relationships  
 **Key Features**:
 - **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
@@ -109,6 +98,18 @@ This repository provides a comprehensive toolkit for real estate data analysis, 
 - **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
 - **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
 - **Natural Language Search**: "modern condo with city views", "family home near schools"
+
+---
+
+### [6. Real Estate Embedding Pipeline](./real_estate_embed/)
+**Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
+**Key Features**:
+- **AI Embedding Generation**: Uses generative AI models to create semantic embeddings from synthetic property descriptions
+- **Multi-Model Support**: Compare embeddings from nomic-embed-text, mxbai-embed-large, and other AI models
+- **Dual Vector Storage**: Stores AI-generated embeddings in both ChromaDB and Elasticsearch for flexible retrieval options
+- **RAG Preparation**: Prepares embeddings for use in retrieval-augmented generation pipelines with either storage backend
+- **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
+- **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
 
 ## Generative AI Technologies
 
