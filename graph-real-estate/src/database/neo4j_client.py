@@ -31,13 +31,14 @@ def clear_database(driver):
     print("Database cleared")
 
 def print_stats(driver):
-    """Print basic database statistics"""
+    """Print comprehensive database statistics including Wikipedia data"""
     queries = {
         "Total Nodes": "MATCH (n) RETURN COUNT(n) as count",
         "Properties": "MATCH (p:Property) RETURN COUNT(p) as count",
         "Neighborhoods": "MATCH (n:Neighborhood) RETURN COUNT(n) as count",
         "Cities": "MATCH (c:City) RETURN COUNT(c) as count",
         "Features": "MATCH (f:Feature) RETURN COUNT(f) as count",
+        "Wikipedia Articles": "MATCH (w:Wikipedia) RETURN COUNT(w) as count",
         "Relationships": "MATCH ()-[r]->() RETURN COUNT(r) as count"
     }
     
@@ -46,4 +47,49 @@ def print_stats(driver):
         result = run_query(driver, query)
         count = result[0]['count'] if result else 0
         print(f"{label}: {count}")
+    
+    # Wikipedia-specific statistics
+    wiki_stats_queries = {
+        "Wikipedia DESCRIBES relationships": "MATCH ()-[r:DESCRIBES]->() RETURN COUNT(r) as count",
+        "Primary Wikipedia articles": "MATCH (w:Wikipedia) WHERE w.relationship_type = 'primary' RETURN COUNT(w) as count",
+        "Related Wikipedia articles": "MATCH (w:Wikipedia) WHERE w.relationship_type IN ['related', 'neighborhood', 'park', 'landmark', 'county', 'city', 'recreation', 'reference'] RETURN COUNT(w) as count"
+    }
+    
+    print("\n--- Wikipedia Integration ---")
+    for label, query in wiki_stats_queries.items():
+        result = run_query(driver, query)
+        count = result[0]['count'] if result else 0
+        print(f"{label}: {count}")
+    
+    # Wikipedia article types distribution
+    type_query = """
+    MATCH (w:Wikipedia) 
+    RETURN w.relationship_type as type, COUNT(w) as count 
+    ORDER BY count DESC
+    """
+    type_result = run_query(driver, type_query)
+    if type_result:
+        print("\n--- Wikipedia Article Types ---")
+        for record in type_result:
+            article_type = record['type'] or 'unknown'
+            count = record['count']
+            print(f"{article_type}: {count}")
+    
+    # Neighborhoods with Wikipedia coverage
+    coverage_query = """
+    MATCH (n:Neighborhood)
+    OPTIONAL MATCH (w:Wikipedia)-[:DESCRIBES]->(n)
+    WITH n.name as neighborhood, COUNT(w) as wiki_count
+    WHERE wiki_count > 0
+    RETURN neighborhood, wiki_count
+    ORDER BY wiki_count DESC
+    """
+    coverage_result = run_query(driver, coverage_query)
+    if coverage_result:
+        print(f"\n--- Wikipedia Coverage by Neighborhood ---")
+        for record in coverage_result[:10]:  # Top 10
+            neighborhood = record['neighborhood']
+            wiki_count = record['wiki_count']
+            print(f"{neighborhood}: {wiki_count} articles")
+    
     print("===========================\n")

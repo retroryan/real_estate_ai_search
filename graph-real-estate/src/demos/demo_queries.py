@@ -35,7 +35,7 @@ class QueryDemonstrator:
         # Analytics
         self._run_analytics_queries()
         
-        print("\n✓ Phase 4 Complete: Query examples demonstrated successfully")
+        print("\nPhase 4 Complete: Query examples demonstrated successfully")
     
     def _run_basic_queries(self):
         """Run basic property queries"""
@@ -58,6 +58,17 @@ class QueryDemonstrator:
                 MATCH (p:Property)
                 RETURN p.property_type as type, count(p) as count
                 ORDER BY count DESC
+            """),
+            ("Properties with enhanced features", """
+                MATCH (p:Property)
+                WHERE p.features IS NOT NULL AND size(p.features) > 0
+                RETURN count(p) as enhanced_properties, 
+                       avg(size(p.features)) as avg_features_per_property
+            """),
+            ("Feature categories overview", """
+                MATCH (f:Feature)
+                RETURN f.category as category, count(f) as feature_count
+                ORDER BY feature_count DESC
             """)
         ]
         
@@ -71,7 +82,7 @@ class QueryDemonstrator:
         
         queries = [
             ("Property to City traversal", """
-                MATCH path = (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+                MATCH path = (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
                 RETURN c.name as city, count(p) as properties
                 ORDER BY properties DESC
             """),
@@ -86,6 +97,20 @@ class QueryDemonstrator:
                 MATCH (n1:Neighborhood)-[:NEAR]-(n2:Neighborhood)
                 RETURN n1.city as city, count(DISTINCT n1) as connected_neighborhoods
                 ORDER BY connected_neighborhoods DESC
+            """),
+            ("City hierarchy with counties", """
+                MATCH (c:City)-[:IN_COUNTY]->(co:County)
+                MATCH (n:Neighborhood)-[:IN_CITY]->(c)
+                RETURN co.name as county, c.name as city, count(n) as neighborhoods
+                ORDER BY neighborhoods DESC
+            """),
+            ("Properties by lifestyle tags", """
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+                WHERE n.lifestyle_tags IS NOT NULL AND size(n.lifestyle_tags) > 0
+                UNWIND n.lifestyle_tags as tag
+                RETURN tag, count(p) as properties
+                ORDER BY properties DESC
+                LIMIT 8
             """)
         ]
         
@@ -113,12 +138,41 @@ class QueryDemonstrator:
                 LIMIT 10
             """),
             ("Price per square foot rankings", """
-                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
-                WHERE p.price_per_sqft IS NOT NULL
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+                WHERE p.price_per_sqft IS NOT NULL AND p.price_per_sqft > 0
                 RETURN c.name as city,
                        avg(p.price_per_sqft) as avg_price_per_sqft,
                        count(p) as properties
                 ORDER BY avg_price_per_sqft DESC
+            """),
+            ("Property similarity analysis", """
+                MATCH (p1:Property)-[r:SIMILAR_TO]->(p2:Property)
+                WHERE r.score > 0.8
+                RETURN avg(r.score) as avg_similarity,
+                       count(*) as high_similarity_pairs,
+                       max(r.score) as max_similarity
+            """),
+            ("Neighborhood lifestyle distribution", """
+                MATCH (n:Neighborhood)
+                WHERE n.lifestyle_tags IS NOT NULL
+                UNWIND n.lifestyle_tags as tag
+                RETURN tag as lifestyle_tag, 
+                       count(n) as neighborhoods,
+                       collect(n.city)[0..3] as sample_cities
+                ORDER BY neighborhoods DESC
+                LIMIT 10
+            """),
+            ("Feature category insights", """
+                MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)
+                WITH f.category as category, 
+                     avg(p.listing_price) as avg_price,
+                     count(p) as property_count
+                WHERE property_count >= 10
+                RETURN category, 
+                       avg_price,
+                       property_count
+                ORDER BY avg_price DESC
+                LIMIT 8
             """)
         ]
         
@@ -191,10 +245,10 @@ class QueryDemonstrator:
                 _ = list(result)  # Consume results
             elapsed = (time.time() - start) * 1000  # Convert to ms
             
-            status = "✓" if elapsed < 100 else "⚠"
+            status = "" if elapsed < 100 else "Warning: "
             print(f"{status} {name}: {elapsed:.2f}ms")
         
-        print("\n✓ Performance check complete")
+        print("\nPerformance check complete")
     
     def verify_implementation(self):
         """Verify Phase 4 implementation is complete"""
@@ -214,15 +268,15 @@ class QueryDemonstrator:
         for check_name, check_func in checks:
             try:
                 check_func()
-                print(f"✓ {check_name}")
+                print(f"{check_name}")
             except Exception as e:
-                print(f"✗ {check_name}: {e}")
+                print(f"{check_name}: {e}")
                 all_passed = False
         
         if all_passed:
-            print("\n✓ Phase 4: All verifications passed")
+            print("\nPhase 4: All verifications passed")
         else:
-            print("\n⚠ Phase 4: Some verifications failed")
+            print("\nWarning: Phase 4: Some verifications failed")
         
         return all_passed
     

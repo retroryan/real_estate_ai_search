@@ -106,7 +106,7 @@ def main():
         # Check if embeddings exist
         status = pipeline.vector_manager.check_embeddings_exist()
         if status['with_embeddings'] == 0:
-            print("\n⚠️  No embeddings found! Run 'python create_embeddings.py' first.")
+            print("\nWarning: No embeddings found! Run 'python create_embeddings.py' first.")
             return 1
         
         print(f"Ready to search {status['with_embeddings']} properties with embeddings\n")
@@ -126,7 +126,7 @@ def main():
             print("=" * 60)
             
             for query in demo_queries:
-                print(f"\n🔍 Query: '{query}'")
+                print(f"\nQuery: '{query}'")
                 print("=" * 60)
                 
                 results = search.search(
@@ -160,7 +160,7 @@ def main():
                 filters['square_feet_min'] = args.sqft_min
             
             # Perform search
-            print(f"🔍 Searching for: '{args.query}'")
+            print(f"Searching for: '{args.query}'")
             if filters:
                 print(f"   Filters: {json.dumps(filters, indent=2)}")
             print("=" * 60)
@@ -187,7 +187,7 @@ def main():
         print("\n\nInterrupted by user")
         return 1
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\nError: Error: {e}")
         import traceback
         traceback.print_exc()
         return 1

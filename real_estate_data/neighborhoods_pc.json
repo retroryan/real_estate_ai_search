@@ -38,50 +38,49 @@
     "price_trend": "rising",
     "demographics": {
       "primary_age_group": "35-60",
-      "vibe": "historic mountain charm"
+      "vibe": "historic mountain charm",
+      "city_population": 8396
     },
     "graph_metadata": {
-      "primary_wiki_article": null,
+      "primary_wiki_article": {
+        "page_id": 151252,
+        "title": "Park City, Utah",
+        "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
+        "confidence": 0.95
+      },
       "related_wiki_articles": [
         {
-          "page_id": 888001,
-          "title": "Park City, Utah",
-          "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
-          "relationship": "landmark",
-          "confidence": 0.891
-        },
-        {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
-          "relationship": "geographic",
-          "confidence": 0.855
+          "relationship": "county",
+          "confidence": 0.9
         },
         {
-          "page_id": 888501,
+          "page_id": 5680177,
           "title": "Park City Mountain Resort",
           "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
-          "relationship": "park",
-          "confidence": 0.8415
+          "relationship": "resort",
+          "confidence": 0.9
         },
         {
-          "page_id": 888503,
+          "page_id": 31230576,
           "title": "Woodward Park City",
           "url": "https://en.wikipedia.org/wiki/Woodward_Park_City",
-          "relationship": "park",
-          "confidence": 0.765
+          "relationship": "recreation",
+          "confidence": 0.8
         }
       ],
       "parent_geography": {
         "city_wiki": {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah"
         }
       },
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -126,47 +125,45 @@
       "vibe": "exclusive luxury"
     },
     "graph_metadata": {
-      "primary_wiki_article": null,
+      "primary_wiki_article": {
+        "page_id": 748238,
+        "title": "Deer Valley",
+        "url": "https://en.wikipedia.org/wiki/Deer_Valley",
+        "confidence": 0.95
+      },
       "related_wiki_articles": [
         {
-          "page_id": 888001,
+          "page_id": 2668419,
+          "title": "Park City Resort",
+          "url": "https://en.wikipedia.org/wiki/Park_City_Resort",
+          "relationship": "resort",
+          "confidence": 0.9
+        },
+        {
+          "page_id": 151252,
           "title": "Park City, Utah",
           "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
-          "relationship": "landmark",
-          "confidence": 0.891
+          "relationship": "city",
+          "confidence": 0.95
         },
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
-          "relationship": "geographic",
-          "confidence": 0.855
-        },
-        {
-          "page_id": 888501,
-          "title": "Park City Mountain Resort",
-          "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
-          "relationship": "park",
-          "confidence": 0.8415
-        },
-        {
-          "page_id": 888502,
-          "title": "Canyons Resort",
-          "url": "https://en.wikipedia.org/wiki/Canyons_Resort",
-          "relationship": "recreation",
-          "confidence": 0.8075
+          "relationship": "county",
+          "confidence": 0.9
         }
       ],
       "parent_geography": {
         "city_wiki": {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah"
         }
       },
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -214,28 +211,28 @@
       "primary_wiki_article": null,
       "related_wiki_articles": [
         {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah",
           "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
           "relationship": "landmark",
           "confidence": 0.891
         },
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
           "relationship": "geographic",
           "confidence": 0.855
         },
         {
-          "page_id": 888501,
+          "page_id": 5680177,
           "title": "Park City Mountain Resort",
           "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
           "relationship": "park",
           "confidence": 0.8415
         },
         {
-          "page_id": 888503,
+          "page_id": 31230576,
           "title": "Woodward Park City",
           "url": "https://en.wikipedia.org/wiki/Woodward_Park_City",
           "relationship": "park",
@@ -244,7 +241,7 @@
       ],
       "parent_geography": {
         "city_wiki": {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah"
         }
       },
@@ -299,21 +296,21 @@
       "primary_wiki_article": null,
       "related_wiki_articles": [
         {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah",
           "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
           "relationship": "landmark",
           "confidence": 0.891
         },
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
           "relationship": "geographic",
           "confidence": 0.855
         },
         {
-          "page_id": 888501,
+          "page_id": 5680177,
           "title": "Park City Mountain Resort",
           "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
           "relationship": "park",
@@ -322,7 +319,7 @@
       ],
       "parent_geography": {
         "city_wiki": {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah"
         }
       },
@@ -375,93 +372,44 @@
     },
     "graph_metadata": {
       "primary_wiki_article": {
-        "page_id": 888502,
-        "title": "Canyons Resort",
-        "url": "https://en.wikipedia.org/wiki/Canyons_Resort",
-        "confidence": 0.9
+        "page_id": 5680177,
+        "title": "Park City Mountain Resort",
+        "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
+        "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 888501,
-          "title": "Park City Mountain Resort",
-          "url": "https://en.wikipedia.org/wiki/Park_City_Mountain_Resort",
-          "relationship": "park",
-          "confidence": 0.95
-        },
-        {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah",
           "url": "https://en.wikipedia.org/wiki/Park_City,_Utah",
           "relationship": "city",
           "confidence": 0.95
         },
         {
-          "page_id": 888503,
+          "page_id": 31230576,
           "title": "Woodward Park City",
           "url": "https://en.wikipedia.org/wiki/Woodward_Park_City",
           "relationship": "recreation",
           "confidence": 0.85
         },
         {
-          "page_id": 888600,
-          "title": "Wasatch Range",
-          "url": "https://en.wikipedia.org/wiki/Wasatch_Range",
-          "relationship": "landmark",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888502,
-          "title": "Canyons Resort",
-          "url": "https://en.wikipedia.org/wiki/Canyons_Resort",
-          "relationship": "recreation",
-          "confidence": 0.8075
-        },
-        {
-          "page_id": 888540,
-          "title": "Vail Resorts",
-          "url": "https://en.wikipedia.org/wiki/Vail_Resorts",
-          "relationship": "commercial",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888544,
+          "page_id": 9766792,
           "title": "Utah Olympic Park",
           "url": "https://en.wikipedia.org/wiki/Utah_Olympic_Park",
           "relationship": "park",
           "confidence": 0.8
-        },
-        {
-          "page_id": 888541,
-          "title": "Orange Bubble Express",
-          "url": "https://en.wikipedia.org/wiki/Orange_Bubble_Express",
-          "relationship": "transit",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888542,
-          "title": "Red Pine Gondola",
-          "url": "https://en.wikipedia.org/wiki/Red_Pine_Gondola",
-          "relationship": "transit",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888543,
-          "title": "Colony at White Pine Canyon",
-          "url": "https://en.wikipedia.org/wiki/Colony_at_White_Pine_Canyon",
-          "relationship": "neighborhood",
-          "confidence": 0.7
         }
       ],
       "parent_geography": {
         "city_wiki": {
-          "page_id": 888001,
+          "page_id": 151252,
           "title": "Park City, Utah"
         }
       },
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -491,7 +439,7 @@
       "Privacy",
       "Natural setting"
     ],
-    "wlifestyle_tags": [
+    "lifestyle_tags": [
       "rural",
       "private",
       "affordable",
@@ -515,45 +463,17 @@
       },
       "related_wiki_articles": [
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
           "relationship": "county",
           "confidence": 0.9
         },
         {
-          "page_id": 888516,
-          "title": "Snyderville Basin",
-          "url": "https://en.wikipedia.org/wiki/Snyderville_Basin",
-          "relationship": "district",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 34831668,
-          "title": "Park City School District",
-          "url": "https://en.wikipedia.org/wiki/Park_City_School_District",
-          "relationship": "school",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888517,
-          "title": "Jeremy Ranch",
-          "url": "https://en.wikipedia.org/wiki/Jeremy_Ranch",
-          "relationship": "neighborhood",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888518,
+          "page_id": 31716,
           "title": "Pinebrook, Utah",
           "url": "https://en.wikipedia.org/wiki/Pinebrook,_Utah",
           "relationship": "neighborhood",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888520,
-          "title": "Parley's Canyon",
-          "url": "https://en.wikipedia.org/wiki/Parley's_Canyon",
-          "relationship": "landmark",
           "confidence": 0.8
         },
         {
@@ -564,7 +484,7 @@
           "confidence": 0.75
         },
         {
-          "page_id": 888519,
+          "page_id": 31716,
           "title": "Interstate 80 in Utah",
           "url": "https://en.wikipedia.org/wiki/Interstate_80_in_Utah",
           "relationship": "transit",
@@ -621,80 +541,38 @@
     },
     "graph_metadata": {
       "primary_wiki_article": {
-        "page_id": 888530,
+        "page_id": 137114,
         "title": "Coalville, Utah",
         "url": "https://en.wikipedia.org/wiki/Coalville,_Utah",
         "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
           "relationship": "county",
           "confidence": 0.95
         },
         {
-          "page_id": 888504,
-          "title": "Echo Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Echo_Reservoir",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888531,
-          "title": "Rockport State Park",
-          "url": "https://en.wikipedia.org/wiki/Rockport_State_Park",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 2588177,
-          "title": "Echo, Utah",
-          "url": "https://en.wikipedia.org/wiki/Echo,_Utah",
-          "relationship": "city",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888532,
+          "page_id": 31716,
           "title": "Hoytsville, Utah",
           "url": "https://en.wikipedia.org/wiki/Hoytsville,_Utah",
           "relationship": "city",
           "confidence": 0.75
         },
         {
-          "page_id": 888519,
+          "page_id": 31716,
           "title": "Interstate 80 in Utah",
           "url": "https://en.wikipedia.org/wiki/Interstate_80_in_Utah",
           "relationship": "transit",
           "confidence": 0.75
         },
         {
-          "page_id": 888510,
-          "title": "Weber River",
-          "url": "https://en.wikipedia.org/wiki/Weber_River",
-          "relationship": "landmark",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888505,
-          "title": "Rockport Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Rockport_Reservoir",
-          "relationship": "park",
-          "confidence": 0.7224999999999999
-        },
-        {
-          "page_id": 888533,
+          "page_id": 31716,
           "title": "Wanship, Utah",
           "url": "https://en.wikipedia.org/wiki/Wanship,_Utah",
           "relationship": "city",
-          "confidence": 0.7
-        },
-        {
-          "page_id": 888534,
-          "title": "Union Pacific Railroad",
-          "url": "https://en.wikipedia.org/wiki/Union_Pacific_Railroad",
-          "relationship": "historical",
           "confidence": 0.7
         }
       ],
@@ -749,70 +627,35 @@
     },
     "graph_metadata": {
       "primary_wiki_article": {
-        "page_id": 888509,
+        "page_id": 31716,
         "title": "Oakley, Utah",
         "url": "https://en.wikipedia.org/wiki/Oakley,_Utah",
         "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 888010,
+          "page_id": 71074,
           "title": "Summit County, Utah",
           "url": "https://en.wikipedia.org/wiki/Summit_County,_Utah",
           "relationship": "county",
           "confidence": 0.9
         },
         {
-          "page_id": 888510,
-          "title": "Weber River",
-          "url": "https://en.wikipedia.org/wiki/Weber_River",
-          "relationship": "landmark",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888514,
-          "title": "Uinta-Wasatch-Cache National Forest",
-          "url": "https://en.wikipedia.org/wiki/Uinta-Wasatch-Cache_National_Forest",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888505,
-          "title": "Rockport Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Rockport_Reservoir",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888511,
+          "page_id": 31716,
           "title": "Marion, Utah",
           "url": "https://en.wikipedia.org/wiki/Marion,_Utah",
           "relationship": "city",
           "confidence": 0.75
         },
         {
-          "page_id": 888512,
+          "page_id": 31716,
           "title": "Kamas, Utah",
           "url": "https://en.wikipedia.org/wiki/Kamas,_Utah",
           "relationship": "city",
           "confidence": 0.75
         },
         {
-          "page_id": 888600,
-          "title": "Wasatch Range",
-          "url": "https://en.wikipedia.org/wiki/Wasatch_Range",
-          "relationship": "landmark",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888513,
-          "title": "Smith and Morehouse Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Smith_and_Morehouse_Reservoir",
-          "relationship": "park",
-          "confidence": 0.7
-        },
-        {
-          "page_id": 888515,
+          "page_id": 31716,
           "title": "Utah State Route 32",
           "url": "https://en.wikipedia.org/wiki/Utah_State_Route_32",
           "relationship": "transit",
@@ -870,80 +713,52 @@
     },
     "graph_metadata": {
       "primary_wiki_article": {
-        "page_id": 888512,
+        "page_id": 31716,
         "title": "Kamas, Utah",
         "url": "https://en.wikipedia.org/wiki/Kamas,_Utah",
         "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 888506,
+          "page_id": 728273,
           "title": "Uinta Mountains",
           "url": "https://en.wikipedia.org/wiki/Uinta_Mountains",
           "relationship": "recreation",
           "confidence": 0.9
         },
         {
-          "page_id": 888514,
-          "title": "Uinta-Wasatch-Cache National Forest",
-          "url": "https://en.wikipedia.org/wiki/Uinta-Wasatch-Cache_National_Forest",
-          "relationship": "park",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 888507,
+          "page_id": 7969968,
           "title": "Mirror Lake (Utah)",
           "url": "https://en.wikipedia.org/wiki/Mirror_Lake_(Utah)",
           "relationship": "park",
           "confidence": 0.85
         },
         {
-          "page_id": 888535,
+          "page_id": 7969968,
           "title": "Mirror Lake Highway",
           "url": "https://en.wikipedia.org/wiki/Mirror_Lake_Highway",
           "relationship": "transit",
           "confidence": 0.85
         },
         {
-          "page_id": 888538,
-          "title": "High Uintas Wilderness",
-          "url": "https://en.wikipedia.org/wiki/High_Uintas_Wilderness",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888536,
+          "page_id": 137115,
           "title": "Francis, Utah",
           "url": "https://en.wikipedia.org/wiki/Francis,_Utah",
           "relationship": "city",
           "confidence": 0.8
         },
         {
-          "page_id": 888539,
+          "page_id": 31716,
           "title": "Utah State Route 150",
           "url": "https://en.wikipedia.org/wiki/Utah_State_Route_150",
           "relationship": "transit",
           "confidence": 0.8
         },
         {
-          "page_id": 888537,
+          "page_id": 31716,
           "title": "Woodland, Utah",
           "url": "https://en.wikipedia.org/wiki/Woodland,_Utah",
           "relationship": "city",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888529,
-          "title": "Provo River",
-          "url": "https://en.wikipedia.org/wiki/Provo_River",
-          "relationship": "landmark",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888600,
-          "title": "Wasatch Range",
-          "url": "https://en.wikipedia.org/wiki/Wasatch_Range",
-          "relationship": "landmark",
           "confidence": 0.75
         }
       ],
@@ -997,7 +812,7 @@
     },
     "graph_metadata": {
       "primary_wiki_article": {
-        "page_id": 888521,
+        "page_id": 137179,
         "title": "Heber City, Utah",
         "url": "https://en.wikipedia.org/wiki/Heber_City,_Utah",
         "confidence": 0.95
@@ -1011,73 +826,31 @@
           "confidence": 0.95
         },
         {
-          "page_id": 888508,
-          "title": "Deer Creek Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Deer_Creek_Reservoir",
-          "relationship": "park",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 888522,
-          "title": "Jordanelle Reservoir",
-          "url": "https://en.wikipedia.org/wiki/Jordanelle_Reservoir",
-          "relationship": "park",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 888523,
+          "page_id": 31716,
           "title": "Midway, Utah",
           "url": "https://en.wikipedia.org/wiki/Midway,_Utah",
           "relationship": "city",
           "confidence": 0.85
         },
         {
-          "page_id": 888526,
+          "page_id": 2747930,
           "title": "Heber Valley Railroad",
           "url": "https://en.wikipedia.org/wiki/Heber_Valley_Railroad",
           "relationship": "landmark",
           "confidence": 0.85
         },
         {
-          "page_id": 888528,
-          "title": "Wasatch Mountain State Park",
-          "url": "https://en.wikipedia.org/wiki/Wasatch_Mountain_State_Park",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888527,
-          "title": "Soldier Hollow",
-          "url": "https://en.wikipedia.org/wiki/Soldier_Hollow",
-          "relationship": "recreation",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888529,
-          "title": "Provo River",
-          "url": "https://en.wikipedia.org/wiki/Provo_River",
-          "relationship": "landmark",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888524,
+          "page_id": 31716,
           "title": "Daniel, Utah",
           "url": "https://en.wikipedia.org/wiki/Daniel,_Utah",
           "relationship": "city",
           "confidence": 0.75
         },
         {
-          "page_id": 888525,
+          "page_id": 31716,
           "title": "Charleston, Utah",
           "url": "https://en.wikipedia.org/wiki/Charleston,_Utah",
           "relationship": "city",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 888600,
-          "title": "Wasatch Range",
-          "url": "https://en.wikipedia.org/wiki/Wasatch_Range",
-          "relationship": "landmark",
           "confidence": 0.75
         }
       ],

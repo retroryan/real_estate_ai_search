@@ -113,11 +113,11 @@ class PropertyEmbeddingPipeline:
         
         # Determine what to process
         if force_recreate:
-            print("\n⚠️  Force recreate mode - clearing existing embeddings")
+            print("\nWarning: Force recreate mode - clearing existing embeddings")
             self.vector_manager.clear_embeddings()
             properties_to_process = self._get_all_properties()
         elif status['without_embeddings'] == 0:
-            print("\n✓ All properties already have embeddings")
+            print("\nAll properties already have embeddings")
             return {
                 "total": status['total'],
                 "processed": 0,
@@ -160,7 +160,7 @@ class PropertyEmbeddingPipeline:
                     
                 except Exception as e:
                     errors += 1
-                    print(f"\n✗ Error processing {prop.get('listing_id', 'unknown')}: {e}")
+                    print(f"\nError: Error processing {prop.get('listing_id', 'unknown')}: {e}")
                     pbar.update(1)
         
         # Store remaining embeddings
@@ -175,11 +175,11 @@ class PropertyEmbeddingPipeline:
         print("\n" + "=" * 60)
         print("EMBEDDING GENERATION COMPLETE")
         print("=" * 60)
-        print(f"✓ Processed: {processed}")
-        print(f"✗ Errors: {errors}")
-        print(f"⏱ Time: {elapsed:.2f}s")
+        print(f"Processed: {processed}")
+        print(f"Errors: {errors}")
+        print(f"Time: {elapsed:.2f}s")
         if processed > 0:
-            print(f"📊 Rate: {processed/elapsed:.1f} properties/second")
+            print(f"Rate: {processed/elapsed:.1f} properties/second")
         
         return {
             "total": len(properties_to_process),
@@ -264,7 +264,7 @@ class PropertyEmbeddingPipeline:
         """Get all properties from the database with their features"""
         query = """
         MATCH (p:Property)
-        OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+        OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         WITH p, n, c, collect(DISTINCT f.name) as features
         RETURN p.listing_id as listing_id,

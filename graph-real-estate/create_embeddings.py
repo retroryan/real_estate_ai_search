@@ -18,48 +18,22 @@ from src.database.neo4j_client import get_neo4j_driver, close_neo4j_driver
 def main():
     """Main function to create property embeddings"""
     parser = argparse.ArgumentParser(
-        description="Generate vector embeddings for properties in Neo4j"
+        description="Generate vector embeddings for properties in Neo4j using settings from config.yaml"
     )
     parser.add_argument(
         "--force-recreate",
         action="store_true",
         help="Delete existing embeddings and recreate from scratch"
     )
-    parser.add_argument(
-        "--provider",
-        choices=["ollama", "openai", "gemini"],
-        help="Override embedding provider from config"
-    )
-    parser.add_argument(
-        "--model",
-        help="Override model name (e.g., nomic-embed-text, mxbai-embed-large)"
-    )
     
     args = parser.parse_args()
     
     driver = None
     try:
-        # Load configuration
-        print("Loading configuration...")
+        # Load configuration from config.yaml
+        print("Loading configuration from config.yaml...")
         embedding_config = get_embedding_config()
         vector_config = get_vector_index_config()
-        
-        # Override provider/model if specified
-        if args.provider:
-            embedding_config.provider = args.provider
-            print(f"Using provider: {args.provider}")
-        
-        if args.model:
-            if embedding_config.provider == "ollama":
-                embedding_config.ollama_model = args.model
-            elif embedding_config.provider == "openai":
-                embedding_config.openai_model = args.model
-            elif embedding_config.provider == "gemini":
-                embedding_config.gemini_model = args.model
-            print(f"Using model: {args.model}")
-            
-            # Update vector dimensions based on new model
-            vector_config.vector_dimensions = embedding_config.get_dimensions()
         
         # Connect to Neo4j
         print("\nConnecting to Neo4j...")
@@ -72,9 +46,9 @@ def main():
         # Create vector index
         print("\nCreating vector index...")
         if pipeline.vector_manager.create_vector_index():
-            print("✓ Vector index ready")
+            print("Vector index ready")
         else:
-            print("✗ Failed to create vector index")
+            print("Failed to create vector index")
             return 1
         
         # Process properties
@@ -101,7 +75,7 @@ def main():
         print("\n\nInterrupted by user")
         return 1
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\nError: Error: {e}")
         import traceback
         traceback.print_exc()
         return 1

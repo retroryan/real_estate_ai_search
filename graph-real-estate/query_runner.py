@@ -95,7 +95,7 @@ Examples:
         elif args.export:
             print(f"Exporting all query results to {args.output}...")
             runner.export_results(output_file=args.output)
-            print(f"✓ Export complete: {args.output}")
+            print(f"Export complete: {args.output}")
             
     except Exception as e:
         print(f"Error: {e}")

@@ -22,7 +22,7 @@ class QueryLibrary:
                 description="Count properties by city",
                 category="basic",
                 cypher="""
-                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
                 RETURN c.name as city, count(p) as count
                 ORDER BY count DESC
                 """
@@ -55,6 +55,27 @@ class QueryLibrary:
                 MATCH (p:Property)
                 RETURN p.bedrooms as bedrooms, count(p) as count
                 ORDER BY bedrooms
+                """
+            ),
+            Query(
+                name="enhanced_properties_overview",
+                description="Overview of enhanced property features",
+                category="basic",
+                cypher="""
+                MATCH (p:Property)
+                RETURN count(p) as total_properties,
+                       avg(size(p.features)) as avg_features_per_property,
+                       avg(p.price_per_sqft) as avg_price_per_sqft
+                """
+            ),
+            Query(
+                name="geographic_hierarchy",
+                description="Geographic organization overview",
+                category="basic",
+                cypher="""
+                MATCH (co:County)<-[:IN_COUNTY]-(c:City)<-[:IN_CITY]-(n:Neighborhood)
+                RETURN co.name as county, c.name as city, count(n) as neighborhoods
+                ORDER BY neighborhoods DESC
                 """
             )
         ]
@@ -107,6 +128,37 @@ class QueryLibrary:
                        n.city as city,
                        connections
                 ORDER BY connections DESC, n.name
+                """
+            ),
+            Query(
+                name="lifestyle_neighborhoods",
+                description="Neighborhoods by lifestyle tags",
+                category="neighborhood",
+                cypher="""
+                MATCH (n:Neighborhood)
+                WHERE n.lifestyle_tags IS NOT NULL AND size(n.lifestyle_tags) > 0
+                UNWIND n.lifestyle_tags as tag
+                RETURN tag as lifestyle_tag, 
+                       collect(n.name)[0..5] as sample_neighborhoods,
+                       count(n) as neighborhood_count
+                ORDER BY neighborhood_count DESC
+                """
+            ),
+            Query(
+                name="neighborhood_similarities",
+                description="Most similar neighborhoods",
+                category="neighborhood",
+                cypher="""
+                MATCH (n1:Neighborhood)-[r:SIMILAR_TO]->(n2:Neighborhood)
+                WHERE r.similarity_score > 0.5
+                RETURN n1.name as neighborhood1,
+                       n1.city as city1,
+                       n2.name as neighborhood2,
+                       n2.city as city2,
+                       r.similarity_score as similarity,
+                       r.lifestyle_similarity as lifestyle_match
+                ORDER BY r.similarity_score DESC
+                LIMIT 10
                 """
             )
         ]
@@ -177,12 +229,13 @@ class QueryLibrary:
                 description="Price per square foot analysis by city",
                 category="price",
                 cypher="""
-                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
-                WHERE p.price_per_sqft IS NOT NULL
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+                WHERE p.price_per_sqft IS NOT NULL AND p.price_per_sqft > 0
                 RETURN c.name as city,
                        avg(p.price_per_sqft) as avg_price_per_sqft,
                        min(p.price_per_sqft) as min_price_per_sqft,
-                       max(p.price_per_sqft) as max_price_per_sqft
+                       max(p.price_per_sqft) as max_price_per_sqft,
+                       count(p) as properties
                 ORDER BY avg_price_per_sqft DESC
                 """
             ),
@@ -249,7 +302,7 @@ class QueryLibrary:
                 description="Market segmentation analysis",
                 category="advanced",
                 cypher="""
-                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:PART_OF]->(c:City)
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
                 WITH c.name as city,
                      CASE 
                        WHEN p.listing_price < 1000000 THEN 'Entry Level'
@@ -260,7 +313,8 @@ class QueryLibrary:
                      p
                 RETURN city, segment,
                        count(p) as count,
-                       avg(p.square_feet) as avg_sqft
+                       avg(p.square_feet) as avg_sqft,
+                       avg(p.listing_price) as avg_price
                 ORDER BY city, segment
                 """
             ),
@@ -293,6 +347,51 @@ class QueryLibrary:
                 RETURN feature1, feature2, cooccurrence
                 ORDER BY cooccurrence DESC
                 LIMIT 15
+                """
+            ),
+            Query(
+                name="lifestyle_property_analysis",
+                description="Property analysis by neighborhood lifestyle tags",
+                category="advanced",
+                cypher="""
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+                WHERE n.lifestyle_tags IS NOT NULL AND size(n.lifestyle_tags) > 0
+                UNWIND n.lifestyle_tags as lifestyle
+                WITH lifestyle, 
+                     avg(p.listing_price) as avg_price,
+                     avg(p.price_per_sqft) as avg_price_per_sqft,
+                     count(p) as property_count
+                WHERE property_count >= 10
+                RETURN lifestyle,
+                       avg_price,
+                       avg_price_per_sqft,
+                       property_count
+                ORDER BY avg_price DESC
+                """
+            ),
+            Query(
+                name="comprehensive_property_profile",
+                description="Complete property analysis with all enhancements",
+                category="advanced", 
+                cypher="""
+                MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+                OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
+                OPTIONAL MATCH (p)-[sim:SIMILAR_TO]->(similar:Property)
+                WHERE p.listing_price > 2000000
+                WITH p, n, c,
+                     collect(DISTINCT f.name)[0..5] as top_features,
+                     n.lifestyle_tags as lifestyle,
+                     count(DISTINCT similar) as similar_properties
+                RETURN p.address as address,
+                       p.listing_price as price,
+                       p.price_per_sqft as price_per_sqft,
+                       c.name as city,
+                       n.name as neighborhood,
+                       lifestyle,
+                       top_features,
+                       similar_properties
+                ORDER BY p.listing_price DESC
+                LIMIT 10
                 """
             )
         ]

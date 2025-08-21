@@ -37,18 +37,39 @@
     "median_home_price": 3500000,
     "price_trend": "stable",
     "demographics": {
-      "primary_age_group": "35-55",
-      "vibe": "sophisticated residential"
+      "primary_age_group": "37-55",
+      "vibe": "sophisticated residential",
+      "population": 20754,
+      "median_household_income": 154264
     },
     "graph_metadata": {
-      "primary_wiki_article": null,
+      "primary_wiki_article": {
+        "page_id": 1978628,
+        "title": "Pacific Heights, San Francisco",
+        "url": "https://en.wikipedia.org/wiki/Pacific_Heights,_San_Francisco",
+        "confidence": 0.95
+      },
       "related_wiki_articles": [
         {
-          "page_id": 888601,
-          "title": "Great Salt Lake",
-          "url": "https://en.wikipedia.org/wiki/Great_Salt_Lake",
-          "relationship": "transit",
-          "confidence": 0.7224999999999999
+          "page_id": 9391765,
+          "title": "Lower Pacific Heights, San Francisco",
+          "url": "https://en.wikipedia.org/wiki/Lower_Pacific_Heights,_San_Francisco",
+          "relationship": "neighborhood",
+          "confidence": 0.85
+        },
+        {
+          "page_id": 17855537,
+          "title": "Lafayette Park (San Francisco)",
+          "url": "https://en.wikipedia.org/wiki/Lafayette_Park_(San_Francisco)",
+          "relationship": "park",
+          "confidence": 0.9
+        },
+        {
+          "page_id": 1487556,
+          "title": "List of neighborhoods in San Francisco",
+          "url": "https://en.wikipedia.org/wiki/List_of_neighborhoods_in_San_Francisco",
+          "relationship": "reference",
+          "confidence": 0.8
         }
       ],
       "parent_geography": {
@@ -64,22 +85,22 @@
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
     "neighborhood_id": "sf-mission-002",
     "name": "Mission District",
     "city": "San Francisco",
-    "county": "San Francisco",
+    "county": "San Francisco", 
     "state": "CA",
     "coordinates": {
       "latitude": 37.7599,
       "longitude": -122.4148
     },
-    "description": "The Mission District pulses with Latino culture, street art, and culinary innovation. Historic murals line Balmy Alley and Clarion Alley, while Valencia Street bustles with trendy restaurants, bars, and independent shops. The neighborhood's famous microclimate provides some of San Francisco's sunniest weather. Dolores Park serves as the social hub, hosting picnics, festivals, and community gatherings. The area attracts young professionals, artists, and long-time Latino families, creating a diverse, vibrant community. Tech workers have increasingly moved in, drawn by the culture and relatively central location, though this has sparked ongoing conversations about gentrification and affordability.",
+    "description": "The Mission District pulses with Latino culture, vibrant street art, and innovative dining. Historic Mission Dolores anchors a neighborhood that seamlessly blends authentic taquerias with trendy cocktail bars. Colorful murals line alleyways while vintage shops and artisan coffee roasters populate Valencia Street. The area attracts young professionals, artists, and families drawn to its sunny microclimate and dynamic energy. While gentrification has brought changes, the Mission retains its multicultural soul and remains one of the city's most exciting neighborhoods for food, nightlife, and cultural experiences.",
     "characteristics": {
-      "walkability_score": 10,
+      "walkability_score": 9,
       "transit_score": 9,
       "school_rating": 6,
       "safety_rating": 6,
@@ -87,15 +108,15 @@
       "family_friendly_score": 7
     },
     "amenities": [
-      "Dolores Park",
-      "BART stations",
-      "Valencia Street dining",
-      "Mission murals",
-      "Farmers market",
-      "Nightlife venues"
+      "Valencia Street",
+      "Mission Dolores",
+      "Street art tours",
+      "Authentic Mexican food",
+      "Craft breweries",
+      "Live music venues"
     ],
     "lifestyle_tags": [
-      "artsy",
+      "artistic",
       "diverse",
       "foodie",
       "nightlife",
@@ -107,101 +128,31 @@
     "price_trend": "rising",
     "demographics": {
       "primary_age_group": "25-40",
-      "vibe": "hip and cultural"
+      "vibe": "hip and cultural",
+      "population": 54000,
+      "hispanic_percentage": 33
     },
     "graph_metadata": {
       "primary_wiki_article": {
         "page_id": 525516,
         "title": "Mission District, San Francisco",
+        "url": "https://en.wikipedia.org/wiki/Mission_District,_San_Francisco",
         "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 1731898,
-          "title": "Mission High School (San Francisco)",
-          "relationship": "school",
-          "confidence": 0.9,
-          "distance_miles": 0.7
+          "page_id": 27676211,
+          "title": "Mission District, San Francisco, California",
+          "url": "https://en.wikipedia.org/wiki/Mission_District,_San_Francisco,_California",
+          "relationship": "reference",
+          "confidence": 0.9
         },
         {
-          "page_id": 403966,
-          "title": "Asian Art Museum (San Francisco)",
-          "relationship": "cultural",
-          "confidence": 0.85,
-          "distance_miles": 1.41
-        },
-        {
-          "page_id": 888301,
-          "title": "Mission Dolores Park",
-          "relationship": "park",
-          "confidence": 0.84
-        },
-        {
-          "page_id": 60049,
-          "title": "Mission San Francisco de As\u00eds",
-          "relationship": "cultural",
-          "confidence": 0.81
-        },
-        {
-          "page_id": 888302,
-          "title": "Castro District, San Francisco",
-          "relationship": "neighborhood",
-          "confidence": 0.81
-        },
-        {
-          "page_id": 1487596,
-          "title": "List of parks in San Francisco",
-          "relationship": "park",
+          "page_id": 1487556,
+          "title": "List of neighborhoods in San Francisco",
+          "url": "https://en.wikipedia.org/wiki/List_of_neighborhoods_in_San_Francisco", 
+          "relationship": "reference",
           "confidence": 0.8
-        },
-        {
-          "page_id": 1552281,
-          "title": "Glen Park, San Francisco",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 1832426,
-          "title": "San Francisco Maritime National Historic Park",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 3148711,
-          "title": "Balboa Park (San Francisco, California)",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 4477419,
-          "title": "National Register of Historic Places listings in San Francisco",
-          "relationship": "landmark",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 36665945,
-          "title": "Lafayette Park, San Francisco, California",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 36667328,
-          "title": "Lincoln Park, San Francisco",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 999708,
-          "title": "Twin Peaks (San Francisco)",
-          "relationship": "landmark",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 17855537,
-          "title": "Lafayette Park (San Francisco)",
-          "relationship": "park",
-          "confidence": 0.8,
-          "distance_miles": 2.29
         }
       ],
       "parent_geography": {
@@ -215,7 +166,9 @@
         }
       },
       "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -261,14 +214,26 @@
       "vibe": "suburban family"
     },
     "graph_metadata": {
-      "primary_wiki_article": null,
+      "primary_wiki_article": {
+        "page_id": 350903,
+        "title": "Sunset District, San Francisco",
+        "url": "https://en.wikipedia.org/wiki/Sunset_District,_San_Francisco",
+        "confidence": 0.95
+      },
       "related_wiki_articles": [
         {
-          "page_id": 888601,
-          "title": "Great Salt Lake",
-          "url": "https://en.wikipedia.org/wiki/Great_Salt_Lake",
-          "relationship": "transit",
-          "confidence": 0.7224999999999999
+          "page_id": 25847556,
+          "title": "Sunset District, San Francisco, California",
+          "url": "https://en.wikipedia.org/wiki/Sunset_District,_San_Francisco,_California",
+          "relationship": "reference",
+          "confidence": 0.9
+        },
+        {
+          "page_id": 1487556,
+          "title": "List of neighborhoods in San Francisco",
+          "url": "https://en.wikipedia.org/wiki/List_of_neighborhoods_in_San_Francisco",
+          "relationship": "reference",
+          "confidence": 0.8
         }
       ],
       "parent_geography": {
@@ -284,7 +249,7 @@
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -329,14 +294,26 @@
       "vibe": "young professional"
     },
     "graph_metadata": {
-      "primary_wiki_article": null,
+      "primary_wiki_article": {
+        "page_id": 14084492,
+        "title": "Downtown San Francisco",
+        "url": "https://en.wikipedia.org/wiki/Downtown_San_Francisco",
+        "confidence": 0.85
+      },
       "related_wiki_articles": [
         {
-          "page_id": 888602,
-          "title": "2002 Winter Olympics",
-          "url": "https://en.wikipedia.org/wiki/2002_Winter_Olympics",
-          "relationship": "transit",
-          "confidence": 0.765
+          "page_id": 515953,
+          "title": "Civic Center, San Francisco",
+          "url": "https://en.wikipedia.org/wiki/Civic_Center,_San_Francisco",
+          "relationship": "neighborhood",
+          "confidence": 0.85
+        },
+        {
+          "page_id": 403966,
+          "title": "Asian Art Museum (San Francisco)",
+          "url": "https://en.wikipedia.org/wiki/Asian_Art_Museum_(San_Francisco)",
+          "relationship": "cultural",
+          "confidence": 0.8
         }
       ],
       "parent_geography": {
@@ -352,7 +329,7 @@
       "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
+      "updated_by": "data_quality_validation"
     }
   },
   {
@@ -362,123 +339,61 @@
     "county": "San Francisco",
     "state": "CA",
     "coordinates": {
-      "latitude": 37.7502,
-      "longitude": -122.4337
+      "latitude": 37.7511,
+      "longitude": -122.4316
     },
-    "description": "Noe Valley epitomizes San Francisco's village-within-a-city charm. Protected by Twin Peaks from fog and wind, the neighborhood enjoys exceptional weather. 24th Street serves as the main strip, featuring boutique shops, cafes, and restaurants with a distinctly local feel. Victorian and Edwardian homes line quiet, tree-lined streets. The neighborhood has evolved into 'Stroller Valley' due to its popularity with young families, offering excellent schools, parks, and a strong sense of community. Tech professionals and established families coexist in this walkable enclave. While prices reflect its desirability, residents consider it worth the premium for the combination of urban convenience and neighborhood tranquility.",
+    "description": "Noe Valley embodies San Francisco's family-friendly charm with tree-lined streets, Victorian homes, and a warm, sunny microclimate. 24th Street forms the neighborhood's heart, featuring independent boutiques, cozy cafes, and kid-friendly restaurants that have earned the area the nickname 'Stroller Valley.' The Castro Theatre and Dolores Park provide entertainment and recreation. Young families and professionals are drawn to excellent schools, walkable amenities, and strong community connections. While expensive, Noe Valley offers a small-town feel within the city, making it one of San Francisco's most desirable residential neighborhoods.",
     "characteristics": {
       "walkability_score": 9,
       "transit_score": 7,
       "school_rating": 9,
       "safety_rating": 9,
-      "nightlife_score": 5,
+      "nightlife_score": 6,
       "family_friendly_score": 10
     },
     "amenities": [
-      "24th Street shops",
-      "Douglass Playground",
-      "Farmers market",
-      "Local cafes",
-      "J-Church line",
-      "Dog parks"
+      "24th Street shopping",
+      "Dolores Park",
+      "Castro Theatre",
+      "Family restaurants",
+      "Excellent schools",
+      "Farmers market"
     ],
     "lifestyle_tags": [
       "family-friendly",
       "sunny",
       "walkable",
-      "village-like",
-      "safe",
+      "community-oriented",
       "upscale",
-      "community-oriented"
+      "quiet"
     ],
-    "median_home_price": 2200000,
+    "median_home_price": 2000000,
     "price_trend": "stable",
     "demographics": {
       "primary_age_group": "30-45",
-      "vibe": "upscale family"
+      "vibe": "family suburban"
     },
     "graph_metadata": {
       "primary_wiki_article": {
         "page_id": 351344,
         "title": "Noe Valley, San Francisco",
+        "url": "https://en.wikipedia.org/wiki/Noe_Valley,_San_Francisco",
         "confidence": 0.95
       },
       "related_wiki_articles": [
         {
-          "page_id": 1731898,
-          "title": "Mission High School (San Francisco)",
-          "relationship": "school",
-          "confidence": 0.9,
-          "distance_miles": 0.87
+          "page_id": 3148624,
+          "title": "Noe Valley (San Francisco)",
+          "url": "https://en.wikipedia.org/wiki/Noe_Valley_(San_Francisco)",
+          "relationship": "reference",
+          "confidence": 0.9
         },
         {
-          "page_id": 888301,
-          "title": "Mission Dolores Park",
-          "relationship": "park",
-          "confidence": 0.84
-        },
-        {
-          "page_id": 888302,
-          "title": "Castro District, San Francisco",
-          "relationship": "neighborhood",
-          "confidence": 0.81
-        },
-        {
-          "page_id": 1487596,
-          "title": "List of parks in San Francisco",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 1552281,
-          "title": "Glen Park, San Francisco",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 1832426,
-          "title": "San Francisco Maritime National Historic Park",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 3148711,
-          "title": "Balboa Park (San Francisco, California)",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 4477419,
-          "title": "National Register of Historic Places listings in San Francisco",
+          "page_id": 72061403,
+          "title": "Noe Valley public toilet",
+          "url": "https://en.wikipedia.org/wiki/Noe_Valley_public_toilet",
           "relationship": "landmark",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 36665945,
-          "title": "Lafayette Park, San Francisco, California",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 2146435,
-          "title": "Balboa Park station",
-          "relationship": "park",
-          "confidence": 0.8,
-          "distance_miles": 2.11
-        },
-        {
-          "page_id": 403966,
-          "title": "Asian Art Museum (San Francisco)",
-          "relationship": "cultural",
-          "confidence": 0.8,
-          "distance_miles": 2.28
-        },
-        {
-          "page_id": 17855537,
-          "title": "Lafayette Park (San Francisco)",
-          "relationship": "park",
-          "confidence": 0.8,
-          "distance_miles": 2.86
+          "confidence": 0.7
         }
       ],
       "parent_geography": {
@@ -492,553 +407,9 @@
         }
       },
       "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
-    }
-  },
-  {
-    "neighborhood_id": "oak-temescal-006",
-    "name": "Temescal",
-    "city": "Oakland",
-    "county": "Alameda",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 37.8308,
-      "longitude": -122.2647
-    },
-    "description": "Temescal has emerged as Oakland's hippest neighborhood, attracting young professionals and creatives with its eclectic mix of vintage shops, craft breweries, and innovative restaurants. Telegraph Avenue serves as the main artery, lined with independent businesses, art galleries, and music venues. The area successfully balances its working-class roots with modern gentrification, creating an authentic urban vibe. Proximity to BART provides easy access to San Francisco while maintaining Oakland's distinct character. The neighborhood offers significantly more affordable housing than SF while delivering comparable cultural amenities and walkability.",
-    "characteristics": {
-      "walkability_score": 9,
-      "transit_score": 8,
-      "school_rating": 6,
-      "safety_rating": 7,
-      "nightlife_score": 8,
-      "family_friendly_score": 6
-    },
-    "amenities": [
-      "Telegraph Avenue",
-      "BART access",
-      "Craft breweries",
-      "Music venues",
-      "Art galleries",
-      "Vintage shops"
-    ],
-    "lifestyle_tags": [
-      "hipster",
-      "artsy",
-      "affordable",
-      "diverse",
-      "walkable",
-      "transit-friendly",
-      "emerging"
-    ],
-    "median_home_price": 850000,
-    "price_trend": "rising",
-    "demographics": {
-      "primary_age_group": "25-40",
-      "vibe": "creative urban"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": {
-        "page_id": 4253169,
-        "title": "Temescal Creek (Northern California)",
-        "confidence": 0.95
-      },
-      "related_wiki_articles": [
-        {
-          "page_id": 888401,
-          "title": "Lake Merritt",
-          "relationship": "park",
-          "confidence": 0.81
-        },
-        {
-          "page_id": 64434524,
-          "title": "Bushrod Park, Oakland, California",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 1584685,
-          "title": "Oakland Museum of California",
-          "relationship": "cultural",
-          "confidence": 0.8,
-          "distance_miles": 2.23
-        },
-        {
-          "page_id": 888402,
-          "title": "Jack London Square",
-          "relationship": "landmark",
-          "confidence": 0.77
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
-    }
-  },
-  {
-    "neighborhood_id": "oak-rockridge-007",
-    "name": "Rockridge",
-    "city": "Oakland",
-    "county": "Alameda",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 37.8444,
-      "longitude": -122.2517
-    },
-    "description": "Rockridge stands as Oakland's premier family neighborhood, offering tree-lined streets, excellent schools, and a thriving commercial district centered around College Avenue. Craftsman homes and Mediterranean-style houses create architectural charm, while the BART station provides seamless access to San Francisco and Silicon Valley. The neighborhood attracts families and professionals seeking suburban tranquility within an urban setting. Local farmers markets, boutique shops, and family restaurants foster a strong sense of community. While prices have risen significantly, Rockridge still offers better value than comparable San Francisco neighborhoods.",
-    "characteristics": {
-      "walkability_score": 8,
-      "transit_score": 9,
-      "school_rating": 9,
-      "safety_rating": 8,
-      "nightlife_score": 5,
-      "family_friendly_score": 10
-    },
-    "amenities": [
-      "College Avenue",
-      "BART station",
-      "Farmers market",
-      "Excellent schools",
-      "Parks",
-      "Family restaurants"
-    ],
-    "lifestyle_tags": [
-      "family-friendly",
-      "suburban",
-      "safe",
-      "educated",
-      "transit-accessible",
-      "community-oriented"
-    ],
-    "median_home_price": 1200000,
-    "price_trend": "stable",
-    "demographics": {
-      "primary_age_group": "30-50",
-      "vibe": "family suburban"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": {
-        "page_id": 999101,
-        "title": "Rockridge, Oakland, California",
-        "confidence": 0.99
-      },
-      "related_wiki_articles": [
-        {
-          "page_id": 999102,
-          "title": "Rockridge station",
-          "relationship": "transit",
-          "confidence": 0.95
-        },
-        {
-          "page_id": 999103,
-          "title": "Rockridge Market Hall",
-          "relationship": "commercial",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 999104,
-          "title": "College Avenue (Oakland)",
-          "relationship": "commercial",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 999107,
-          "title": "Oakland Public Library, Rockridge Branch",
-          "relationship": "cultural",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 999108,
-          "title": "Frog Park (Rockridge-Temescal Greenbelt)",
-          "relationship": "park",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 888401,
-          "title": "Lake Merritt",
-          "relationship": "park",
-          "confidence": 0.81
-        },
-        {
-          "page_id": 64434524,
-          "title": "Bushrod Park, Oakland, California",
-          "relationship": "park",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 999105,
-          "title": "Claremont Country Club",
-          "relationship": "landmark",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888402,
-          "title": "Jack London Square",
-          "relationship": "landmark",
-          "confidence": 0.77
-        },
-        {
-          "page_id": 999106,
-          "title": "Oakland firestorm of 1991",
-          "relationship": "historical",
-          "confidence": 0.75
-        },
-        {
-          "page_id": 999109,
-          "title": "Highway 24 (California)",
-          "relationship": "transit",
-          "confidence": 0.7
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
-    }
-  },
-  {
-    "neighborhood_id": "sj-willow-glen-008",
-    "name": "Willow Glen",
-    "city": "San Jose",
-    "county": "Santa Clara",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 37.3075,
-      "longitude": -121.8899
-    },
-    "description": "Willow Glen embodies small-town charm within Silicon Valley, featuring tree-canopied streets lined with 1920s-era homes and a walkable downtown district. Lincoln Avenue serves as the heart of the community, offering boutique shops, cafes, and restaurants that cater to local residents rather than tourists. The neighborhood attracts tech professionals, established families, and empty nesters who appreciate the quiet residential feel and proximity to major employment centers. Excellent schools, beautiful parks, and strong community involvement make it particularly popular with families. While real estate prices reflect Silicon Valley's prosperity, Willow Glen offers more space and value than Peninsula counterparts.",
-    "characteristics": {
-      "walkability_score": 7,
-      "transit_score": 6,
-      "school_rating": 9,
-      "safety_rating": 9,
-      "nightlife_score": 4,
-      "family_friendly_score": 10
-    },
-    "amenities": [
-      "Lincoln Avenue shops",
-      "Tree-lined streets",
-      "Community parks",
-      "Excellent schools",
-      "Farmers market",
-      "Historic charm"
-    ],
-    "lifestyle_tags": [
-      "family-friendly",
-      "suburban",
-      "safe",
-      "community-oriented",
-      "historic",
-      "tech-adjacent"
-    ],
-    "median_home_price": 1800000,
-    "price_trend": "stable",
-    "demographics": {
-      "primary_age_group": "35-55",
-      "vibe": "suburban family"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": {
-        "page_id": 8887170,
-        "title": "Willow Glen, San Jose",
-        "url": "https://en.wikipedia.org/wiki/Willow_Glen,_San_Jose",
-        "confidence": 0.95
-      },
-      "related_wiki_articles": [
-        {
-          "page_id": 888545,
-          "title": "Lincoln Avenue, San Jose",
-          "url": "https://en.wikipedia.org/wiki/Lincoln_Avenue,_San_Jose",
-          "relationship": "commercial",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 12509322,
-          "title": "Willow Glen Elementary School (San Jose, California)",
-          "url": "https://en.wikipedia.org/wiki/Willow_Glen_Elementary_School_(San_Jose,_California)",
-          "relationship": "school",
-          "confidence": 0.8
-        },
-        {
-          "page_id": 888546,
-          "title": "Los Gatos Creek Trail",
-          "url": "https://en.wikipedia.org/wiki/Los_Gatos_Creek_Trail",
-          "relationship": "park",
-          "confidence": 0.8
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
       "generated_at": "2025-08-21T10:00:00Z",
       "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
-    }
-  },
-  {
-    "neighborhood_id": "sj-santana-row-009",
-    "name": "Santana Row",
-    "city": "San Jose",
-    "county": "Santa Clara",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 37.3197,
-      "longitude": -121.9483
-    },
-    "description": "Santana Row represents San Jose's attempt to create European-style urban living in the heart of Silicon Valley. This master-planned community features luxury condos, upscale shopping, fine dining, and entertainment venues all within a walkable environment. The area attracts affluent tech professionals, young couples, and empty nesters seeking maintenance-free living with urban amenities. High-rise residential towers offer modern finishes and resort-style amenities. While lacking the historic character of older neighborhoods, Santana Row provides convenience and luxury for those prioritizing lifestyle over authenticity.",
-    "characteristics": {
-      "walkability_score": 9,
-      "transit_score": 7,
-      "school_rating": 7,
-      "safety_rating": 8,
-      "nightlife_score": 8,
-      "family_friendly_score": 6
-    },
-    "amenities": [
-      "Luxury shopping",
-      "Fine dining",
-      "Entertainment venues",
-      "Resort amenities",
-      "Valet parking",
-      "Concierge services"
-    ],
-    "lifestyle_tags": [
-      "luxury",
-      "urban",
-      "convenient",
-      "modern",
-      "upscale",
-      "tech-friendly",
-      "maintenance-free"
-    ],
-    "median_home_price": 1500000,
-    "price_trend": "stable",
-    "demographics": {
-      "primary_age_group": "28-45",
-      "vibe": "urban luxury"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": {
-        "page_id": 2307788,
-        "title": "Santana Row",
-        "url": "https://en.wikipedia.org/wiki/Santana_Row",
-        "confidence": 0.95
-      },
-      "related_wiki_articles": [
-        {
-          "page_id": 888547,
-          "title": "Valley Fair Shopping Center",
-          "url": "https://en.wikipedia.org/wiki/Valley_Fair_Shopping_Center",
-          "relationship": "commercial",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 12509322,
-          "title": "Willow Glen Elementary School (San Jose, California)",
-          "url": "https://en.wikipedia.org/wiki/Willow_Glen_Elementary_School_(San_Jose,_California)",
-          "relationship": "school",
-          "confidence": 0.8
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z",
-      "source": "wikipedia_database",
-      "updated_by": "update_json_wikipedia_urls"
-    }
-  },
-  {
-    "neighborhood_id": "sal-oldtown-010",
-    "name": "Old Town Salinas",
-    "city": "Salinas",
-    "county": "Monterey",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 36.6777,
-      "longitude": -121.6555
-    },
-    "description": "Old Town Salinas preserves the agricultural heritage of the Salinas Valley while undergoing careful revitalization. Historic buildings house art galleries, local restaurants, and community spaces celebrating the area's rich cultural diversity. The neighborhood serves as a more affordable alternative to coastal Monterey County communities while maintaining access to world-class agriculture, wineries, and natural beauty. Young families and artists are drawn to the authentic character and potential for growth. First-time homebuyers appreciate the opportunity to own in California at reasonable prices while enjoying small-town community feel.",
-    "characteristics": {
-      "walkability_score": 6,
-      "transit_score": 4,
-      "school_rating": 6,
-      "safety_rating": 6,
-      "nightlife_score": 4,
-      "family_friendly_score": 8
-    },
-    "amenities": [
-      "Historic buildings",
-      "Art galleries",
-      "Community spaces",
-      "Local restaurants",
-      "Cultural events",
-      "Agricultural heritage"
-    ],
-    "lifestyle_tags": [
-      "affordable",
-      "historic",
-      "cultural",
-      "agricultural",
-      "community-oriented",
-      "emerging",
-      "family-friendly"
-    ],
-    "median_home_price": 650000,
-    "price_trend": "rising",
-    "demographics": {
-      "primary_age_group": "25-45",
-      "vibe": "small town heritage"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": {
-        "page_id": 999501,
-        "title": "Oldtown Salinas",
-        "confidence": 0.85
-      },
-      "related_wiki_articles": [
-        {
-          "page_id": 999502,
-          "title": "National Steinbeck Center",
-          "relationship": "cultural",
-          "confidence": 0.95
-        },
-        {
-          "page_id": 999503,
-          "title": "Salinas, California",
-          "relationship": "city",
-          "confidence": 0.95
-        },
-        {
-          "page_id": 999504,
-          "title": "Monterey County, California",
-          "relationship": "county",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 999505,
-          "title": "John Steinbeck",
-          "relationship": "historical",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 999507,
-          "title": "Salinas Valley",
-          "relationship": "landmark",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 999506,
-          "title": "California Rodeo Salinas",
-          "relationship": "cultural",
-          "confidence": 0.8
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
-    }
-  },
-  {
-    "neighborhood_id": "sal-creekbridge-011",
-    "name": "Creekbridge",
-    "city": "Salinas",
-    "county": "Monterey",
-    "state": "CA",
-    "coordinates": {
-      "latitude": 36.6942,
-      "longitude": -121.6378
-    },
-    "description": "Creekbridge represents modern suburban development in the Salinas Valley, featuring newer construction homes with contemporary amenities and family-friendly layouts. The neighborhood attracts commuters to Silicon Valley, Monterey Peninsula, and local agriculture businesses seeking affordable housing with modern conveniences. Master-planned communities include parks, walking trails, and recreational facilities. The area offers excellent value for families prioritizing space, safety, and newer construction over urban amenities. While requiring car dependency, residents appreciate the peaceful environment and strong schools serving the community.",
-    "characteristics": {
-      "walkability_score": 4,
-      "transit_score": 3,
-      "school_rating": 8,
-      "safety_rating": 8,
-      "nightlife_score": 2,
-      "family_friendly_score": 9
-    },
-    "amenities": [
-      "New construction",
-      "Community parks",
-      "Walking trails",
-      "Recreation center",
-      "Good schools",
-      "Family facilities"
-    ],
-    "lifestyle_tags": [
-      "suburban",
-      "family-friendly",
-      "affordable",
-      "safe",
-      "modern",
-      "quiet",
-      "car-dependent"
-    ],
-    "median_home_price": 750000,
-    "price_trend": "stable",
-    "demographics": {
-      "primary_age_group": "30-50",
-      "vibe": "suburban family"
-    },
-    "graph_metadata": {
-      "primary_wiki_article": null,
-      "related_wiki_articles": [
-        {
-          "page_id": 999503,
-          "title": "Salinas, California",
-          "relationship": "city",
-          "confidence": 0.9
-        },
-        {
-          "page_id": 999504,
-          "title": "Monterey County, California",
-          "relationship": "county",
-          "confidence": 0.85
-        },
-        {
-          "page_id": 999601,
-          "title": "Salinas River (California)",
-          "relationship": "landmark",
-          "confidence": 0.7
-        },
-        {
-          "page_id": 999602,
-          "title": "Hartnell College",
-          "relationship": "school",
-          "confidence": 0.65
-        }
-      ],
-      "parent_geography": {
-        "state_wiki": {
-          "page_id": 5407,
-          "title": "California"
-        }
-      },
-      "generated_by": "enhanced_neighborhood_exporter",
-      "generated_at": "2025-08-21T10:00:00Z"
+      "updated_by": "data_quality_validation"
     }
   }
 ]

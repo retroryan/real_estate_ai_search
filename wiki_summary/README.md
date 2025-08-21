@@ -473,8 +473,6 @@ wiki_summary/
 │   ├── signatures.py               # Enhanced DSPy signatures with flexible types
 │   ├── cache.py                    # Response caching system
 │   └── html_parser.py              # HTML location extraction
-├── migrations/                     # NEW: Database migrations
-│   └── migrate_locations_schema.py # Flexible schema migration script
 └── shared/                         # Shared utilities
     └── llm_utils.py                # LLM configuration utilities
 ```

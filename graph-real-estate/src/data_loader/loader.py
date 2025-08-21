@@ -1,7 +1,8 @@
-"""Data loader for real estate JSON files with Pydantic validation"""
+"""Enhanced data loader for real estate JSON files with Wikipedia integration"""
 import json
+import pandas as pd
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import ValidationError
 
 from src.models import Property, Neighborhood, City, Feature
@@ -50,16 +51,16 @@ def validate_property_data(properties: List[Property]) -> bool:
     # Since we're using Pydantic, validation happens automatically
     # This function now just reports statistics
     valid_count = len(properties)
-    print(f"✓ All {valid_count} properties validated successfully")
+    print(f"All {valid_count} properties validated successfully")
     
     # Check for missing optional fields
     missing_coords = sum(1 for p in properties if not p.coordinates)
     missing_details = sum(1 for p in properties if not p.property_details)
     
     if missing_coords:
-        print(f"  ⚠ {missing_coords} properties missing coordinates")
+        print(f"  Warning: {missing_coords} properties missing coordinates")
     if missing_details:
-        print(f"  ⚠ {missing_details} properties missing property details")
+        print(f"  Warning: {missing_details} properties missing property details")
     
     return True
 
@@ -122,3 +123,83 @@ def get_unique_cities(properties: List[Property]) -> List[City]:
                 state=prop.state or 'Unknown'
             )
     return list(cities.values())
+
+
+def load_enhanced_property_data() -> Dict[str, Any]:
+    """Load enhanced property data with features from JSON files"""
+    base_path = Path(__file__).parent.parent.parent.parent / 'real_estate_data'
+    
+    # Load neighborhood data with lifestyle information
+    neighborhoods_data = {}
+    
+    # Try to load SF neighborhoods
+    try:
+        sf_neighborhoods = load_json_file(base_path / 'neighborhoods_sf.json')
+        for n in sf_neighborhoods:
+            neighborhoods_data[n['neighborhood_id']] = n
+        print(f"Loaded {len(sf_neighborhoods)} SF neighborhoods")
+    except Exception as e:
+        print(f"Warning: Could not load SF neighborhood data: {e}")
+    
+    # Try to load PC neighborhoods
+    try:
+        pc_neighborhoods = load_json_file(base_path / 'neighborhoods_pc.json')
+        for n in pc_neighborhoods:
+            neighborhoods_data[n['neighborhood_id']] = n
+        print(f"Loaded {len(pc_neighborhoods)} PC neighborhoods")
+    except Exception as e:
+        print(f"Warning: Could not load PC neighborhood data: {e}")
+    
+    print(f"Total neighborhoods loaded: {len(neighborhoods_data)}")
+    return neighborhoods_data
+
+
+def load_wikipedia_data() -> Optional[pd.DataFrame]:
+    """Load Wikipedia data directly from neighborhood JSON files"""
+    try:
+        # Load enhanced neighborhood data (which includes graph_metadata)
+        neighborhoods_data = load_enhanced_property_data()
+        
+        wiki_relationships = []
+        
+        for neighborhood_id, neighborhood in neighborhoods_data.items():
+            graph_metadata = neighborhood.get('graph_metadata', {})
+            
+            # Extract primary Wikipedia article
+            primary_article = graph_metadata.get('primary_wiki_article')
+            if primary_article and primary_article.get('page_id'):
+                wiki_relationships.append({
+                    'neighborhood_id': neighborhood_id,
+                    'page_id': primary_article['page_id'],
+                    'title': primary_article['title'],
+                    'url': primary_article['url'],
+                    'relationship_type': 'primary',
+                    'confidence_score': primary_article.get('confidence', 0.5),
+                    'summary': f"Primary Wikipedia article for {neighborhood['name']} neighborhood, providing comprehensive information about local history, demographics, notable landmarks, and cultural significance. This serves as the authoritative source for understanding the area's character and development."
+                })
+            
+            # Extract related Wikipedia articles
+            related_articles = graph_metadata.get('related_wiki_articles', [])
+            for related in related_articles:
+                if related.get('page_id'):
+                    wiki_relationships.append({
+                        'neighborhood_id': neighborhood_id,
+                        'page_id': related['page_id'],
+                        'title': related['title'],
+                        'url': related['url'],
+                        'relationship_type': related.get('relationship', 'related'),
+                        'confidence_score': related.get('confidence', 0.5),
+                        'summary': f"Related Wikipedia article for {neighborhood['name']}"
+                    })
+        
+        if wiki_relationships:
+            wiki_df = pd.DataFrame(wiki_relationships)
+            print(f"Loaded {len(wiki_relationships)} Wikipedia relationships from JSON files")
+            return wiki_df
+        else:
+            print("No Wikipedia relationships found in JSON files")
+            return None
+            
+    except Exception as e:
+        print(f"Error loading Wikipedia data from JSON: {e}")
+        return None

@@ -11,14 +11,24 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     Load configuration from YAML file
     
     Args:
-        config_path: Path to config file (defaults to src/vectors/config.yaml)
+        config_path: Path to config file (defaults to config.yaml in project root)
         
     Returns:
         Dictionary with configuration
     """
     if config_path is None:
-        # Default to config.yaml in the same directory
-        config_path = Path(__file__).parent / "config.yaml"
+        # Look for config.yaml in project root first, then fallback to vectors directory
+        project_root = Path(__file__).parent.parent.parent
+        root_config = project_root / "config.yaml"
+        vector_config = Path(__file__).parent / "config.yaml"
+        
+        if root_config.exists():
+            config_path = root_config
+        elif vector_config.exists():
+            config_path = vector_config
+        else:
+            # Default to root location even if not found (will error with clear message)
+            config_path = root_config
     
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)

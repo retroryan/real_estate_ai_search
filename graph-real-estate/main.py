@@ -53,7 +53,7 @@ Examples:
     elif args.action == "clear":
         driver = get_neo4j_driver()
         clear_database(driver)
-        print("✓ Database cleared")
+        print("Database cleared")
         close_neo4j_driver(driver)
         return
     
@@ -100,7 +100,7 @@ Examples:
             runner.run_interactive()
             
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\nError: Error: {e}")
         import traceback
         traceback.print_exc()
     finally:
