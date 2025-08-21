@@ -43,18 +43,23 @@ def setup_llm(model: Optional[str] = None, **kwargs) -> dspy.LM:
         # Modern DSPy pattern: create LM instance and configure settings
         llm = dspy.LM(model=model, **llm_config)
         
-        # Use modern settings.configure instead of legacy dspy.configure
-        dspy.settings.configure(lm=llm)
+        # Best practice: Use JSONAdapter for better performance and automatic fallback
+        # This will use structured outputs when possible, JSON mode as fallback
+        try:
+            from dspy.adapters import JSONAdapter
+            adapter = JSONAdapter()
+            dspy.configure(lm=llm, adapter=adapter)
+            logger.info(f"Successfully configured DSPy with model: {model} using JSONAdapter")
+        except ImportError:
+            # Fallback if JSONAdapter not available (older DSPy versions)
+            dspy.settings.configure(lm=llm)
+            logger.info(f"Successfully configured DSPy with model: {model} using default adapter")
         
-        logger.info(f"Successfully configured DSPy with model: {model}")
         return llm
         
-    except dspy.DSPyException as e:
-        logger.error(f"DSPy initialization failed for model {model}: {e}")
-        raise ConfigurationException(f"Failed to initialize DSPy LLM: {e}") from e
     except Exception as e:
-        logger.error(f"Unexpected error initializing DSPy for model {model}: {type(e).__name__}: {e}")
-        raise ConfigurationException(f"Unexpected DSPy initialization error: {e}") from e
+        logger.error(f"Error initializing DSPy for model {model}: {type(e).__name__}: {e}")
+        raise ConfigurationException(f"DSPy initialization error: {e}") from e
 
 
 def test_llm_connection() -> bool:
