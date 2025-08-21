@@ -23,6 +23,7 @@ class Address(BaseModel):
     """Property address"""
     street: str
     city: str
+    county: Optional[str] = None
     state: str
     zip: str
     
@@ -32,13 +33,19 @@ class Address(BaseModel):
 
 class PropertyDetails(BaseModel):
     """Property physical details"""
-    type: Optional[str] = Field(default="unknown", description="Property type")
+    property_type: Optional[str] = Field(default="unknown", description="Property type", alias="type")
     bedrooms: int = Field(default=0, ge=0, description="Number of bedrooms")
     bathrooms: float = Field(default=0, ge=0, description="Number of bathrooms")
     square_feet: int = Field(default=0, ge=0, description="Square footage")
-    year_built: Optional[int] = Field(default=None, ge=1800, le=2025, description="Year built")
+    year_built: Optional[int] = Field(default=None, ge=1800, le=2030, description="Year built")
+    lot_size: Optional[float] = Field(default=None, ge=0, description="Lot size in acres")
+    stories: Optional[int] = Field(default=None, ge=0, description="Number of stories")
+    garage_spaces: Optional[int] = Field(default=None, ge=0, description="Number of garage spaces")
     
-    @validator('type')
+    class Config:
+        populate_by_name = True  # Allow both field name and alias
+    
+    @validator('property_type', pre=True)
     def normalize_type(cls, v):
         """Normalize property type"""
         if v:
@@ -99,9 +106,9 @@ class Property(BaseModel):
     def get_property_type(self) -> str:
         """Get property type from details"""
         if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.type or 'unknown'
+            return self.property_details.property_type or 'unknown'
         elif isinstance(self.property_details, dict):
-            return self.property_details.get('type', 'unknown')
+            return self.property_details.get('property_type', self.property_details.get('type', 'unknown'))
         return 'unknown'
     
     def get_bedrooms(self) -> int:
@@ -146,5 +153,83 @@ class Property(BaseModel):
             return "1M-2M"
         elif self.listing_price < 3000000:
             return "2M-3M"
+        elif self.listing_price < 5000000:
+            return "3M-5M"
         else:
-            return "3M+"
+            return "5M+"
+
+
+class PriceRange(BaseModel):
+    """Price range category"""
+    range_id: str = Field(..., description="Price range identifier")
+    label: str = Field(..., description="Human-readable label")
+    min_price: int = Field(..., ge=0, description="Minimum price")
+    max_price: Optional[int] = Field(None, description="Maximum price (None for unlimited)")
+    
+    @classmethod
+    def get_standard_ranges(cls) -> List['PriceRange']:
+        """Get standard price range categories"""
+        return [
+            cls(range_id="range_0_500k", label="Under $500k", min_price=0, max_price=500000),
+            cls(range_id="range_500k_1m", label="$500k-$1M", min_price=500000, max_price=1000000),
+            cls(range_id="range_1m_2m", label="$1M-$2M", min_price=1000000, max_price=2000000),
+            cls(range_id="range_2m_3m", label="$2M-$3M", min_price=2000000, max_price=3000000),
+            cls(range_id="range_3m_5m", label="$3M-$5M", min_price=3000000, max_price=5000000),
+            cls(range_id="range_5m_plus", label="$5M+", min_price=5000000, max_price=None),
+        ]
+
+
+class Feature(BaseModel):
+    """Property feature"""
+    feature_id: str = Field(..., description="Feature identifier")
+    name: str = Field(..., description="Feature name")
+    category: Optional[str] = Field(None, description="Feature category")
+    
+    @validator('feature_id', pre=True)
+    def generate_feature_id(cls, v, values):
+        """Generate feature ID from name if not provided"""
+        if not v and 'name' in values:
+            return values['name'].lower().replace(' ', '_').replace('-', '_')
+        return v
+
+
+class PropertyLoadResult(BaseModel):
+    """Result of property loading operation"""
+    properties_loaded: int = 0
+    nodes_created: int = 0
+    
+    # Node type counts
+    property_nodes: int = 0
+    feature_nodes: int = 0
+    property_type_nodes: int = 0
+    price_range_nodes: int = 0
+    
+    # Relationship counts
+    neighborhood_relationships: int = 0
+    city_relationships: int = 0
+    county_relationships: int = 0
+    feature_relationships: int = 0
+    type_relationships: int = 0
+    price_range_relationships: int = 0
+    
+    # Statistics
+    unique_features: int = 0
+    unique_property_types: int = 0
+    avg_features_per_property: float = 0.0
+    properties_without_neighborhoods: int = 0
+    
+    # Errors and warnings
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    
+    duration_seconds: float = 0.0
+    success: bool = True
+    
+    def add_error(self, error: str):
+        """Add an error message"""
+        self.errors.append(error)
+        self.success = False
+    
+    def add_warning(self, warning: str):
+        """Add a warning message"""
+        self.warnings.append(warning)

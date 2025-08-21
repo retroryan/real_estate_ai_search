@@ -121,16 +121,27 @@ ollama pull nomic-embed-text
 
 ## Usage
 
-### 1. Build the Graph Database
-```bash
-# Run complete setup (recommended)
-python main.py all
+### 1. Build the Knowledge Graph Database
 
-# Or run individual steps:
-python main.py setup          # Environment setup & data validation
-python main.py schema         # Create enhanced schema with all node types
-python main.py relationships  # Create relationships & calculate similarities
+The application uses a phased approach to build the knowledge graph:
+
+```bash
+# Run complete graph load (all phases) - RECOMMENDED
+python main.py load
+
+# Or run individual phases:
+python main.py validate       # Phase 1: Validate data sources
+python main.py geographic     # Phase 2: Load geographic foundation (States, Counties, Cities)
+python main.py wikipedia      # Phase 3: Load Wikipedia knowledge layer
+python main.py neighborhoods  # Phase 4: Load neighborhoods with correlations
+
+# Utility commands:
+python main.py verify         # Verify graph integrity after loading
+python main.py stats          # Show database statistics
+python main.py clear          # Clear all data
 ```
+
+**Note**: The application has been refactored with a modular architecture using Pydantic models for type safety. The old commands (`setup`, `schema`, `relationships`) are deprecated but still recognized for backward compatibility.
 
 ### 2. Create Vector Embeddings
 ```bash
@@ -146,8 +157,8 @@ python create_embeddings.py --force-recreate
 ## Quick Start - Running Demos
 
 ```bash
-# Build the enhanced graph database with Wikipedia integration
-python main.py all
+# Build the knowledge graph database with Wikipedia integration
+python main.py load
 
 # Create embeddings (required for demos 1, 3, and 5)
 python create_embeddings.py

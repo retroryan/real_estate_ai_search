@@ -463,18 +463,21 @@ class PureVectorSearchDemo:
         
         stats_query = """
         MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
-        WHERE s.score > 0.7
+        WHERE s.similarity_score > 0.7
         RETURN count(s) as high_similarity_pairs,
-               avg(s.score) as avg_high_similarity,
-               max(s.score) as max_similarity
+               avg(s.similarity_score) as avg_high_similarity,
+               max(s.similarity_score) as max_similarity
         """
         
         stats = run_query(self.driver, stats_query)
         if stats:
             stat = stats[0]
             print(f"   High similarity pairs (>0.7): {stat['high_similarity_pairs']}")
-            print(f"   Average high similarity: {stat['avg_high_similarity']:.3f}")
-            print(f"   Maximum similarity: {stat['max_similarity']:.3f}")
+            # Handle None values by providing defaults
+            avg_sim = stat['avg_high_similarity'] or 0.0
+            max_sim = stat['max_similarity'] or 0.0
+            print(f"   Average high similarity: {avg_sim:.3f}")
+            print(f"   Maximum similarity: {max_sim:.3f}")
 
 
 def run_pure_vector_search_demo():

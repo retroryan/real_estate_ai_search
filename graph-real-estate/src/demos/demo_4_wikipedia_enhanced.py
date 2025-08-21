@@ -113,18 +113,22 @@ class WikipediaEnhancedListings:
         )
         
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
-        WHERE p.enriched_description IS NOT NULL
-        OPTIONAL MATCH (n)<-[:DESCRIBES]-(w:Wikipedia)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        OPTIONAL MATCH (n)<-[:DESCRIBES]-(w:WikipediaArticle)
+        WHERE w.overall_confidence > 0.4
         WITH p, n, collect(DISTINCT {
             title: w.title,
-            type: w.relationship_type,
-            confidence: w.confidence,
-            summary: substring(w.summary, 0, 200)
+            type: w.location_type,
+            confidence: w.overall_confidence,
+            summary: w.long_summary,
+            short_summary: w.short_summary,
+            key_topics: w.key_topics,
+            url: w.url
         }) as wiki_articles
+        WHERE size(wiki_articles) > 0
         RETURN p.listing_id as listing_id,
                p.description as description,
-               p.enriched_description as enriched_description,
+               COALESCE(p.enriched_description, p.description) as enriched_description,
                p.listing_price as listing_price,
                p.bedrooms as bedrooms,
                p.bathrooms as bathrooms,
@@ -132,14 +136,89 @@ class WikipediaEnhancedListings:
                n.name as neighborhood,
                n.city as city,
                wiki_articles
-        ORDER BY size(wiki_articles) DESC
-        LIMIT 3
+        ORDER BY size(wiki_articles) DESC, p.listing_price DESC
+        LIMIT 5
         """
         
         results = run_query(self.driver, query)
         
-        for r in results:
-            self.print_property_listing(r, r['wiki_articles'])
+        if not results:
+            print("No properties found with Wikipedia enhancements.")
+            return
+            
+        print(f"Found {len(results)} properties with Wikipedia context:\n")
+        
+        for i, r in enumerate(results, 1):
+            self.print_enhanced_property_listing(r, i)
+    
+    def print_enhanced_property_listing(self, property_data: Dict[str, Any], index: int):
+        """Print a detailed property listing with Wikipedia intelligence"""
+        print(f"\n🏠 PROPERTY {index}: {property_data['listing_id']}")
+        print("=" * 70)
+        
+        # Basic property details
+        print(f"📍 Location: {property_data['neighborhood']}, {property_data['city']}")
+        print(f"💰 Price: ${property_data['listing_price']:,.0f}")
+        
+        # Property specifications
+        if property_data.get('bedrooms') or property_data.get('bathrooms') or property_data.get('square_feet'):
+            specs = []
+            if property_data.get('bedrooms'):
+                specs.append(f"{property_data['bedrooms']} bedrooms")
+            if property_data.get('bathrooms'):
+                specs.append(f"{property_data['bathrooms']} bathrooms")
+            if property_data.get('square_feet'):
+                specs.append(f"{property_data['square_feet']:,} sq ft")
+                if property_data['listing_price'] and property_data['square_feet']:
+                    price_per_sqft = property_data['listing_price'] / property_data['square_feet']
+                    specs.append(f"${price_per_sqft:.0f}/sq ft")
+            print(f"🏡 Details: {' | '.join(specs)}")
+        
+        # Original property description
+        print(f"\n📝 Property Description:")
+        description = property_data['description'] or "No description available"
+        print(f"   {description[:400]}{'...' if len(description) > 400 else ''}")
+        
+        # Wikipedia intelligence
+        wiki_articles = property_data.get('wiki_articles', [])
+        if wiki_articles:
+            print(f"\n🧠 WIKIPEDIA INTELLIGENCE ({len(wiki_articles)} articles):")
+            print("-" * 50)
+            
+            for j, article in enumerate(wiki_articles, 1):
+                confidence = article.get('confidence', 0)
+                confidence_icon = "🟢" if confidence > 0.8 else "🟡" if confidence > 0.5 else "🟠"
+                
+                print(f"\n   {j}. {confidence_icon} {article['title']}")
+                print(f"      Type: {article.get('type', 'Unknown')} | Confidence: {confidence:.2f}")
+                
+                # Show URL
+                url = article.get('url', '')
+                if url:
+                    print(f"      URL: {url}")
+                
+                # Show truncated summary
+                summary = article.get('summary', '')
+                if summary:
+                    # Clean and truncate summary to 100 characters
+                    summary_clean = summary.replace('\n', ' ').strip()
+                    summary_display = summary_clean[:100] + "..." if len(summary_clean) > 100 else summary_clean
+                    print(f"      Summary: {summary_display}")
+                
+                # Show key topics if available
+                topics = article.get('key_topics', '')
+                if topics:
+                    print(f"      Key Topics: {topics}")
+                    
+                print()  # Extra space between articles
+        
+        # Enhanced listing (if available)
+        enhanced_desc = property_data.get('enriched_description')
+        if enhanced_desc and enhanced_desc != property_data.get('description'):
+            print(f"\n✨ WIKIPEDIA-ENHANCED LISTING:")
+            print(f"   {enhanced_desc[:500]}{'...' if len(enhanced_desc) > 500 else ''}")
+        
+        print(f"\n{'─' * 70}")
     
     # ===== SECTION 2: CULTURAL & HISTORICAL CONTEXT =====
     
@@ -151,12 +230,12 @@ class WikipediaEnhancedListings:
         )
         
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
-        WHERE w.relationship_type IN ['cultural', 'landmark', 'historical']
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
+        WHERE w.location_type IN ['neighborhood', 'district', 'city']
         WITH p, n, collect(DISTINCT {
             title: w.title,
-            type: w.relationship_type,
-            confidence: w.confidence
+            type: w.location_type,
+            confidence: w.overall_confidence
         }) as cultural_articles
         WHERE size(cultural_articles) > 0
         RETURN p.listing_id as listing_id,
@@ -190,15 +269,15 @@ class WikipediaEnhancedListings:
         )
         
         query = """
-        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
+        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
         WITH n, collect(DISTINCT {
             title: w.title,
-            type: w.relationship_type,
-            confidence: w.confidence,
+            type: w.location_type,
+            confidence: w.overall_confidence,
             summary: substring(w.summary, 0, 150)
         }) as wiki_articles
         WHERE size(wiki_articles) >= 3
-        MATCH (p:Property)-[:LOCATED_IN]->(n)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
         WITH n, wiki_articles,
              count(p) as property_count,
              avg(p.listing_price) as avg_price,
@@ -264,11 +343,11 @@ class WikipediaEnhancedListings:
         
         # Properties in neighborhoods with many Wikipedia articles
         query = """
-        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
-        WHERE w.confidence > 0.7
+        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
+        WHERE w.overall_confidence > 0.3
         WITH n, count(DISTINCT w) as wiki_count,
-             collect(DISTINCT w.relationship_type) as wiki_types
-        MATCH (p:Property)-[:LOCATED_IN]->(n)
+             collect(DISTINCT w.location_type) as wiki_types
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
         WITH n, wiki_count, wiki_types,
              count(p) as property_count,
              avg(p.listing_price) as avg_price,
@@ -338,15 +417,17 @@ class WikipediaEnhancedListings:
             print("-" * 60)
             
             # Build dynamic query for this lifestyle
-            type_conditions = " OR ".join([f"w.relationship_type = '{t}'" for t in lifestyle['types']])
+            # Use actual location types that exist
+            available_types = ['neighborhood', 'city', 'district']
+            type_conditions = " OR ".join([f"w.location_type = '{t}'" for t in available_types])
             
             query = f"""
-            MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
+            MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
             WHERE {type_conditions}
             WITH n, count(DISTINCT w) as lifestyle_match_count,
                  collect(DISTINCT w.title) as matching_articles
             WHERE lifestyle_match_count >= 2
-            MATCH (p:Property)-[:LOCATED_IN]->(n)
+            MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
             WITH n, lifestyle_match_count, matching_articles,
                  min(p.listing_price) as min_price,
                  max(p.listing_price) as max_price,
@@ -385,27 +466,27 @@ class WikipediaEnhancedListings:
         
         query = """
         // Compare top neighborhoods by Wikipedia coverage
-        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
+        MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
         WITH n, 
              count(DISTINCT w) as total_articles,
-             count(DISTINCT CASE WHEN w.relationship_type = 'cultural' THEN w END) as cultural_count,
-             count(DISTINCT CASE WHEN w.relationship_type = 'park' THEN w END) as park_count,
-             count(DISTINCT CASE WHEN w.relationship_type = 'transit' THEN w END) as transit_count,
-             count(DISTINCT CASE WHEN w.relationship_type = 'landmark' THEN w END) as landmark_count,
-             avg(w.confidence) as avg_confidence
-        WHERE total_articles >= 3
-        MATCH (p:Property)-[:LOCATED_IN]->(n)
-        WITH n, total_articles, cultural_count, park_count, transit_count, landmark_count,
+             count(DISTINCT CASE WHEN w.location_type = 'neighborhood' THEN w END) as neighborhood_count,
+             count(DISTINCT CASE WHEN w.location_type = 'city' THEN w END) as city_count,
+             count(DISTINCT CASE WHEN w.location_type = 'district' THEN w END) as district_count,
+             count(DISTINCT CASE WHEN w.location_type = 'county' THEN w END) as county_count,
+             avg(w.overall_confidence) as avg_confidence
+        WHERE total_articles >= 1
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
+        WITH n, total_articles, neighborhood_count, city_count, district_count, county_count,
              avg_confidence,
              avg(p.listing_price) as avg_price,
              count(p) as property_count
         RETURN n.name as neighborhood,
                n.city as city,
                total_articles,
-               cultural_count,
-               park_count,
-               transit_count,
-               landmark_count,
+               neighborhood_count,
+               city_count,
+               district_count,
+               county_count,
                avg_confidence,
                avg_price,
                property_count
@@ -423,27 +504,25 @@ class WikipediaEnhancedListings:
         
         for r in results:
             neighborhood = f"{r['neighborhood'][:20]}, {r['city'][:3]}"
-            print(f"{neighborhood:<25} {r['total_articles']:<6} {r['cultural_count']:<8} "
-                  f"{r['park_count']:<7} {r['transit_count']:<8} {r['landmark_count']:<10} "
+            print(f"{neighborhood:<25} {r['total_articles']:<6} {r['neighborhood_count']:<8} "
+                  f"{r['city_count']:<7} {r['district_count']:<8} {r['county_count']:<10} "
                   f"${r['avg_price']/1000000:.1f}M")
         
         print("\nAnalysis Insights:")
         
-        # Find the most culturally rich
-        culturally_rich = max(results, key=lambda x: x['cultural_count'])
-        print(f"   Most Culturally Rich: {culturally_rich['neighborhood']} "
-              f"({culturally_rich['cultural_count']} cultural Wikipedia articles)")
-        
-        # Find the best for nature
-        nature_friendly = max(results, key=lambda x: x['park_count'])
-        if nature_friendly['park_count'] > 0:
-            print(f"   Best for Nature Lovers: {nature_friendly['neighborhood']} "
-                  f"({nature_friendly['park_count']} park-related articles)")
-        
-        # Find the best documented
-        best_documented = max(results, key=lambda x: x['total_articles'])
-        print(f"   Best Documented: {best_documented['neighborhood']} "
-              f"({best_documented['total_articles']} total Wikipedia articles)")
+        if results:
+            # Find the best documented neighborhood
+            best_documented = max(results, key=lambda x: x['total_articles'])
+            print(f"   Best Documented: {best_documented['neighborhood']} "
+                  f"({best_documented['total_articles']} Wikipedia articles)")
+            
+            # Find the most neighborhood-focused
+            neighborhood_focused = max(results, key=lambda x: x['neighborhood_count'])
+            if neighborhood_focused['neighborhood_count'] > 0:
+                print(f"   Most Neighborhood-Focused: {neighborhood_focused['neighborhood']} "
+                      f"({neighborhood_focused['neighborhood_count']} neighborhood articles)")
+        else:
+            print("   No neighborhood data found with Wikipedia coverage")
         
         # Find the best value with good documentation
         if len(results) > 3:
@@ -471,7 +550,7 @@ def run_wikipedia_enhanced_demo():
         driver = get_neo4j_driver()
         
         # Quick check that Wikipedia data exists
-        wiki_check = run_query(driver, "MATCH (w:Wikipedia) RETURN count(w) as count")
+        wiki_check = run_query(driver, "MATCH (w:WikipediaArticle) RETURN count(w) as count")
         if wiki_check[0]['count'] == 0:
             print("\nWarning: No Wikipedia data found in database!")
             print("Please run 'python main.py all' to import Wikipedia articles.")

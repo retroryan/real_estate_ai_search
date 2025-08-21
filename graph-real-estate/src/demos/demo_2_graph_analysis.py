@@ -35,9 +35,9 @@ if hasattr(signal, 'SIGPIPE'):
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 # Add src to path
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
-from src.database.neo4j_client import get_neo4j_driver, close_neo4j_driver, run_query
+from src.database import get_neo4j_driver, close_neo4j_driver, run_query
 
 
 class GraphRelationshipAnalysisDemo:

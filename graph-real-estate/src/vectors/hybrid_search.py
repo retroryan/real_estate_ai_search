@@ -183,13 +183,15 @@ class HybridPropertySearch:
         query = """
         MATCH (p:Property {listing_id: $listing_id})
         OPTIONAL MATCH (p)-[:SIMILAR_TO]-(similar:Property)
-        OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)<-[:LOCATED_IN]-(neighbor:Property)
+        OPTIONAL MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)<-[:IN_NEIGHBORHOOD]-(neighbor:Property)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(featured:Property)
+        OPTIONAL MATCH (p)-[:NEAR_BY]-(nearby:Property)
         RETURN 
             COUNT(DISTINCT similar) as similarity_connections,
             COUNT(DISTINCT neighbor) as neighborhood_connections,
             COUNT(DISTINCT featured) as feature_connections,
-            COUNT(DISTINCT f) as feature_count
+            COUNT(DISTINCT f) as feature_count,
+            COUNT(DISTINCT nearby) as proximity_connections
         """
         
         with self.driver.session() as session:
@@ -201,7 +203,8 @@ class HybridPropertySearch:
                     'similarity_connections': 0,
                     'neighborhood_connections': 0,
                     'feature_connections': 0,
-                    'feature_count': 0
+                    'feature_count': 0,
+                    'proximity_connections': 0
                 }
             
             # Calculate centrality score based on connections
@@ -210,13 +213,15 @@ class HybridPropertySearch:
             neighborhood_score = min(result['neighborhood_connections'] / 50, 1.0)  # Cap at 50
             feature_conn_score = min(result['feature_connections'] / 20, 1.0)  # Cap at 20
             feature_count_score = min(result['feature_count'] / 15, 1.0)  # Cap at 15
+            proximity_score = min(result['proximity_connections'] / 30, 1.0)  # Cap at 30
             
-            # Weighted combination
+            # Weighted combination - now using Phase 6 proximity data
             centrality = (
-                similarity_score * 0.4 +
-                neighborhood_score * 0.2 +
-                feature_conn_score * 0.2 +
-                feature_count_score * 0.2
+                similarity_score * 0.3 +        # Phase 6 similarity relationships
+                neighborhood_score * 0.15 +     # Neighborhood connections  
+                feature_conn_score * 0.15 +     # Feature sharing
+                feature_count_score * 0.2 +     # Feature richness
+                proximity_score * 0.2           # Phase 6 geographic proximity
             )
             
             return {
@@ -224,7 +229,8 @@ class HybridPropertySearch:
                 'similarity_connections': result['similarity_connections'],
                 'neighborhood_connections': result['neighborhood_connections'],
                 'feature_connections': result['feature_connections'],
-                'feature_count': result['feature_count']
+                'feature_count': result['feature_count'],
+                'proximity_connections': result['proximity_connections']
             }
     
     def _calculate_combined_score(

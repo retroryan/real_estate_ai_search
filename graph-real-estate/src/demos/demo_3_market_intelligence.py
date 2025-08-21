@@ -86,8 +86,8 @@ class MarketIntelligenceAnalyzer:
         # City-level market overview
         self.print_subsection("City Market Overview")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
-        WITH c.name as City, 
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        WITH n.city as City, 
              count(DISTINCT n) as Neighborhoods,
              count(p) as Properties,
              avg(p.listing_price) as AvgPrice,
@@ -109,14 +109,14 @@ class MarketIntelligenceAnalyzer:
         # Neighborhood market segmentation
         self.print_subsection("Neighborhood Market Segmentation")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
-        WITH n, c,
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        WITH n,
              count(p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
              avg(p.square_feet) as AvgSqft,
              collect(DISTINCT p.property_type) as PropertyTypes
         WHERE PropertyCount >= 5
-        WITH n, c, PropertyCount, AvgPrice, AvgSqft, PropertyTypes,
+        WITH n, PropertyCount, AvgPrice, AvgSqft, PropertyTypes,
              CASE 
                 WHEN AvgPrice > 8000000 THEN 'Ultra-Luxury'
                 WHEN AvgPrice > 3000000 THEN 'Luxury' 
@@ -124,7 +124,7 @@ class MarketIntelligenceAnalyzer:
                 WHEN AvgPrice > 800000 THEN 'Mid-Market'
                 ELSE 'Affordable'
              END as MarketSegment
-        RETURN c.name as City, n.name as Neighborhood, MarketSegment,
+        RETURN n.city as City, n.name as Neighborhood, MarketSegment,
                PropertyCount, AvgPrice, AvgSqft, PropertyTypes,
                n.lifestyle_tags as LifestyleTags
         ORDER BY AvgPrice DESC
@@ -142,10 +142,10 @@ class MarketIntelligenceAnalyzer:
         # Geographic arbitrage opportunities
         self.print_subsection("Geographic Arbitrage Analysis")
         query = """
-        MATCH (p1:Property)-[:LOCATED_IN]->(n1:Neighborhood)-[:IN_CITY]->(c:City),
-              (p2:Property)-[:LOCATED_IN]->(n2:Neighborhood)-[:IN_CITY]->(c)
-        WHERE n1 <> n2 AND p1.square_feet > 0 AND p2.square_feet > 0
-        WITH n1.name as Neighborhood1, n2.name as Neighborhood2, c.name as City,
+        MATCH (p1:Property)-[:IN_NEIGHBORHOOD]->(n1:Neighborhood),
+              (p2:Property)-[:IN_NEIGHBORHOOD]->(n2:Neighborhood)
+        WHERE n1 <> n2 AND n1.city = n2.city AND p1.square_feet > 0 AND p2.square_feet > 0
+        WITH n1.name as Neighborhood1, n2.name as Neighborhood2, n1.city as City,
              avg(p1.listing_price / p1.square_feet) as PricePerSqft1,
              avg(p2.listing_price / p2.square_feet) as PricePerSqft2,
              count(p1) as Properties1, count(p2) as Properties2
@@ -214,8 +214,8 @@ class MarketIntelligenceAnalyzer:
         # Property type pricing intelligence
         self.print_subsection("Property Type Market Analysis")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
-        WITH p.property_type as PropertyType, c.name as City,
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        WITH p.property_type as PropertyType, n.city as City,
              count(p) as Count,
              avg(p.listing_price) as AvgPrice,
              min(p.listing_price) as MinPrice,
@@ -239,7 +239,7 @@ class MarketIntelligenceAnalyzer:
         # Pricing anomaly detection
         self.print_subsection("Pricing Anomaly Detection")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         WITH n, 
              collect(p) as Properties,
              avg(p.listing_price) as NeighborhoodAvg,
@@ -251,11 +251,11 @@ class MarketIntelligenceAnalyzer:
              abs(prop.listing_price - NeighborhoodAvg) / PriceStdDev as ZScore
         WHERE ZScore > 2.0  // Statistical outliers
         
-        MATCH (prop)-[:LOCATED_IN]->(n)-[:IN_CITY]->(c:City)
+        MATCH (prop)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (prop)-[:HAS_FEATURE]->(f:Feature)
         
         RETURN prop.listing_id as PropertyID, prop.listing_price as Price,
-               NeighborhoodAvg, ZScore, c.name + ", " + n.name as Location,
+               NeighborhoodAvg, ZScore, n.city + ", " + n.name as Location,
                collect(DISTINCT f.name)[0..5] as TopFeatures,
                CASE WHEN prop.listing_price > NeighborhoodAvg THEN 'OVERPRICED' ELSE 'UNDERPRICED' END as Anomaly
         ORDER BY ZScore DESC
@@ -284,15 +284,15 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Undervalued Market Segments")
         query = """
         // Simplified approach: Find neighborhoods with above-average features but below-average prices
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
-        WITH n, c, count(p) as PropertyCount,
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        WITH n, count(p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
              avg(size([(p)-[:HAS_FEATURE]->(:Feature) | 1])) as AvgFeaturesPerProperty
         WHERE PropertyCount >= 5
         
         // Get city averages for comparison
-        MATCH (cityProps:Property)-[:LOCATED_IN]->(:Neighborhood)-[:IN_CITY]->(c)
-        WITH n, c, PropertyCount, AvgPrice, AvgFeaturesPerProperty,
+        MATCH (cityProps:Property)-[:IN_NEIGHBORHOOD]->(:Neighborhood {city: n.city})
+        WITH n, PropertyCount, AvgPrice, AvgFeaturesPerProperty,
              avg(cityProps.listing_price) as CityAvgPrice,
              avg(size([(cityProps)-[:HAS_FEATURE]->(:Feature) | 1])) as CityAvgFeatures
         
@@ -302,7 +302,7 @@ class MarketIntelligenceAnalyzer:
         // Find undervalued: above-average features, below-average price
         WHERE FeatureRatio > 1.1 AND PriceRatio < 0.9
         
-        RETURN c.name as City, n.name as Neighborhood,
+        RETURN n.city as City, n.name as Neighborhood,
                AvgPrice, PropertyCount, AvgFeaturesPerProperty,
                PriceRatio, FeatureRatio,
                n.lifestyle_tags as LifestyleTags
@@ -324,10 +324,10 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Emerging Market Indicators")
         query = """
         // Find areas with diverse property types and growing feature adoption
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
-        WITH n, c,
+        WITH n,
              count(DISTINCT p) as PropertyCount,
              count(DISTINCT p.property_type) as PropertyTypeDiversity,
              count(DISTINCT f.category) as FeatureCategoryDiversity,
@@ -338,7 +338,7 @@ class MarketIntelligenceAnalyzer:
         // Calculate diversity score
         WITH *, (PropertyTypeDiversity * FeatureCategoryDiversity) as DiversityScore
         
-        RETURN c.name as City, n.name as Neighborhood,
+        RETURN n.city as City, n.name as Neighborhood,
                PropertyCount, AvgPrice, DiversityScore,
                PropertyTypeDiversity, FeatureCategoryDiversity,
                PropertyTypes, n.lifestyle_tags as LifestyleTags
@@ -397,12 +397,12 @@ class MarketIntelligenceAnalyzer:
         # Lifestyle tag market analysis
         self.print_subsection("Lifestyle Preference Markets")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         UNWIND n.lifestyle_tags as LifestyleTag
         
-        MATCH (p)-[:LOCATED_IN]->(n)-[:IN_CITY]->(c:City)
-        WITH LifestyleTag, c.name as City,
+        MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        WITH LifestyleTag, n.city as City,
              count(DISTINCT p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
              count(DISTINCT n) as NeighborhoodCount,
@@ -427,7 +427,7 @@ class MarketIntelligenceAnalyzer:
         # Lifestyle-feature correlation analysis
         self.print_subsection("Lifestyle-Feature Correlation Matrix")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         UNWIND n.lifestyle_tags as LifestyleTag
         
@@ -470,10 +470,10 @@ class MarketIntelligenceAnalyzer:
         # Demographic market sizing
         self.print_subsection("Market Size by Lifestyle Segment")
         query = """
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         
-        WITH c.name as City, n.lifestyle_tags as LifestyleTags,
+        WITH n.city as City, n.lifestyle_tags as LifestyleTags,
              count(p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
              sum(p.listing_price) as TotalMarketValue
@@ -632,19 +632,19 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Competitive Property Clusters")
         query = """
         MATCH (p:Property)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.score > 0.8  // High similarity threshold
+        WHERE sim.similarity_score > 0.8  // High similarity threshold
         
         // Find properties with many high-similarity connections
         WITH p, count(similar) as SimilarityConnections,
-             avg(sim.score) as AvgSimilarityScore,
+             avg(sim.similarity_score) as AvgSimilarityScore,
              collect(similar.listing_id)[0..5] as SimilarProperties
         WHERE SimilarityConnections >= 3
         
-        MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+        MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
-               c.name + ", " + n.name as Location,
+               n.city + ", " + n.name as Location,
                SimilarityConnections, AvgSimilarityScore,
                SimilarProperties, collect(DISTINCT f.name)[0..5] as TopFeatures
         ORDER BY SimilarityConnections DESC, AvgSimilarityScore DESC
@@ -666,10 +666,10 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Market Positioning Analysis")
         query = """
         // Analyze positioning within price bands and feature categories
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
-        WITH p, c, n,
+        WITH p, n,
              collect(DISTINCT f.category) as FeatureCategories,
              size([(p)-[:HAS_FEATURE]->(:Feature) | 1]) as FeatureCount,
              CASE 
@@ -681,7 +681,7 @@ class MarketIntelligenceAnalyzer:
              END as PriceBand
         
         // Count competitive density in same price band and neighborhood
-        MATCH (comp:Property)-[:LOCATED_IN]->(n)
+        MATCH (comp:Property)-[:IN_NEIGHBORHOOD]->(n)
         WHERE comp <> p AND 
               CASE 
                 WHEN p.listing_price > 8000000 THEN comp.listing_price > 8000000
@@ -691,18 +691,18 @@ class MarketIntelligenceAnalyzer:
                 ELSE comp.listing_price <= 800000
               END
         
-        WITH p, c, n, FeatureCategories, FeatureCount, PriceBand,
+        WITH p, n, FeatureCategories, FeatureCount, PriceBand,
              count(comp) as DirectCompetitors
         
         // Analyze feature differentiation
         OPTIONAL MATCH (p)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.score > 0.7
+        WHERE sim.similarity_score > 0.7
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
-               c.name as City, n.name as Neighborhood, PriceBand,
+               n.city as City, n.name as Neighborhood, PriceBand,
                FeatureCount, FeatureCategories, DirectCompetitors,
                count(DISTINCT similar) as SimilarProperties,
-               avg(sim.score) as AvgSimilarity
+               avg(sim.similarity_score) as AvgSimilarity
         ORDER BY DirectCompetitors DESC, FeatureCount DESC
         LIMIT 15
         """
@@ -722,10 +722,10 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Market Gap Analysis")
         query = """
         // Find underserved market segments
-        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
-        WITH c.name as City, p.property_type as PropertyType,
+        WITH n.city as City, p.property_type as PropertyType,
              CASE 
                 WHEN p.listing_price > 5000000 THEN 'Ultra-Luxury'
                 WHEN p.listing_price > 2000000 THEN 'Luxury'
