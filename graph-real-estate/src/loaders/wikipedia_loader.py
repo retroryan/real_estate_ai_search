@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 from src.loaders.base import BaseLoader
+from src.loaders.config import GraphLoadingConfig
 from src.models.wikipedia import (
     WikipediaArticle, WikipediaRelationship, 
     WikipediaStats, WikipediaLoadResult
@@ -18,6 +19,9 @@ class WikipediaKnowledgeLoader(BaseLoader):
     def __init__(self, db_path: Optional[Path] = None, geographic_index: Optional[Dict] = None):
         """Initialize Wikipedia loader"""
         super().__init__()
+        
+        # Load batch size configuration
+        self.batch_config = GraphLoadingConfig.from_yaml()
         
         if db_path:
             self.db_path = db_path
@@ -86,9 +90,10 @@ class WikipediaKnowledgeLoader(BaseLoader):
             return self.load_result
     
     def _create_constraints_and_indexes(self) -> None:
-        """Create Wikipedia-specific constraints and indexes"""
-        self.logger.info("Creating Wikipedia constraints and indexes...")
+        """Create enhanced Wikipedia-specific constraints and indexes from FIX_v7"""
+        self.logger.info("Creating enhanced Wikipedia constraints and indexes...")
         
+        # Node key constraint for data integrity
         constraints = [
             ("WikipediaArticle.page_id",
              "CREATE CONSTRAINT IF NOT EXISTS FOR (w:WikipediaArticle) REQUIRE w.page_id IS UNIQUE"),
@@ -97,6 +102,7 @@ class WikipediaKnowledgeLoader(BaseLoader):
         for name, query in constraints:
             self.create_constraint(name, query)
         
+        # Enhanced indexes for better query performance
         indexes = [
             ("WikipediaArticle.confidence",
              "CREATE INDEX IF NOT EXISTS FOR (w:WikipediaArticle) ON (w.overall_confidence)"),
@@ -110,6 +116,35 @@ class WikipediaKnowledgeLoader(BaseLoader):
         
         for name, query in indexes:
             self.create_index(name, query)
+        
+        # Create full-text search index for Wikipedia articles
+        self._create_wikipedia_fulltext_index()
+    
+    def _create_wikipedia_fulltext_index(self) -> None:
+        """Create full-text search index for Wikipedia articles"""
+        try:
+            # Check if index already exists
+            check_query = "SHOW INDEXES YIELD name WHERE name = 'wikipediaSearch' RETURN name"
+            result = self.execute_query(check_query)
+            
+            if not result:
+                query = """
+                CALL db.index.fulltext.createNodeIndex(
+                    'wikipediaSearch',
+                    ['WikipediaArticle'],
+                    ['title', 'summary', 'key_topics']
+                )
+                """
+                self.execute_query(query)
+                self.logger.info("Created full-text index: wikipediaSearch")
+            else:
+                self.logger.info("Full-text index already exists: wikipediaSearch")
+        except Exception as e:
+            # Full-text search may not be available in all Neo4j versions
+            if "unknown function" in str(e).lower() or "procedure" in str(e).lower():
+                self.logger.debug("Full-text indexes not supported in this Neo4j version")
+            else:
+                self.logger.warning(f"Could not create full-text index: {e}")
     
     def _load_articles_from_db(self) -> List[WikipediaArticle]:
         """Load Wikipedia articles from SQLite database"""
@@ -211,7 +246,7 @@ class WikipediaKnowledgeLoader(BaseLoader):
             w.last_updated = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=100)
+        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.wikipedia_batch_size)
         self.logger.info(f"Created {created} Wikipedia nodes")
         return created
     
@@ -283,7 +318,7 @@ class WikipediaKnowledgeLoader(BaseLoader):
             MATCH (s:State {state_code: item.state_code})
             MERGE (w)-[:IN_STATE]->(s)
             """
-            count = self.batch_execute(query, state_batch, batch_size=200)
+            count = self.batch_execute(query, state_batch, batch_size=self.batch_config.default_batch_size)
             self.load_result.relationships_created['state'] = count
             self.logger.info(f"  Created {count} state relationships")
         
@@ -295,7 +330,7 @@ class WikipediaKnowledgeLoader(BaseLoader):
             MATCH (c:County {county_id: item.county_id})
             MERGE (w)-[:IN_COUNTY]->(c)
             """
-            count = self.batch_execute(query, county_batch, batch_size=200)
+            count = self.batch_execute(query, county_batch, batch_size=self.batch_config.default_batch_size)
             self.load_result.relationships_created['county'] = count
             self.logger.info(f"  Created {count} county relationships")
         
@@ -307,7 +342,7 @@ class WikipediaKnowledgeLoader(BaseLoader):
             MATCH (city:City {city_id: item.city_id})
             MERGE (w)-[:DESCRIBES_LOCATION_IN]->(city)
             """
-            count = self.batch_execute(query, city_batch, batch_size=200)
+            count = self.batch_execute(query, city_batch, batch_size=self.batch_config.default_batch_size)
             self.load_result.relationships_created['city'] = count
             self.logger.info(f"  Created {count} city relationships")
     

@@ -1,0 +1,1421 @@
+[
+  {
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Rockridge",
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Temescal",
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "CA"
+  },
+  {
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "CA"
+  },
+  {
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Mission District",
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Noe Valley",
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Pacific Heights",
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "SOMA",
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Sunset District",
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "CA"
+  },
+  {
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Santana Row",
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "CA"
+  },
+  {
+    "neighborhood": "Willow Glen",
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "CA"
+  },
+  {
+    "state": "California"
+  },
+  {
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Fremont",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Grand Lake",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Hayward",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Interstate 238 and State Route 238",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Mountain House",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "city": "San Francisco\u2013Oakland",
+    "county": "Alameda",
+    "state": "California"
+  },
+  {
+    "county": "Alameda County",
+    "state": "California"
+  },
+  {
+    "city": "Berkeley",
+    "county": "Alameda County",
+    "state": "California"
+  },
+  {
+    "city": "Fremont",
+    "county": "Alameda County",
+    "state": "California"
+  },
+  {
+    "city": "Oakland",
+    "county": "Alameda County",
+    "state": "California"
+  },
+  {
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "city": "Alpine Village",
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "city": "Bear Valley",
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "city": "Lake Alpine",
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "city": "Mount Bullion",
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "city": "Silver Mountain",
+    "county": "Alpine",
+    "state": "California"
+  },
+  {
+    "county": "Alpine County",
+    "state": "California"
+  },
+  {
+    "city": "Centerville",
+    "county": "Alpine County",
+    "state": "California"
+  },
+  {
+    "city": "Markleeville",
+    "county": "Alpine County",
+    "state": "California"
+  },
+  {
+    "county": "Amador",
+    "state": "California"
+  },
+  {
+    "city": "Buckhorn",
+    "county": "Amador",
+    "state": "California"
+  },
+  {
+    "city": "Buena Vista",
+    "county": "Amador",
+    "state": "California"
+  },
+  {
+    "city": "Jackson",
+    "county": "Amador",
+    "state": "California"
+  },
+  {
+    "county": "Butte",
+    "state": "California"
+  },
+  {
+    "city": "Chico",
+    "county": "Butte",
+    "state": "California"
+  },
+  {
+    "city": "Angels Camp",
+    "county": "Calaveras",
+    "state": "California"
+  },
+  {
+    "county": "Contra Costa",
+    "state": "California"
+  },
+  {
+    "city": "Antioch",
+    "county": "Contra Costa",
+    "state": "California"
+  },
+  {
+    "city": "Bayview",
+    "county": "Contra Costa",
+    "state": "California"
+  },
+  {
+    "city": "Mountain View",
+    "county": "Contra Costa",
+    "state": "California"
+  },
+  {
+    "county": "Contra Costa County",
+    "state": "California"
+  },
+  {
+    "county": "Humboldt",
+    "state": "California"
+  },
+  {
+    "county": "Klamath County",
+    "state": "California"
+  },
+  {
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Clearlake",
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Lakeport",
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Lucerne",
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Pine Grove",
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Spring Valley",
+    "county": "Lake",
+    "state": "California"
+  },
+  {
+    "city": "Alondra Park",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Alpine",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Baldwin Park",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Burbank",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Cornell",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "El Nido",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "La Habra Heights",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Lancaster",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Pyramid Lake",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Rowland Heights",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "city": "Sand Canyon",
+    "county": "Los Angeles",
+    "state": "California"
+  },
+  {
+    "county": "Los Angeles County",
+    "state": "California"
+  },
+  {
+    "city": "Elizabeth Lake",
+    "county": "Los Angeles County",
+    "state": "California"
+  },
+  {
+    "city": "Los Angeles",
+    "county": "Los Angeles County",
+    "state": "California"
+  },
+  {
+    "city": "Corte Madera",
+    "county": "Marin",
+    "state": "California"
+  },
+  {
+    "city": "San Rafael",
+    "county": "Marin",
+    "state": "California"
+  },
+  {
+    "city": "Santa Rosa",
+    "county": "Marin",
+    "state": "California"
+  },
+  {
+    "county": "Marin County",
+    "state": "California"
+  },
+  {
+    "city": "Corte Madera",
+    "county": "Marin County",
+    "state": "California"
+  },
+  {
+    "city": "Tiburon",
+    "county": "Marin County",
+    "state": "California"
+  },
+  {
+    "city": "Mariposa",
+    "county": "Mariposa County",
+    "state": "California"
+  },
+  {
+    "county": "Monterey",
+    "state": "California"
+  },
+  {
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "California"
+  },
+  {
+    "county": "Monterey County",
+    "state": "California"
+  },
+  {
+    "county": "Napa",
+    "state": "California"
+  },
+  {
+    "city": "American Canyon",
+    "county": "Napa",
+    "state": "California"
+  },
+  {
+    "city": "St. Helena",
+    "county": "Napa",
+    "state": "California"
+  },
+  {
+    "city": "Buena Park",
+    "county": "Orange",
+    "state": "California"
+  },
+  {
+    "city": "Silverado",
+    "county": "Orange",
+    "state": "California"
+  },
+  {
+    "city": "Silverado",
+    "county": "Orange County",
+    "state": "California"
+  },
+  {
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Canyon Lake",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Chiriaco Summit",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Eagle Mountain",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Edgemont",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "El Cerrito",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "El Sobrante",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "La Cresta",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Lake Riverside",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Martinez",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Oasis",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Riverside",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "city": "Sage",
+    "county": "Riverside",
+    "state": "California"
+  },
+  {
+    "county": "Riverside County",
+    "state": "California"
+  },
+  {
+    "city": "Riverside",
+    "county": "Riverside County",
+    "state": "California"
+  },
+  {
+    "city": "Sacramento",
+    "county": "Sacramento",
+    "state": "California"
+  },
+  {
+    "city": "Sacramento",
+    "county": "Sacramento County",
+    "state": "California"
+  },
+  {
+    "county": "San Benito",
+    "state": "California"
+  },
+  {
+    "county": "San Bernardino",
+    "state": "California"
+  },
+  {
+    "city": "Big Bear City",
+    "county": "San Bernardino",
+    "state": "California"
+  },
+  {
+    "city": "Big Bear Lake",
+    "county": "San Bernardino",
+    "state": "California"
+  },
+  {
+    "city": "Pine Mountain",
+    "county": "San Bernardino",
+    "state": "California"
+  },
+  {
+    "city": "Baldwin Lake",
+    "county": "San Bernardino County",
+    "state": "California"
+  },
+  {
+    "city": "Bluff Lake",
+    "county": "San Bernardino County",
+    "state": "California"
+  },
+  {
+    "city": "Granite Mountains",
+    "county": "San Bernardino County",
+    "state": "California"
+  },
+  {
+    "county": "San Diego",
+    "state": "California"
+  },
+  {
+    "city": "San Diego",
+    "county": "San Diego",
+    "state": "California"
+  },
+  {
+    "county": "San Diego County",
+    "state": "California"
+  },
+  {
+    "city": "San Diego",
+    "county": "San Diego County",
+    "state": "California"
+  },
+  {
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Bayview\u2013Hunters Point",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Bernal Heights",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Castro District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Diamond Heights",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Eureka Valley",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Excelsior District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Fillmore District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Financial District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Glen Park",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Lower Pacific Heights, San Francisco",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Marina District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Mission Bay",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Mission District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Noe Valley",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Oceanview",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Pacific Heights",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Parkside",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Richmond District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "San Francisco",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "San Francisco Bay Area",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Sunset District",
+    "county": "San Francisco",
+    "state": "California"
+  },
+  {
+    "city": "Mountain House",
+    "county": "San Joaquin",
+    "state": "California"
+  },
+  {
+    "city": "Old River",
+    "county": "San Joaquin",
+    "state": "California"
+  },
+  {
+    "city": "Mountain House",
+    "county": "San Joaquin County",
+    "state": "California"
+  },
+  {
+    "city": "Baywood-Los Osos",
+    "county": "San Luis Obispo",
+    "state": "California"
+  },
+  {
+    "county": "San Mateo",
+    "state": "California"
+  },
+  {
+    "city": "South San Francisco",
+    "county": "San Mateo",
+    "state": "California"
+  },
+  {
+    "county": "San Mateo County",
+    "state": "California"
+  },
+  {
+    "city": "Burbank",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Coyote Lake",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Crystal Peak",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Los Altos Hills",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Morgan Hill",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Mountain View",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Twin Peaks",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "city": "Willow Glen",
+    "county": "Santa Clara",
+    "state": "California"
+  },
+  {
+    "county": "Santa Clara County",
+    "state": "California"
+  },
+  {
+    "city": "Black Mountain",
+    "county": "Santa Clara County",
+    "state": "California"
+  },
+  {
+    "city": "Los Altos Hills",
+    "county": "Santa Clara County",
+    "state": "California"
+  },
+  {
+    "city": "Los Gatos",
+    "county": "Santa Clara County",
+    "state": "California"
+  },
+  {
+    "city": "San Jose",
+    "county": "Santa Clara County",
+    "state": "California"
+  },
+  {
+    "city": "Boulder Creek",
+    "county": "Santa Cruz",
+    "state": "California"
+  },
+  {
+    "city": "Los Gatos",
+    "county": "Santa Cruz",
+    "state": "California"
+  },
+  {
+    "city": "Santa Cruz",
+    "county": "Santa Cruz",
+    "state": "California"
+  },
+  {
+    "county": "Siskiyou",
+    "state": "California"
+  },
+  {
+    "city": "Bear Mountain",
+    "county": "Siskiyou",
+    "state": "California"
+  },
+  {
+    "city": "Black Butte",
+    "county": "Siskiyou",
+    "state": "California"
+  },
+  {
+    "city": "Klamath River",
+    "county": "Siskiyou",
+    "state": "California"
+  },
+  {
+    "city": "Lake Shastina",
+    "county": "Siskiyou",
+    "state": "California"
+  },
+  {
+    "city": "Benicia",
+    "county": "Solano",
+    "state": "California"
+  },
+  {
+    "county": "Solano County",
+    "state": "California"
+  },
+  {
+    "county": "Sonoma",
+    "state": "California"
+  },
+  {
+    "city": "Allensworth",
+    "county": "Tulare",
+    "state": "California"
+  },
+  {
+    "city": "Coalville",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "city": "Kamas",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "city": "Oakley",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "neighborhood": "Canyons Village",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "neighborhood": "Deer Valley",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "neighborhood": "Old Town",
+    "city": "Park City",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "city": "Summit Park",
+    "county": "Summit",
+    "state": "UT"
+  },
+  {
+    "city": "Heber City",
+    "county": "Wasatch",
+    "state": "UT"
+  },
+  {
+    "state": "Utah"
+  },
+  {
+    "county": "Beaver",
+    "state": "Utah"
+  },
+  {
+    "city": "Beaver",
+    "county": "Beaver",
+    "state": "Utah"
+  },
+  {
+    "city": "Eagle Point Ski Resort",
+    "county": "Beaver",
+    "state": "Utah"
+  },
+  {
+    "city": "Beaver",
+    "county": "Beaver County",
+    "state": "Utah"
+  },
+  {
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Bear River City",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Beaver Dam",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Blue Creek",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Brigham City",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Park Valley",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "city": "Riverside",
+    "county": "Box Elder",
+    "state": "Utah"
+  },
+  {
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Amalga",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Avon",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Benson",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Cache Junction",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Clarkston",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "College Ward",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Hyde Park",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "Logan",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "city": "River Heights",
+    "county": "Cache",
+    "state": "Utah"
+  },
+  {
+    "county": "Carbon",
+    "state": "Utah"
+  },
+  {
+    "city": "Price",
+    "county": "Carbon County",
+    "state": "Utah"
+  },
+  {
+    "city": "Manila",
+    "county": "Daggett",
+    "state": "Utah"
+  },
+  {
+    "county": "Davis County",
+    "state": "Utah"
+  },
+  {
+    "county": "Duchesne",
+    "state": "Utah"
+  },
+  {
+    "city": "Uinta Mountains",
+    "county": "Duchesne",
+    "state": "Utah"
+  },
+  {
+    "city": "Roosevelt",
+    "county": "Duchesne County",
+    "state": "Utah"
+  },
+  {
+    "county": "Garfield",
+    "state": "Utah"
+  },
+  {
+    "city": "Boulder",
+    "county": "Garfield",
+    "state": "Utah"
+  },
+  {
+    "city": "Bryce Canyon City",
+    "county": "Garfield",
+    "state": "Utah"
+  },
+  {
+    "city": "Escalante",
+    "county": "Garfield",
+    "state": "Utah"
+  },
+  {
+    "city": "Panguitch",
+    "county": "Garfield",
+    "state": "Utah"
+  },
+  {
+    "city": "Beryl",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Beryl Junction",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Brian Head",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Cedar City",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Cedar Highlands",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Enoch",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "city": "Summit",
+    "county": "Iron",
+    "state": "Utah"
+  },
+  {
+    "county": "Iron County",
+    "state": "Utah"
+  },
+  {
+    "city": "Cedar City",
+    "county": "Iron County",
+    "state": "Utah"
+  },
+  {
+    "city": "Cedar Valley",
+    "county": "Iron County",
+    "state": "Utah"
+  },
+  {
+    "city": "Black Mountains",
+    "county": "Iron County; Beaver County",
+    "state": "Utah"
+  },
+  {
+    "city": "Eureka",
+    "county": "Juab",
+    "state": "Utah"
+  },
+  {
+    "city": "Mirror Lake",
+    "county": "Lakes of Duchesne",
+    "state": "Utah"
+  },
+  {
+    "city": "Argyle",
+    "county": "Rich",
+    "state": "Utah"
+  },
+  {
+    "city": "Garden",
+    "county": "Rich",
+    "state": "Utah"
+  },
+  {
+    "city": "Laketown",
+    "county": "Rich",
+    "state": "Utah"
+  },
+  {
+    "county": "Rich County",
+    "state": "Utah"
+  },
+  {
+    "city": "Garden City",
+    "county": "Rich County",
+    "state": "Utah"
+  },
+  {
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Bingham Canyon",
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Emigration Canyon",
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Riverton",
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Salt Lake City",
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Snowbird",
+    "county": "Salt Lake",
+    "state": "Utah"
+  },
+  {
+    "city": "Kearns",
+    "county": "Salt Lake County",
+    "state": "Utah"
+  },
+  {
+    "city": "Salt Lake City",
+    "county": "Salt Lake County",
+    "state": "Utah"
+  },
+  {
+    "city": "West Jordan",
+    "county": "Salt Lake County",
+    "state": "Utah"
+  },
+  {
+    "city": "Moab",
+    "county": "San Juan",
+    "state": "Utah"
+  },
+  {
+    "city": "Blacks Fork",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Coalville",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Echo",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Francis",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Kamas",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Oakley",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Park City",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Silver Summit",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Summit Park",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "city": "Upton",
+    "county": "Summit",
+    "state": "Utah"
+  },
+  {
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "city": "Coalville",
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "city": "East Basin",
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "city": "Park City",
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "city": "Salt Lake City",
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "city": "Upton",
+    "county": "Summit County",
+    "state": "Utah"
+  },
+  {
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Ajax",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Aragonite",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Arinosa",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Dugway",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Iosepa",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Lake Point",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Pine Canyon",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Rush Lake",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Stansbury Park",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Stockton",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Tooele",
+    "county": "Tooele",
+    "state": "Utah"
+  },
+  {
+    "city": "Vernal",
+    "county": "Uintah",
+    "state": "Utah"
+  },
+  {
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Eagle Mountain",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Lake Shore",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Lakeview",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Lehi",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Orem",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Provo",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Spring Lake",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "Sundance Resort",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "city": "West Mountain",
+    "county": "Utah",
+    "state": "Utah"
+  },
+  {
+    "county": "Wasatch",
+    "state": "Utah"
+  },
+  {
+    "city": "Heber City",
+    "county": "Wasatch",
+    "state": "Utah"
+  },
+  {
+    "city": "Interlaken",
+    "county": "Wasatch",
+    "state": "Utah"
+  },
+  {
+    "city": "Soldier Summit",
+    "county": "Wasatch",
+    "state": "Utah"
+  },
+  {
+    "city": "Charleston",
+    "county": "Wasatch County",
+    "state": "Utah"
+  },
+  {
+    "city": "Heber City",
+    "county": "Wasatch County",
+    "state": "Utah"
+  },
+  {
+    "city": "Enterprise",
+    "county": "Washington",
+    "state": "Utah"
+  },
+  {
+    "city": "St. George",
+    "county": "Washington County",
+    "state": "Utah"
+  },
+  {
+    "city": "Loa",
+    "county": "Wayne",
+    "state": "Utah"
+  },
+  {
+    "county": "Wayne County",
+    "state": "Utah"
+  },
+  {
+    "city": "Blind Lake",
+    "county": "Wayne County",
+    "state": "Utah"
+  },
+  {
+    "city": "Boulder Mountain",
+    "county": "Wayne County",
+    "state": "Utah"
+  }
+]

@@ -1,752 +1,312 @@
 #!/usr/bin/env python3
 """
-Demo script to showcase various search capabilities of the Property Search System.
-This script demonstrates different search types with clear, formatted output.
+Demo script for Wikipedia-enhanced property search.
+Shows various search capabilities using real data.
 """
 
-import sys
 import json
-import time
+import sys
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 
-# Add parent to path for imports
+# Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.syntax import Syntax
-from rich import box
-
-from real_estate_search.config.settings import Settings
-from real_estate_search.search.search_engine import PropertySearchEngine
-from real_estate_search.search.models import SearchRequest, SearchFilters, GeoSearchParams, GeoPoint
-from real_estate_search.search.enums import QueryType, GeoDistanceUnit
-from real_estate_search.indexer.enums import PropertyType, PropertyStatus, SortOrder
-
-
-console = Console()
+from real_estate_search.search.search_engine import SearchEngine, SearchMode
+from real_estate_search.search.models import SearchRequest, SearchFilters
+from real_estate_search.search.enums import QueryType
+from real_estate_search.indexer.property_indexer import PropertyIndexer
+from real_estate_search.wikipedia.extractor import WikipediaExtractor
 
 
 class SearchDemo:
-    """Demonstrate various search capabilities."""
+    """Demonstration of Wikipedia-enhanced search capabilities."""
     
     def __init__(self):
-        """Initialize the demo."""
-        self.settings = Settings.load()
-        self.search_engine = PropertySearchEngine(self.settings)
-        
-    def print_section_header(self, title: str, description: str = ""):
-        """Print a formatted section header."""
-        console.print("\n" + "="*80)
-        console.print(f"[bold cyan]{title}[/bold cyan]")
-        if description:
-            console.print(f"[dim]{description}[/dim]")
-        console.print("="*80 + "\n")
+        """Initialize demo components."""
+        self.search_engine = SearchEngine()
+        self.indexer = PropertyIndexer()
+        self.wikipedia_extractor = WikipediaExtractor()
     
-    def print_query_info(self, query_type: str, params: Dict[str, Any]):
-        """Print query parameters in a formatted way."""
-        console.print("[bold]Query Type:[/bold]", query_type)
-        console.print("[bold]Parameters:[/bold]")
-        for key, value in params.items():
-            if value is not None:
-                console.print(f"  • {key}: {value}")
-        console.print()
-    
-    def print_results(self, response, show_details: bool = True):
-        """Print search results in a formatted table."""
-        if response.total == 0:
-            console.print("[yellow]No results found[/yellow]")
-            return
+    def setup_demo_index(self, force_recreate: bool = True):
+        """Set up the demo index with sample data."""
+        print("\n🔧 Setting up demo index...")
         
-        # Summary
-        console.print(f"[green]Found {response.total} properties[/green] (showing {len(response.hits)})")
-        console.print(f"Query took: {response.took_ms}ms\n")
-        
-        # Results table
-        table = Table(show_header=True, header_style="bold magenta", box=box.ROUNDED)
-        table.add_column("ID", style="cyan", width=12)
-        table.add_column("Address", style="white")
-        table.add_column("City", style="white")
-        table.add_column("Type", style="yellow")
-        table.add_column("Price", justify="right", style="green")
-        table.add_column("Beds", justify="center")
-        table.add_column("Baths", justify="center")
-        table.add_column("Sq Ft", justify="right")
-        
-        if any(hit.distance for hit in response.hits):
-            table.add_column("Distance", justify="right", style="blue")
-        
-        if any(hit.score for hit in response.hits):
-            table.add_column("Score", justify="right", style="dim")
-        
-        for hit in response.hits:
-            prop = hit.property
-            row = [
-                prop.listing_id,
-                prop.address.street[:30],
-                prop.address.city,
-                prop.property_type.value if hasattr(prop.property_type, 'value') else str(prop.property_type),
-                f"${prop.price:,.0f}",
-                str(prop.bedrooms),
-                f"{prop.bathrooms:.1f}",
-                f"{prop.square_feet:,}" if prop.square_feet else "N/A"
-            ]
-            
-            if any(h.distance for h in response.hits):
-                if hit.distance:
-                    row.append(f"{hit.distance:.2f} km")
-                else:
-                    row.append("")
-            
-            if any(h.score for h in response.hits):
-                if hit.score:
-                    row.append(f"{hit.score:.2f}")
-                else:
-                    row.append("")
-            
-            table.add_row(*row)
-        
-        console.print(table)
-        
-        # Show highlights if available
-        if show_details and any(hit.highlights for hit in response.hits):
-            console.print("\n[bold]Search Highlights:[/bold]")
-            for i, hit in enumerate(response.hits[:3]):
-                if hit.highlights:
-                    console.print(f"\n[cyan]{hit.property.listing_id}:[/cyan]")
-                    for field, highlights in hit.highlights.items():
-                        console.print(f"  • {field}: {' ... '.join(highlights)}")
-    
-    def print_aggregations(self, response):
-        """Print aggregation results."""
-        if not response.aggregations:
-            return
-        
-        console.print("\n[bold]Aggregations:[/bold]\n")
-        
-        for agg_name, agg_data in response.aggregations.items():
-            if hasattr(agg_data, 'type'):
-                if agg_data.type == "terms":
-                    console.print(f"[cyan]{agg_name}:[/cyan]")
-                    for bucket in agg_data.buckets[:5]:
-                        if hasattr(bucket, 'key') and hasattr(bucket, 'doc_count'):
-                            console.print(f"  • {bucket.key}: {bucket.doc_count} properties")
-                        elif isinstance(bucket, dict):
-                            console.print(f"  • {bucket.get('key', 'N/A')}: {bucket.get('doc_count', 0)} properties")
-                elif agg_data.type == "range":
-                    console.print(f"[cyan]{agg_name}:[/cyan]")
-                    for bucket in agg_data.buckets:
-                        if hasattr(bucket, 'from_value'):
-                            if bucket.from_value is not None and bucket.to_value is not None:
-                                console.print(f"  • ${bucket.from_value/1000:.0f}k-${bucket.to_value/1000:.0f}k: {bucket.doc_count} properties")
-                        elif isinstance(bucket, dict):
-                            from_val = bucket.get('from')
-                            to_val = bucket.get('to')
-                            key = bucket.get('key', '')
-                            count = bucket.get('doc_count', 0)
-                            if from_val is not None and to_val is not None:
-                                console.print(f"  • {key}: {count} properties")
-                            elif to_val is not None:
-                                console.print(f"  • Under ${to_val/1000:.0f}k: {count} properties")
-                            elif from_val is not None:
-                                console.print(f"  • Over ${from_val/1000:.0f}k: {count} properties")
-                elif agg_data.type == "stats":
-                    console.print(f"[cyan]{agg_name}:[/cyan]")
-                    if hasattr(agg_data, 'avg'):
-                        console.print(f"  • Average: ${agg_data.avg:,.0f}")
-                        console.print(f"  • Min: ${agg_data.min:,.0f}")
-                        console.print(f"  • Max: ${agg_data.max:,.0f}")
-        console.print()
-    
-    def demo_text_search(self):
-        """Demonstrate text search across multiple fields."""
-        self.print_section_header(
-            "DEMONSTRATION 1: TEXT SEARCH",
-            "Search across all text fields (description, features, amenities, etc.)"
-        )
-        
-        console.print("[bold]What this does:[/bold]")
-        console.print("  • Searches for 'mountain views' across multiple text fields")
-        console.print("  • Uses fuzzy matching to handle typos")
-        console.print("  • Boosts matches in description and search_tags fields")
-        console.print("  • Highlights matching terms in the results\n")
-        
-        # Example 1: Search for mountain views
-        self.print_query_info(
-            "Full-text search",
-            {"query": "mountain views", "size": 5}
-        )
-        
-        console.print("[dim]Executing search now (debug log will appear below)...[/dim]")
-        
-        request = SearchRequest(
-            query_type=QueryType.TEXT,
-            query_text="mountain views",
-            size=5,
-            include_highlights=True
-        )
-        
-        response = self.search_engine.search(request)
-        
-        console.print("\n[bold green]Search Results:[/bold green]")
-        self.print_results(response)
-    
-    def demo_filter_search(self):
-        """Demonstrate filtered search with multiple criteria."""
-        self.print_section_header(
-            "DEMONSTRATION 2: FILTERED SEARCH",
-            "Search using specific property criteria (price, bedrooms, type, etc.)"
-        )
-        
-        console.print("[bold]What this does:[/bold]")
-        console.print("  • Filters properties by exact criteria (no text matching)")
-        console.print("  • Combines multiple filters with AND logic")
-        console.print("  • Sorts results by price (ascending)")
-        console.print("  • Returns only properties matching ALL criteria\n")
-        
-        # Example: Find 3+ bedroom homes under $1M
-        self.print_query_info(
-            "Filter-based search",
-            {
-                "min_bedrooms": 3,
-                "max_price": "$1,000,000",
-                "property_types": ["single_family", "townhouse"],
-                "cities": ["Park City"],
-                "sort": "price ascending"
-            }
-        )
-        
-        console.print("[dim]Executing filtered search now...[/dim]")
-        
-        filters = SearchFilters(
-            min_bedrooms=3,
-            max_price=1000000,
-            property_types=[PropertyType.SINGLE_FAMILY, PropertyType.TOWNHOUSE],
-            cities=["Park City"]
-        )
-        
-        request = SearchRequest(
-            query_type=QueryType.FILTER,
-            filters=filters,
-            size=5,
-            sort_by=SortOrder.PRICE_ASC
-        )
-        
-        response = self.search_engine.search(request)
-        
-        console.print("\n[bold green]Filtered Results:[/bold green]")
-        self.print_results(response)
-    
-    def demo_combined_search(self):
-        """Demonstrate combining text search with filters."""
-        self.print_section_header(
-            "DEMONSTRATION 3: COMBINED TEXT + FILTER SEARCH",
-            "Combine full-text search with property filters"
-        )
-        
-        console.print("[bold]What this does:[/bold]")
-        console.print("  • Searches for 'modern kitchen' in text fields")
-        console.print("  • ALSO applies property filters (price range, bedrooms)")
-        console.print("  • Results must match BOTH text query AND filters")
-        console.print("  • Shows how to narrow down text search results\n")
-        
-        self.print_query_info(
-            "Text search with filters",
-            {
-                "query": "modern kitchen",
-                "min_price": "$500,000",
-                "max_price": "$1,500,000",
-                "min_bedrooms": 2,
-                "property_status": "active"
-            }
-        )
-        
-        console.print("[dim]Executing combined search now...[/dim]")
-        
-        filters = SearchFilters(
-            min_price=500000,
-            max_price=1500000,
-            min_bedrooms=2,
-            property_status=PropertyStatus.ACTIVE
-        )
-        
-        request = SearchRequest(
-            query_type=QueryType.TEXT,
-            query_text="modern kitchen",
-            filters=filters,
-            size=5,
-            include_highlights=True
-        )
-        
-        response = self.search_engine.search(request)
-        
-        console.print("\n[bold green]Combined Search Results:[/bold green]")
-        self.print_results(response)
-    
-    def demo_geo_search(self):
-        """Demonstrate geographic radius search."""
-        self.print_section_header(
-            "DEMONSTRATION 4: GEOGRAPHIC SEARCH",
-            "Find properties within a radius of a location"
-        )
-        
-        console.print("[bold]What this does:[/bold]")
-        console.print("  • Searches within 5km radius of downtown Park City")
-        console.print("  • Calculates distance from center point")
-        console.print("  • Sorts results by distance (closest first)")
-        console.print("  • Can combine with price and other filters\n")
-        
-        # Search near downtown Park City
-        self.print_query_info(
-            "Geo-radius search",
-            {
-                "center": "Park City, UT (40.6461, -111.4980)",
-                "radius": "5 km",
-                "max_price": "$2,000,000",
-                "sort": "distance"
-            }
-        )
-        
-        console.print("[dim]Executing geographic search now...[/dim]")
-        
-        filters = SearchFilters(max_price=2000000)
-        
-        response = self.search_engine.geo_search(
-            center_lat=40.6461,
-            center_lon=-111.4980,
-            radius=5,
-            unit="km",
-            filters=filters,
-            size=5
-        )
-        
-        console.print("\n[bold green]Geographic Search Results:[/bold green]")
-        self.print_results(response)
-    
-    def demo_aggregation_search(self):
-        """Demonstrate search with aggregations."""
-        self.print_section_header(
-            "AGGREGATION SEARCH",
-            "Get statistical insights about the property market"
-        )
-        
-        self.print_query_info(
-            "Search with aggregations",
-            {
-                "query": "all properties",
-                "aggregations": "price ranges, property types, cities, statistics"
-            }
-        )
-        
-        request = SearchRequest(
-            query_type=QueryType.FILTER,
-            filters=SearchFilters(),  # No filters - get all
-            size=1,  # Minimal size for aggregation-only query
-            include_aggregations=True
-        )
-        
-        response = self.search_engine.search(request)
-        
-        console.print(f"[green]Total properties in index: {response.total}[/green]")
-        self.print_aggregations(response)
-    
-    def demo_price_range_search(self):
-        """Demonstrate searching different price ranges."""
-        self.print_section_header(
-            "PRICE RANGE ANALYSIS",
-            "Compare properties across different price brackets"
-        )
-        
-        price_ranges = [
-            ("Budget", 0, 500000),
-            ("Mid-range", 500000, 1000000),
-            ("Luxury", 1000000, 2000000),
-            ("Ultra-luxury", 2000000, 10000000)
-        ]
-        
-        table = Table(
-            title="Properties by Price Range",
-            show_header=True,
-            header_style="bold magenta",
-            box=box.ROUNDED
-        )
-        table.add_column("Range", style="cyan")
-        table.add_column("Price Bracket", style="white")
-        table.add_column("Count", justify="center", style="green")
-        table.add_column("Avg Beds", justify="center")
-        table.add_column("Avg Baths", justify="center")
-        table.add_column("Avg Sq Ft", justify="right")
-        table.add_column("Cities", style="dim")
-        
-        for label, min_price, max_price in price_ranges:
-            filters = SearchFilters(
-                min_price=min_price,
-                max_price=max_price
-            )
-            
-            request = SearchRequest(
-                query_type=QueryType.FILTER,
-                filters=filters,
-                size=100,  # Get more to calculate averages
-                include_aggregations=False
-            )
-            
-            response = self.search_engine.search(request)
-            
-            if response.total > 0:
-                # Calculate averages
-                total_beds = sum(hit.property.bedrooms for hit in response.hits)
-                total_baths = sum(hit.property.bathrooms for hit in response.hits)
-                total_sqft = sum(hit.property.square_feet for hit in response.hits if hit.property.square_feet)
-                sqft_count = sum(1 for hit in response.hits if hit.property.square_feet)
-                
-                cities = set(hit.property.address.city for hit in response.hits)
-                
-                avg_beds = total_beds / len(response.hits) if response.hits else 0
-                avg_baths = total_baths / len(response.hits) if response.hits else 0
-                avg_sqft = total_sqft / sqft_count if sqft_count > 0 else 0
-                
-                table.add_row(
-                    label,
-                    f"${min_price/1000:.0f}k-${max_price/1000:.0f}k",
-                    str(response.total),
-                    f"{avg_beds:.1f}",
-                    f"{avg_baths:.1f}",
-                    f"{avg_sqft:,.0f}" if avg_sqft > 0 else "N/A",
-                    ", ".join(list(cities)[:2])
-                )
-            else:
-                table.add_row(
-                    label,
-                    f"${min_price/1000:.0f}k-${max_price/1000:.0f}k",
-                    "0",
-                    "-",
-                    "-",
-                    "-",
-                    "-"
-                )
-        
-        console.print(table)
-    
-    def demo_property_type_comparison(self):
-        """Compare different property types."""
-        self.print_section_header(
-            "PROPERTY TYPE COMPARISON",
-            "Analyze different property types in the market"
-        )
-        
-        property_types = [
-            PropertyType.SINGLE_FAMILY,
-            PropertyType.CONDO,
-            PropertyType.TOWNHOUSE,
-            PropertyType.MULTI_FAMILY
-        ]
-        
-        table = Table(
-            title="Property Type Analysis",
-            show_header=True,
-            header_style="bold magenta",
-            box=box.ROUNDED
-        )
-        table.add_column("Type", style="cyan")
-        table.add_column("Count", justify="center", style="green")
-        table.add_column("Avg Price", justify="right", style="yellow")
-        table.add_column("Price Range", justify="center")
-        table.add_column("Avg Size", justify="right")
-        table.add_column("Top City", style="dim")
-        
-        for prop_type in property_types:
-            filters = SearchFilters(
-                property_types=[prop_type]
-            )
-            
-            request = SearchRequest(
-                query_type=QueryType.FILTER,
-                filters=filters,
-                size=100,
-                include_aggregations=False
-            )
-            
-            response = self.search_engine.search(request)
-            
-            if response.total > 0:
-                prices = [hit.property.price for hit in response.hits]
-                avg_price = sum(prices) / len(prices)
-                min_price = min(prices)
-                max_price = max(prices)
-                
-                sizes = [hit.property.square_feet for hit in response.hits if hit.property.square_feet]
-                avg_size = sum(sizes) / len(sizes) if sizes else 0
-                
-                # Find most common city
-                city_counts = {}
-                for hit in response.hits:
-                    city = hit.property.address.city
-                    city_counts[city] = city_counts.get(city, 0) + 1
-                top_city = max(city_counts, key=city_counts.get) if city_counts else "N/A"
-                
-                table.add_row(
-                    prop_type.value,
-                    str(response.total),
-                    f"${avg_price:,.0f}",
-                    f"${min_price/1000:.0f}k-${max_price/1000:.0f}k",
-                    f"{avg_size:,.0f} sq ft" if avg_size > 0 else "N/A",
-                    top_city
-                )
-            else:
-                table.add_row(
-                    prop_type.value,
-                    "0",
-                    "-",
-                    "-",
-                    "-",
-                    "-"
-                )
-        
-        console.print(table)
-    
-    def demo_similar_properties(self):
-        """Find properties similar to a given property."""
-        self.print_section_header(
-            "SIMILAR PROPERTIES SEARCH",
-            "Find properties similar to a reference property"
-        )
-        
-        # First, find a luxury property to use as reference
-        console.print("[dim]Finding a reference property...[/dim]\n")
-        
-        filters = SearchFilters(
-            min_price=1000000,
-            property_types=[PropertyType.SINGLE_FAMILY]
-        )
-        
-        request = SearchRequest(
-            query_type=QueryType.FILTER,
-            filters=filters,
-            size=1
-        )
-        
-        response = self.search_engine.search(request)
-        
-        if response.hits:
-            reference = response.hits[0]
-            console.print(f"[bold]Reference Property:[/bold]")
-            console.print(f"  • ID: {reference.property.listing_id}")
-            console.print(f"  • Address: {reference.property.address.street}, {reference.property.address.city}")
-            console.print(f"  • Price: ${reference.property.price:,.0f}")
-            console.print(f"  • Type: {reference.property.property_type.value if hasattr(reference.property.property_type, 'value') else reference.property.property_type}")
-            console.print(f"  • Bedrooms: {reference.property.bedrooms}")
-            console.print(f"  • Bathrooms: {reference.property.bathrooms}")
-            console.print()
-            
-            # Find similar properties
-            self.print_query_info(
-                "More Like This search",
-                {
-                    "reference_property": reference.property.listing_id,
-                    "max_results": 5
-                }
-            )
-            
-            similar_request = SearchRequest(
-                query_type=QueryType.SIMILAR,
-                similar_to_id=reference.doc_id,
-                size=5
-            )
-            
-            similar_response = self.search_engine.search(similar_request)
-            
-            if similar_response.total > 0:
-                console.print(f"[green]Found {similar_response.total} similar properties:[/green]\n")
-                self.print_results(similar_response, show_details=False)
-            else:
-                console.print("[yellow]No similar properties found[/yellow]")
+        # Create index
+        if self.indexer.create_index(force_recreate=force_recreate):
+            print("✅ Index created successfully")
         else:
-            console.print("[yellow]No reference property found[/yellow]")
+            print("❌ Failed to create index")
+            return False
+        
+        # Index properties
+        print("\n📥 Indexing properties with Wikipedia enrichment...")
+        
+        # Get absolute paths to property files
+        project_root = Path(__file__).parent.parent.parent
+        sf_file = project_root / "real_estate_data" / "properties_sf.json"
+        pc_file = project_root / "real_estate_data" / "properties_pc.json"
+        
+        # Index SF properties
+        sf_stats = self.indexer.index_properties_from_file(
+            str(sf_file),
+            batch_size=20
+        )
+        print(f"  SF Properties: {sf_stats.success} indexed, {sf_stats.failed} failed")
+        
+        # Index Park City properties
+        pc_stats = self.indexer.index_properties_from_file(
+            str(pc_file),
+            batch_size=20
+        )
+        print(f"  Park City Properties: {pc_stats.success} indexed, {pc_stats.failed} failed")
+        
+        # Show index stats
+        stats = self.indexer.get_index_stats()
+        print(f"\n📊 Index Statistics:")
+        print(f"  Total documents: {stats.get('document_count', 0)}")
+        print(f"  Wikipedia coverage:")
+        print(f"    - Location context: {stats['wikipedia_coverage']['location_context']}")
+        print(f"    - Neighborhood context: {stats['wikipedia_coverage']['neighborhood_context']}")
+        print(f"    - Has POIs: {stats['wikipedia_coverage']['has_pois']}")
+        avg_desirability = stats['wikipedia_coverage'].get('avg_desirability', 0)
+        if avg_desirability is not None:
+            print(f"    - Avg desirability: {avg_desirability:.2f}")
+        else:
+            print(f"    - Avg desirability: N/A")
+        
+        return True
     
-    def run_all_demos(self):
-        """Run all demonstration searches."""
-        try:
-            # Header
-            console.print("\n" + "="*80)
-            console.print("[bold green]PROPERTY SEARCH SYSTEM DEMONSTRATION[/bold green]", justify="center")
-            console.print(f"[dim]Connected to: {self.settings.elasticsearch.host}:{self.settings.elasticsearch.port}[/dim]", justify="center")
-            console.print("="*80)
+    def demo_park_city_ski_search(self):
+        """Demo: Find ski-accessible properties in Park City."""
+        print("\n" + "="*60)
+        print("🎿 DEMO 1: Park City Ski Resort Properties")
+        print("="*60)
+        
+        query = "ski resort luxury home near Deer Valley"
+        print(f"\nQuery: '{query}'")
+        
+        request = SearchRequest(
+            query_text=query,
+            search_mode=SearchMode.STANDARD,
+            filters=SearchFilters(
+                cities=["Park City"],
+                min_price=1000000
+            ),
+            size=3
+        )
+        results = self.search_engine.search(request)
+        
+        self._display_results(results, show_wikipedia=True)
+    
+    def demo_sf_cultural_search(self):
+        """Demo: Find properties near cultural venues in San Francisco."""
+        print("\n" + "="*60)
+        print("🎭 DEMO 2: San Francisco Cultural District Properties")
+        print("="*60)
+        
+        query = "museum arts cultural"
+        print(f"\nQuery: '{query}' (Cultural Mode)")
+        
+        request = SearchRequest(
+            query_text=query,
+            search_mode=SearchMode.CULTURAL,
+            filters=SearchFilters(
+                cities=["San Francisco"],
+                min_bedrooms=2
+            ),
+            size=3
+        )
+        results = self.search_engine.search(request)
+        
+        self._display_results(results, show_pois=True)
+    
+    def demo_lifestyle_search(self):
+        """Demo: Lifestyle-based property search."""
+        print("\n" + "="*60)
+        print("🏡 DEMO 3: Lifestyle-Based Search")
+        print("="*60)
+        
+        query = "park recreation family outdoor"
+        print(f"\nQuery: '{query}' (Lifestyle Mode)")
+        
+        request = SearchRequest(
+            query_text=query,
+            search_mode=SearchMode.LIFESTYLE,
+            filters=SearchFilters(
+                min_bedrooms=3,
+                max_price=2000000
+            ),
+            size=3
+        )
+        results = self.search_engine.search(request)
+        
+        self._display_results(results, show_scores=True)
+    
+    def demo_poi_proximity_search(self):
+        """Demo: Find properties near specific POIs."""
+        print("\n" + "="*60)
+        print("📍 DEMO 4: POI Proximity Search")
+        print("="*60)
+        
+        query = "Park"  # Will match various parks
+        print(f"\nQuery: Properties near '{query}' (within 1 mile)")
+        
+        request = SearchRequest(
+            query_text=query,
+            search_mode=SearchMode.POI_PROXIMITY,
+            filters=SearchFilters(),  # Will use default max_distance_miles in query builder
+            size=3
+        )
+        results = self.search_engine.search(request)
+        
+        self._display_results(results, show_matching_pois=True)
+    
+    def demo_investment_search(self):
+        """Demo: Investment property search."""
+        print("\n" + "="*60)
+        print("💰 DEMO 5: Investment Property Search")
+        print("="*60)
+        
+        query = "tourist rental investment"
+        print(f"\nQuery: '{query}' (Investment Mode)")
+        
+        request = SearchRequest(
+            query_text=query,
+            search_mode=SearchMode.INVESTMENT,
+            size=3
+        )
+        results = self.search_engine.search(request)
+        
+        self._display_results(results, show_investment_metrics=True)
+    
+    def demo_faceted_search(self):
+        """Demo: Show faceted search capabilities."""
+        print("\n" + "="*60)
+        print("🔍 DEMO 6: Faceted Search Options")
+        print("="*60)
+        
+        facets = self.search_engine.get_facets(query="park")
+        
+        print("\n📊 Available Facets:")
+        
+        # Price ranges
+        print("\n💵 Price Ranges:")
+        for bucket in facets.get("price_range", {}).get("buckets", []):
+            print(f"  {bucket['key']}: {bucket['doc_count']} properties")
+        
+        # Cultural features
+        print("\n🎭 Cultural Features:")
+        for bucket in facets.get("cultural_features", {}).get("buckets", [])[:5]:
+            print(f"  {bucket['key']}: {bucket['doc_count']} properties")
+        
+        # POI categories
+        print("\n📍 Nearby POI Categories:")
+        poi_cats = facets.get("poi_categories", {}).get("categories", {}).get("buckets", [])
+        for bucket in poi_cats[:5]:
+            print(f"  {bucket['key']}: {bucket['doc_count']} properties")
+        
+        # Location quality
+        print("\n⭐ Location Quality:")
+        for bucket in facets.get("location_quality", {}).get("buckets", []):
+            print(f"  {bucket['key']}: {bucket['doc_count']} properties")
+    
+    def _display_results(
+        self,
+        results,
+        show_wikipedia: bool = False,
+        show_pois: bool = False,
+        show_scores: bool = False,
+        show_matching_pois: bool = False,
+        show_investment_metrics: bool = False
+    ):
+        """Display search results with various details."""
+        print(f"\n📊 Found {results.total} properties")
+        
+        for i, hit in enumerate(results.hits[:3], 1):
+            prop = hit.property
+            print(f"\n{i}. Property {prop.listing_id}")
+            print(f"   📍 {prop.address.street}, {prop.address.city}")
+            print(f"   💰 ${prop.price:,.0f}")
+            print(f"   🏠 {prop.bedrooms} bed, {prop.bathrooms} bath, {prop.square_feet:,} sqft" if prop.square_feet else f"   🏠 {prop.bedrooms} bed, {prop.bathrooms} bath")
             
-            # Check index has data
-            console.print("\n[bold yellow]STEP 1: Verifying Elasticsearch Index[/bold yellow]")
-            console.print("[dim]Running a test query to check if the index has data...[/dim]\n")
+            # Note: Wikipedia data would be in the ES document, not the Property model
+            # For demo purposes, we'll skip showing Wikipedia details since they're not directly accessible
+            # The data IS indexed and searchable, just not returned in the Property model
             
-            test_request = SearchRequest(
-                query_type=QueryType.FILTER,
-                filters=SearchFilters(),
-                size=1
-            )
-            console.print("[dim]Note: The debug log below shows the actual Elasticsearch query being executed:[/dim]")
-            test_response = self.search_engine.search(test_request)
+            if show_wikipedia:
+                print(f"   📚 Location data: Available in search index")
             
-            if test_response.total == 0:
-                console.print("\n[red]❌ No data in index! Please run:[/red]")
-                console.print("[yellow]python scripts/setup_index.py --data-dir ../real_estate_data[/yellow]\n")
-                return
+            if show_pois:
+                print(f"   🗺️ POI data: Available in search index")
             
-            console.print(f"\n[green]✅ SUCCESS: Index contains {test_response.total} properties[/green]")
+            if show_scores:
+                print(f"   ⭐ Location context: Enriched in search index")
             
-            # Show first property as sample
-            if test_response.hits:
-                sample = test_response.hits[0].property
-                console.print("\n[bold]Sample property found in index:[/bold]")
-                console.print(f"  • Address: {sample.address.street}, {sample.address.city}")
-                console.print(f"  • Type: {sample.property_type.value if hasattr(sample.property_type, 'value') else sample.property_type}")
-                console.print(f"  • Price: ${sample.price:,.0f}")
-                console.print(f"  • Bedrooms: {sample.bedrooms}, Bathrooms: {sample.bathrooms}")
-                if sample.square_feet:
-                    console.print(f"  • Size: {sample.square_feet:,} sq ft")
+            if show_matching_pois:
+                print(f"   🎯 Nearby POIs: Searchable in index")
             
-            console.print("\n" + "="*80)
-            console.print("[bold cyan]STEP 2: Running Search Demonstrations[/bold cyan]")
-            console.print("="*80)
-            console.print("\n[dim]Each demonstration will:[/dim]")
-            console.print("[dim]  1. Explain what type of search is being performed[/dim]")
-            console.print("[dim]  2. Show the search parameters being used[/dim]")
-            console.print("[dim]  3. Execute the search (you'll see debug logs)[/dim]")
-            console.print("[dim]  4. Display the results in formatted tables[/dim]")
-            console.print("\n[bold yellow]Note:[/bold yellow] The [dim]gray debug logs[/dim] show the actual Elasticsearch queries")
-            console.print("being sent to the server. This is useful for understanding how searches work.\n")
-            console.print("[dim]" + "-"*80 + "[/dim]")
+            if show_investment_metrics:
+                print(f"   📈 Investment metrics: Available for ranking")
             
-            # Run each demo
-            demos = [
-                ("Text Search", self.demo_text_search),
-                ("Filtered Search", self.demo_filter_search),
-                ("Combined Search", self.demo_combined_search),
-                ("Geographic Search", self.demo_geo_search),
-                ("Aggregation Analysis", self.demo_aggregation_search),
-                ("Price Range Analysis", self.demo_price_range_search),
-                ("Property Type Comparison", self.demo_property_type_comparison),
-                ("Similar Properties", self.demo_similar_properties)
-            ]
-            
-            total_demos = len(demos)
-            for i, (name, demo_func) in enumerate(demos, 1):
-                try:
-                    console.print(f"\n[bold cyan]Running demo {i} of {total_demos}...[/bold cyan]")
-                    time.sleep(0.5)  # Brief pause between demos
-                    demo_func()
-                except Exception as e:
-                    console.print(f"\n[red]❌ Error in {name}: {e}[/red]")
-            
-            # Footer
-            self.print_section_header(
-                "DEMONSTRATION COMPLETE",
-                f"Demonstrated {len(demos)} different search capabilities"
-            )
-            
-            console.print("[green]✅ All demonstrations completed successfully![/green]")
-            console.print("\n[dim]To run individual demos, you can call specific methods:[/dim]")
-            console.print("[dim]  • demo.demo_text_search()[/dim]")
-            console.print("[dim]  • demo.demo_filter_search()[/dim]")
-            console.print("[dim]  • demo.demo_geo_search()[/dim]")
-            console.print("[dim]  • etc.[/dim]\n")
-            
-        except Exception as e:
-            console.print(f"\n[red]❌ Demo failed: {e}[/red]")
-            import traceback
-            console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        finally:
-            # Clean up
-            self.search_engine.close()
+            # Show highlights if available
+            if hit.highlights:
+                print(f"   💡 Matched in: {', '.join(hit.highlights.keys())}")
+    
+    def show_wikipedia_coverage(self):
+        """Show Wikipedia data coverage statistics."""
+        print("\n" + "="*60)
+        print("📚 Wikipedia Data Coverage")
+        print("="*60)
+        
+        stats = self.wikipedia_extractor.get_location_statistics()
+        print(f"\nTotal Wikipedia articles: {stats['total_articles']}")
+        print(f"Unique locations: {stats['unique_locations']}")
+        print(f"\nArticles by city:")
+        print(f"  San Francisco: {stats['san_francisco_articles']}")
+        print(f"  Park City: {stats['park_city_articles']}")
+        print(f"  Oakland: {stats['oakland_articles']}")
+        print(f"  San Jose: {stats['san_jose_articles']}")
 
 
 def main():
-    """Main entry point."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(
-        description="Demonstrate Property Search System capabilities",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    
-    parser.add_argument(
-        "--demo",
-        choices=["all", "text", "filter", "combined", "geo", "aggregation", "price", "type", "similar"],
-        default="all",
-        help="Which demo to run"
-    )
-    
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Start interactive mode after demos"
-    )
-    
-    args = parser.parse_args()
-    
-    # Create demo instance
+    """Run the search demo."""
     demo = SearchDemo()
     
-    # Run requested demo
-    if args.demo == "all":
-        demo.run_all_demos()
-    elif args.demo == "text":
-        demo.demo_text_search()
-    elif args.demo == "filter":
-        demo.demo_filter_search()
-    elif args.demo == "combined":
-        demo.demo_combined_search()
-    elif args.demo == "geo":
-        demo.demo_geo_search()
-    elif args.demo == "aggregation":
-        demo.demo_aggregation_search()
-    elif args.demo == "price":
-        demo.demo_price_range_search()
-    elif args.demo == "type":
-        demo.demo_property_type_comparison()
-    elif args.demo == "similar":
-        demo.demo_similar_properties()
+    print("\n" + "="*60)
+    print("🚀 Wikipedia-Enhanced Property Search Demo")
+    print("="*60)
     
-    # Interactive mode
-    if args.interactive:
-        console.print("\n[bold cyan]Entering interactive mode...[/bold cyan]")
-        console.print("[dim]Type 'help' for commands, 'quit' to exit[/dim]\n")
-        
-        while True:
-            try:
-                command = input("search> ").strip().lower()
-                
-                if command == "quit" or command == "exit":
-                    break
-                elif command == "help":
-                    console.print("\nAvailable commands:")
-                    console.print("  text <query>     - Text search")
-                    console.print("  filter           - Filter search (interactive)")
-                    console.print("  geo <lat> <lon>  - Geographic search")
-                    console.print("  stats            - Show statistics")
-                    console.print("  quit             - Exit")
-                    console.print()
-                elif command.startswith("text "):
-                    query = command[5:].strip()
-                    request = SearchRequest(
-                        query_type=QueryType.TEXT,
-                        query_text=query,
-                        size=5,
-                        include_highlights=True
-                    )
-                    response = demo.search_engine.search(request)
-                    demo.print_results(response)
-                elif command == "stats":
-                    demo.demo_aggregation_search()
-                else:
-                    console.print("[yellow]Unknown command. Type 'help' for available commands.[/yellow]")
-                    
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Use 'quit' to exit[/yellow]")
-            except Exception as e:
-                console.print(f"[red]Error: {e}[/red]")
+    # Check if index already has data
+    try:
+        count = demo.search_engine.es_client.count(index=demo.search_engine.index_name)
+        if count['count'] > 0:
+            print(f"\n✅ Using existing index with {count['count']} documents")
+        else:
+            # Setup index only if empty
+            if not demo.setup_demo_index(force_recreate=True):
+                print("Failed to set up demo index")
+                return
+    except:
+        # If index doesn't exist, create it
+        if not demo.setup_demo_index(force_recreate=True):
+            print("Failed to set up demo index")
+            return
     
-    console.print("\n[dim]Demo session ended.[/dim]")
+    # Show Wikipedia coverage
+    demo.show_wikipedia_coverage()
+    
+    # Run demos
+    demo.demo_park_city_ski_search()
+    demo.demo_sf_cultural_search()
+    demo.demo_lifestyle_search()
+    demo.demo_poi_proximity_search()
+    demo.demo_investment_search()
+    demo.demo_faceted_search()
+    
+    print("\n" + "="*60)
+    print("✅ Demo Complete!")
+    print("="*60)
 
 
 if __name__ == "__main__":

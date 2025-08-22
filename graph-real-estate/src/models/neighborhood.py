@@ -178,6 +178,7 @@ class NeighborhoodLoadResult(BaseModel):
     city_relationships: int = 0
     county_relationships: int = 0
     wikipedia_correlations: int = 0
+    wikipedia_property_relationships: int = 0
     
     # Correlation breakdown
     direct_correlations: int = 0

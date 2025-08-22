@@ -5,6 +5,7 @@ from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
 
 from src.loaders.base import BaseLoader
+from src.loaders.config import GraphLoadingConfig
 from src.models.geographic import (
     State, County, City, LocationEntry, 
     GeographicHierarchy, GeographicStats
@@ -20,6 +21,9 @@ class GeographicFoundationLoader(BaseLoader):
         """Initialize the geographic loader"""
         super().__init__()
         
+        # Load batch size configuration
+        self.batch_config = GraphLoadingConfig.from_yaml()
+        
         if locations_path:
             self.locations_path = locations_path
         else:
@@ -28,47 +32,6 @@ class GeographicFoundationLoader(BaseLoader):
         self.hierarchy = GeographicHierarchy()
         self.geographic_index: Dict[str, any] = {}
         
-    def load(self) -> bool:
-        """Main loading method"""
-        self.logger.info("=" * 60)
-        self.logger.info("GEOGRAPHIC FOUNDATION LOADING")
-        self.logger.info("=" * 60)
-        
-        try:
-            # Clear database
-            self._clear_database()
-            
-            # Load and parse locations
-            locations = self._load_locations()
-            
-            # Organize into hierarchy
-            self._organize_hierarchy(locations)
-            
-            # Create constraints and indexes
-            self._create_constraints_and_indexes()
-            
-            # Create nodes in database
-            self._create_state_nodes()
-            self._create_county_nodes()
-            self._create_city_nodes()
-            
-            # Verify the hierarchy
-            stats = self._verify_hierarchy()
-            
-            self.logger.info("=" * 60)
-            self.logger.info("✅ GEOGRAPHIC FOUNDATION COMPLETE")
-            self.logger.info(f"  States: {stats.total_states}")
-            self.logger.info(f"  Counties: {stats.total_counties}")
-            self.logger.info(f"  Cities: {stats.total_cities}")
-            self.logger.info("=" * 60)
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to load geographic foundation: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
     
     def _clear_database(self) -> None:
         """Clear all existing data from database"""
@@ -179,9 +142,10 @@ class GeographicFoundationLoader(BaseLoader):
                         f"{len(self.hierarchy.cities)} cities")
     
     def _create_constraints_and_indexes(self) -> None:
-        """Create database constraints and indexes"""
-        self.logger.info("Creating constraints and indexes...")
+        """Create database constraints and indexes with optimizations from FIX_v7"""
+        self.logger.info("Creating enhanced constraints and indexes...")
         
+        # Node key constraints for data integrity
         constraints = [
             ("State.state_code", 
              "CREATE CONSTRAINT IF NOT EXISTS FOR (s:State) REQUIRE s.state_code IS UNIQUE"),
@@ -194,13 +158,25 @@ class GeographicFoundationLoader(BaseLoader):
         for name, query in constraints:
             self.create_constraint(name, query)
         
+        # Enhanced indexes for better query performance
         indexes = [
-            ("City.state_code", 
-             "CREATE INDEX IF NOT EXISTS FOR (c:City) ON (c.state_code)"),
+            # State indexes
+            ("State.state_name", 
+             "CREATE INDEX IF NOT EXISTS FOR (s:State) ON (s.state_name)"),
+            
+            # County indexes
             ("County.state_code", 
              "CREATE INDEX IF NOT EXISTS FOR (c:County) ON (c.state_code)"),
+            ("County.county_name",
+             "CREATE INDEX IF NOT EXISTS FOR (c:County) ON (c.county_name)"),
+            
+            # City indexes
+            ("City.state_code", 
+             "CREATE INDEX IF NOT EXISTS FOR (c:City) ON (c.state_code)"),
             ("City.county_id",
              "CREATE INDEX IF NOT EXISTS FOR (c:City) ON (c.county_id)"),
+            ("City.city_name",
+             "CREATE INDEX IF NOT EXISTS FOR (c:City) ON (c.city_name)"),
         ]
         
         for name, query in indexes:
@@ -220,12 +196,13 @@ class GeographicFoundationLoader(BaseLoader):
         
         query = """
         WITH item
-        MERGE (s:State {state_code: item.state_code})
+        MERGE (s:State:Location {state_code: item.state_code})
         SET s.state_name = item.state_name,
+            s.state_id = item.state_code,
             s.created_at = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=10)
+        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.state_batch_size)
         self.logger.info(f"Created {created} state nodes")
     
     def _create_county_nodes(self) -> None:
@@ -244,13 +221,14 @@ class GeographicFoundationLoader(BaseLoader):
         query = """
         WITH item
         MATCH (s:State {state_code: item.state_code})
-        MERGE (c:County {county_id: item.county_id})
+        MERGE (c:County:Location {county_id: item.county_id})
         SET c.county_name = item.county_name,
-            c.state_code = item.state_code
+            c.state_code = item.state_code,
+            c.created_at = datetime()
         MERGE (c)-[:IN_STATE]->(s)
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=50)
+        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.county_batch_size)
         self.logger.info(f"Created {created} county nodes with state relationships")
     
     def _create_city_nodes(self) -> None:
@@ -270,14 +248,15 @@ class GeographicFoundationLoader(BaseLoader):
         query = """
         WITH item
         MATCH (c:County {county_id: item.county_id})
-        MERGE (city:City {city_id: item.city_id})
+        MERGE (city:City:Location {city_id: item.city_id})
         SET city.city_name = item.city_name,
             city.county_id = item.county_id,
-            city.state_code = item.state_code
+            city.state_code = item.state_code,
+            city.created_at = datetime()
         MERGE (city)-[:IN_COUNTY]->(c)
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=100)
+        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.city_batch_size)
         self.logger.info(f"Created {created} city nodes with county relationships")
     
     def _verify_hierarchy(self) -> GeographicStats:

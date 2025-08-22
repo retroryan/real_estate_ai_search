@@ -176,6 +176,7 @@ class GraphOrchestrator:
             traceback.print_exc()
             return False
     
+    
     def run_phase_6_similarity(self) -> bool:
         """Phase 6: Relationship Enhancement and Similarity Calculations"""
         self.logger.info("\n" + "="*60)
@@ -254,7 +255,6 @@ class GraphOrchestrator:
             ("Features", "MATCH (f:Feature) RETURN count(f) as count"),
             ("Property Types", "MATCH (pt:PropertyType) RETURN count(pt) as count"),
             ("Price Ranges", "MATCH (pr:PriceRange) RETURN count(pr) as count"),
-            ("Topic Clusters", "MATCH (tc:TopicCluster) RETURN count(tc) as count"),
         ]
         
         for name, query in node_queries:
@@ -268,20 +268,33 @@ class GraphOrchestrator:
         rel_queries = [
             ("County→State", "MATCH ()-[r:IN_STATE]->(:State) RETURN count(r) as count"),
             ("City→County", "MATCH ()-[r:IN_COUNTY]->(:County) RETURN count(r) as count"),
-            ("Neighborhood→City", "MATCH (:Neighborhood)-[r:LOCATED_IN]->(:City) RETURN count(r) as count"),
+            ("Neighborhood→City", "MATCH (:Neighborhood)-[r:IN_CITY]->(:City) RETURN count(r) as count"),
             ("Property→Neighborhood", "MATCH (:Property)-[r:IN_NEIGHBORHOOD]->(:Neighborhood) RETURN count(r) as count"),
             ("Property→City", "MATCH (:Property)-[r:IN_CITY]->(:City) RETURN count(r) as count"),
             ("Property→Feature", "MATCH (:Property)-[r:HAS_FEATURE]->(:Feature) RETURN count(r) as count"),
+            ("Property→Type", "MATCH (:Property)-[r:OF_TYPE]->(:PropertyType) RETURN count(r) as count"),
+            ("Property→PriceRange", "MATCH (:Property)-[r:IN_PRICE_RANGE]->(:PriceRange) RETURN count(r) as count"),
             ("Wikipedia→Neighborhood", "MATCH (:WikipediaArticle)-[r:DESCRIBES]->(:Neighborhood) RETURN count(r) as count"),
             ("Wikipedia→State", "MATCH (:WikipediaArticle)-[r:IN_STATE]->() RETURN count(r) as count"),
             ("Property Similarities", "MATCH ()-[r:SIMILAR_TO]->() RETURN count(r) as count"),
             ("Neighborhood Connections", "MATCH ()-[r:NEAR]->() RETURN count(r) as count"),
             ("Geographic Proximities", "MATCH ()-[r:NEAR_BY]->() RETURN count(r) as count"),
-            ("Topic Memberships", "MATCH ()-[r:BELONGS_TO_TOPIC]->() RETURN count(r) as count"),
         ]
         
         for name, query in rel_queries:
             from src.database import run_query
+            result = run_query(driver, query)
+            count = result[0]['count'] if result else 0
+            print(f"  {name}: {count}")
+        
+        # Hierarchical label counts (from FIX_v7 improvements)
+        print("\n🏷️ HIERARCHICAL LABELS:")
+        hierarchy_queries = [
+            ("Location nodes", "MATCH (n:Location) RETURN count(n) as count"),
+            ("Asset nodes", "MATCH (n:Asset) RETURN count(n) as count"),
+        ]
+        
+        for name, query in hierarchy_queries:
             result = run_query(driver, query)
             count = result[0]['count'] if result else 0
             print(f"  {name}: {count}")

@@ -7,6 +7,7 @@ from collections import defaultdict
 import re
 
 from src.loaders.base import BaseLoader
+from src.loaders.config import GraphLoadingConfig
 from src.models.neighborhood import (
     Neighborhood, NeighborhoodCharacteristics, NeighborhoodDemographics,
     WikipediaMetadata, GraphMetadata, NeighborhoodCorrelation,
@@ -22,6 +23,9 @@ class NeighborhoodLoader(BaseLoader):
     def __init__(self, geographic_index: Optional[Dict] = None):
         """Initialize neighborhood loader"""
         super().__init__()
+        
+        # Load batch size configuration
+        self.batch_config = GraphLoadingConfig.from_yaml()
         
         self.geographic_index = geographic_index or {}
         self.neighborhoods: List[Neighborhood] = []
@@ -57,6 +61,8 @@ class NeighborhoodLoader(BaseLoader):
             
             # Correlate with Wikipedia articles
             self._correlate_wikipedia_articles()
+            
+            # Note: Wikipedia->Property relationships are created in PropertyLoader after properties exist
             
             # Enrich neighborhoods with Wikipedia data
             self._enrich_neighborhoods()
@@ -217,52 +223,63 @@ class NeighborhoodLoader(BaseLoader):
             self.create_index(name, query)
     
     def _create_neighborhood_nodes(self) -> int:
-        """Create neighborhood nodes in Neo4j"""
-        self.logger.info(f"Creating {len(self.neighborhoods)} neighborhood nodes...")
+        """Create neighborhood nodes with ALL available data"""
+        self.logger.info(f"Creating {len(self.neighborhoods)} neighborhood nodes with complete data...")
         
         batch_data = []
         for neighborhood in self.neighborhoods:
-            batch_data.append({
+            # Prepare comprehensive node data
+            node_data = {
                 'neighborhood_id': neighborhood.neighborhood_id,
                 'name': neighborhood.name,
                 'city': neighborhood.city,
                 'county': neighborhood.county,
                 'state': neighborhood.state,
+                
+                # Rich description (previously missing!)
                 'description': neighborhood.description or '',
+                
+                # Lifestyle and character
                 'lifestyle_tags': neighborhood.lifestyle_tags,
                 'amenities': neighborhood.amenities,
-                'median_home_price': neighborhood.median_home_price,
-                'price_trend': neighborhood.price_trend,
+                
+                # All characteristics scores
                 'walkability_score': neighborhood.characteristics.walkability_score if neighborhood.characteristics else None,
                 'transit_score': neighborhood.characteristics.transit_score if neighborhood.characteristics else None,
                 'school_rating': neighborhood.characteristics.school_rating if neighborhood.characteristics else None,
                 'safety_rating': neighborhood.characteristics.safety_rating if neighborhood.characteristics else None,
+                'nightlife_score': neighborhood.characteristics.nightlife_score if neighborhood.characteristics else None,
+                'family_friendly_score': neighborhood.characteristics.family_friendly_score if neighborhood.characteristics else None,
+                
+                # Demographics
+                'vibe': neighborhood.demographics.vibe if neighborhood.demographics else '',
+                'primary_age_group': neighborhood.demographics.primary_age_group if neighborhood.demographics else '',
+                'population': neighborhood.demographics.population if neighborhood.demographics else None,
+                'median_household_income': neighborhood.demographics.median_household_income if neighborhood.demographics else None,
+                
+                # Market data
+                'median_home_price': neighborhood.median_home_price,
+                'price_trend': neighborhood.price_trend,
+                
+                # Calculated scores
                 'knowledge_score': neighborhood.knowledge_score,
-                'wikipedia_count': neighborhood.wikipedia_count
-            })
+                'wikipedia_count': neighborhood.wikipedia_count,
+                
+                # Coordinates for spatial queries
+                'latitude': neighborhood.coordinates.get('latitude') if neighborhood.coordinates else None,
+                'longitude': neighborhood.coordinates.get('longitude') if neighborhood.coordinates else None
+            }
+            
+            batch_data.append(node_data)
         
         query = """
         WITH item
-        MERGE (n:Neighborhood {neighborhood_id: item.neighborhood_id})
-        SET n.name = item.name,
-            n.city = item.city,
-            n.county = item.county,
-            n.state = item.state,
-            n.description = item.description,
-            n.lifestyle_tags = item.lifestyle_tags,
-            n.amenities = item.amenities,
-            n.median_home_price = item.median_home_price,
-            n.price_trend = item.price_trend,
-            n.walkability_score = item.walkability_score,
-            n.transit_score = item.transit_score,
-            n.school_rating = item.school_rating,
-            n.safety_rating = item.safety_rating,
-            n.knowledge_score = item.knowledge_score,
-            n.wikipedia_count = item.wikipedia_count,
-            n.created_at = datetime()
+        MERGE (n:Neighborhood:Location {neighborhood_id: item.neighborhood_id})
+        SET n += item,  // Set all properties at once
+            n.last_updated = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=50)
+        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.neighborhood_batch_size)
         self.logger.info(f"Created {created} neighborhood nodes")
         return created
     
@@ -300,9 +317,9 @@ class NeighborhoodLoader(BaseLoader):
             WITH item
             MATCH (n:Neighborhood {neighborhood_id: item.neighborhood_id})
             MATCH (c:City {city_id: item.city_id})
-            MERGE (n)-[:LOCATED_IN]->(c)
+            MERGE (n)-[:IN_CITY]->(c)
             """
-            count = self.batch_execute(query, city_batch, batch_size=100)
+            count = self.batch_execute(query, city_batch, batch_size=self.batch_config.default_batch_size)
             self.load_result.city_relationships = count
             self.logger.info(f"  Created {count} neighborhood-city relationships")
         
@@ -314,7 +331,7 @@ class NeighborhoodLoader(BaseLoader):
             MATCH (c:County {county_id: item.county_id})
             MERGE (n)-[:IN_COUNTY]->(c)
             """
-            count = self.batch_execute(query, county_batch, batch_size=100)
+            count = self.batch_execute(query, county_batch, batch_size=self.batch_config.default_batch_size)
             self.load_result.county_relationships = count
             self.logger.info(f"  Created {count} neighborhood-county relationships")
     
@@ -396,7 +413,7 @@ class NeighborhoodLoader(BaseLoader):
                 correlation_method: 'direct'
             }]->(n)
             """
-            count = self.batch_execute(query, batch_data, batch_size=100)
+            count = self.batch_execute(query, batch_data, batch_size=self.batch_config.default_batch_size)
             return count
         
         return 0
@@ -451,6 +468,63 @@ class NeighborhoodLoader(BaseLoader):
         
         result = self.execute_query(query)
         return result[0]['count'] if result else 0
+    
+    def _create_wikipedia_property_relationships(self) -> None:
+        """Create direct RELEVANT_TO relationships between Wikipedia articles and properties"""
+        self.logger.info("Creating Wikipedia→Property relationships...")
+        
+        total_created = 0
+        
+        # For each neighborhood with Wikipedia metadata
+        for neighborhood in self.neighborhoods:
+            if not neighborhood.graph_metadata:
+                continue
+            
+            # Get all Wikipedia page IDs for this neighborhood
+            wiki_page_ids = []
+            
+            # Add primary Wikipedia article
+            if neighborhood.graph_metadata.primary_wiki_article:
+                wiki_page_ids.append({
+                    'page_id': neighborhood.graph_metadata.primary_wiki_article.page_id,
+                    'confidence': neighborhood.graph_metadata.primary_wiki_article.confidence,
+                    'rel_type': 'primary'
+                })
+            
+            # Add related Wikipedia articles
+            for wiki in neighborhood.graph_metadata.related_wiki_articles:
+                wiki_page_ids.append({
+                    'page_id': wiki.page_id,
+                    'confidence': wiki.confidence,
+                    'rel_type': wiki.relationship
+                })
+            
+            # Create relationships for each Wikipedia article to all properties in neighborhood
+            for wiki_info in wiki_page_ids:
+                query = """
+                MATCH (w:WikipediaArticle {page_id: $page_id})
+                MATCH (p:Property {neighborhood_id: $neighborhood_id})
+                MERGE (w)-[r:RELEVANT_TO]->(p)
+                SET r.confidence = $confidence,
+                    r.relationship_type = $rel_type,
+                    r.neighborhood_context = true,
+                    r.created_at = datetime()
+                RETURN count(r) as created
+                """
+                
+                result = self.execute_query(query, {
+                    'page_id': wiki_info['page_id'],
+                    'neighborhood_id': neighborhood.neighborhood_id,
+                    'confidence': wiki_info['confidence'],
+                    'rel_type': wiki_info['rel_type']
+                })
+                
+                if result:
+                    created = result[0]['created']
+                    total_created += created
+        
+        self.load_result.wikipedia_property_relationships = total_created
+        self.logger.info(f"  Created {total_created} Wikipedia→Property relationships")
     
     def _enrich_neighborhoods(self):
         """Enrich neighborhoods with aggregated Wikipedia data"""

@@ -20,6 +20,20 @@ embedding:
   batch_size: 100
   show_progress: true
 
+# Graph database batch processing settings
+graph_loading:
+  # Batch sizes for different entity types
+  state_batch_size: 500      # Was 10
+  county_batch_size: 1000    # Was 50
+  city_batch_size: 1000      # Was 100
+  feature_batch_size: 1000   # Was 50
+  property_batch_size: 1000  # Was 100
+  wikipedia_batch_size: 1000 # Was 100
+  neighborhood_batch_size: 500  # Was 50
+  
+  # Default batch size for operations not specified above
+  default_batch_size: 1000
+
 vector_index:
   index_name: "property_embeddings"
   vector_dimensions: 768  # Auto-set based on model

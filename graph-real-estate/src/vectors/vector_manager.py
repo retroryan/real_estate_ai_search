@@ -161,7 +161,7 @@ class PropertyVectorManager:
             ) 
             YIELD node, score
             WHERE score >= $min_score
-            MATCH (node)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
+            MATCH (node)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)-[:IN_CITY]->(c:City)
             RETURN node.listing_id as listing_id,
                    node.address as address,
                    node.listing_price as price,

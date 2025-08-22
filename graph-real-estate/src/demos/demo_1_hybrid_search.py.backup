@@ -157,11 +157,13 @@ class AdvancedHybridSearchDemo:
         ]
         
         for i, test in enumerate(semantic_queries, 1):
-            print(f"\nTest {i}: {test['description']}")
-            print(f"Query: \"{test['query']}\"")
+            print(f"\n"
+Test {i}: {test['description']}")
+            print(f"Query: \\"{test['query']}\\"")
             
             # Search with pure vector similarity first
-            print("\n   🔍 Semantic search results:")
+            print("\n"
+   🔍 Semantic search results:")
             start_time = time.time()
             results = self.search.search(test['query'], top_k=3, use_graph_boost=False)
             search_time = time.time() - start_time
@@ -175,11 +177,14 @@ class AdvancedHybridSearchDemo:
             else:
                 print("   No results found")
                 
-            print("\n" + "-" * 60)
+            print("\n"
+" + "-" * 60)
     
     def demo_2_graph_intelligence(self):
         """Demo 2: Graph relationships enhancing search relevance"""
-        print("\n" + "="*80 + "\n")
+        print("\n"
+" + "="*80 + "
+") 
         print("DEMO 2: GRAPH INTELLIGENCE & RELATIONSHIP BOOSTING")
         print("="*82)
         print("Comparing pure vector search with graph-enhanced hybrid search")
@@ -197,33 +202,41 @@ class AdvancedHybridSearchDemo:
         ]
         
         for i, test in enumerate(graph_queries, 1):
-            print(f"\nTest {i}: {test['description']}")
-            print(f"Query: \"{test['query']}\"")
+            print(f"\n"
+Test {i}: {test['description']}")
+            print(f"Query: \\"{test['query']}\\"")
             
             # Pure vector search
-            print("\n   📊 Pure Vector Search:")
+            print("\n"
+   📊 Pure Vector Search:")
             vector_results = self.search.search(test['query'], top_k=3, use_graph_boost=False)
             
             # Graph-enhanced search
-            print("\n   🧠 Graph-Enhanced Hybrid Search:")
+            print("\n"
+   🧠 Graph-Enhanced Hybrid Search:")
             hybrid_results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
             
             # Compare results
             if vector_results and hybrid_results:
-                print("\n   📈 Comparison Analysis:")
+                print("\n"
+   📈 Comparison Analysis:")
                 for j, (v_result, h_result) in enumerate(zip(vector_results, hybrid_results), 1):
-                    print(f"\n   Position {j}:")
+                    print(f"\n"
+   Position {j}:")
                     print(f"      Vector Only: {v_result.listing_id} (score: {v_result.vector_score:.3f})")
                     print(f"      Hybrid: {h_result.listing_id} (vector: {h_result.vector_score:.3f}, graph: {h_result.graph_score:.3f}, combined: {h_result.combined_score:.3f})")
                     
                     if h_result.similar_properties:
                         print(f"      Graph boost from {len(h_result.similar_properties)} similar properties")
             
-            print("\n" + "-" * 60)
+            print("\n"
+" + "-" * 60)
     
     def demo_3_feature_intelligence(self):
         """Demo 3: Feature-based search and correlations"""
-        print("\n" + "="*80 + "\n")
+        print("\n"
+" + "="*80 + "
+")
         print("DEMO 3: FEATURE INTELLIGENCE & CROSS-FEATURE CORRELATIONS")  
         print("="*82)
         print("Finding properties through feature relationships and combinations")
@@ -240,15 +253,18 @@ class AdvancedHybridSearchDemo:
         ]
         
         for i, test in enumerate(feature_queries, 1):
-            print(f"\nTest {i}: {test['description']}")
-            print(f"Query: \"{test['query']}\"")
+            print(f"\n"
+Test {i}: {test['description']}")
+            print(f"Query: \\"{test['query']}\\"")
             
             results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
             
             if results:
-                print(f"\n   🏠 Found {len(results)} feature-rich matches:")
+                print(f"\n"
+   🏠 Found {len(results)} feature-rich matches:")
                 for j, result in enumerate(results, 1):
-                    print(f"\n   {j}. {result.listing_id} - ${result.price:,}")
+                    print(f"\n"
+   {j}. {result.listing_id} - ${result.price:,}")
                     print(f"      Combined Score: {result.combined_score:.3f}")
                     if result.features:
                         print(f"      Features ({len(result.features)}): {', '.join(result.features[:6])}")
@@ -259,11 +275,14 @@ class AdvancedHybridSearchDemo:
                     feature_boost = result.graph_score * 0.2  # Feature component of graph score
                     print(f"      Feature Intelligence Boost: {feature_boost:.3f}")
             
-            print("\n" + "-" * 60)
+            print("\n"
+" + "-" * 60)
     
     def demo_4_complex_multi_criteria(self):
         """Demo 4: Complex search with multiple criteria and ranking"""
-        print("\n" + "="*80 + "\n")
+        print("\n"
+" + "="*80 + "
+")
         print("DEMO 4: COMPLEX MULTI-CRITERIA SEARCH")
         print("="*82)
         print("Advanced search combining semantic understanding with precise filtering")
@@ -283,8 +302,9 @@ class AdvancedHybridSearchDemo:
         ]
         
         for i, test in enumerate(complex_queries, 1):
-            print(f"\nTest {i}: {test['description']}")
-            print(f"Query: \"{test['query']}\"")
+            print(f"\n"
+Test {i}: {test['description']}")
+            print(f"Query: \\"{test['query']}\\"")
             print(f"Filters: {test['filters']}")
             
             results = self.search.search(
@@ -295,17 +315,22 @@ class AdvancedHybridSearchDemo:
             )
             
             if results:
-                print(f"\n   💎 Found {len(results)} qualifying matches:")
+                print(f"\n"
+   💎 Found {len(results)} qualifying matches:")
                 for j, result in enumerate(results, 1):
                     print(self.format_result(result, j, show_analysis=True))
             else:
-                print("\n   No properties match the specified criteria")
+                print("\n"
+   No properties match the specified criteria")
             
-            print("\n" + "-" * 60)
+            print("\n"
+" + "-" * 60)
     
     def demo_5_geographic_intelligence(self):
         """Demo 5: Geographic and proximity intelligence"""
-        print("\n" + "="*80 + "\n")
+        print("\n"
+" + "="*80 + "
+")
         print("DEMO 5: GEOGRAPHIC & PROXIMITY INTELLIGENCE")
         print("="*82)
         print("Leveraging geographic proximity relationships for location-aware search")
@@ -322,15 +347,18 @@ class AdvancedHybridSearchDemo:
         ]
         
         for i, test in enumerate(location_queries, 1):
-            print(f"\nTest {i}: {test['description']}")
-            print(f"Query: \"{test['query']}\"")
+            print(f"\n"
+Test {i}: {test['description']}")
+            print(f"Query: \\"{test['query']}\\"")
             
             results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
             
             if results:
-                print(f"\n   🗺️  Geographic intelligence results:")
+                print(f"\n"
+   🗺️  Geographic intelligence results:")
                 for j, result in enumerate(results, 1):
-                    print(f"\n   {j}. {result.listing_id} - {result.neighborhood}, {result.city}")
+                    print(f"\n"
+   {j}. {result.listing_id} - {result.neighborhood}, {result.city}")
                     print(f"      Price: ${result.price:,}")
                     print(f"      Graph Score: {result.graph_score:.3f} (includes proximity relationships)")
                     print(f"      Combined Score: {result.combined_score:.3f}")
@@ -338,7 +366,8 @@ class AdvancedHybridSearchDemo:
                     if result.similar_properties:
                         print(f"      Connected to {len(result.similar_properties)} similar properties")
             
-            print("\n" + "-" * 60)
+            print("\n"
+" + "-" * 60)
     
     def run_complete_demo(self):
         """Run the complete hybrid search demonstration"""
@@ -353,21 +382,26 @@ class AdvancedHybridSearchDemo:
             self.demo_4_complex_multi_criteria()
             self.demo_5_geographic_intelligence()
             
-            print("\n" + "="*80)
+            print("\n"
+" + "="*80)
             print("🎉 HYBRID SEARCH DEMONSTRATION COMPLETE")
             print("="*80)
-            print("\nKey Achievements Demonstrated:")
+            print("\n"
+Key Achievements Demonstrated:")
             print("✅ Semantic understanding of natural language queries")
             print("✅ Graph intelligence boosting search relevance")
             print("✅ Feature-based intelligence and correlations")
             print("✅ Complex multi-criteria search with filtering")
             print("✅ Geographic proximity and neighborhood intelligence")
-            print("\nThe hybrid search successfully combines vector embeddings with")
+            print("\n"
+The hybrid search successfully combines vector embeddings with")
             print("graph relationships for superior search intelligence!")
             
         except Exception as e:
-            print(f"\n❌ Demo failed: {e}")
-            print("\nTroubleshooting:")
+            print(f"\n"
+❌ Demo failed: {e}")
+            print("\n"
+Troubleshooting:")
             print("1. Ensure embeddings are created")
             print("2. Verify all relationships exist")
             print("3. Check database connectivity")
@@ -385,8 +419,10 @@ def main():
         demo = AdvancedHybridSearchDemo()
         demo.run_complete_demo()
     except Exception as e:
-        print(f"\n❌ Failed to initialize demo: {e}")
-        print("\nPlease ensure:")
+        print(f"\n"
+❌ Failed to initialize demo: {e}")
+        print("\n"
+Please ensure:")
         print("1. Neo4j is running")
         print("2. Database is loaded with property data")
         print("3. Embeddings have been created")

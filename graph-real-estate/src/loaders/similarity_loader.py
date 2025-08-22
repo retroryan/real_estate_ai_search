@@ -79,62 +79,113 @@ class SimilarityLoader(BaseLoader):
         return self.result
     
     def _calculate_property_similarities(self):
-        """Calculate similarity scores between properties and create SIMILAR_TO relationships."""
+        """Use vector search to find similar properties efficiently using k-NN."""
         
-        # Get all properties with their essential attributes
+        # First check if vector index exists
+        # Verify vector index exists
+        check_index_query = """
+        SHOW INDEXES YIELD name, type
+        WHERE name = 'property_embeddings' AND type CONTAINS 'VECTOR'
+        RETURN name
+        """
+        index_result = self.execute_query(check_index_query)
+        
+        if not index_result:
+            raise RuntimeError("Vector index 'property_embeddings' not found. Run create_embeddings.py first.")
+        
+        # Get all properties with embeddings
         query = """
         MATCH (p:Property)
-        OPTIONAL MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
-        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
-        RETURN p.listing_id as listing_id,
+        WHERE p.descriptionEmbedding IS NOT NULL
+        RETURN p.listing_id as listing_id, 
                p.listing_price as price,
-               p.square_feet as square_footage,
                p.bedrooms as bedrooms,
                p.bathrooms as bathrooms,
-               p.property_type as property_type,
-               p.latitude as latitude,
-               p.longitude as longitude,
-               n.neighborhood_id as neighborhood_id,
-               n.city as city,
-               collect(f.name) as features
-        ORDER BY p.listing_id
+               p.square_feet as square_feet,
+               p.neighborhood_id as neighborhood_id
         """
         
         properties = self.execute_query(query)
         self.result.properties_processed = len(properties)
+        self.logger.info(f"Processing {len(properties)} properties with embeddings using k-NN")
         
-        self.logger.info(f"Processing {len(properties)} properties for similarity calculations")
-        
-        # Calculate similarities between all property pairs (limit for performance)
-        comparisons = 0
         similarities_created = 0
         
-        for i, prop_a in enumerate(properties):
-            if comparisons >= self.config.max_property_comparisons:
-                break
+        for prop in properties:
+            # Use vector index to find k most similar properties
+            knn_query = """
+            MATCH (source:Property {listing_id: $listing_id})
+            WHERE source.descriptionEmbedding IS NOT NULL
+            CALL db.index.vector.queryNodes(
+                'property_embeddings',
+                20,  // Find top 20 similar
+                source.descriptionEmbedding
+            ) YIELD node as target, score as vector_similarity
+            WHERE target.listing_id <> $listing_id
+            AND vector_similarity > $threshold
+            
+            // Calculate additional similarity components
+            WITH source, target, vector_similarity,
+                 abs(source.listing_price - target.listing_price) / 
+                    CASE 
+                        WHEN source.listing_price > target.listing_price 
+                        THEN source.listing_price 
+                        ELSE target.listing_price 
+                    END as price_diff,
+                 CASE 
+                    WHEN source.bedrooms = target.bedrooms THEN 0.2
+                    WHEN abs(source.bedrooms - target.bedrooms) = 1 THEN 0.1
+                    ELSE 0
+                 END as bedroom_similarity,
+                 CASE
+                    WHEN source.neighborhood_id IS NOT NULL 
+                    AND source.neighborhood_id = target.neighborhood_id THEN 0.2
+                    ELSE 0
+                 END as location_bonus
+            
+            // Calculate composite score
+            WITH source, target,
+                 vector_similarity,
+                 vector_similarity * 0.5 +          // 50% from embeddings
+                 (1 - price_diff) * 0.2 +          // 20% from price
+                 bedroom_similarity +                // 20% from size
+                 location_bonus                     // 10% from location
+                 as composite_score
+            
+            WHERE composite_score > $final_threshold
+            
+            // Create similarity relationship
+            MERGE (source)-[r:SIMILAR_TO]-(target)
+            SET r.similarity_score = composite_score,
+                r.vector_similarity = vector_similarity,
+                r.method = 'knn_composite',
+                r.updated_at = datetime()
+            
+            RETURN count(r) as created
+            """
+            
+            try:
+                result = self.execute_query(knn_query, {
+                    'listing_id': prop['listing_id'],
+                    'threshold': 0.7,  # Vector similarity threshold
+                    'final_threshold': self.config.property_similarity_threshold
+                })
                 
-            for j, prop_b in enumerate(properties[i+1:], i+1):
-                if comparisons >= self.config.max_property_comparisons:
-                    break
+                if result:
+                    created = result[0]['created']
+                    similarities_created += created
                     
-                comparisons += 1
-                
-                # Calculate similarity
-                similarity = self._calculate_property_similarity(prop_a, prop_b)
-                
-                if similarity.similarity_score >= self.config.property_similarity_threshold:
-                    # Create SIMILAR_TO relationship
-                    self._create_property_similarity_relationship(similarity)
-                    similarities_created += 1
-                    
-                    if similarity.similarity_score > 0.8:
-                        self.result.high_similarity_pairs += 1
+            except Exception as e:
+                # No fallbacks - vector search is required
+                self.logger.error(f"Vector search failed: {e}")
+                raise RuntimeError(f"k-NN vector search failed. Ensure Neo4j supports vector indexes: {e}")
         
-        self.result.property_similarities_calculated = comparisons
         self.result.property_similarities_created = similarities_created
+        self.logger.info(f"Created {similarities_created} similarity relationships using k-NN")
         
         if similarities_created > 0:
             self.result.avg_property_similarity = self._calculate_average_similarity_score()
+    
     
     def _calculate_property_similarity(self, prop_a: Dict, prop_b: Dict) -> PropertySimilarity:
         """Calculate comprehensive similarity between two properties."""
@@ -287,10 +338,13 @@ class SimilarityLoader(BaseLoader):
         return reasons
     
     def _create_property_similarity_relationship(self, similarity: PropertySimilarity):
-        """Create SIMILAR_TO relationship between properties."""
+        """Create SIMILAR_TO relationship between properties with optimized query."""
         query = """
         MATCH (a:Property {listing_id: $prop_a})
+        USING INDEX a:Property(listing_id)
         MATCH (b:Property {listing_id: $prop_b})
+        USING INDEX b:Property(listing_id)
+        WHERE NOT EXISTS((a)-[:SIMILAR_TO]-(b))
         CREATE (a)-[r:SIMILAR_TO]->(b)
         SET r.similarity_score = $score,
             r.price_similarity = $price_sim,
@@ -433,10 +487,13 @@ class SimilarityLoader(BaseLoader):
         return topics
     
     def _create_neighborhood_connection_relationship(self, connection: NeighborhoodConnection):
-        """Create NEAR relationship between neighborhoods."""
+        """Create NEAR relationship between neighborhoods with optimized query."""
         query = """
         MATCH (a:Neighborhood {neighborhood_id: $n_a})
+        USING INDEX a:Neighborhood(neighborhood_id)
         MATCH (b:Neighborhood {neighborhood_id: $n_b})
+        USING INDEX b:Neighborhood(neighborhood_id)
+        WHERE NOT EXISTS((a)-[:NEAR]-(b))
         CREATE (a)-[r:NEAR]->(b)
         SET r.connection_strength = $strength,
             r.geographic_proximity = $geo_prox,
@@ -551,6 +608,7 @@ class SimilarityLoader(BaseLoader):
         query = f"""
         MATCH (a:{label_a} {{{id_field_a}: $entity_a}})
         MATCH (b:{label_b} {{{id_field_b}: $entity_b}})
+        WHERE NOT EXISTS((a)-[:NEAR_BY]-(b))
         CREATE (a)-[r:NEAR_BY]->(b)
         SET r.distance_km = $distance_km,
             r.distance_miles = $distance_miles,
@@ -574,15 +632,18 @@ class SimilarityLoader(BaseLoader):
         """Create topic-based clusters from Wikipedia data."""
         
         # Get all Wikipedia topics and their associated entities
+        # Handle key_topics as an array (which it already is)
         query = """
-        MATCH (w:Wikipedia)-[:DESCRIBES]->(n:Neighborhood)
-        UNWIND split(w.key_topics, ',') as topic
-        WITH trim(topic) as clean_topic, collect(DISTINCT n.neighborhood_id) as neighborhoods
-        WHERE clean_topic <> ''
+        MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
+        WHERE w.key_topics IS NOT NULL AND size(w.key_topics) > 0
+        UNWIND w.key_topics as topic
+        WITH toLower(trim(toString(topic))) as clean_topic, collect(DISTINCT n.neighborhood_id) as neighborhoods
+        WHERE clean_topic <> '' AND clean_topic <> 'null'
         WITH clean_topic as topic, neighborhoods, size(neighborhoods) as member_count
         WHERE member_count >= $min_cluster_size
         RETURN topic, neighborhoods, member_count
         ORDER BY member_count DESC
+        LIMIT 20
         """
         
         topic_data = self.execute_query(query, {
@@ -655,7 +716,7 @@ class SimilarityLoader(BaseLoader):
         # Count topic-based connections (neighborhoods sharing Wikipedia topics)
         topic_connections_query = """
         MATCH (n1:Neighborhood)-[:BELONGS_TO_TOPIC]->(tc:TopicCluster)<-[:BELONGS_TO_TOPIC]-(n2:Neighborhood)
-        WHERE id(n1) < id(n2)
+        WHERE elementId(n1) < elementId(n2)
         RETURN count(*) as topic_connections
         """
         
@@ -666,7 +727,7 @@ class SimilarityLoader(BaseLoader):
         paths_query = """
         MATCH (p1:Property)-[:IN_NEIGHBORHOOD]->(n1:Neighborhood)-[:BELONGS_TO_TOPIC]->(tc:TopicCluster)
         <-[:BELONGS_TO_TOPIC]-(n2:Neighborhood)<-[:IN_NEIGHBORHOOD]-(p2:Property)
-        WHERE id(p1) < id(p2)
+        WHERE elementId(p1) < elementId(p2)
         RETURN count(DISTINCT [p1.listing_id, p2.listing_id]) as recommendation_paths
         """
         

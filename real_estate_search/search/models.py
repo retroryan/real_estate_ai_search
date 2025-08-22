@@ -97,6 +97,7 @@ class SearchRequest(BaseModel):
     # Query parameters
     query_type: QueryType = QueryType.TEXT
     query_text: Optional[str] = Field(None, min_length=1, max_length=500)
+    search_mode: Optional[str] = Field(None, description="Search mode for specialized queries")
     filters: Optional[SearchFilters] = None
     
     # Geo search parameters

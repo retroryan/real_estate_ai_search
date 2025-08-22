@@ -92,7 +92,7 @@
     "neighborhood_id": "sf-mission-002",
     "name": "Mission District",
     "city": "San Francisco",
-    "county": "San Francisco", 
+    "county": "San Francisco",
     "state": "CA",
     "coordinates": {
       "latitude": 37.7599,
@@ -150,7 +150,7 @@
         {
           "page_id": 1487556,
           "title": "List of neighborhoods in San Francisco",
-          "url": "https://en.wikipedia.org/wiki/List_of_neighborhoods_in_San_Francisco", 
+          "url": "https://en.wikipedia.org/wiki/List_of_neighborhoods_in_San_Francisco",
           "relationship": "reference",
           "confidence": 0.8
         }
@@ -400,6 +400,474 @@
         "city_wiki": {
           "page_id": 49728,
           "title": "San Francisco"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "oak-temescal-006",
+    "name": "Temescal",
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 37.8372,
+      "longitude": -122.2622
+    },
+    "description": "Temescal is one of Oakland's most vibrant neighborhoods, centered on Telegraph Avenue with a rich cultural heritage and thriving arts scene. Originally a separate village annexed by Oakland in 1897, it features diverse dining from Ethiopian restaurants to award-winning establishments like Burdell. The neighborhood offers tree-lined streets of early 20th-century bungalows, proximity to MacArthur BART station, and unique amenities like one of the few tool-lending libraries in the US. Its multicultural character attracts young families and artists drawn to its walkable commercial district and strong community connections.",
+    "characteristics": {
+      "walkability_score": 8,
+      "transit_score": 9,
+      "school_rating": 7,
+      "safety_rating": 7,
+      "nightlife_score": 8,
+      "family_friendly_score": 8
+    },
+    "amenities": [
+      "Telegraph Avenue",
+      "MacArthur BART",
+      "Tool-lending library",
+      "Farmers market",
+      "Diverse restaurants",
+      "Arts venues"
+    ],
+    "lifestyle_tags": [
+      "artistic",
+      "diverse",
+      "foodie",
+      "transit-friendly",
+      "cultural",
+      "community-oriented"
+    ],
+    "median_home_price": 900000,
+    "price_trend": "rising",
+    "demographics": {
+      "primary_age_group": "25-40",
+      "vibe": "diverse cultural hub",
+      "population": 5064
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 3931239,
+        "title": "Temescal, Oakland, California",
+        "url": "https://en.wikipedia.org/wiki/Temescal,_Oakland,_California",
+        "confidence": 0.95
+      },
+      "related_wiki_articles": [
+        {
+          "page_id": 4253169,
+          "title": "Temescal Creek (Northern California)",
+          "url": "https://en.wikipedia.org/wiki/Temescal_Creek_(Northern_California)",
+          "relationship": "geographical",
+          "confidence": 0.85
+        },
+        {
+          "page_id": 71361907,
+          "title": "Frog Park (Rockridge-Temescal Greenbelt)",
+          "url": "https://en.wikipedia.org/wiki/Frog_Park_(Rockridge-Temescal_Greenbelt)",
+          "relationship": "park",
+          "confidence": 0.8
+        }
+      ],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 50548,
+          "title": "Oakland, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Alameda County, California"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "oak-rockridge-007",
+    "name": "Rockridge",
+    "city": "Oakland",
+    "county": "Alameda",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 37.8428,
+      "longitude": -122.2461
+    },
+    "description": "Rockridge is one of Oakland's most desirable neighborhoods, recognized by Money Magazine as one of the 'best places to live.' Located near the Berkeley border, it features a mix of large 1920s-1950s homes, charming bungalows, and modern apartments that support the thriving commercial district. The neighborhood centers around College Avenue with its boutique shops, restaurants, and the popular Rockridge BART station providing 22-minute access to downtown San Francisco. Residents enjoy the community-built Rockridge-Temescal Greenbelt Park and proximity to both urban amenities and natural spaces in the Oakland Hills.",
+    "characteristics": {
+      "walkability_score": 9,
+      "transit_score": 10,
+      "school_rating": 8,
+      "safety_rating": 8,
+      "nightlife_score": 6,
+      "family_friendly_score": 9
+    },
+    "amenities": [
+      "College Avenue",
+      "Rockridge BART",
+      "Boutique shopping",
+      "Rockridge Library",
+      "Greenbelt Park",
+      "Farmers market"
+    ],
+    "lifestyle_tags": [
+      "upscale",
+      "family-friendly",
+      "transit-oriented",
+      "walkable",
+      "community-focused",
+      "hills access"
+    ],
+    "median_home_price": 1350000,
+    "price_trend": "stable",
+    "demographics": {
+      "primary_age_group": "30-55",
+      "vibe": "upscale family community"
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 2229448,
+        "title": "Rockridge, Oakland, California",
+        "url": "https://en.wikipedia.org/wiki/Rockridge,_Oakland,_California",
+        "confidence": 0.95
+      },
+      "related_wiki_articles": [
+        {
+          "page_id": 3192793,
+          "title": "Mountain View Cemetery (Oakland, California)",
+          "url": "https://en.wikipedia.org/wiki/Mountain_View_Cemetery_(Oakland,_California)",
+          "relationship": "landmark",
+          "confidence": 0.8
+        },
+        {
+          "page_id": 71361907,
+          "title": "Frog Park (Rockridge-Temescal Greenbelt)",
+          "url": "https://en.wikipedia.org/wiki/Frog_Park_(Rockridge-Temescal_Greenbelt)",
+          "relationship": "park",
+          "confidence": 0.9
+        }
+      ],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 50548,
+          "title": "Oakland, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Alameda County, California"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "sal-oldtown-010",
+    "name": "Oldtown Salinas",
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 36.6777,
+      "longitude": -121.6555
+    },
+    "description": "Oldtown Salinas is the historic downtown core featuring beautiful Victorian architecture and serving as the cultural heart of the city. Home to the National Steinbeck Center, Steinbeck House, and John Steinbeck Library, this walkable district celebrates the area's literary heritage and agricultural roots. South Main Street buzzes with locally-owned antique shops, art galleries, boutiques, and restaurants that maintain the neighborhood's authentic, small-town charm. The area has undergone thoughtful revitalization while preserving its western and rodeo heritage, creating a quaint destination that reflects Salinas' rich history.",
+    "characteristics": {
+      "walkability_score": 8,
+      "transit_score": 5,
+      "school_rating": 6,
+      "safety_rating": 7,
+      "nightlife_score": 5,
+      "family_friendly_score": 8
+    },
+    "amenities": [
+      "National Steinbeck Center",
+      "Steinbeck House",
+      "Antique shops",
+      "Art galleries",
+      "Victorian architecture",
+      "Local restaurants"
+    ],
+    "lifestyle_tags": [
+      "historic",
+      "cultural",
+      "walkable",
+      "literary heritage",
+      "small-town charm",
+      "tourist-friendly"
+    ],
+    "median_home_price": 650000,
+    "price_trend": "stable",
+    "demographics": {
+      "primary_age_group": "35-60",
+      "vibe": "historic cultural district"
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 107783,
+        "title": "Salinas, California",
+        "url": "https://en.wikipedia.org/wiki/Salinas,_California",
+        "confidence": 0.9
+      },
+      "related_wiki_articles": [
+        {
+          "page_id": 2539033,
+          "title": "List of California Historical Landmarks",
+          "url": "https://en.wikipedia.org/wiki/List_of_California_Historical_Landmarks",
+          "relationship": "reference",
+          "confidence": 0.7
+        },
+        {
+          "page_id": 18212523,
+          "title": "List of tourist attractions in Monterey County, California",
+          "url": "https://en.wikipedia.org/wiki/List_of_tourist_attractions_in_Monterey_County,_California",
+          "relationship": "tourism",
+          "confidence": 0.8
+        }
+      ],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 107783,
+          "title": "Salinas, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Monterey County, California"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "sal-creekbridge-011",
+    "name": "Creekbridge",
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 36.7089,
+      "longitude": -121.6378
+    },
+    "description": "Creekbridge is one of Salinas' most affluent neighborhoods, developed in the 1990s in the northern part of the city. This suburban community features rolling hills, wooded gulches with creeks, and well-maintained residential streets with a mix of ranch-style, Mediterranean-inspired, and modern Craftsman homes. The neighborhood attracts families and professionals drawn to its peaceful setting, excellent schools, and proximity to parks including the 64-acre Natividad Creek Park with its dog park, skate park, and recreational facilities. Creekbridge represents the more upscale residential development in Salinas with higher household incomes than much of the city.",
+    "characteristics": {
+      "walkability_score": 5,
+      "transit_score": 4,
+      "school_rating": 8,
+      "safety_rating": 9,
+      "nightlife_score": 3,
+      "family_friendly_score": 9
+    },
+    "amenities": [
+      "Natividad Creek Park",
+      "Rolling hills",
+      "Creek access",
+      "Dog park",
+      "Skate park",
+      "Quiet streets"
+    ],
+    "lifestyle_tags": [
+      "suburban",
+      "family-friendly",
+      "affluent",
+      "quiet",
+      "spacious",
+      "well-maintained"
+    ],
+    "median_home_price": 750000,
+    "price_trend": "stable",
+    "demographics": {
+      "primary_age_group": "30-55",
+      "vibe": "suburban family community"
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 107783,
+        "title": "Salinas, California",
+        "url": "https://en.wikipedia.org/wiki/Salinas,_California",
+        "confidence": 0.85
+      },
+      "related_wiki_articles": [],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 107783,
+          "title": "Salinas, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Monterey County, California"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "sj-willow-glen-008",
+    "name": "Willow Glen",
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 37.3067,
+      "longitude": -121.8897
+    },
+    "description": "Willow Glen is one of San Jose's most charming and walkable neighborhoods, known for its tree-lined streets, historic homes, and vibrant Lincoln Avenue commercial district. This established community features a mix of 1920s-1940s architecture, from cozy bungalows to larger family homes. The neighborhood's heart is Lincoln Avenue, bustling with local boutiques, cafes, restaurants, and the popular farmer's market. Residents appreciate the small-town feel within Silicon Valley, excellent schools, and strong community spirit fostered by local events and festivals throughout the year.",
+    "characteristics": {
+      "walkability_score": 8,
+      "transit_score": 6,
+      "school_rating": 9,
+      "safety_rating": 8,
+      "nightlife_score": 6,
+      "family_friendly_score": 9
+    },
+    "amenities": [
+      "Lincoln Avenue",
+      "Farmers market",
+      "Local boutiques",
+      "Tree-lined streets",
+      "Community events",
+      "Historic homes"
+    ],
+    "lifestyle_tags": [
+      "charming",
+      "family-friendly",
+      "walkable",
+      "community-oriented",
+      "historic",
+      "local shopping"
+    ],
+    "median_home_price": 1800000,
+    "price_trend": "stable",
+    "demographics": {
+      "primary_age_group": "30-50",
+      "vibe": "charming family neighborhood"
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 8887170,
+        "title": "Willow Glen, San Jose",
+        "url": "https://en.wikipedia.org/wiki/Willow_Glen,_San_Jose",
+        "confidence": 0.95
+      },
+      "related_wiki_articles": [
+        {
+          "page_id": 12509322,
+          "title": "Willow Glen Elementary School (San Jose, California)",
+          "url": "https://en.wikipedia.org/wiki/Willow_Glen_Elementary_School_(San_Jose,_California)",
+          "relationship": "school",
+          "confidence": 0.85
+        }
+      ],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 49728,
+          "title": "San Jose, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Santa Clara County, California"
+        },
+        "state_wiki": {
+          "page_id": 5407,
+          "title": "California"
+        }
+      },
+      "generated_by": "enhanced_neighborhood_exporter",
+      "generated_at": "2025-08-21T10:00:00Z",
+      "source": "wikipedia_database",
+      "updated_by": "data_quality_validation"
+    }
+  },
+  {
+    "neighborhood_id": "sj-santana-row-009",
+    "name": "Santana Row",
+    "city": "San Jose",
+    "county": "Santa Clara",
+    "state": "CA",
+    "coordinates": {
+      "latitude": 37.3213,
+      "longitude": -121.9481
+    },
+    "description": "Santana Row is San Jose's premier upscale shopping, dining, and residential district, designed as a European-style village with pedestrian-friendly streets and outdoor plazas. This mixed-use development features luxury retail stores, fine dining restaurants, trendy bars, and high-end residential options including condos and apartments. The area attracts young professionals and affluent residents who appreciate the walkable urban lifestyle, extensive amenities, and vibrant nightlife. Regular events, festivals, and outdoor activities create a dynamic community atmosphere in the heart of Silicon Valley.",
+    "characteristics": {
+      "walkability_score": 10,
+      "transit_score": 7,
+      "school_rating": 8,
+      "safety_rating": 8,
+      "nightlife_score": 9,
+      "family_friendly_score": 6
+    },
+    "amenities": [
+      "Luxury shopping",
+      "Fine dining",
+      "Outdoor plazas",
+      "Entertainment venues",
+      "Farmers market",
+      "Community events"
+    ],
+    "lifestyle_tags": [
+      "luxury",
+      "upscale",
+      "walkable",
+      "nightlife",
+      "shopping",
+      "modern urban"
+    ],
+    "median_home_price": 1100000,
+    "price_trend": "stable",
+    "demographics": {
+      "primary_age_group": "25-40",
+      "vibe": "upscale urban lifestyle"
+    },
+    "graph_metadata": {
+      "primary_wiki_article": {
+        "page_id": 2307788,
+        "title": "Santana Row",
+        "url": "https://en.wikipedia.org/wiki/Santana_Row",
+        "confidence": 0.95
+      },
+      "related_wiki_articles": [],
+      "parent_geography": {
+        "city_wiki": {
+          "page_id": 49728,
+          "title": "San Jose, California"
+        },
+        "county_wiki": {
+          "page_id": 79752,
+          "title": "Santa Clara County, California"
         },
         "state_wiki": {
           "page_id": 5407,

@@ -1,6 +1,6 @@
 """Property-related Pydantic models"""
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from enum import Enum
 
 class PropertyType(str, Enum):
@@ -45,7 +45,8 @@ class PropertyDetails(BaseModel):
     class Config:
         populate_by_name = True  # Allow both field name and alias
     
-    @validator('property_type', pre=True)
+    @field_validator('property_type', mode='before')
+    @classmethod
     def normalize_type(cls, v):
         """Normalize property type"""
         if v:
@@ -53,12 +54,44 @@ class PropertyDetails(BaseModel):
         return "unknown"
 
 class Property(BaseModel):
-    """Property model for graph database"""
+    """Property model for graph database
+    
+    This model automatically transforms nested dictionaries into proper Pydantic models
+    during instantiation. This ensures type safety throughout the application.
+    
+    How it works:
+    1. When you create a Property with Property(**data), Pydantic's validation pipeline starts
+    2. The @model_validator(mode='before') decorator registers transform_all_nested_fields() 
+       to run AUTOMATICALLY before field validation
+    3. This method transforms any dict inputs into proper Pydantic models (Address, Coordinates, etc.)
+    4. After transformation, all fields are guaranteed to be either the proper model type or None
+    5. This eliminates the need for isinstance() checks throughout the codebase
+    
+    Example:
+        # Input data with nested dicts (e.g., from JSON)
+        data = {
+            'listing_id': 'prop-123',
+            'neighborhood_id': 'hood-456',
+            'address': {'street': '123 Main', 'city': 'SF', 'state': 'CA', 'zip': '94102'},
+            'coordinates': {'latitude': 37.7, 'longitude': -122.4},
+            'listing_price': 1000000
+        }
+        
+        # Create Property - transform_all_nested_fields runs automatically
+        prop = Property(**data)
+        
+        # Now prop.address is an Address model, not a dict
+        # prop.coordinates is a Coordinates model, not a dict
+        # All getter methods can safely assume the proper types
+    """
     listing_id: str = Field(..., description="Unique listing identifier")
     neighborhood_id: str = Field(..., description="Neighborhood identifier")
-    address: Optional[Dict[str, str] | str] = Field(default=None, description="Property address")
-    coordinates: Optional[Coordinates | Dict[str, float]] = Field(default=None, description="Geographic coordinates")
-    property_details: Optional[PropertyDetails | Dict[str, Any]] = Field(default=None, description="Property details")
+    
+    # These fields only store proper Pydantic models after validation
+    address: Optional[Address] = Field(default=None, description="Property address")
+    coordinates: Optional[Coordinates] = Field(default=None, description="Geographic coordinates")
+    property_details: Optional[PropertyDetails] = Field(default=None, description="Property details")
+    
     listing_price: float = Field(..., gt=0, description="Listing price")
     price_per_sqft: Optional[float] = Field(default=None, gt=0, description="Price per square foot")
     description: Optional[str] = Field(default="", description="Property description")
@@ -69,79 +102,107 @@ class Property(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     
-    @validator('coordinates', pre=True)
-    def parse_coordinates(cls, v):
-        """Parse coordinates from dict if needed"""
-        if isinstance(v, dict):
-            return Coordinates(**v)
-        return v
-    
-    @validator('property_details', pre=True)
-    def parse_details(cls, v):
-        """Parse property details from dict if needed"""
-        if isinstance(v, dict):
-            return PropertyDetails(**v)
-        return v
+    @model_validator(mode='before')
+    @classmethod
+    def transform_all_nested_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Transform ALL nested dict/string inputs to proper Pydantic models at input boundary
+        
+        This method is called AUTOMATICALLY by Pydantic before field validation.
+        You never call this method directly - the @model_validator decorator registers it
+        with Pydantic's validation pipeline.
+        
+        The 'mode="before"' parameter means this runs BEFORE individual field validation,
+        allowing us to transform raw input data (dicts) into proper Pydantic models.
+        
+        This is the key to eliminating isinstance() checks throughout the codebase:
+        - Input: Nested dicts from JSON, databases, or APIs
+        - Output: Proper Pydantic models (Address, Coordinates, PropertyDetails)
+        - Result: Type safety - fields are guaranteed to be the correct type or None
+        """
+        
+        # Transform address - handle dict, string, or Address object
+        if 'address' in values and values['address'] is not None:
+            addr = values['address']
+            if isinstance(addr, dict):
+                values['address'] = Address(**addr)
+            elif isinstance(addr, str):
+                # Parse string address into components
+                parts = [p.strip() for p in addr.split(',')]
+                values['address'] = Address(
+                    street=parts[0] if len(parts) > 0 else "",
+                    city=parts[1] if len(parts) > 1 else "",
+                    state=parts[2][:2] if len(parts) > 2 else "",
+                    zip=parts[-1] if len(parts) > 3 else "",
+                    county=None
+                )
+        
+        # Transform coordinates - handle dict or Coordinates object
+        if 'coordinates' in values and values['coordinates'] is not None:
+            coords = values['coordinates']
+            if isinstance(coords, dict):
+                values['coordinates'] = Coordinates(**coords)
+        
+        # Transform property details - handle dict or PropertyDetails object
+        if 'property_details' in values and values['property_details'] is not None:
+            details = values['property_details']
+            if isinstance(details, dict):
+                values['property_details'] = PropertyDetails(**details)
+        
+        return values
     
     def get_address_string(self) -> str:
-        """Get address as string"""
-        if isinstance(self.address, dict):
-            return f"{self.address.get('street', '')} {self.address.get('city', '')} {self.address.get('state', '')} {self.address.get('zip', '')}".strip()
-        elif isinstance(self.address, str):
-            return self.address
-        return ""
+        """Get address as formatted string
+        
+        Returns the full address string if address exists, empty string otherwise.
+        The address field is guaranteed to be an Address model or None after validation.
+        """
+        return self.address.to_string() if self.address else ""
     
     def get_coordinates_dict(self) -> Dict[str, float]:
-        """Get coordinates as dict"""
-        if isinstance(self.coordinates, Coordinates):
+        """Get coordinates as dictionary for APIs and serialization
+        
+        Returns coordinates in lat/lng format for compatibility with mapping APIs.
+        The coordinates field is guaranteed to be a Coordinates model or None after validation.
+        """
+        if self.coordinates:
             return {"lat": self.coordinates.latitude, "lng": self.coordinates.longitude}
-        elif isinstance(self.coordinates, dict):
-            # Handle both lat/lng and latitude/longitude keys
-            if 'latitude' in self.coordinates:
-                return {"lat": self.coordinates.get('latitude', 0), "lng": self.coordinates.get('longitude', 0)}
-            else:
-                return {"lat": self.coordinates.get('lat', 0), "lng": self.coordinates.get('lng', 0)}
         return {"lat": 0.0, "lng": 0.0}
     
     def get_property_type(self) -> str:
-        """Get property type from details"""
-        if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.property_type or 'unknown'
-        elif isinstance(self.property_details, dict):
-            return self.property_details.get('property_type', self.property_details.get('type', 'unknown'))
-        return 'unknown'
+        """Get property type from details
+        
+        Returns the property type if details exist, 'unknown' otherwise.
+        The property_details field is guaranteed to be a PropertyDetails model or None after validation.
+        """
+        return self.property_details.property_type if self.property_details else 'unknown'
     
     def get_bedrooms(self) -> int:
-        """Get number of bedrooms"""
-        if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.bedrooms
-        elif isinstance(self.property_details, dict):
-            return self.property_details.get('bedrooms', 0)
-        return 0
+        """Get number of bedrooms
+        
+        Returns the bedroom count from property details, 0 if details don't exist.
+        """
+        return self.property_details.bedrooms if self.property_details else 0
     
     def get_bathrooms(self) -> float:
-        """Get number of bathrooms"""
-        if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.bathrooms
-        elif isinstance(self.property_details, dict):
-            return self.property_details.get('bathrooms', 0)
-        return 0
+        """Get number of bathrooms
+        
+        Returns the bathroom count from property details, 0 if details don't exist.
+        """
+        return self.property_details.bathrooms if self.property_details else 0
     
     def get_square_feet(self) -> int:
-        """Get square footage"""
-        if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.square_feet
-        elif isinstance(self.property_details, dict):
-            return self.property_details.get('square_feet', 0)
-        return 0
+        """Get square footage
+        
+        Returns the square footage from property details, 0 if details don't exist.
+        """
+        return self.property_details.square_feet if self.property_details else 0
     
     def get_year_built(self) -> Optional[int]:
-        """Get year built"""
-        if isinstance(self.property_details, PropertyDetails):
-            return self.property_details.year_built
-        elif isinstance(self.property_details, dict):
-            return self.property_details.get('year_built')
-        return None
+        """Get year built
+        
+        Returns the year built from property details, None if details don't exist or year is not set.
+        """
+        return self.property_details.year_built if self.property_details else None
     
     def calculate_price_range(self) -> str:
         """Calculate price range category"""
@@ -185,11 +246,12 @@ class Feature(BaseModel):
     name: str = Field(..., description="Feature name")
     category: Optional[str] = Field(None, description="Feature category")
     
-    @validator('feature_id', pre=True)
-    def generate_feature_id(cls, v, values):
+    @field_validator('feature_id', mode='before')
+    @classmethod
+    def generate_feature_id(cls, v, info):
         """Generate feature ID from name if not provided"""
-        if not v and 'name' in values:
-            return values['name'].lower().replace(' ', '_').replace('-', '_')
+        if not v and 'name' in info.data:
+            return info.data['name'].lower().replace(' ', '_').replace('-', '_')
         return v
 
 
@@ -211,6 +273,7 @@ class PropertyLoadResult(BaseModel):
     feature_relationships: int = 0
     type_relationships: int = 0
     price_range_relationships: int = 0
+    wikipedia_property_relationships: int = 0
     
     # Statistics
     unique_features: int = 0

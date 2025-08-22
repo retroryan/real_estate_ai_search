@@ -24,7 +24,7 @@ from real_estate_search.config.settings import Settings
 from real_estate_search.indexer.property_indexer import PropertyIndexer
 from real_estate_search.indexer.models import Property, Address, GeoLocation, Neighborhood
 from real_estate_search.indexer.enums import PropertyType, PropertyStatus
-from real_estate_search.search.search_engine import PropertySearchEngine
+from real_estate_search.search.search_engine import SearchEngine
 from real_estate_search.search.models import SearchRequest, SearchFilters, GeoSearchParams, GeoPoint
 from real_estate_search.search.enums import QueryType, GeoDistanceUnit
 
@@ -112,10 +112,10 @@ class PropertySearchTester:
         console.print("\n[yellow]Testing Elasticsearch Connection...[/yellow]")
         
         try:
-            self.indexer = PropertyIndexer(self.settings)
+            self.indexer = PropertyIndexer(settings=self.settings)
             
             # Test ping
-            if self.indexer.es.ping():
+            if self.indexer.es_client.ping():
                 console.print("✅ Connected to Elasticsearch")
                 
                 # Check authentication
@@ -125,7 +125,7 @@ class PropertySearchTester:
                     console.print("ℹ️  No authentication configured")
                 
                 # Get cluster info
-                info = self.indexer.es.info()
+                info = self.indexer.es_client.info()
                 console.print(f"✅ Cluster: {info['cluster_name']}")
                 console.print(f"✅ Version: {info['version']['number']}")
                 
@@ -144,7 +144,7 @@ class PropertySearchTester:
         
         try:
             # Create index
-            created = self.indexer.create_index(force=True)
+            created = self.indexer.create_index(force_recreate=True)
             
             if created:
                 console.print("✅ Index created successfully")
@@ -152,14 +152,14 @@ class PropertySearchTester:
                 console.print("ℹ️  Index already exists")
             
             # Verify alias
-            if self.indexer.es.indices.exists_alias(name=self.settings.index.alias):
+            if self.indexer.es_client.indices.exists_alias(name=self.settings.index.alias):
                 console.print(f"✅ Alias '{self.settings.index.alias}' exists")
             else:
                 console.print(f"❌ Alias '{self.settings.index.alias}' not found")
                 return False
             
             # Check mappings
-            mapping = self.indexer.es.indices.get_mapping(index=self.settings.index.alias)
+            mapping = self.indexer.es_client.indices.get_mapping(index=self.settings.index.alias)
             if mapping:
                 console.print("✅ Mappings configured")
                 
@@ -194,7 +194,7 @@ class PropertySearchTester:
             
             # Verify documents in index
             time.sleep(1)  # Wait for refresh
-            count_response = self.indexer.es.count(index=self.settings.index.alias)
+            count_response = self.indexer.es_client.count(index=self.settings.index.alias)
             doc_count = count_response['count']
             console.print(f"✅ Documents in index: {doc_count}")
             
@@ -209,7 +209,7 @@ class PropertySearchTester:
         console.print("\n[yellow]Testing Text Search...[/yellow]")
         
         try:
-            self.search_engine = PropertySearchEngine(self.settings)
+            self.search_engine = SearchEngine(settings=self.settings)
             
             # Test 1: Simple text search
             request = SearchRequest(

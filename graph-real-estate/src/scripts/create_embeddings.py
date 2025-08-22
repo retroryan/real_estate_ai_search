@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 
 # Add src to path
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.vectors import PropertyEmbeddingPipeline
 from src.vectors.config_loader import get_embedding_config, get_vector_index_config

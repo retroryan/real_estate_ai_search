@@ -38,7 +38,7 @@ def print_stats(driver):
         "Neighborhoods": "MATCH (n:Neighborhood) RETURN COUNT(n) as count",
         "Cities": "MATCH (c:City) RETURN COUNT(c) as count",
         "Features": "MATCH (f:Feature) RETURN COUNT(f) as count",
-        "Wikipedia Articles": "MATCH (w:Wikipedia) RETURN COUNT(w) as count",
+        "Wikipedia Articles": "MATCH (w:WikipediaArticle) RETURN COUNT(w) as count",
         "Relationships": "MATCH ()-[r]->() RETURN COUNT(r) as count"
     }
     
@@ -51,8 +51,8 @@ def print_stats(driver):
     # Wikipedia-specific statistics
     wiki_stats_queries = {
         "Wikipedia DESCRIBES relationships": "MATCH ()-[r:DESCRIBES]->() RETURN COUNT(r) as count",
-        "Primary Wikipedia articles": "MATCH (w:Wikipedia) WHERE w.relationship_type = 'primary' RETURN COUNT(w) as count",
-        "Related Wikipedia articles": "MATCH (w:Wikipedia) WHERE w.relationship_type IN ['related', 'neighborhood', 'park', 'landmark', 'county', 'city', 'recreation', 'reference'] RETURN COUNT(w) as count"
+        "Primary Wikipedia articles": "MATCH (w:WikipediaArticle) WHERE w.relationship_type = 'primary' RETURN COUNT(w) as count",
+        "Related Wikipedia articles": "MATCH (w:WikipediaArticle) WHERE w.relationship_type IN ['related', 'neighborhood', 'park', 'landmark', 'county', 'city', 'recreation', 'reference'] RETURN COUNT(w) as count"
     }
     
     print("\n--- Wikipedia Integration ---")
@@ -63,7 +63,7 @@ def print_stats(driver):
     
     # Wikipedia article types distribution
     type_query = """
-    MATCH (w:Wikipedia) 
+    MATCH (w:WikipediaArticle) 
     RETURN w.relationship_type as type, COUNT(w) as count 
     ORDER BY count DESC
     """
@@ -78,7 +78,7 @@ def print_stats(driver):
     # Neighborhoods with Wikipedia coverage
     coverage_query = """
     MATCH (n:Neighborhood)
-    OPTIONAL MATCH (w:Wikipedia)-[:DESCRIBES]->(n)
+    OPTIONAL MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n)
     WITH n.name as neighborhood, COUNT(w) as wiki_count
     WHERE wiki_count > 0
     RETURN neighborhood, wiki_count
