@@ -2,6 +2,15 @@
 
 A high-quality demonstration of Elasticsearch-powered real estate search enriched with Wikipedia location data, POIs (Points of Interest), and neighborhood context.
 
+## Important: Working Directory
+
+**All commands in this README should be run from the `real_estate_search` directory:**
+
+```bash
+cd /path/to/project/real_estate_search
+# All commands below assume you are in this directory
+```
+
 ## Features
 
 - **Full-Text Search**: Search properties by description, features, and amenities
@@ -37,8 +46,12 @@ curl -u elastic:elasticpassword localhost:9200
 ### Setup and Index Data
 
 ```bash
+# From the real_estate_search directory:
 # Create index and load properties with Wikipedia enrichment
-python -m real_estate_search.scripts.setup_index --recreate
+python scripts/setup_index.py --recreate
+
+# Or with test data only (3 properties)
+python scripts/setup_index.py --recreate --test-data
 
 # Output:
 # ✅ Index created
@@ -49,8 +62,9 @@ python -m real_estate_search.scripts.setup_index --recreate
 ### Run Demo Searches
 
 ```bash
+# From the real_estate_search directory:
 # Run the full demo showing all search modes
-python -m real_estate_search.scripts.demo_search
+python scripts/demo_search.py
 
 # Demos include:
 # 1. Park City Ski Resort Properties (97 results)
@@ -185,19 +199,25 @@ The index uses a comprehensive mapping optimized for demo purposes:
 ### Elasticsearch Settings
 
 ```yaml
-# config/settings.yaml
+# config.yaml (in real_estate_search directory)
 elasticsearch:
   host: localhost
   port: 9200
-  scheme: https
   username: elastic
-  password: elasticpassword
-  verify_certs: false
+  password: your-password-here
+  # api_key: your-api-key-here  # Alternative to username/password
+  # cloud_id: your-cloud-id-here  # For Elastic Cloud
+  property_index: properties
+  batch_size: 100
+  request_timeout: 30
 
-index:
-  name: properties
-  shards: 1        # Single shard for 420 docs
-  replicas: 0      # No replicas for demo
+embedding:
+  provider: ollama
+  model_name: nomic-embed-text
+  
+data:
+  wikipedia_db: data/wikipedia/wikipedia.db
+  properties_dir: real_estate_data
 ```
 
 ### Environment Variables
@@ -213,12 +233,13 @@ export ES_PASSWORD=elasticpassword
 ## Testing
 
 ```bash
-# Run system tests
-python -m real_estate_search.scripts.test_system
+# From the real_estate_search directory:
+# Run system tests (if available)
+python scripts/test_system.py
 
 # Test specific search mode
 python -c "
-from real_estate_search.search.search_engine import SearchEngine
+from search.search_engine import SearchEngine
 engine = SearchEngine()
 # Your test code here
 "
@@ -240,11 +261,11 @@ engine = SearchEngine()
 
 ### Connection Errors
 - Verify Elasticsearch is running: `ps aux | grep elasticsearch`
-- Check credentials in `config/settings.yaml`
+- Check credentials in `config.yaml` (in real_estate_search directory)
 - Ensure port 9200 is accessible
 
 ### Missing Wikipedia Data
-- Confirm database exists: `ls data/wikipedia/wikipedia.db`
+- Confirm database exists: `ls ../data/wikipedia/wikipedia.db`
 - Check Wikipedia article count in database
 - Review enrichment logs during indexing
 

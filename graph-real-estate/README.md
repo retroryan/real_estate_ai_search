@@ -146,10 +146,10 @@ python main.py clear          # Clear all data
 ### 2. Create Vector Embeddings
 ```bash
 # Generate embeddings using config.yaml settings
-python create_embeddings.py
+python -m src.scripts.create_embeddings
 
 # Force recreate all embeddings (delete existing and regenerate)
-python create_embeddings.py --force-recreate
+python -m src.scripts.create_embeddings --force-recreate
 ```
 
 **Note**: All embedding settings (provider, model, dimensions) are configured in `config.yaml`. To use a different model like `mxbai-embed-large`, update the `ollama_model` setting in `config.yaml`.
@@ -161,7 +161,7 @@ python create_embeddings.py --force-recreate
 python main.py load
 
 # Create embeddings (required for demos 1, 3, and 5)
-python create_embeddings.py
+python -m src.scripts.create_embeddings
 
 # Run advanced demonstration scripts (from src/demos/)
 python -m src.demos.demo_1_hybrid_search      # Advanced hybrid search

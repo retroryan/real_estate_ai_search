@@ -10,13 +10,13 @@ import sys
 from pathlib import Path
 from typing import List
 
-# Add project root to path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from real_estate_search.config.settings import Settings
-from real_estate_search.indexer.property_indexer import PropertyIndexer
-from real_estate_search.indexer.models import Property, Address, Neighborhood, GeoLocation
-from real_estate_search.indexer.enums import PropertyType, PropertyStatus
+from config.config import Config
+from indexer.property_indexer import PropertyIndexer
+from indexer.models import Property, Address, Neighborhood, GeoLocation
+from indexer.enums import PropertyType, PropertyStatus
 
 
 def load_test_properties() -> List[Property]:
@@ -156,11 +156,11 @@ def main():
     parser.add_argument('--test-data', action='store_true', help='Use test data')
     args = parser.parse_args()
     
-    # Load settings
-    settings = Settings.load()
+    # Load config
+    config = Config.from_yaml()
     
     # Create indexer
-    indexer = PropertyIndexer(settings=settings)
+    indexer = PropertyIndexer(config=config)
     
     # Create index (optional recreate)
     if args.recreate or not indexer.es_client.indices.exists(index=indexer.index_name):

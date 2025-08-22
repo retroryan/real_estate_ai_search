@@ -575,8 +575,11 @@ class GraphRelationshipAnalysisDemo:
         if result:
             r = result[0]
             print(f"   {r['total']:,} total similarity relationships")
-            print(f"   Score distribution: min={r['min_score']:.3f}, Q1={r['q1']:.3f}, median={r['median']:.3f}, Q3={r['q3']:.3f}, max={r['max_score']:.3f}")
-            print(f"   Average similarity: {r['avg_score']:.3f}")
+            if r['total'] > 0 and r['min_score'] is not None:
+                print(f"   Score distribution: min={r['min_score']:.3f}, Q1={r['q1']:.3f}, median={r['median']:.3f}, Q3={r['q3']:.3f}, max={r['max_score']:.3f}")
+                print(f"   Average similarity: {r['avg_score']:.3f}")
+            else:
+                print("   No similarity relationships found in the database")
     
     def _analyze_feature_value_influence(self):
         """Analyze how features influence property values"""
