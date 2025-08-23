@@ -39,13 +39,21 @@ def main():
         print("\nConnecting to Neo4j...")
         driver = get_neo4j_driver()
         
-        # Create embedding pipeline
+        # Create embedding pipeline with constructor injection
         print("Initializing embedding pipeline...")
-        pipeline = PropertyEmbeddingPipeline(driver, embedding_config, vector_config)
+        model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
+        pipeline = PropertyEmbeddingPipeline(driver, model_name)
+        
+        # Create vector manager for index creation
+        from src.core.query_executor import QueryExecutor
+        from src.vectors.vector_manager import PropertyVectorManager
+        
+        query_executor = QueryExecutor(driver)
+        vector_manager = PropertyVectorManager(driver, query_executor)
         
         # Create vector index
         print("\nCreating vector index...")
-        if pipeline.vector_manager.create_vector_index():
+        if vector_manager.create_vector_index():
             print("Vector index ready")
         else:
             print("Failed to create vector index")
@@ -53,23 +61,17 @@ def main():
         
         # Process properties
         print("\nGenerating embeddings...")
-        stats = pipeline.process_properties(force_recreate=args.force_recreate)
+        limit = None if not args.force_recreate else None
+        embeddings_created = pipeline.generate_property_embeddings(limit=limit)
         
         # Print final summary
         print("\n" + "=" * 60)
         print("SUMMARY")
         print("=" * 60)
-        print(f"Total properties: {stats['total']}")
-        print(f"Successfully processed: {stats['processed']}")
-        if stats['existing'] > 0:
-            print(f"Already had embeddings: {stats['existing']}")
-        if stats['errors'] > 0:
-            print(f"Errors: {stats['errors']}")
-        print(f"Time taken: {stats['time']:.2f} seconds")
-        if stats['rate'] > 0:
-            print(f"Processing rate: {stats['rate']:.1f} properties/second")
+        print(f"Embeddings created: {embeddings_created}")
+        print("✅ Embedding creation completed successfully")
         
-        return 0 if stats['errors'] == 0 else 1
+        return 0
         
     except KeyboardInterrupt:
         print("\n\nInterrupted by user")

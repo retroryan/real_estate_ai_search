@@ -126,3 +126,26 @@ class GeographicStats(BaseModel):
     cities_with_complete_path: int = 0
     counties_with_multiple_names: int = 0
     timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class GeographicLoadResult(BaseModel):
+    """Result of geographic data loading"""
+    success: bool = False
+    total_states: int = 0
+    total_counties: int = 0
+    total_cities: int = 0
+    state_relationships: int = 0
+    county_relationships: int = 0
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    duration_seconds: float = 0.0
+    timestamp: datetime = Field(default_factory=datetime.now)
+    
+    def add_error(self, error: str):
+        """Add an error message"""
+        self.errors.append(error)
+        self.success = False
+    
+    def add_warning(self, warning: str):
+        """Add a warning message"""
+        self.warnings.append(warning)

@@ -1,5 +1,6 @@
 """Property indexer module for Elasticsearch."""
 
-from .property_indexer import PropertyIndexer
+# PropertyIndexer is deprecated - use IndexingService with DependencyContainer instead
+# from .property_indexer import PropertyIndexer
 
-__all__ = ["PropertyIndexer"]
+__all__ = []

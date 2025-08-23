@@ -38,21 +38,33 @@ def test_hybrid_search():
             count = result[0]['count'] if result else 0
             print(f"  {name}: {count:,}")
         
-        # Initialize hybrid search
+        # Initialize hybrid search with constructor injection
         embedding_config = get_embedding_config()
         vector_config = get_vector_index_config()
         search_config = get_search_config()
         
-        pipeline = PropertyEmbeddingPipeline(driver, embedding_config, vector_config)
-        search = HybridPropertySearch(driver, pipeline, search_config)
+        # Create dependencies for hybrid search
+        from src.core.query_executor import QueryExecutor
+        from src.vectors.vector_manager import PropertyVectorManager
         
-        # Check embeddings exist
-        status = pipeline.vector_manager.check_embeddings_exist()
-        if status['with_embeddings'] == 0:
+        model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
+        pipeline = PropertyEmbeddingPipeline(driver, model_name)
+        
+        query_executor = QueryExecutor(driver)
+        vector_manager = PropertyVectorManager(driver, query_executor)
+        
+        search = HybridPropertySearch(query_executor, pipeline, vector_manager, search_config)
+        
+        # Check embeddings exist by querying database
+        query = "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as with_embeddings"
+        result = query_executor.execute_read(query)
+        embeddings_count = result[0]['with_embeddings'] if result else 0
+        
+        if embeddings_count == 0:
             print("\n❌ No embeddings found! Create embeddings first.")
             return
             
-        print(f"\n✅ Ready to search {status['with_embeddings']} properties")
+        print(f"\n✅ Ready to search {embeddings_count} properties")
         
         # Test queries
         test_queries = [

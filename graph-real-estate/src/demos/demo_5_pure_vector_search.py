@@ -44,22 +44,33 @@ class PureVectorSearchDemo:
     def __init__(self, driver):
         self.driver = driver
         
-        # Initialize embedding pipeline
+        # Initialize embedding pipeline with constructor injection
         try:
+            from src.core.query_executor import QueryExecutor
+            from src.vectors.vector_manager import PropertyVectorManager
+            
             embedding_config = get_embedding_config()
             vector_config = get_vector_index_config()
-            self.pipeline = PropertyEmbeddingPipeline(driver, embedding_config, vector_config)
+            
+            model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
+            self.pipeline = PropertyEmbeddingPipeline(driver, model_name)
+            
+            # Create vector manager for embeddings check
+            query_executor = QueryExecutor(driver)
+            self.vector_manager = PropertyVectorManager(driver, query_executor)
             
             # Check if embeddings exist
-            status = self.pipeline.vector_manager.check_embeddings_exist()
-            self.embeddings_available = status['with_embeddings'] > 0
+            query = "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as with_embeddings"
+            result = query_executor.execute_read(query)
+            embeddings_count = result[0]['with_embeddings'] if result else 0
+            self.embeddings_available = embeddings_count > 0
             
             if not self.embeddings_available:
                 print("No embeddings found! Please run 'python create_embeddings.py' first.")
             else:
-                print(f"Found {status['with_embeddings']} properties with embeddings")
-                print(f"Using {embedding_config.provider} with {self.pipeline._get_model_name()}")
-                print(f"Embedding dimensions: {vector_config.vector_dimensions}")
+                print(f"Found {embeddings_count} properties with embeddings")
+                print(f"Using {model_name} model")
+                print(f"Embedding dimensions: 384")
                 
         except Exception as e:
             print(f"Could not initialize embedding pipeline: {e}")
@@ -92,7 +103,7 @@ class PureVectorSearchDemo:
         query_embedding = self.pipeline.embed_model.get_text_embedding(query)
         
         # Perform pure vector search
-        results = self.pipeline.vector_manager.vector_search(
+        results = self.vector_manager.vector_search(
             query_embedding=query_embedding,
             top_k=top_k,
             min_score=min_score

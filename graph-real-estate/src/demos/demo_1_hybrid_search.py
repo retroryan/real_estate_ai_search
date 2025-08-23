@@ -59,16 +59,29 @@ class AdvancedHybridSearchDemo:
         vector_config = get_vector_index_config()
         search_config = get_search_config()
         
-        # Initialize search pipeline
-        self.pipeline = PropertyEmbeddingPipeline(self.driver, embedding_config, vector_config)
-        self.search = HybridPropertySearch(self.driver, self.pipeline, search_config)
+        # Initialize search pipeline with constructor injection
+        model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
+        self.pipeline = PropertyEmbeddingPipeline(self.driver, model_name)
         
-        # Verify embeddings exist
-        status = self.pipeline.vector_manager.check_embeddings_exist()
-        if status['with_embeddings'] == 0:
-            raise RuntimeError("Error: No embeddings found! Create embeddings first.")
+        # Create dependencies for hybrid search
+        from src.core.query_executor import QueryExecutor
+        from src.vectors.vector_manager import PropertyVectorManager
         
-        print(f"✅ Ready to search {status['with_embeddings']} properties with embeddings")
+        query_executor = QueryExecutor(self.driver)
+        vector_manager = PropertyVectorManager(self.driver, query_executor)
+        
+        self.search = HybridPropertySearch(query_executor, self.pipeline, vector_manager, search_config)
+        
+        # Verify embeddings exist by checking if properties have embeddings
+        query = "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as with_embeddings"
+        result = query_executor.execute_read(query)
+        embeddings_count = result[0]['with_embeddings'] if result else 0
+        
+        if embeddings_count == 0:
+            print("⚠️  No embeddings found! Running without vector search capabilities.")
+            print("   Create embeddings with: python -m src.scripts.create_embeddings")
+        else:
+            print(f"✅ Ready to search {embeddings_count} properties with embeddings")
         
         # Show relationship statistics
         self._show_relationship_stats()

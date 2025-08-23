@@ -1,41 +1,59 @@
-"""Property loader for Phase 5"""
-import json
-from pathlib import Path
+"""Property loader with constructor injection"""
+
+import logging
 from typing import List, Dict, Set, Any
 from datetime import datetime
+from pydantic import BaseModel, Field
 
-from src.loaders.base import BaseLoader
-from src.loaders.config import GraphLoadingConfig
-from src.models.neighborhood import Neighborhood
+from src.core.query_executor import QueryExecutor
+from src.core.config import PropertyConfig, LoaderConfig
+from src.data_sources import PropertyFileDataSource
 from src.models.property import (
     Property, PropertyDetails, Address, Coordinates,
     PropertyType as PropertyTypeEnum, PriceRange, Feature, PropertyLoadResult
 )
 
 
-class PropertyLoader(BaseLoader):
-    """Load properties from JSON files and connect to existing graph"""
+class PropertyLoader:
+    """Load properties with injected dependencies"""
     
-    def __init__(self):
-        """Initialize property loader"""
-        super().__init__()
-        self.properties: List[Property] = []
-        self.load_result = PropertyLoadResult()
+    def __init__(
+        self,
+        query_executor: QueryExecutor,
+        config: PropertyConfig,
+        loader_config: LoaderConfig,
+        data_source: PropertyFileDataSource
+    ):
+        """
+        Initialize property loader with dependencies
         
-        # Load batch size configuration
-        self.batch_config = GraphLoadingConfig.from_yaml()
-        
-        # Paths to property JSON files
-        self.sf_path = self.base_path / 'real_estate_data' / 'properties_sf.json'
-        self.pc_path = self.base_path / 'real_estate_data' / 'properties_pc.json'
+        Args:
+            query_executor: Database query executor
+            config: Property configuration
+            loader_config: Loader batch configuration
+            data_source: Property data source
+        """
+        self.query_executor = query_executor
+        self.config = config
+        self.loader_config = loader_config
+        self.data_source = data_source
+        self.logger = logging.getLogger(self.__class__.__name__)
         
         # Collections for unique entities
         self.unique_features: Set[str] = set()
         self.unique_property_types: Set[str] = set()
         self.price_ranges = PriceRange.get_standard_ranges()
+        
+        # Load result tracking
+        self.load_result = PropertyLoadResult()
     
     def load(self) -> PropertyLoadResult:
-        """Main loading method"""
+        """
+        Main loading method
+        
+        Returns:
+            PropertyLoadResult with statistics
+        """
         self.logger.info("=" * 60)
         self.logger.info("PROPERTY LOADING AND CONNECTIONS")
         self.logger.info("=" * 60)
@@ -43,9 +61,9 @@ class PropertyLoader(BaseLoader):
         start_time = datetime.now()
         
         try:
-            # Load property data from JSON
-            self.properties = self._load_properties_from_json()
-            self.load_result.properties_loaded = len(self.properties)
+            # Load property data from data source
+            properties = self._load_and_validate_properties()
+            self.load_result.properties_loaded = len(properties)
             
             # Create constraints and indexes
             self._create_constraints_and_indexes()
@@ -60,29 +78,27 @@ class PropertyLoader(BaseLoader):
             self._create_property_type_nodes()
             
             # Create property nodes
-            nodes_created = self._create_property_nodes()
+            nodes_created = self._create_property_nodes(properties)
             self.load_result.property_nodes = nodes_created
             
             # Create geographic relationships
             self._create_geographic_relationships()
             
             # Create feature relationships
-            self._create_feature_relationships()
+            self._create_feature_relationships(properties)
             
             # Create type and price relationships
             self._create_type_and_price_relationships()
             
-            # Create Wikipedia→Property relationships (must be done after properties exist)
-            self._create_wikipedia_property_relationships()
-            
             # Calculate statistics
-            self._calculate_statistics()
+            self._calculate_statistics(properties)
             
             # Verify the integration
             self._verify_integration()
             
             # Calculate duration
             self.load_result.duration_seconds = (datetime.now() - start_time).total_seconds()
+            self.load_result.success = True
             
             self.logger.info("=" * 60)
             self.logger.info("✅ PROPERTY LOADING COMPLETE")
@@ -99,50 +115,38 @@ class PropertyLoader(BaseLoader):
         except Exception as e:
             self.logger.error(f"Failed to load properties: {e}")
             self.load_result.add_error(str(e))
+            self.load_result.success = False
             import traceback
             traceback.print_exc()
             return self.load_result
     
-    def _load_properties_from_json(self) -> List[Property]:
-        """Load and parse property data from JSON files"""
-        self.logger.info("Loading property data from JSON files...")
+    def _load_and_validate_properties(self) -> List[Property]:
+        """Load and validate property data from data source"""
+        self.logger.info("Loading property data from data source...")
         
         properties = []
+        raw_properties = self.data_source.load_properties()
         
-        for city_name, path in [('San Francisco', self.sf_path), ('Park City', self.pc_path)]:
-            if not path.exists():
-                self.load_result.add_warning(f"Property file not found: {path}")
-                continue
-            
+        for item in raw_properties:
             try:
-                with open(path, 'r') as f:
-                    data = json.load(f)
+                # Parse and validate with Pydantic
+                property_obj = Property(**item)
                 
-                for item in data:
-                    try:
-                        # Parse and validate with Pydantic
-                        property_obj = Property(**item)
-                        
-                        # Extract features for tracking
-                        if property_obj.features:
-                            self.unique_features.update(property_obj.features)
-                        
-                        # Extract property type
-                        prop_type = property_obj.get_property_type()
-                        if prop_type and prop_type != 'unknown':
-                            self.unique_property_types.add(prop_type)
-                        
-                        properties.append(property_obj)
-                        
-                    except Exception as e:
-                        self.load_result.add_warning(
-                            f"Failed to parse property {item.get('listing_id', 'unknown')}: {e}"
-                        )
+                # Extract features for tracking
+                if property_obj.features:
+                    self.unique_features.update(property_obj.features)
                 
-                self.logger.info(f"  Loaded {len([p for p in properties if path == self.sf_path or path == self.pc_path])} {city_name} properties")
+                # Extract property type
+                prop_type = property_obj.get_property_type()
+                if prop_type and prop_type != 'unknown':
+                    self.unique_property_types.add(prop_type)
+                
+                properties.append(property_obj)
                 
             except Exception as e:
-                self.load_result.add_error(f"Failed to load {path}: {e}")
+                self.load_result.add_warning(
+                    f"Failed to parse property {item.get('listing_id', 'unknown')}: {e}"
+                )
         
         self.logger.info(f"Total properties loaded: {len(properties)}")
         self.logger.info(f"Unique features found: {len(self.unique_features)}")
@@ -151,8 +155,8 @@ class PropertyLoader(BaseLoader):
         return properties
     
     def _create_constraints_and_indexes(self) -> None:
-        """Create enhanced property-specific constraints and indexes from FIX_v7"""
-        self.logger.info("Creating enhanced property constraints and indexes...")
+        """Create property-specific constraints and indexes"""
+        self.logger.info("Creating property constraints and indexes...")
         
         # Node key constraints for data integrity
         constraints = [
@@ -167,11 +171,10 @@ class PropertyLoader(BaseLoader):
         ]
         
         for name, query in constraints:
-            self.create_constraint(name, query)
+            self.query_executor.create_constraint(name, query)
         
-        # Enhanced indexes for better query performance
+        # Indexes for better query performance
         indexes = [
-            # Property indexes - optimized for common queries
             ("Property.neighborhood_id",
              "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.neighborhood_id)"),
             ("Property.city",
@@ -180,55 +183,14 @@ class PropertyLoader(BaseLoader):
              "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.listing_price)"),
             ("Property.bedrooms",
              "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.bedrooms)"),
-            ("Property.bathrooms",
-             "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.bathrooms)"),
-            ("Property.square_feet",
-             "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.square_feet)"),
-            ("Property.price_per_sqft",
-             "CREATE INDEX IF NOT EXISTS FOR (p:Property) ON (p.price_per_sqft)"),
-            
-            # Feature indexes
             ("Feature.category",
              "CREATE INDEX IF NOT EXISTS FOR (f:Feature) ON (f.category)"),
-            ("Feature.name",
-             "CREATE INDEX IF NOT EXISTS FOR (f:Feature) ON (f.name)"),
-            
-            # Asset label indexes (hierarchical)
             ("Asset.listing_price",
              "CREATE INDEX IF NOT EXISTS FOR (a:Asset) ON (a.listing_price)"),
         ]
         
         for name, query in indexes:
-            self.create_index(name, query)
-        
-        # Create full-text search index for properties
-        self._create_property_fulltext_index()
-    
-    def _create_property_fulltext_index(self) -> None:
-        """Create full-text search index for properties"""
-        try:
-            # Check if index already exists
-            check_query = "SHOW INDEXES YIELD name WHERE name = 'propertySearch' RETURN name"
-            result = self.execute_query(check_query)
-            
-            if not result:
-                query = """
-                CALL db.index.fulltext.createNodeIndex(
-                    'propertySearch',
-                    ['Property'],
-                    ['description', 'street', 'city', 'neighborhood_id']
-                )
-                """
-                self.execute_query(query)
-                self.logger.info("Created full-text index: propertySearch")
-            else:
-                self.logger.info("Full-text index already exists: propertySearch")
-        except Exception as e:
-            # Full-text search may not be available in all Neo4j versions
-            if "unknown function" in str(e).lower() or "procedure" in str(e).lower():
-                self.logger.debug("Full-text indexes not supported in this Neo4j version")
-            else:
-                self.logger.warning(f"Could not create full-text index: {e}")
+            self.query_executor.create_index(name, query)
     
     def _create_price_range_nodes(self) -> None:
         """Create price range nodes"""
@@ -252,7 +214,7 @@ class PropertyLoader(BaseLoader):
             pr.created_at = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.default_batch_size)
+        created = self.query_executor.batch_execute(query, batch_data, self.loader_config.batch_size)
         self.load_result.price_range_nodes = created
         self.logger.info(f"  Created {created} price range nodes")
     
@@ -263,8 +225,6 @@ class PropertyLoader(BaseLoader):
         batch_data = []
         for feature_name in self.unique_features:
             feature_id = feature_name.lower().replace(' ', '_').replace('-', '_')
-            
-            # Categorize features (simplified categorization)
             category = self._categorize_feature(feature_name)
             
             batch_data.append({
@@ -281,7 +241,7 @@ class PropertyLoader(BaseLoader):
             f.created_at = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.feature_batch_size)
+        created = self.query_executor.batch_execute(query, batch_data, self.loader_config.feature_batch_size)
         self.load_result.feature_nodes = created
         self.load_result.unique_features = len(self.unique_features)
         self.logger.info(f"  Created {created} feature nodes")
@@ -332,18 +292,18 @@ class PropertyLoader(BaseLoader):
             pt.created_at = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.default_batch_size)
+        created = self.query_executor.batch_execute(query, batch_data, self.loader_config.batch_size)
         self.load_result.property_type_nodes = created
         self.load_result.unique_property_types = len(self.unique_property_types)
         self.logger.info(f"  Created {created} property type nodes")
     
-    def _create_property_nodes(self) -> int:
+    def _create_property_nodes(self, properties: List[Property]) -> int:
         """Create property nodes in database"""
-        self.logger.info(f"Creating {len(self.properties)} property nodes...")
+        self.logger.info(f"Creating {len(properties)} property nodes...")
         
         batch_data = []
-        for prop in self.properties:
-            # Extract address components - no isinstance needed anymore!
+        for prop in properties:
+            # Extract address components
             address_dict = {}
             if prop.address:
                 address_dict = {
@@ -354,10 +314,10 @@ class PropertyLoader(BaseLoader):
                     'zip': prop.address.zip
                 }
             
-            # Extract coordinates - simplified!
+            # Extract coordinates
             coords = prop.get_coordinates_dict()
             
-            # Extract property details - simplified!
+            # Extract property details
             details = {}
             if prop.property_details:
                 details = {
@@ -423,32 +383,31 @@ class PropertyLoader(BaseLoader):
             p.created_at = datetime()
         """
         
-        created = self.batch_execute(query, batch_data, batch_size=self.batch_config.property_batch_size)
+        created = self.query_executor.batch_execute(query, batch_data, self.loader_config.property_batch_size)
         self.logger.info(f"  Created {created} property nodes")
         return created
     
     def _create_geographic_relationships(self) -> None:
-        """Create relationships to neighborhoods, cities, and counties with optimized queries"""
+        """Create relationships to neighborhoods, cities, and counties"""
         self.logger.info("Creating geographic relationships...")
         
-        # Connect to neighborhoods - optimized with index hints and filtering
+        # Connect to neighborhoods
         query = """
         MATCH (p:Property)
         WHERE p.neighborhood_id IS NOT NULL 
           AND NOT EXISTS((p)-[:IN_NEIGHBORHOOD]->())
         WITH p
         MATCH (n:Neighborhood {neighborhood_id: p.neighborhood_id})
-        USING INDEX n:Neighborhood(neighborhood_id)
         MERGE (p)-[r:IN_NEIGHBORHOOD]->(n)
         SET r.created_at = datetime()
         RETURN count(r) as count
         """
-        result = self.execute_query(query)
+        result = self.query_executor.execute_write(query)
         neighborhood_count = result[0]['count'] if result else 0
         self.load_result.neighborhood_relationships = neighborhood_count
         self.logger.info(f"  Created {neighborhood_count} property->neighborhood relationships")
         
-        # Connect to cities - optimized with early filtering
+        # Connect to cities
         query = """
         MATCH (p:Property)
         WHERE p.city IS NOT NULL 
@@ -463,60 +422,19 @@ class PropertyLoader(BaseLoader):
         SET r.created_at = datetime()
         RETURN count(r) as count
         """
-        result = self.execute_query(query)
+        result = self.query_executor.execute_write(query)
         city_count = result[0]['count'] if result else 0
         self.load_result.city_relationships = city_count
         self.logger.info(f"  Created {city_count} property->city relationships")
-        
-        # Connect to counties - optimized with early filtering
-        query = """
-        MATCH (p:Property)
-        WHERE p.county IS NOT NULL 
-          AND NOT EXISTS((p)-[:IN_COUNTY]->())
-        WITH p, 
-             CASE
-                WHEN p.county CONTAINS 'County' THEN toLower(replace(p.county, ' ', '_'))
-                ELSE toLower(replace(p.county + ' County', ' ', '_'))
-             END as county_id
-        MATCH (c:County)
-        WHERE c.county_id = county_id 
-           OR toLower(c.county_name) = toLower(p.county) 
-           OR toLower(c.county_name) = toLower(p.county + ' County')
-        WITH p, c
-        ORDER BY c.county_id
-        LIMIT 1
-        MERGE (p)-[r:IN_COUNTY]->(c)
-        SET r.created_at = datetime()
-        RETURN count(r) as count
-        """
-        result = self.execute_query(query)
-        county_count = result[0]['count'] if result else 0
-        self.load_result.county_relationships = county_count
-        self.logger.info(f"  Created {county_count} property->county relationships")
-        
-        # Check for properties without neighborhoods
-        query = """
-        MATCH (p:Property)
-        WHERE NOT EXISTS((p)-[:IN_NEIGHBORHOOD]->(:Neighborhood))
-        RETURN count(p) as count
-        """
-        result = self.execute_query(query)
-        orphaned = result[0]['count'] if result else 0
-        if orphaned > 0:
-            self.load_result.properties_without_neighborhoods = orphaned
-            self.load_result.add_warning(f"{orphaned} properties could not be connected to neighborhoods")
     
-    def _create_feature_relationships(self) -> None:
+    def _create_feature_relationships(self, properties: List[Property]) -> None:
         """Create relationships between properties and features"""
         self.logger.info("Creating feature relationships...")
         
-        # Process in batches to avoid memory issues
-        # Optimized batch processing for feature relationships
-        total_relationships = 0
         relationships = []
         
         # Collect all property-feature pairs
-        for prop in self.properties:
+        for prop in properties:
             if not prop.features:
                 continue
             
@@ -527,26 +445,25 @@ class PropertyLoader(BaseLoader):
                     'feature_id': feature_id
                 })
         
-        # Create relationships in batches using UNWIND
+        # Create relationships in batches
         if relationships:
             batch_query = """
             UNWIND $batch AS rel
             MATCH (p:Property {listing_id: rel.listing_id})
-            USING INDEX p:Property(listing_id)
             MATCH (f:Feature {feature_id: rel.feature_id})
-            USING INDEX f:Feature(feature_id)
             MERGE (p)-[r:HAS_FEATURE]->(f)
             SET r.created_at = datetime()
             """
             
             batch_size = 500
+            total_created = 0
             for i in range(0, len(relationships), batch_size):
                 batch = relationships[i:i + batch_size]
-                self.execute_query(batch_query, {'batch': batch})
-                total_relationships += len(batch)
-        
-        self.load_result.feature_relationships = total_relationships
-        self.logger.info(f"  Created {total_relationships} property->feature relationships")
+                self.query_executor.execute_write(batch_query, {'batch': batch})
+                total_created += len(batch)
+            
+            self.load_result.feature_relationships = total_created
+            self.logger.info(f"  Created {total_created} property->feature relationships")
     
     def _create_type_and_price_relationships(self) -> None:
         """Create property type and price range relationships"""
@@ -562,7 +479,7 @@ class PropertyLoader(BaseLoader):
         SET r.created_at = datetime()
         RETURN count(r) as count
         """
-        result = self.execute_query(query)
+        result = self.query_executor.execute_write(query)
         type_count = result[0]['count'] if result else 0
         self.load_result.type_relationships = type_count
         self.logger.info(f"  Created {type_count} property->type relationships")
@@ -584,117 +501,28 @@ class PropertyLoader(BaseLoader):
         SET r.created_at = datetime()
         RETURN count(r) as count
         """
-        result = self.execute_query(query)
+        result = self.query_executor.execute_write(query)
         price_count = result[0]['count'] if result else 0
         self.load_result.price_range_relationships = price_count
         self.logger.info(f"  Created {price_count} property->price_range relationships")
     
-    def _calculate_statistics(self) -> None:
+    def _calculate_statistics(self, properties: List[Property]) -> None:
         """Calculate statistics for the load result"""
-        if self.properties:
-            total_features = sum(len(p.features) for p in self.properties if p.features)
-            self.load_result.avg_features_per_property = total_features / len(self.properties)
-    
-    def _create_wikipedia_property_relationships(self) -> None:
-        """Create direct RELEVANT_TO relationships between Wikipedia articles and properties"""
-        self.logger.info("Creating Wikipedia→Property relationships...")
-        
-        # Load neighborhood data to get Wikipedia metadata
-        neighborhoods = []
-        for path in [self.sf_path, self.pc_path]:
-            if path.exists():
-                with open(path) as f:
-                    data = json.load(f)
-                    for item in data:
-                        neighborhoods.append(item)
-        
-        total_created = 0
-        
-        # For each neighborhood with Wikipedia metadata
-        for neigh_data in neighborhoods:
-            if 'graph_metadata' not in neigh_data:
-                continue
-            
-            neighborhood_id = neigh_data['neighborhood_id']
-            graph_meta = neigh_data['graph_metadata']
-            
-            # Get all Wikipedia page IDs for this neighborhood
-            wiki_page_ids = []
-            
-            # Add primary Wikipedia article
-            if graph_meta.get('primary_wiki_article'):
-                wiki = graph_meta['primary_wiki_article']
-                wiki_page_ids.append({
-                    'page_id': wiki['page_id'],
-                    'confidence': wiki.get('confidence', 0.8),
-                    'rel_type': 'primary'
-                })
-            
-            # Add related Wikipedia articles
-            for wiki in graph_meta.get('related_wiki_articles', []):
-                wiki_page_ids.append({
-                    'page_id': wiki['page_id'],
-                    'confidence': wiki.get('confidence', 0.7),
-                    'rel_type': wiki.get('relationship', 'related')
-                })
-            
-            # Create relationships for each Wikipedia article to all properties in neighborhood
-            for wiki_info in wiki_page_ids:
-                query = """
-                MATCH (w:WikipediaArticle {page_id: $page_id})
-                MATCH (p:Property {neighborhood_id: $neighborhood_id})
-                MERGE (w)-[r:RELEVANT_TO]->(p)
-                SET r.confidence = $confidence,
-                    r.relationship_type = $rel_type,
-                    r.neighborhood_context = true,
-                    r.created_at = datetime()
-                RETURN count(r) as created
-                """
-                
-                result = self.execute_query(query, {
-                    'page_id': wiki_info['page_id'],
-                    'neighborhood_id': neighborhood_id,
-                    'confidence': wiki_info['confidence'],
-                    'rel_type': wiki_info['rel_type']
-                })
-                
-                if result:
-                    created = result[0]['created']
-                    total_created += created
-        
-        self.logger.info(f"  Created {total_created} Wikipedia→Property relationships")
-        self.load_result.wikipedia_property_relationships = total_created
+        if properties:
+            total_features = sum(len(p.features) for p in properties if p.features)
+            self.load_result.avg_features_per_property = total_features / len(properties)
     
     def _verify_integration(self) -> None:
         """Verify property integration"""
         self.logger.info("Verifying property integration...")
         
         # Count total nodes
-        property_count = self.count_nodes("Property")
-        feature_count = self.count_nodes("Feature")
-        type_count = self.count_nodes("PropertyType")
-        range_count = self.count_nodes("PriceRange")
+        property_count = self.query_executor.count_nodes("Property")
+        feature_count = self.query_executor.count_nodes("Feature")
+        type_count = self.query_executor.count_nodes("PropertyType")
+        range_count = self.query_executor.count_nodes("PriceRange")
         
         self.logger.info(f"  Total properties: {property_count}")
         self.logger.info(f"  Total features: {feature_count}")
         self.logger.info(f"  Total property types: {type_count}")
         self.logger.info(f"  Total price ranges: {range_count}")
-        
-        # Check connectivity
-        query = """
-        MATCH (p:Property)
-        OPTIONAL MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
-        OPTIONAL MATCH (p)-[:IN_CITY]->(c:City)
-        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
-        RETURN 
-            count(DISTINCT p) as total_properties,
-            count(DISTINCT n) as connected_neighborhoods,
-            count(DISTINCT c) as connected_cities,
-            count(DISTINCT f) as connected_features
-        """
-        result = self.execute_query(query)
-        if result:
-            stats = result[0]
-            self.logger.info(f"  Properties with neighborhoods: {stats['connected_neighborhoods']}")
-            self.logger.info(f"  Properties with cities: {stats['connected_cities']}")
-            self.logger.info(f"  Features in use: {stats['connected_features']}")

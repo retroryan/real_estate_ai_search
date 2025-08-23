@@ -6,7 +6,7 @@ All aggregations use typed enums and models.
 from typing import Dict, Any, List, Optional
 import structlog
 
-from ..indexer.enums import FieldName
+from indexer.enums import FieldName
 from .enums import AggregationName, PriceRange
 
 

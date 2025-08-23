@@ -22,9 +22,9 @@ embedding:
   dimension: 768
 
 data:
-  wikipedia_db: data/wikipedia/wikipedia.db
-  wikipedia_pages_dir: data/wikipedia/pages
-  properties_dir: real_estate_data
+  wikipedia_db: ../data/wikipedia/wikipedia.db
+  wikipedia_pages_dir: ../data/wikipedia/pages
+  properties_dir: ../real_estate_data
 
 chunking:
   chunk_size: 512

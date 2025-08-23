@@ -1,12 +1,13 @@
-"""Hybrid search combining vector similarity and graph relationships"""
+"""Hybrid search with constructor injection"""
+
+import logging
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from neo4j import Driver
 
-from .models import SearchConfig
-from .vector_manager import PropertyVectorManager
-from .embedding_pipeline import PropertyEmbeddingPipeline
-from .config_loader import get_search_config
+from src.core.query_executor import QueryExecutor
+from src.core.config import SearchConfig
+from src.vectors.embedding_pipeline import PropertyEmbeddingPipeline
+from src.vectors.vector_manager import PropertyVectorManager
 
 
 @dataclass
@@ -29,29 +30,29 @@ class SearchResult:
 
 
 class HybridPropertySearch:
-    """
-    Combines vector similarity with graph relationships for enhanced search.
-    Follows patterns from wiki_embed's query testing.
-    """
+    """Hybrid search with injected dependencies"""
     
     def __init__(
         self,
-        driver: Driver,
+        query_executor: QueryExecutor,
         embedding_pipeline: PropertyEmbeddingPipeline,
-        config: Optional[SearchConfig] = None
+        vector_manager: PropertyVectorManager,
+        config: SearchConfig
     ):
         """
-        Initialize hybrid search
+        Initialize hybrid search with all dependencies
         
         Args:
-            driver: Neo4j database driver
+            query_executor: Query executor for database operations
             embedding_pipeline: Pipeline for generating query embeddings
-            config: Search configuration (loads from file if not provided)
+            vector_manager: Manager for vector operations
+            config: Search configuration
         """
-        self.driver = driver
+        self.query_executor = query_executor
         self.embedding_pipeline = embedding_pipeline
-        self.vector_manager = embedding_pipeline.vector_manager
-        self.config = config or get_search_config()
+        self.vector_manager = vector_manager
+        self.config = config
+        self.logger = logging.getLogger(self.__class__.__name__)
     
     def search(
         self,
@@ -65,9 +66,9 @@ class HybridPropertySearch:
         
         Args:
             query: Natural language search query
-            filters: Optional filters (price_min, price_max, city, neighborhood, bedrooms, etc.)
-            top_k: Number of results to return (defaults to config.default_top_k)
-            use_graph_boost: Whether to boost scores using graph metrics (defaults to config.use_graph_boost)
+            filters: Optional filters
+            top_k: Number of results to return
+            use_graph_boost: Whether to boost scores using graph metrics
             
         Returns:
             List of SearchResult objects sorted by combined score
@@ -79,23 +80,20 @@ class HybridPropertySearch:
         # Generate query embedding
         query_embedding = self.embedding_pipeline.embed_model.get_text_embedding(query)
         
-        # Perform vector search (get extra results for filtering)
+        # Perform vector search
         vector_results = self.vector_manager.vector_search(
             query_embedding, 
             top_k=top_k * 3 if filters else top_k * 2,
-            min_score=self.config.min_similarity
+            min_score=self.config.min_similarity,
+            filters=filters
         )
         
         if not vector_results:
             return []
         
-        # Apply filters if provided
-        if filters:
-            vector_results = self._apply_filters(vector_results, filters)
-        
         # Enhance with graph data and calculate scores
         enhanced_results = []
-        for result in vector_results[:top_k * 2]:  # Process more than needed for graph boost
+        for result in vector_results[:top_k * 2]:
             # Get graph metrics
             graph_metrics = self._get_graph_metrics(result['listing_id'])
             
@@ -140,46 +138,8 @@ class HybridPropertySearch:
         enhanced_results.sort(key=lambda x: x.combined_score, reverse=True)
         return enhanced_results[:top_k]
     
-    def _apply_filters(self, results: List[Dict], filters: Dict[str, Any]) -> List[Dict]:
-        """Apply filters to search results"""
-        filtered = []
-        
-        for result in results:
-            # Price filters
-            if 'price_min' in filters and result.get('price', 0) < filters['price_min']:
-                continue
-            if 'price_max' in filters and result.get('price', float('inf')) > filters['price_max']:
-                continue
-            
-            # Location filters
-            if 'city' in filters and result.get('city', '').lower() != filters['city'].lower():
-                continue
-            if 'neighborhood' in filters and result.get('neighborhood', '').lower() != filters['neighborhood'].lower():
-                continue
-            
-            # Property detail filters
-            if 'bedrooms_min' in filters and (result.get('bedrooms') or 0) < filters['bedrooms_min']:
-                continue
-            if 'bathrooms_min' in filters and (result.get('bathrooms') or 0) < filters['bathrooms_min']:
-                continue
-            if 'square_feet_min' in filters and (result.get('square_feet') or 0) < filters['square_feet_min']:
-                continue
-            
-            filtered.append(result)
-        
-        return filtered
-    
     def _get_graph_metrics(self, listing_id: str) -> Dict[str, Any]:
-        """
-        Calculate graph-based importance metrics for a property
-        
-        Returns dict with:
-        - centrality_score: Overall importance in graph (0-1)
-        - similarity_connections: Number of similar properties
-        - neighborhood_connections: Number of properties in same neighborhood
-        - feature_connections: Number of properties sharing features
-        - feature_count: Number of features
-        """
+        """Calculate graph-based importance metrics for a property"""
         query = """
         MATCH (p:Property {listing_id: $listing_id})
         OPTIONAL MATCH (p)-[:SIMILAR_TO]-(similar:Property)
@@ -194,44 +154,44 @@ class HybridPropertySearch:
             COUNT(DISTINCT nearby) as proximity_connections
         """
         
-        with self.driver.session() as session:
-            result = session.run(query, listing_id=listing_id).single()
-            
-            if not result:
-                return {
-                    'centrality_score': 0.0,
-                    'similarity_connections': 0,
-                    'neighborhood_connections': 0,
-                    'feature_connections': 0,
-                    'feature_count': 0,
-                    'proximity_connections': 0
-                }
-            
-            # Calculate centrality score based on connections
-            # Normalize each metric and combine
-            similarity_score = min(result['similarity_connections'] / 10, 1.0)  # Cap at 10
-            neighborhood_score = min(result['neighborhood_connections'] / 50, 1.0)  # Cap at 50
-            feature_conn_score = min(result['feature_connections'] / 20, 1.0)  # Cap at 20
-            feature_count_score = min(result['feature_count'] / 15, 1.0)  # Cap at 15
-            proximity_score = min(result['proximity_connections'] / 30, 1.0)  # Cap at 30
-            
-            # Weighted combination - now using Phase 6 proximity data
-            centrality = (
-                similarity_score * 0.3 +        # Phase 6 similarity relationships
-                neighborhood_score * 0.15 +     # Neighborhood connections  
-                feature_conn_score * 0.15 +     # Feature sharing
-                feature_count_score * 0.2 +     # Feature richness
-                proximity_score * 0.2           # Phase 6 geographic proximity
-            )
-            
+        result = self.query_executor.execute_read(query, {'listing_id': listing_id})
+        
+        if not result or len(result) == 0:
             return {
-                'centrality_score': min(centrality, 1.0),
-                'similarity_connections': result['similarity_connections'],
-                'neighborhood_connections': result['neighborhood_connections'],
-                'feature_connections': result['feature_connections'],
-                'feature_count': result['feature_count'],
-                'proximity_connections': result['proximity_connections']
+                'centrality_score': 0.0,
+                'similarity_connections': 0,
+                'neighborhood_connections': 0,
+                'feature_connections': 0,
+                'feature_count': 0,
+                'proximity_connections': 0
             }
+        
+        data = result[0]
+        
+        # Calculate centrality score based on connections
+        similarity_score = min(data['similarity_connections'] / 10, 1.0)
+        neighborhood_score = min(data['neighborhood_connections'] / 50, 1.0)
+        feature_conn_score = min(data['feature_connections'] / 20, 1.0)
+        feature_count_score = min(data['feature_count'] / 15, 1.0)
+        proximity_score = min(data['proximity_connections'] / 30, 1.0)
+        
+        # Weighted combination
+        centrality = (
+            similarity_score * 0.3 +
+            neighborhood_score * 0.15 +
+            feature_conn_score * 0.15 +
+            feature_count_score * 0.2 +
+            proximity_score * 0.2
+        )
+        
+        return {
+            'centrality_score': min(centrality, 1.0),
+            'similarity_connections': data['similarity_connections'],
+            'neighborhood_connections': data['neighborhood_connections'],
+            'feature_connections': data['feature_connections'],
+            'feature_count': data['feature_count'],
+            'proximity_connections': data['proximity_connections']
+        }
     
     def _calculate_combined_score(
         self,
@@ -239,14 +199,7 @@ class HybridPropertySearch:
         graph_score: float,
         graph_metrics: Dict[str, Any]
     ) -> float:
-        """
-        Calculate combined score using vector similarity and graph metrics
-        
-        Uses weighted combination from config:
-        - vector_weight (default 0.6)
-        - graph_weight (default 0.2)
-        - features_weight (default 0.2)
-        """
+        """Calculate combined score using vector similarity and graph metrics"""
         # Feature richness score
         feature_score = min(graph_metrics['feature_count'] / 15, 1.0)
         
@@ -275,9 +228,12 @@ class HybridPropertySearch:
         LIMIT $limit
         """
         
-        with self.driver.session() as session:
-            results = session.run(query, listing_id=listing_id, limit=limit)
-            return [record['listing_id'] for record in results if record['listing_id']]
+        results = self.query_executor.execute_read(query, {
+            'listing_id': listing_id,
+            'limit': limit
+        })
+        
+        return [r['listing_id'] for r in results if r.get('listing_id')]
     
     def _get_property_features(self, listing_id: str) -> List[str]:
         """Get features of a property"""
@@ -287,6 +243,5 @@ class HybridPropertySearch:
         ORDER BY f.name
         """
         
-        with self.driver.session() as session:
-            results = session.run(query, listing_id=listing_id)
-            return [record['feature'] for record in results if record['feature']]
+        results = self.query_executor.execute_read(query, {'listing_id': listing_id})
+        return [r['feature'] for r in results if r.get('feature')]

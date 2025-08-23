@@ -1,6 +1,25 @@
 # Configuration for property vector embeddings
 # Adapted from wiki_embed patterns for consistency
 
+# Database configuration
+database:
+  uri: ${NEO4J_URI:-bolt://localhost:7687}
+  user: ${NEO4J_USERNAME:-neo4j}
+  password: ${NEO4J_PASSWORD:-password}
+  database: ${NEO4J_DATABASE:-neo4j}
+
+# Data paths
+property:
+  data_path: ../real_estate_data
+
+geographic:
+  data_path: ../real_estate_data
+
+wikipedia:
+  data_path: ../data/wikipedia
+  pages_subdir: pages
+  database_file: wikipedia.db
+
 embedding:
   provider: ollama  # Options: ollama, openai, gemini
   

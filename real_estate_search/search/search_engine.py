@@ -9,7 +9,7 @@ import logging
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ApiError
 
-from ..config.settings import Settings
+from config.settings import Settings
 from .models import SearchRequest, SearchResponse, Aggregation
 from .enums import QueryType
 
@@ -70,7 +70,7 @@ class SearchEngine:
         """
         import time
         from .models import SearchResponse, PropertyHit
-        from ..indexer.models import Property, Address, Neighborhood
+        from indexer.models import Property, Address, Neighborhood
         
         start_time = time.time()
         
@@ -344,7 +344,7 @@ class SearchEngine:
     def _build_response(self, es_response: Dict[str, Any], request: SearchRequest, took_ms: int) -> SearchResponse:
         """Convert ES response to SearchResponse. NO VARIATIONS."""
         from .models import SearchResponse, PropertyHit
-        from ..indexer.models import Property, Address, Neighborhood
+        from indexer.models import Property, Address, Neighborhood
         
         hits = []
         for hit in es_response.get('hits', {}).get('hits', []):
@@ -356,7 +356,7 @@ class SearchEngine:
             if address_data:
                 # Handle nested location data
                 if 'location' in address_data and isinstance(address_data['location'], dict):
-                    from ..indexer.models import GeoLocation
+                    from indexer.models import GeoLocation
                     address_data['location'] = GeoLocation(**address_data['location'])
                 address = Address(**address_data)
                 property_data['address'] = address

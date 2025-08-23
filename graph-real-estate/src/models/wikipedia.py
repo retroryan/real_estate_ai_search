@@ -104,6 +104,7 @@ class WikipediaStats(BaseModel):
 class WikipediaLoadResult(BaseModel):
     """Result of Wikipedia loading operation"""
     articles_loaded: int = 0
+    summaries_loaded: int = 0
     nodes_created: int = 0
     topics_extracted: int = 0
     relationships_created: Dict[str, int] = Field(default_factory=lambda: {
