@@ -43,35 +43,74 @@ pip install -r requirements.txt
 curl -u elastic:elasticpassword localhost:9200
 ```
 
-### Setup and Index Data
+## Usage
+
+The application now uses a unified `main.py` entry point with three operation modes:
+
+### 1. Full Demo Mode (Recommended)
+
+Run the complete demonstration including indexing and searches:
 
 ```bash
 # From the real_estate_search directory:
-# Create index and load properties with Wikipedia enrichment
-python scripts/setup_index.py --recreate
+python main.py --mode demo
 
-# Or with test data only (3 properties)
-python scripts/setup_index.py --recreate --test-data
-
-# Output:
-# ✅ Index created
-# 📄 Loaded 420 properties  
-# ✅ Indexed 420/420 properties
+# This will:
+# 1. Create/recreate the property index
+# 2. Ingest all properties with Wikipedia enrichment
+# 3. Run demo searches showing different capabilities
 ```
 
-### Run Demo Searches
+### 2. Data Ingestion Mode
+
+Index properties with Wikipedia enrichment:
 
 ```bash
-# From the real_estate_search directory:
-# Run the full demo showing all search modes
-python scripts/demo_search.py
+# Ingest data (preserves existing index)
+python main.py --mode ingest
 
-# Demos include:
-# 1. Park City Ski Resort Properties (97 results)
-# 2. San Francisco Cultural District (87 results)
-# 3. Lifestyle-Based Search (117 results)
-# 4. POI Proximity Search
-# 5. Investment Properties (24 results)
+# Force recreate index before ingestion
+python main.py --mode ingest --recreate
+
+# Output example:
+# ✅ Index created/updated
+# 📄 Ingestion complete: 420 properties indexed, 0 failed
+```
+
+### 3. Search Mode
+
+Execute individual search queries:
+
+```bash
+# Search for specific properties
+python main.py --mode search --query "ski resort properties"
+python main.py --mode search --query "family home near parks"
+python main.py --mode search --query "downtown condo with amenities"
+
+# Results show top 5 matches with location context
+```
+
+### Configuration Options
+
+```bash
+# Use custom configuration file
+python main.py --config custom-config.yaml --mode demo
+
+# Set logging level
+python main.py --mode demo --log-level DEBUG
+
+# Get help
+python main.py --help
+```
+
+### Legacy Scripts (Still Available)
+
+```bash
+# Direct index setup (legacy)
+python scripts/setup_index.py --recreate
+
+# Direct demo searches (legacy)
+python scripts/demo_search.py
 ```
 
 ## Data Overview
@@ -96,23 +135,39 @@ python scripts/demo_search.py
 
 ### Core Components
 
+The application has a unified main entry point with clean modular structure:
+
 ```
 real_estate_search/
-├── indexer/          # Elasticsearch indexing with Wikipedia enrichment
-│   ├── property_indexer.py   # Main indexing logic
-│   ├── mappings.py          # Elasticsearch field mappings
-│   └── models.py            # Pydantic data models
+├── main.py           # Unified CLI entry point with 3 modes
+├── container.py      # Dependency injection container
+├── config/           # Configuration management
+│   ├── config.py    # Configuration classes
+│   └── settings.py  # Settings validation
+├── services/         # Business logic layer
+│   ├── indexing_service.py    # Property indexing with enrichment
+│   ├── search_service.py      # Search operations
+│   └── enrichment_service.py  # Wikipedia data enrichment
+├── repositories/     # Data access layer  
+│   ├── property_repository.py    # Property data loading
+│   └── wikipedia_repository.py  # Wikipedia database queries
+├── ingestion/        # Data ingestion orchestration
+│   └── orchestrator.py         # Coordinates ingestion pipeline
+├── indexer/          # Elasticsearch indexing
+│   ├── property_indexer.py    # Core indexing logic
+│   ├── mappings.py           # Elasticsearch field mappings
+│   └── models.py             # Pydantic data models
 ├── search/           # Search implementation
-│   ├── search_engine.py    # Search with multiple modes
-│   ├── models.py           # Request/response models
-│   └── enums.py            # Search types and operators
+│   ├── search_engine.py      # Multi-mode search engine
+│   ├── models.py            # Request/response models
+│   └── query_builder.py     # Elasticsearch query construction
 ├── wikipedia/        # Wikipedia integration
-│   ├── enricher.py         # Property enrichment with Wikipedia data
-│   ├── extractor.py        # Wikipedia database queries
-│   └── models.py           # Wikipedia data models
-└── scripts/          # Demo and setup scripts
-    ├── setup_index.py      # Index creation and data loading
-    └── demo_search.py      # Search demonstrations
+│   ├── enricher.py          # Property enrichment logic
+│   ├── extractor.py         # Data extraction from Wikipedia
+│   └── models.py            # Wikipedia data models
+└── scripts/          # Legacy scripts (still functional)
+    ├── setup_index.py       # Direct index setup
+    └── demo_search.py       # Direct search demos
 ```
 
 ### Data Flow
@@ -127,55 +182,21 @@ real_estate_search/
 
 ## Search Examples
 
-### Basic Property Search
+### Command Line Usage
 
-```python
-from real_estate_search.search.search_engine import SearchEngine
-from real_estate_search.search.models import SearchRequest, SearchFilters
+```bash
+# Demo mode - runs complete demonstration
+python main.py --mode demo
 
-engine = SearchEngine()
+# Search mode - individual queries  
+python main.py --mode search --query "luxury ski resort properties"
+python main.py --mode search --query "family home near parks"
+python main.py --mode search --query "downtown condo with cultural attractions"
 
-# Search luxury homes in Park City
-request = SearchRequest(
-    query_text="luxury ski resort",
-    filters=SearchFilters(
-        cities=["park city"],
-        min_price=1000000
-    ),
-    size=10
-)
-
-results = engine.search(request)
-print(f"Found {results.total} properties")
+# Ingestion mode - index data
+python main.py --mode ingest --recreate
 ```
 
-### Lifestyle Search
-
-```python
-# Find family-friendly properties near parks
-request = SearchRequest(
-    query_text="park recreation family",
-    search_mode="lifestyle",
-    filters=SearchFilters(min_bedrooms=3),
-    size=10
-)
-
-results = engine.search(request)
-```
-
-### Cultural District Search
-
-```python
-# Properties near museums and cultural venues
-request = SearchRequest(
-    query_text="museum arts cultural",
-    search_mode="cultural",
-    filters=SearchFilters(cities=["san francisco"]),
-    size=10
-)
-
-results = engine.search(request)
-```
 
 ## Elasticsearch Mapping
 
@@ -272,9 +293,10 @@ engine = SearchEngine()
 ## Development Notes
 
 This is a **high-quality demo** implementation focusing on:
-- Clean, modular code with Pydantic models
+- Clean, modular code with Pydantic models  
 - Rich Wikipedia integration for location context
 - Multiple search modes demonstrating different use cases
+- Single `main.py` entry point with 3 operation modes
 - No over-engineering (removed caching, scoring complexity)
 - Single index, no sharding needed for 420 documents
 
