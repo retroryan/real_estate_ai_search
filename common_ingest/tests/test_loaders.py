@@ -2,15 +2,12 @@
 Test data loaders with enrichment functionality.
 """
 
-import sys
+import pytest
 import tempfile
 import json
 import sqlite3
 from pathlib import Path
 from decimal import Decimal
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from common_ingest.loaders.property_loader import PropertyLoader
 from common_ingest.loaders.neighborhood_loader import NeighborhoodLoader
@@ -93,8 +90,6 @@ def test_property_loader():
         assert prop.square_feet == 2500
         
         logger.info("✅ PropertyLoader test passed")
-    
-    return True
 
 
 def test_neighborhood_loader():
@@ -153,8 +148,6 @@ def test_neighborhood_loader():
         assert neighborhood.center_point.lon == -122.4148
         
         logger.info("✅ NeighborhoodLoader test passed")
-    
-    return True
 
 
 def test_wikipedia_loader():
@@ -259,8 +252,6 @@ def test_wikipedia_loader():
         assert summary.key_topics == ["olympics", "resort", "skiing"], f"Key topics not normalized: {summary.key_topics}"
         
         logger.info("✅ WikipediaLoader test passed")
-    
-    return True
 
 
 def test_city_filtering():
@@ -330,8 +321,6 @@ def test_city_filtering():
         assert len(all_properties) == 2, f"Expected 2 properties total, got {len(all_properties)}"
         
         logger.info("✅ City filtering test passed")
-    
-    return True
 
 
 def test_location_filtering_wikipedia():
@@ -424,47 +413,3 @@ def test_location_filtering_wikipedia():
         assert ut_summaries[0].best_state == "Utah"  # Should be expanded
         
         logger.info("✅ Wikipedia location filtering test passed")
-    
-    return True
-
-
-def run_all_tests():
-    """Run all loader tests."""
-    logger.info("=" * 60)
-    logger.info("Running Loader Tests")
-    logger.info("=" * 60)
-    
-    tests = [
-        test_property_loader,
-        test_neighborhood_loader,
-        test_wikipedia_loader,
-        test_city_filtering,
-        test_location_filtering_wikipedia
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            logger.error(f"❌ Test {test.__name__} failed: {e}")
-            failed += 1
-    
-    logger.info("=" * 60)
-    logger.info(f"Test Results: {passed} passed, {failed} failed")
-    logger.info("=" * 60)
-    
-    if failed == 0:
-        logger.info("🎉 All loader tests passed!")
-    else:
-        logger.error(f"⚠️ {failed} tests failed")
-    
-    return failed == 0
-
-
-if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)

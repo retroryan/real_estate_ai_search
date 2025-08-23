@@ -99,28 +99,18 @@ class NeighborhoodLoader(BaseLoader[EnrichedNeighborhood]):
         # Normalize city name for matching
         city_lower = city.lower()
         
-        if "san francisco" in city_lower or "sf" in city_lower:
-            if self.sf_neighborhoods_file.exists():
-                neighborhoods = self._load_neighborhoods_from_file(
-                    self.sf_neighborhoods_file,
-                    default_city="San Francisco",
-                    default_state="CA"
-                )
-                logger.info(f"Loaded {len(neighborhoods)} neighborhoods from San Francisco")
+        # Load all neighborhoods first, then filter by city
+        all_neighborhoods = self.load_all()
         
-        elif "park city" in city_lower or "pc" in city_lower:
-            if self.pc_neighborhoods_file.exists():
-                neighborhoods = self._load_neighborhoods_from_file(
-                    self.pc_neighborhoods_file,
-                    default_city="Park City",
-                    default_state="UT"
-                )
-                logger.info(f"Loaded {len(neighborhoods)} neighborhoods from Park City")
+        # Filter neighborhoods by city (case-insensitive)
+        filtered_neighborhoods = [
+            nbhd for nbhd in all_neighborhoods
+            if nbhd.city.lower() == city_lower
+        ]
         
-        else:
-            logger.warning(f"Unknown city filter: {city}")
+        logger.info(f"Filtered {len(filtered_neighborhoods)} neighborhoods for city '{city}' from total {len(all_neighborhoods)}")
         
-        return neighborhoods
+        return filtered_neighborhoods
     
     def _load_neighborhoods_from_file(
         self, 

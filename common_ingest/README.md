@@ -104,18 +104,43 @@ All API responses follow a consistent structure:
 
 ### Running Tests
 
+#### Unit Tests (Using pytest)
 ```bash
-# Run all tests
-python common_ingest/tests/test_models.py
-python common_ingest/tests/test_loaders.py
-python common_ingest/tests/test_enrichers.py
+# Run all unit tests
+python -m pytest common_ingest/tests/ -v
 
-# Or run specific test suites
-cd common_ingest
-python tests/test_models.py    # Test Pydantic models
-python tests/test_loaders.py   # Test data loaders
-python tests/test_enrichers.py # Test enrichment utilities
+# Run specific test modules
+python -m pytest common_ingest/tests/test_models.py -v
+python -m pytest common_ingest/tests/test_loaders.py -v
+python -m pytest common_ingest/tests/test_enrichers.py -v
+
+# Run unit tests with coverage
+python -m pytest common_ingest/tests/ --cov=common_ingest --cov-report=term-missing
 ```
+
+#### Integration Tests
+```bash
+# Run all integration tests
+python -m pytest common_ingest/integration_tests/ -v
+
+# Run specific integration test suites
+python -m pytest common_ingest/integration_tests/test_health_endpoints.py -v
+python -m pytest common_ingest/integration_tests/test_property_endpoints.py -v
+python -m pytest common_ingest/integration_tests/test_neighborhood_endpoints.py -v
+python -m pytest common_ingest/integration_tests/test_api_comprehensive.py -v
+
+# Run integration tests with coverage
+python -m pytest common_ingest/integration_tests/ --cov=common_ingest.api
+```
+
+The integration tests cover:
+- **Health Endpoints**: API health and status checking
+- **Property Endpoints**: CRUD operations, pagination, filtering, validation
+- **Neighborhood Endpoints**: CRUD operations, pagination, filtering, validation  
+- **Comprehensive API**: Cross-endpoint consistency, error handling, documentation
+- **Real Data Testing**: Uses actual property and neighborhood data from JSON files
+- **Error Response Testing**: Validates structured error responses and correlation IDs
+- **Performance Testing**: Response time validation and resource usage
 
 ### Data Models
 
@@ -179,7 +204,18 @@ All data structures use Pydantic for:
 ```
 common_ingest/
 ├── __init__.py           # Module exports
-├── models/               # Pydantic data models
+├── __main__.py          # Data loading entry point (python -m common_ingest)
+├── api_main.py          # FastAPI server entry point
+├── api/                 # REST API implementation
+│   ├── app.py           # FastAPI application factory
+│   ├── dependencies.py  # Dependency injection for FastAPI
+│   ├── middleware.py    # Custom middleware (logging, error handling)
+│   ├── routers/         # API route handlers
+│   │   └── properties.py
+│   └── schemas/         # API request/response models
+│       ├── requests.py  # Request parameters and filters
+│       └── responses.py # Response models and pagination
+├── models/              # Pydantic data models
 │   ├── base.py          # Base model classes
 │   ├── property.py      # Property and neighborhood models
 │   ├── wikipedia.py     # Wikipedia article models
@@ -195,26 +231,18 @@ common_ingest/
 ├── utils/               # Utility functions
 │   ├── config.py        # Configuration management
 │   └── logger.py        # Logging setup
-└── tests/               # Test suite
-    ├── test_models.py   # Model validation tests
-    ├── test_loaders.py  # Loader functionality tests
-    └── test_enrichers.py # Enrichment utilities tests
+├── tests/               # Unit test suite
+│   ├── test_models.py   # Model validation tests
+│   ├── test_loaders.py  # Loader functionality tests
+│   └── test_enrichers.py # Enrichment utilities tests
+└── integration_tests/   # Integration test suite
+    ├── conftest.py      # Test fixtures and configuration
+    ├── test_health_endpoints.py
+    ├── test_property_endpoints.py
+    ├── test_neighborhood_endpoints.py
+    └── test_api_comprehensive.py
 ```
 
-## Running Tests
-
-```bash
-# Run all tests
-python -m pytest common_ingest/tests/
-
-# Run specific test module
-python common_ingest/tests/test_models.py
-python common_ingest/tests/test_loaders.py
-python common_ingest/tests/test_enrichers.py
-
-# Run with verbose output
-python common_ingest/tests/test_models.py -v
-```
 
 ## API Reference
 
@@ -327,6 +355,29 @@ data_paths:
   property_data_dir: "real_estate_data"
   wikipedia_db_path: "data/wikipedia/wikipedia.db"
 
+# FastAPI server configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  debug: false
+  title: "Common Ingest API"
+  description: "REST API for loading and accessing enriched property and Wikipedia data"
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+  openapi_url: "/openapi.json"
+  cors:
+    allow_origins: ["*"]
+    allow_credentials: true
+    allow_methods: ["GET", "POST", "PUT", "DELETE"]
+    allow_headers: ["*"]
+
+# ChromaDB configuration for future embedding support
+chromadb:
+  host: "localhost"
+  port: 8001  # Changed to avoid conflict with API server
+  persist_directory: "./data/common_embeddings"
+
 # Data enrichment settings
 enrichment:
   city_abbreviations:
@@ -348,6 +399,7 @@ from common_ingest.utils.config import get_settings
 settings = get_settings()
 print(f"Module version: {settings.metadata.version}")
 print(f"Data path: {settings.data_paths.get_property_data_path()}")
+print(f"API server: {settings.api.host}:{settings.api.port}")
 print(f"Log level: {settings.logging.level}")
 print(f"Batch size: {settings.processing.batch_size}")
 ```

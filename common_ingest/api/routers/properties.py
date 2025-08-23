@@ -148,6 +148,9 @@ async def get_properties(
             links=links
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 for invalid page)
+        raise
     except Exception as e:
         logger.error(
             f"Failed to load properties: {str(e)}",
@@ -306,6 +309,9 @@ async def get_neighborhoods(
             links=links
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 for invalid page)
+        raise
     except Exception as e:
         logger.error(
             f"Failed to load neighborhoods: {str(e)}",

@@ -102,28 +102,18 @@ class PropertyLoader(BaseLoader[EnrichedProperty]):
         # Normalize city name for matching
         city_lower = city.lower()
         
-        if "san francisco" in city_lower or "sf" in city_lower:
-            if self.sf_properties_file.exists():
-                properties = self._load_properties_from_file(
-                    self.sf_properties_file,
-                    default_city="San Francisco",
-                    default_state="CA"
-                )
-                logger.info(f"Loaded {len(properties)} properties from San Francisco")
+        # Load all properties first, then filter by city
+        all_properties = self.load_all()
         
-        elif "park city" in city_lower or "pc" in city_lower:
-            if self.pc_properties_file.exists():
-                properties = self._load_properties_from_file(
-                    self.pc_properties_file,
-                    default_city="Park City",
-                    default_state="UT"
-                )
-                logger.info(f"Loaded {len(properties)} properties from Park City")
+        # Filter properties by city (case-insensitive)
+        filtered_properties = [
+            prop for prop in all_properties
+            if prop.address.city.lower() == city_lower
+        ]
         
-        else:
-            logger.warning(f"Unknown city filter: {city}")
+        logger.info(f"Filtered {len(filtered_properties)} properties for city '{city}' from total {len(all_properties)}")
         
-        return properties
+        return filtered_properties
     
     def _load_properties_from_file(
         self, 

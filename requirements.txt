@@ -12,6 +12,10 @@ pyyaml==6.0.1
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
+# Testing dependencies
+pytest>=7.4.0
+httpx>=0.25.0  # Required for FastAPI TestClient
+
 # Vector store dependencies
 elasticsearch>=8.0.0
 

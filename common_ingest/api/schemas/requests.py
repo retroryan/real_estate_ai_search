@@ -75,3 +75,74 @@ class NeighborhoodFilter(BaseModel):
         default=False,
         description="Include embedding data in response"
     )
+
+
+class WikipediaArticleFilter(BaseModel):
+    """
+    Filter parameters for Wikipedia article endpoints.
+    
+    Allows filtering articles by location, relevance, and sorting options.
+    """
+    
+    city: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        description="Filter by city name (case-insensitive)"
+    )
+    state: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        description="Filter by state name (case-insensitive)"
+    )
+    relevance_min: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Minimum relevance score (0.0 to 1.0)"
+    )
+    sort_by: Optional[str] = Field(
+        default="relevance",
+        regex="^(relevance|title|page_id)$",
+        description="Sort articles by: relevance, title, or page_id"
+    )
+    include_embeddings: bool = Field(
+        default=False,
+        description="Include embedding data in response"
+    )
+
+
+class WikipediaSummaryFilter(BaseModel):
+    """
+    Filter parameters for Wikipedia summary endpoints.
+    
+    Allows filtering summaries by location and confidence thresholds.
+    """
+    
+    city: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        description="Filter by city name (case-insensitive)"
+    )
+    state: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+        description="Filter by state name (case-insensitive)"
+    )
+    confidence_min: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence score (0.0 to 1.0)"
+    )
+    include_key_topics: bool = Field(
+        default=True,
+        description="Include key topics in response"
+    )
+    include_embeddings: bool = Field(
+        default=False,
+        description="Include embedding data in response"
+    )

@@ -76,7 +76,7 @@ class ChromaDBConfig(BaseModel):
         description="ChromaDB host"
     )
     port: int = Field(
-        default=8000,
+        default=8001,
         description="ChromaDB port"
     )
     persist_directory: Optional[Path] = Field(
@@ -125,6 +125,76 @@ class ChromaDBConfig(BaseModel):
         model = model or self.default_embedding_model
         model_safe = model.replace("-", "_").replace(".", "_")
         return self.neighborhood_collection_pattern.format(model=model_safe, version=version)
+
+
+class CORSConfig(BaseModel):
+    """CORS configuration for FastAPI."""
+    
+    allow_origins: List[str] = Field(
+        default=["*"],
+        description="List of allowed origins for CORS"
+    )
+    allow_credentials: bool = Field(
+        default=True,
+        description="Allow credentials in CORS requests"
+    )
+    allow_methods: List[str] = Field(
+        default=["GET", "POST", "PUT", "DELETE"],
+        description="List of allowed HTTP methods"
+    )
+    allow_headers: List[str] = Field(
+        default=["*"],
+        description="List of allowed headers"
+    )
+
+
+class APIConfig(BaseModel):
+    """Configuration for FastAPI server."""
+    
+    host: str = Field(
+        default="0.0.0.0",
+        description="Server host address"
+    )
+    port: int = Field(
+        default=8000,
+        description="Server port number"
+    )
+    reload: bool = Field(
+        default=True,
+        description="Enable auto-reload in development"
+    )
+    debug: bool = Field(
+        default=False,
+        description="Enable debug mode"
+    )
+    
+    # API documentation settings
+    title: str = Field(
+        default="Common Ingest API",
+        description="API title"
+    )
+    description: str = Field(
+        default="REST API for loading and accessing enriched property and Wikipedia data",
+        description="API description"
+    )
+    docs_url: str = Field(
+        default="/docs",
+        description="URL for Swagger UI documentation"
+    )
+    redoc_url: str = Field(
+        default="/redoc",
+        description="URL for ReDoc documentation"
+    )
+    openapi_url: str = Field(
+        default="/openapi.json",
+        description="URL for OpenAPI schema"
+    )
+    
+    # CORS configuration
+    cors: CORSConfig = Field(
+        default_factory=CORSConfig,
+        description="CORS configuration"
+    )
 
 
 class EnrichmentConfig(BaseModel):
@@ -248,6 +318,10 @@ class Settings(BaseModel):
     data_paths: DataPaths = Field(
         default_factory=DataPaths,
         description="Data source paths configuration"
+    )
+    api: APIConfig = Field(
+        default_factory=APIConfig,
+        description="FastAPI server configuration"
     )
     chromadb: ChromaDBConfig = Field(
         default_factory=ChromaDBConfig,

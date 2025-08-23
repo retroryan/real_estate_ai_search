@@ -2,11 +2,7 @@
 Test enrichment utilities.
 """
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import pytest
 
 from common_ingest.enrichers.address_utils import (
     expand_city_name,
@@ -43,7 +39,6 @@ def test_expand_city_name():
     assert expand_city_name("Unknown City") == "Unknown City"
     
     logger.info("✅ City name expansion test passed")
-    return True
 
 
 def test_expand_state_code():
@@ -67,7 +62,6 @@ def test_expand_state_code():
     assert expand_state_code("Unknown") == "Unknown"
     
     logger.info("✅ State code expansion test passed")
-    return True
 
 
 def test_normalize_address():
@@ -102,7 +96,6 @@ def test_normalize_address():
     assert normalize_address(None) == None
     
     logger.info("✅ Address normalization test passed")
-    return True
 
 
 def test_validate_coordinates():
@@ -135,7 +128,6 @@ def test_validate_coordinates():
     assert validate_coordinates("invalid", "0") == False
     
     logger.info("✅ Coordinate validation test passed")
-    return True
 
 
 def test_normalize_feature_list():
@@ -172,7 +164,6 @@ def test_normalize_feature_list():
     assert None not in normalized3
     
     logger.info("✅ Feature list normalization test passed")
-    return True
 
 
 def test_extract_features_from_description():
@@ -216,7 +207,6 @@ def test_extract_features_from_description():
     assert "fireplace" in features2
     
     logger.info("✅ Feature extraction test passed")
-    return True
 
 
 def test_merge_feature_lists():
@@ -242,48 +232,5 @@ def test_merge_feature_lists():
     assert merge_feature_lists([], None, []) == []
     
     logger.info("✅ Feature list merging test passed")
-    return True
 
 
-def run_all_tests():
-    """Run all enricher tests."""
-    logger.info("=" * 60)
-    logger.info("Running Enricher Tests")
-    logger.info("=" * 60)
-    
-    tests = [
-        test_expand_city_name,
-        test_expand_state_code,
-        test_normalize_address,
-        test_validate_coordinates,
-        test_normalize_feature_list,
-        test_extract_features_from_description,
-        test_merge_feature_lists
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            logger.error(f"❌ Test {test.__name__} failed: {e}")
-            failed += 1
-    
-    logger.info("=" * 60)
-    logger.info(f"Test Results: {passed} passed, {failed} failed")
-    logger.info("=" * 60)
-    
-    if failed == 0:
-        logger.info("🎉 All enricher tests passed!")
-    else:
-        logger.error(f"⚠️ {failed} tests failed")
-    
-    return failed == 0
-
-
-if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)

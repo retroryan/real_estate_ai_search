@@ -9,6 +9,7 @@ from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 
 from ...models.property import EnrichedProperty, EnrichedNeighborhood
+from ...models.wikipedia import EnrichedWikipediaArticle, WikipediaSummary
 
 
 class ResponseMetadata(BaseModel):
@@ -137,3 +138,55 @@ class ErrorResponse(BaseModel):
                 }
             }
         }
+
+
+class WikipediaArticleResponse(BaseModel):
+    """
+    Single Wikipedia article response.
+    
+    Wraps an EnrichedWikipediaArticle with additional API metadata.
+    """
+    
+    data: EnrichedWikipediaArticle = Field(description="Enriched Wikipedia article data")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the article"
+    )
+
+
+class WikipediaArticleListResponse(BaseModel):
+    """
+    Wikipedia article list response with pagination.
+    
+    Provides paginated list of Wikipedia articles with metadata and navigation links.
+    """
+    
+    data: List[EnrichedWikipediaArticle] = Field(description="List of enriched Wikipedia articles")
+    metadata: ResponseMetadata = Field(description="Response metadata and pagination info")
+    links: Optional[ResponseLinks] = Field(default=None, description="Pagination navigation links")
+
+
+class WikipediaSummaryResponse(BaseModel):
+    """
+    Single Wikipedia summary response.
+    
+    Wraps a WikipediaSummary with additional API metadata.
+    """
+    
+    data: WikipediaSummary = Field(description="Wikipedia summary data")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the summary"
+    )
+
+
+class WikipediaSummaryListResponse(BaseModel):
+    """
+    Wikipedia summary list response with pagination.
+    
+    Provides paginated list of Wikipedia summaries with metadata and navigation links.
+    """
+    
+    data: List[WikipediaSummary] = Field(description="List of Wikipedia summaries")
+    metadata: ResponseMetadata = Field(description="Response metadata and pagination info")
+    links: Optional[ResponseLinks] = Field(default=None, description="Pagination navigation links")

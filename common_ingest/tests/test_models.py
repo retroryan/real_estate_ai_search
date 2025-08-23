@@ -2,14 +2,10 @@
 Test Pydantic models and data validation.
 """
 
-import sys
-from pathlib import Path
+import pytest
 from decimal import Decimal
 from datetime import datetime
 import uuid
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from common_ingest.models.base import BaseEnrichedModel, generate_uuid
 from common_ingest.models.property import (
@@ -47,33 +43,20 @@ def test_geo_location_model():
     assert loc.lon == -122.4194
     
     # Test latitude bounds
-    try:
+    with pytest.raises(ValueError):
         GeoLocation(lat=91, lon=0)
-        assert False, "Should have raised validation error for lat > 90"
-    except ValueError:
-        pass
     
-    try:
+    with pytest.raises(ValueError):
         GeoLocation(lat=-91, lon=0)
-        assert False, "Should have raised validation error for lat < -90"
-    except ValueError:
-        pass
     
     # Test longitude bounds
-    try:
+    with pytest.raises(ValueError):
         GeoLocation(lat=0, lon=181)
-        assert False, "Should have raised validation error for lon > 180"
-    except ValueError:
-        pass
     
-    try:
+    with pytest.raises(ValueError):
         GeoLocation(lat=0, lon=-181)
-        assert False, "Should have raised validation error for lon < -180"
-    except ValueError:
-        pass
     
     logger.info("✅ GeoLocation model test passed")
-    return True
 
 
 def test_enriched_address_model():
@@ -104,7 +87,6 @@ def test_enriched_address_model():
     assert address2.coordinates is None
     
     logger.info("✅ EnrichedAddress model test passed")
-    return True
 
 
 def test_enriched_property_model():
@@ -153,7 +135,6 @@ def test_enriched_property_model():
     assert isinstance(uuid.UUID(prop.embedding_id), uuid.UUID)
     
     logger.info("✅ EnrichedProperty model test passed")
-    return True
 
 
 def test_enriched_neighborhood_model():
@@ -191,7 +172,6 @@ def test_enriched_neighborhood_model():
     assert neighborhood.embedding_id is not None
     
     logger.info("✅ EnrichedNeighborhood model test passed")
-    return True
 
 
 def test_wikipedia_article_model():
@@ -226,7 +206,6 @@ def test_wikipedia_article_model():
     assert article.embedding_id is not None
     
     logger.info("✅ EnrichedWikipediaArticle model test passed")
-    return True
 
 
 def test_wikipedia_summary_model():
@@ -265,7 +244,6 @@ def test_wikipedia_summary_model():
     assert "culture" in summary2.key_topics or "Culture" in summary2.key_topics
     
     logger.info("✅ WikipediaSummary model test passed")
-    return True
 
 
 def test_embedding_models():
@@ -313,7 +291,6 @@ def test_embedding_models():
     assert wiki_embedding.embedding_id == "wiki_emb_123"
     
     logger.info("✅ Embedding models test passed")
-    return True
 
 
 def test_property_type_enum():
@@ -333,7 +310,6 @@ def test_property_type_enum():
     assert PropertyType("condo") == PropertyType.CONDO
     
     logger.info("✅ PropertyType enum test passed")
-    return True
 
 
 def test_property_status_enum():
@@ -350,50 +326,3 @@ def test_property_status_enum():
     assert PropertyStatus("sold") == PropertyStatus.SOLD
     
     logger.info("✅ PropertyStatus enum test passed")
-    return True
-
-
-def run_all_tests():
-    """Run all model tests."""
-    logger.info("=" * 60)
-    logger.info("Running Model Tests")
-    logger.info("=" * 60)
-    
-    tests = [
-        test_geo_location_model,
-        test_enriched_address_model,
-        test_enriched_property_model,
-        test_enriched_neighborhood_model,
-        test_wikipedia_article_model,
-        test_wikipedia_summary_model,
-        test_embedding_models,
-        test_property_type_enum,
-        test_property_status_enum
-    ]
-    
-    passed = 0
-    failed = 0
-    
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            logger.error(f"❌ Test {test.__name__} failed: {e}")
-            failed += 1
-    
-    logger.info("=" * 60)
-    logger.info(f"Test Results: {passed} passed, {failed} failed")
-    logger.info("=" * 60)
-    
-    if failed == 0:
-        logger.info("🎉 All model tests passed!")
-    else:
-        logger.error(f"⚠️ {failed} tests failed")
-    
-    return failed == 0
-
-
-if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)

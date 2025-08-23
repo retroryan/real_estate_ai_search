@@ -15,10 +15,34 @@ data_paths:
   # Wikipedia pages directory (relative to base_path)  
   wikipedia_pages_dir: "data/wikipedia/pages"
 
+# FastAPI server configuration
+api:
+  # Server host and port
+  host: "0.0.0.0"
+  port: 8000
+  
+  # Server configuration
+  reload: true  # Enable auto-reload in development
+  debug: false  # Enable debug mode
+  
+  # API documentation
+  title: "Common Ingest API"
+  description: "REST API for loading and accessing enriched property and Wikipedia data"
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+  openapi_url: "/openapi.json"
+  
+  # CORS configuration
+  cors:
+    allow_origins: ["*"]  # Configure appropriately for production
+    allow_credentials: true
+    allow_methods: ["GET", "POST", "PUT", "DELETE"]
+    allow_headers: ["*"]
+
 # ChromaDB configuration for future embedding support
 chromadb:
   host: "localhost"
-  port: 8000
+  port: 8001  # Changed to avoid conflict with API server
   persist_directory: "./data/common_embeddings"
   
   # Collection naming patterns

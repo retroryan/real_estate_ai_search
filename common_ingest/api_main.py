@@ -36,15 +36,16 @@ def main():
     settings = get_settings()
     
     logger.info("Starting Common Ingest API server")
-    logger.info(f"API Documentation: http://localhost:8000/docs")
-    logger.info(f"Health Check: http://localhost:8000/api/v1/health")
+    logger.info(f"Server: http://{settings.api.host}:{settings.api.port}")
+    logger.info(f"API Documentation: http://{settings.api.host}:{settings.api.port}{settings.api.docs_url}")
+    logger.info(f"Health Check: http://{settings.api.host}:{settings.api.port}/api/v1/health")
     
-    # Configure uvicorn for development/demo
+    # Configure uvicorn using settings
     uvicorn.run(
         "common_ingest.api_main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=settings.api.host,
+        port=settings.api.port,
+        reload=settings.api.reload,
         log_level=settings.logging.level.lower(),
         access_log=True
     )

@@ -10,8 +10,10 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ..utils.config import get_settings
 from ..utils.logger import setup_logger
@@ -49,27 +51,79 @@ def create_app() -> FastAPI:
     settings = get_settings()
     
     app = FastAPI(
-        title="Common Ingest API",
-        description="REST API for loading and accessing enriched property and Wikipedia data",
+        title=settings.api.title,
+        description=settings.api.description,
         version=settings.metadata.version,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=settings.api.docs_url,
+        redoc_url=settings.api.redoc_url,
+        openapi_url=settings.api.openapi_url,
+        debug=settings.api.debug,
         lifespan=lifespan
     )
     
-    # Add CORS middleware
+    # Add CORS middleware using configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
-        allow_headers=["*"],
+        allow_origins=settings.api.cors.allow_origins,
+        allow_credentials=settings.api.cors.allow_credentials,
+        allow_methods=settings.api.cors.allow_methods,
+        allow_headers=settings.api.cors.allow_headers,
     )
     
     # Add custom middleware
     app.add_middleware(LoggingMiddleware)
     app.add_middleware(ErrorHandlingMiddleware)
+    
+    # Add custom exception handler for HTTPException
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        """Handle HTTPException with structured error response."""
+        correlation_id = getattr(request.state, 'correlation_id', str(uuid.uuid4()))
+        
+        error_response = {
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": exc.detail,
+                "status_code": exc.status_code,
+                "correlation_id": correlation_id
+            }
+        }
+        
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_response,
+            headers={"X-Correlation-ID": correlation_id}
+        )
+    
+    # Add custom exception handler for validation errors
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        """Handle Pydantic validation errors with structured error response."""
+        correlation_id = getattr(request.state, 'correlation_id', str(uuid.uuid4()))
+        
+        # Extract validation error details
+        error_details = []
+        for error in exc.errors():
+            field_path = " -> ".join(str(x) for x in error["loc"])
+            error_details.append(f"{field_path}: {error['msg']}")
+        
+        error_message = f"Validation failed: {'; '.join(error_details)}"
+        
+        error_response = {
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": error_message,
+                "status_code": 422,
+                "correlation_id": correlation_id,
+                "validation_details": exc.errors()
+            }
+        }
+        
+        return JSONResponse(
+            status_code=422,
+            content=error_response,
+            headers={"X-Correlation-ID": correlation_id}
+        )
     
     # Include routers
     app.include_router(
