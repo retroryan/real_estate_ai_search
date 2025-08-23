@@ -1,0 +1,125 @@
+# Common Ingest Configuration
+# This file configures data loading and enrichment for the common_ingest module
+
+# Data source paths
+data_paths:
+  # Base path for the project (can be absolute or relative)
+  base_path: "/Users/ryanknight/projects/temporal/real_estate_ai_search"
+  
+  # Property data directory (relative to base_path)
+  property_data_dir: "real_estate_data"
+  
+  # Wikipedia database path (relative to base_path)
+  wikipedia_db_path: "data/wikipedia/wikipedia.db"
+  
+  # Wikipedia pages directory (relative to base_path)  
+  wikipedia_pages_dir: "data/wikipedia/pages"
+
+# ChromaDB configuration for future embedding support
+chromadb:
+  host: "localhost"
+  port: 8000
+  persist_directory: "./data/common_embeddings"
+  
+  # Collection naming patterns
+  property_collection_pattern: "property_{model}_v{version}"
+  wikipedia_collection_pattern: "wikipedia_{model}_v{version}"
+  neighborhood_collection_pattern: "neighborhood_{model}_v{version}"
+  
+  # Default embedding model
+  default_embedding_model: "nomic-embed-text"
+  default_provider: "ollama"
+
+# Data enrichment settings
+enrichment:
+  # City name abbreviations to expand
+  city_abbreviations:
+    SF: "San Francisco"
+    LA: "Los Angeles"
+    NYC: "New York City"
+    NY: "New York"
+    PC: "Park City"
+    SLC: "Salt Lake City"
+    LV: "Las Vegas"
+  
+  # State code to full name mappings
+  state_codes:
+    AL: "Alabama"
+    AK: "Alaska"
+    AZ: "Arizona"
+    AR: "Arkansas"
+    CA: "California"
+    CO: "Colorado"
+    CT: "Connecticut"
+    DE: "Delaware"
+    FL: "Florida"
+    GA: "Georgia"
+    HI: "Hawaii"
+    ID: "Idaho"
+    IL: "Illinois"
+    IN: "Indiana"
+    IA: "Iowa"
+    KS: "Kansas"
+    KY: "Kentucky"
+    LA: "Louisiana"
+    ME: "Maine"
+    MD: "Maryland"
+    MA: "Massachusetts"
+    MI: "Michigan"
+    MN: "Minnesota"
+    MS: "Mississippi"
+    MO: "Missouri"
+    MT: "Montana"
+    NE: "Nebraska"
+    NV: "Nevada"
+    NH: "New Hampshire"
+    NJ: "New Jersey"
+    NM: "New Mexico"
+    NY: "New York"
+    NC: "North Carolina"
+    ND: "North Dakota"
+    OH: "Ohio"
+    OK: "Oklahoma"
+    OR: "Oregon"
+    PA: "Pennsylvania"
+    RI: "Rhode Island"
+    SC: "South Carolina"
+    SD: "South Dakota"
+    TN: "Tennessee"
+    TX: "Texas"
+    UT: "Utah"
+    VT: "Vermont"
+    VA: "Virginia"
+    WA: "Washington"
+    WV: "West Virginia"
+    WI: "Wisconsin"
+    WY: "Wyoming"
+  
+  # Feature normalization options
+  normalize_features_to_lowercase: true
+  deduplicate_features: true
+  sort_features: true
+
+# Performance and processing settings
+processing:
+  # Batch size for bulk operations
+  batch_size: 100
+  
+  # Maximum number of parallel workers
+  max_workers: 4
+  
+  # Show progress indicators
+  show_progress: true
+
+# Logging configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # Enable operation tracking
+  track_operations: true
+
+# Module metadata
+metadata:
+  version: "0.1.0"
+  description: "Common data ingestion and enrichment module"
