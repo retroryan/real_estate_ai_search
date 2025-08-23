@@ -2,31 +2,31 @@
 
 ## Executive Summary
 
-This proposal outlines a comprehensive integration testing strategy for the Common Embeddings Module that validates the entire pipeline from data ingestion through correlation and enrichment using real-world data sources. The tests will use actual data from the project's real estate JSON files and Wikipedia SQLite database to ensure the system performs correctly with production-like datasets.
+This proposal outlines a comprehensive ChromaDB-focused integration testing strategy for the Common Embeddings Module that validates storage, retrieval, and query operations using real-world datasets. The tests will use actual data from the project's real estate JSON files and Wikipedia SQLite database to ensure ChromaDB operations perform correctly with production-like workloads and data volumes.
 
 ## Testing Philosophy
 
-### Real Data-Driven Testing
-Unlike unit tests that use synthetic data, these integration tests leverage the project's actual datasets:
+### Real Data-Driven ChromaDB Testing
+These integration tests focus exclusively on ChromaDB storage and retrieval operations using the project's actual datasets:
 - **220 real estate properties** from San Francisco and Park City
 - **11 neighborhoods** with rich demographic and amenity data  
 - **557 Wikipedia articles** about Utah and California locations
 - **Processed summaries** with confidence scores and location extraction
 
-### End-to-End Validation
-Each test validates the complete data flow:
-1. Data loading and normalization
-2. Text chunking and embedding generation
-3. ChromaDB storage with metadata
-4. Correlation with source data
-5. Entity enrichment and reconstruction
+### ChromaDB-Focused Validation
+Each test validates ChromaDB-specific operations:
+1. Collection management and organization
+2. Metadata storage with minimal correlation identifiers
+3. Multi-collection and similarity search capabilities
+4. Query performance with realistic datasets
+5. Advanced ChromaDB features (health monitoring, duplicate detection)
 
-### Performance and Scale Testing
-Tests will validate performance characteristics:
-- Bulk processing capabilities
-- Memory usage with realistic datasets
+### Storage Performance and Scale Testing
+Tests will validate ChromaDB performance characteristics:
+- Storage efficiency with minimal metadata approach
 - Query response times with production-size collections
-- Cache effectiveness and hit rates
+- Memory usage during bulk storage operations
+- Collection health and maintenance capabilities
 
 ## Data Source Analysis
 
@@ -61,138 +61,191 @@ Tests will validate performance characteristics:
 - **Topic Analysis**: Key topics extracted from content
 - **Quality Metrics**: Overall confidence scores (0.78-0.88 range)
 
-## Test Categories and Scenarios
+## ChromaDB Storage and Retrieval Test Scenarios
 
-### Category 1: Data Loading and Pipeline Integration (5 tests)
+### Test 1: Basic Collection Management and Health Monitoring
+- **Setup**: Create collections for properties, neighborhoods, and Wikipedia data using real datasets
+- **Data**: Use 50 SF properties, 5 neighborhoods, 25 Wikipedia articles
+- **Validation**: 
+  - Verify collection naming conventions (e.g., "properties_nomic_v1", "wikipedia_gemini_v1")
+  - Test collection health monitoring and statistics reporting
+  - Validate collection metadata storage and retrieval
+  - Confirm collection size and embedding count accuracy
 
-**Test 1: Property Data Pipeline Validation**
-- Load all 220 SF and PC properties through the embedding pipeline
-- Verify correct entity type classification and metadata preservation
-- Validate text generation from structured property data
-- Confirm all required correlation fields are present
+### Test 2: Minimal Metadata Storage Strategy
+- **Setup**: Store embeddings with only essential correlation identifiers
+- **Data**: Sample of 30 properties with complete metadata vs minimal metadata
+- **Validation**:
+  - Verify only correlation fields stored (listing_id, entity_type, source_file, text_hash)
+  - Confirm no source data duplication in ChromaDB metadata
+  - Test metadata field validation and required field enforcement
+  - Validate storage efficiency compared to full metadata approach
 
-**Test 2: Neighborhood Data Processing**
-- Process all 11 neighborhoods through chunking and embedding
-- Test handling of long descriptions (some >400 words)
-- Verify neighborhood-specific metadata extraction
-- Validate demographic and amenity data preservation
+### Test 3: Entity-Specific Identifier Queries
+- **Setup**: Store mixed entity types and query by specific identifiers
+- **Data**: 20 properties (listing_id), 15 Wikipedia articles (page_id), 8 neighborhoods (neighborhood_id)
+- **Validation**:
+  - Query properties by listing_id: "prop-oak-125", "prop-coal-137"
+  - Query Wikipedia by page_id: 49728 (San Francisco), 45186 (Orem, Utah)  
+  - Query neighborhoods by neighborhood_id: "sf-pac-heights-001", "pc-old-town-001"
+  - Verify exact identifier matching and no false positives
 
-**Test 3: Wikipedia Article Pipeline**  
-- Load sample of 50 Wikipedia articles from database
-- Test HTML content extraction and cleaning
-- Verify page_id preservation and metadata mapping
-- Validate coordinate and location data handling
+### Test 4: Multi-Chunk Document Storage and Retrieval
+- **Setup**: Store long Wikipedia articles requiring chunking
+- **Data**: Select 10 longest Wikipedia articles (>2000 words each)
+- **Validation**:
+  - Verify chunk metadata: chunk_index, chunk_total, parent_hash
+  - Test chunk sequence completeness validation
+  - Query all chunks for specific parent document
+  - Validate chunk ordering and parent-child relationships
 
-**Test 4: Wikipedia Summary Processing**
-- Process LLM-generated summaries through embedding pipeline
-- Test confidence score preservation and location extraction
-- Verify key topic handling and summary quality metrics
-- Validate join relationships between articles and summaries
+### Test 5: Duplicate Detection and Deduplication
+- **Setup**: Attempt to store duplicate content with different identifiers
+- **Data**: Same property description with different listing_ids
+- **Validation**:
+  - Test text_hash-based duplicate detection
+  - Verify duplicate prevention during storage
+  - Test duplicate detection across different entity types
+  - Validate duplicate reporting and statistics
 
-**Test 5: Multi-Source Batch Processing**
-- Process mixed batch: 20 properties, 5 neighborhoods, 25 Wikipedia articles
-- Verify correct entity type routing and processing
-- Test batch size handling and memory management
-- Validate processing statistics and error handling
+### Test 6: Bulk Storage Performance with Real Data Volumes
+- **Setup**: Store large batches simulating production loads
+- **Data**: All 220 properties + 11 neighborhoods + 100 Wikipedia articles
+- **Validation**:
+  - Measure storage throughput (embeddings per second)
+  - Monitor memory usage during bulk operations
+  - Test batch size optimization (10, 50, 100, 200 items)
+  - Validate atomic batch operations (all succeed or all fail)
 
-### Category 2: ChromaDB Storage and Retrieval (4 tests)
+### Test 7: Metadata-Only Query Operations  
+- **Setup**: Perform queries that return only metadata without embeddings
+- **Data**: 100 mixed entities across all types
+- **Validation**:
+  - Test correlation-optimized queries (metadata only, no vectors)
+  - Verify query performance for correlation operations
+  - Test filtering by entity_type, source_type combinations
+  - Validate result accuracy and completeness
 
-**Test 6: Collection Management and Organization**
-- Create collections for each entity type and embedding model
-- Verify collection naming conventions and metadata
-- Test collection health monitoring and statistics
-- Validate duplicate detection using text_hash
+### Test 8: Basic Similarity Search Functionality
+- **Setup**: Perform similarity searches with known good matches
+- **Data**: Property descriptions, neighborhood descriptions, Wikipedia summaries
+- **Test Queries**:
+  - "luxury townhome with city views" → should find "prop-oak-125"
+  - "historic mining town mountain resort" → should find Old Town Park City
+  - "San Francisco bay area university" → should find UCSF article
+- **Validation**: Verify similarity scores, ranking, and result relevance
 
-**Test 7: Metadata Storage and Retrieval**
-- Store embeddings with minimal correlation metadata
-- Query by entity-specific identifiers (listing_id, page_id)
-- Verify metadata-only queries for correlation operations
-- Test bulk retrieval performance with 500+ embeddings
+### Test 9: Multi-Collection Search and Aggregation
+- **Setup**: Search across multiple collections simultaneously  
+- **Data**: Separate collections for properties, neighborhoods, Wikipedia
+- **Validation**:
+  - Test cross-collection similarity search
+  - Verify result aggregation and ranking across collections
+  - Test entity type filtering in multi-collection queries
+  - Validate performance with multiple collections
 
-**Test 8: Multi-Chunk Document Storage**
-- Process long Wikipedia articles that require chunking
-- Verify chunk sequence metadata (chunk_index, chunk_total, parent_hash)
-- Test chunk completeness validation
-- Validate parent-child relationship preservation
+### Test 10: Advanced Filtering and Where Clauses
+- **Setup**: Test ChromaDB where clause functionality with real metadata
+- **Data**: Properties with various price ranges, neighborhoods with different scores
+- **Validation**:
+  - Filter properties by price range: >$500K, <$600K
+  - Filter neighborhoods by walkability_score: >=9
+  - Filter Wikipedia by confidence score: >0.8
+  - Test complex where clauses with multiple conditions
 
-**Test 9: Query Performance and Similarity Search**
-- Perform similarity searches across different entity types
-- Test multi-collection search with result aggregation
-- Validate similarity threshold filtering
-- Measure query response times with realistic datasets
+### Test 11: Collection Health and Diagnostics
+- **Setup**: Monitor collection health with various data quality scenarios
+- **Data**: Mix of complete and incomplete data, valid and edge-case identifiers
+- **Validation**:
+  - Test orphaned embedding detection (embeddings without source data)
+  - Verify incomplete chunk sequence detection
+  - Test duplicate ID detection across collections
+  - Validate health scoring and issue categorization
 
-### Category 3: Correlation Engine Validation (6 tests)
+### Test 12: Large-Scale Query Performance
+- **Setup**: Performance testing with production-size datasets
+- **Data**: Full 220 properties + 557 Wikipedia articles + neighborhoods
+- **Validation**:
+  - Measure query response times (p50, p95, p99)
+  - Test similarity search performance with large collections
+  - Verify memory usage during large result sets
+  - Validate query timeout and resource limits
 
-**Test 10: Property Correlation Accuracy**
-- Correlate property embeddings with source JSON data
-- Test listing_id extraction and matching
-- Verify complete property data reconstruction
-- Validate neighborhood context integration
+### Test 13: Geographic and Coordinate-Based Queries
+- **Setup**: Test location-based filtering and queries
+- **Data**: Properties and Wikipedia articles with coordinate data
+- **Validation**:
+  - Query embeddings within geographic bounds (SF Bay Area, Utah regions)
+  - Test coordinate precision and accuracy
+  - Verify geographic metadata preservation
+  - Validate location-based similarity search
 
-**Test 11: Wikipedia Article Correlation**
-- Correlate Wikipedia embeddings using page_id identifiers
-- Test article data loading from SQLite database
-- Verify summary integration when available
-- Validate location and coordinate preservation
+### Test 14: Text Hash and Content Validation
+- **Setup**: Verify text hash generation and content integrity
+- **Data**: Same content with different formatting/spacing
+- **Validation**:
+  - Test text hash consistency across identical content
+  - Verify hash differences for content variations
+  - Test content integrity after storage and retrieval
+  - Validate hash-based duplicate detection accuracy
 
-**Test 12: Multi-Chunk Document Reconstruction**
-- Select long Wikipedia articles split into multiple chunks
-- Test chunk grouping by parent identifier
-- Verify correct ordering and text reconstruction
-- Validate completeness detection and missing chunk handling
+### Test 15: Collection Migration and Versioning
+- **Setup**: Test collection versioning and migration scenarios
+- **Data**: Same dataset stored in v1 and v2 collections
+- **Validation**:
+  - Test collection naming with version numbers
+  - Verify migration utilities and data transfer
+  - Test backward compatibility with older collection formats
+  - Validate cleanup of deprecated collections
 
-**Test 13: Bulk Correlation Performance**
-- Correlate 100+ embeddings across all entity types
-- Test parallel processing with configurable workers
-- Verify cache effectiveness and hit rate improvements  
-- Validate error handling for missing source data
+### Test 16: Entity Type Distribution and Statistics
+- **Setup**: Analyze entity type distribution across collections
+- **Data**: Mixed entity types with realistic distribution
+- **Validation**:
+  - Test entity type counting and statistics
+  - Verify entity type filtering and queries
+  - Test source type distribution analysis
+  - Validate metadata field coverage by entity type
 
-**Test 14: Source Data Caching Strategy**
-- Test cache population and hit rate tracking
-- Verify cache effectiveness across repeated operations
-- Test memory usage and cache size limits
-- Validate cache invalidation and cleanup
+### Test 17: Storage Efficiency and Compression
+- **Setup**: Compare storage efficiency across different approaches
+- **Data**: Same entities with full metadata vs minimal metadata
+- **Validation**:
+  - Measure storage size differences
+  - Test compression effectiveness on embedding vectors
+  - Verify storage efficiency with different embedding dimensions
+  - Validate retrieval speed vs storage size tradeoffs
 
-**Test 15: Orphaned Embedding Detection**
-- Create test scenarios with missing source data
-- Verify graceful error handling and reporting
-- Test correlation report generation with error statistics
-- Validate system resilience to data inconsistencies
+### Test 18: Concurrent Access and Thread Safety
+- **Setup**: Test concurrent read/write operations
+- **Data**: Multiple threads accessing same collections
+- **Validation**:
+  - Test concurrent similarity searches
+  - Verify thread safety for metadata queries
+  - Test concurrent bulk storage operations
+  - Validate data consistency under concurrent access
 
-### Category 4: Enrichment and Entity Processing (3 tests)
+### Test 19: Error Handling and Recovery Scenarios
+- **Setup**: Test various failure modes and recovery
+- **Data**: Corrupted metadata, missing fields, invalid identifiers
+- **Validation**:
+  - Test graceful handling of malformed data
+  - Verify error reporting and logging
+  - Test recovery from partial storage failures
+  - Validate rollback mechanisms for failed operations
 
-**Test 16: Property-Specific Enrichment**
-- Apply property enrichment to correlated entities
-- Verify price-per-sqft calculations and derived metrics
-- Test neighborhood context integration
-- Validate feature analysis and categorization
-
-**Test 17: Wikipedia Content Analysis**
-- Apply Wikipedia-specific enrichment processors  
-- Test content analysis (word counts, reading time, etc.)
-- Verify location extraction and geographic enhancement
-- Validate article quality assessment and categorization
-
-**Test 18: Bulk Enrichment Processing**
-- Process 50+ entities through enrichment pipeline
-- Test parallel enrichment with configurable workers
-- Verify entity-specific processor routing
-- Validate enrichment quality and error handling
-
-### Category 5: Real-World Query Scenarios (2 tests)
-
-**Test 19: Location-Based Property Search**
-- Query: "luxury townhome in Oakland with city views and pool"
-- Expected: Should find properties like "prop-oak-125" (Temescal townhome with community pool and city views)
-- Verify correlation retrieves complete property and neighborhood data
-- Validate enrichment includes neighborhood context and amenities
-
-**Test 20: Geographic Wikipedia Search**
-- Query: "Utah national parks and recreation areas"
-- Expected: Should find articles like Bryce Canyon National Park
-- Test similarity search across Wikipedia collection
-- Verify correlation with article content and location data
-- Validate geographic enrichment and confidence scores
+### Test 20: Real-World End-to-End Query Scenarios
+- **Setup**: Complete similarity search to metadata retrieval workflow
+- **Test Scenarios**:
+  - Property search: "waterfront condo with mountain views" in Park City data
+  - Neighborhood analysis: "walkable area with good schools" in SF data  
+  - Wikipedia lookup: "Utah mining history" in Wikipedia collection
+  - Cross-entity search: "luxury properties near university" (properties + Wikipedia)
+- **Validation**:
+  - Verify end-to-end query accuracy and relevance
+  - Test similarity score thresholds and ranking
+  - Validate metadata retrieval for correlation operations
+  - Confirm realistic query response times (<1 second)
 
 ## Implementation Strategy
 
@@ -202,139 +255,146 @@ Tests will validate performance characteristics:
 ```
 common_embeddings/integration_tests/
 ├── __init__.py
-├── conftest.py                    # Pytest configuration and fixtures
-├── test_data_pipeline.py          # Tests 1-5: Data loading pipeline
-├── test_chromadb_operations.py    # Tests 6-9: Storage and retrieval
-├── test_correlation_engine.py     # Tests 10-15: Correlation validation
-├── test_enrichment_processing.py  # Tests 16-18: Entity enrichment
-├── test_realistic_scenarios.py    # Tests 19-20: Real-world queries
+├── conftest.py                          # Pytest configuration and fixtures
+├── test_chromadb_basic_operations.py    # Tests 1-7: Basic storage and management
+├── test_chromadb_search_queries.py      # Tests 8-14: Search and query operations  
+├── test_chromadb_advanced_features.py   # Tests 15-20: Advanced features and scenarios
 ├── fixtures/
-│   ├── test_collections.py        # ChromaDB test collection management
-│   ├── sample_data.py             # Data sampling utilities
-│   └── performance_fixtures.py    # Performance measurement utilities
+│   ├── chromadb_collections.py         # ChromaDB test collection management
+│   ├── real_data_samples.py            # Real estate and Wikipedia data sampling
+│   ├── embedding_fixtures.py           # Pre-generated embeddings for testing
+│   └── performance_fixtures.py         # Performance measurement utilities
 └── utils/
-    ├── assertion_helpers.py       # Custom assertion utilities
-    ├── data_validation.py         # Data quality validation
-    └── performance_measurement.py # Performance testing utilities
+    ├── chromadb_assertions.py          # ChromaDB-specific assertion helpers
+    ├── query_builders.py               # Query construction utilities
+    ├── data_validation.py              # Data quality validation for ChromaDB
+    └── performance_measurement.py      # ChromaDB performance testing utilities
 ```
 
 ### Test Configuration
 
 **Pytest Configuration (`conftest.py`):**
-- ChromaDB test database setup and teardown
-- Data sampling fixtures for consistent test data
-- Performance measurement fixtures
-- Error injection utilities for failure scenario testing
+- ChromaDB test instance setup and teardown with isolated collections
+- Real data sampling fixtures from actual property/Wikipedia datasets
+- Pre-generated embedding fixtures to avoid expensive embedding generation during tests
+- Performance measurement fixtures for latency and throughput testing
+- Collection health monitoring and cleanup utilities
 
 **Environment Setup:**
-- Separate test ChromaDB instance to avoid polluting development data
-- Configurable embedding providers for testing (prefer fast local models)
-- Reduced batch sizes for faster test execution
-- Comprehensive logging for test debugging
+- Isolated test ChromaDB instance (separate from development data)
+- Mock embedding providers for fast test execution (or cached embeddings)
+- Configurable test data sizes (small for unit tests, large for performance tests)
+- Comprehensive ChromaDB operation logging and debugging
 
 ### Data Management Strategy
 
-**Test Data Selection:**
-- Use representative samples from real datasets
-- Include edge cases: longest descriptions, highest-priced properties, lowest-confidence Wikipedia summaries
-- Test with both high-quality and problematic data records
-- Include geographic diversity (SF urban vs PC mountain communities)
+**ChromaDB-Specific Test Data Selection:**
+- Use representative samples optimized for ChromaDB testing
+- Include storage edge cases: largest embeddings, longest metadata, highest chunk counts
+- Test with various metadata field combinations and entity types
+- Include both clean data and edge cases (missing fields, malformed identifiers)
 
-**Test Data Consistency:**
-- Pin specific records by ID for reproducible tests
-- Use data snapshots to ensure test stability
-- Validate data quality before running tests
-- Include data validation as part of test setup
+**Test Data Consistency for ChromaDB:**
+- Pin specific property IDs ("prop-oak-125"), Wikipedia page IDs (49728), neighborhood IDs for reproducible tests
+- Use pre-generated embeddings to ensure consistent vector data
+- Validate ChromaDB collection state before and after tests
+- Include collection cleanup and isolation between test runs
 
 ### Performance Expectations
 
-**Baseline Performance Targets:**
-- Property pipeline: <2 seconds per property including embedding
-- Wikipedia pipeline: <3 seconds per article including chunking
-- Correlation operations: <100ms per embedding with cache hits
-- Bulk operations: >50 items per minute with parallel processing
-- Memory usage: <2GB RAM for processing 100+ items
+**ChromaDB Performance Targets:**
+- Bulk storage: >100 embeddings per second for batch operations
+- Similarity search: <500ms response time for queries against 1000+ embeddings
+- Metadata queries: <50ms for identifier-based lookups
+- Collection operations: <2 seconds for collection creation and health checks
+- Memory usage: <1GB RAM for storing 500+ embeddings with metadata
 
-**Performance Test Methodology:**
-- Warm-up runs to populate caches
-- Multiple iterations for statistical significance  
-- Memory profiling during bulk operations
-- Latency percentile measurements (50th, 95th, 99th)
+**ChromaDB Performance Test Methodology:**
+- Multiple test runs to account for ChromaDB caching effects
+- Memory profiling during bulk storage operations  
+- Query latency percentile measurements (50th, 95th, 99th)
+- Storage size measurements and efficiency analysis
+- Concurrent operation performance testing
 
 ## Success Criteria
 
-### Functional Correctness
-- All 20 tests pass with real production data
-- Correlation accuracy >95% for properly formatted data
-- Multi-chunk reconstruction accuracy 100% for complete sequences
-- Entity enrichment produces valid, enhanced data for all entity types
+### ChromaDB Functional Correctness
+- All 20 ChromaDB-focused tests pass with real production data
+- Storage accuracy 100% for properly formatted embeddings and metadata
+- Query accuracy >95% for identifier-based and similarity searches
+- Multi-chunk storage and retrieval accuracy 100% for complete sequences
 
-### Performance Benchmarks
-- Pipeline throughput meets or exceeds baseline targets
-- Memory usage remains within acceptable bounds
-- Cache hit rates >80% for bulk correlation operations
-- Query response times <500ms for similarity searches
+### ChromaDB Performance Benchmarks
+- Storage throughput meets or exceeds baseline targets (>100 embeddings/sec)
+- Memory usage remains within bounds (<1GB for 500+ embeddings)
+- Query response times meet targets (<500ms similarity, <50ms metadata)
+- Collection operations complete within time limits (<2 seconds)
 
-### Data Quality Validation
-- All correlation identifiers properly extracted and matched
-- No data loss during pipeline processing
-- Metadata preservation throughout all processing stages
-- Error handling gracefully manages missing or corrupted data
+### ChromaDB Data Integrity
+- All correlation identifiers properly stored and retrievable
+- No data loss during ChromaDB storage and retrieval operations
+- Metadata consistency maintained across all collection operations
+- Embedding vectors preserved with full precision
 
-### Integration Robustness
-- Tests pass with different embedding providers
-- System handles various batch sizes and processing configurations
-- Concurrent operations don't cause data corruption
-- Recovery mechanisms work correctly after simulated failures
+### ChromaDB Integration Robustness
+- Tests pass with different ChromaDB configurations and collection sizes
+- System handles various batch sizes and concurrent operations
+- Error recovery works correctly for storage failures
+- Collection health monitoring accurately detects issues
 
 ## Risk Mitigation
 
-### Test Environment Isolation
-- Separate test ChromaDB instance prevents development data contamination
-- Test-specific configurations avoid impacting development settings
-- Comprehensive cleanup ensures tests don't interfere with each other
+### ChromaDB Test Environment Isolation
+- Dedicated test ChromaDB instance with separate persistence directory
+- Test-specific collection naming to prevent conflicts with development data
+- Comprehensive collection cleanup ensures tests don't interfere with each other
+- Isolated embedding generation to prevent test data contamination
 
-### Data Dependencies
-- Tests include data validation to catch dataset changes
-- Fallback mechanisms handle missing test data gracefully
-- Clear documentation of required data preconditions
+### ChromaDB Data Dependencies  
+- Tests validate ChromaDB collection state before execution
+- Fallback mechanisms handle missing collections or corrupted embeddings
+- Pre-generated embedding fixtures reduce dependency on external embedding providers
+- Clear documentation of required ChromaDB setup and data preconditions
 
-### Performance Variability
-- Multiple test runs account for performance variations
-- Relaxed timing thresholds accommodate slower test environments
-- Performance trends tracking identifies degradation over time
+### ChromaDB Performance Variability
+- Multiple test runs account for ChromaDB caching and warm-up effects
+- Relaxed timing thresholds accommodate different hardware environments
+- Performance baseline establishment and trend tracking
+- Configurable test sizes for different testing scenarios
 
-### Maintenance Overhead
-- Tests designed to be maintainable as system evolves
-- Clear separation between test logic and test data
-- Comprehensive documentation for future maintainers
+### ChromaDB Test Maintenance
+- Tests designed to be maintainable as ChromaDB schema evolves
+- Clear separation between ChromaDB operation logic and test assertions
+- Comprehensive ChromaDB-specific utilities and fixtures
+- Documentation for maintaining tests with ChromaDB version changes
 
 ## Timeline and Resources
 
-**Phase 1 (Week 1): Infrastructure Setup**
-- Test directory structure and configuration
-- ChromaDB test instance setup
-- Base fixture and utility development
+**Phase 1 (Week 1): ChromaDB Test Infrastructure**
+- ChromaDB test environment setup and isolation
+- Real data sampling and embedding fixture generation
+- Base ChromaDB utilities and assertion helpers
 
-**Phase 2 (Week 2): Core Pipeline Tests (Tests 1-9)**
-- Data loading and pipeline validation
-- ChromaDB storage and retrieval testing
-- Performance baseline establishment
+**Phase 2 (Week 2): Basic ChromaDB Operations (Tests 1-7)**
+- Collection management and health monitoring tests
+- Storage strategy validation and metadata testing
+- Bulk operations and performance baseline establishment
 
-**Phase 3 (Week 3): Correlation and Enrichment (Tests 10-18)**
-- Correlation engine comprehensive testing
-- Entity enrichment validation
-- Advanced scenario testing
+**Phase 3 (Week 3): Advanced ChromaDB Features (Tests 8-14)**
+- Similarity search and multi-collection query testing
+- Performance testing with realistic data volumes
+- Error handling and recovery scenario validation
 
-**Phase 4 (Week 4): Realistic Scenarios and Documentation (Tests 19-20)**
-- End-to-end realistic query testing
-- Performance optimization and tuning
-- Comprehensive documentation and maintenance guides
+**Phase 4 (Week 4): Real-World ChromaDB Scenarios (Tests 15-20)**
+- End-to-end query workflow testing
+- Advanced feature validation (versioning, concurrent access)
+- Performance optimization and comprehensive documentation
 
 **Resource Requirements:**
-- 1 senior developer for test design and implementation
-- Access to full real estate and Wikipedia datasets
-- ChromaDB test infrastructure setup
-- Continuous integration pipeline integration
+- 1 developer focused on ChromaDB integration testing
+- Access to full real estate (220 properties) and Wikipedia (557 articles) datasets
+- ChromaDB test infrastructure with isolation capabilities
+- Pre-generated embedding fixtures to reduce test execution time
+- Continuous integration pipeline with ChromaDB test environment
 
-This comprehensive testing strategy ensures the Common Embeddings Module performs correctly with real-world data while maintaining the performance and reliability required for production use.
+This focused ChromaDB testing strategy ensures the storage and retrieval components perform correctly with real-world data while validating the sophisticated correlation architecture through comprehensive ChromaDB operation testing.

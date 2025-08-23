@@ -111,6 +111,60 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 - **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
 - **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
 
+---
+
+### [7. Common Ingest API](./common_ingest/)
+**Purpose**: FastAPI-based REST API for accessing enriched real estate and Wikipedia data  
+**Key Features**:
+- **RESTful Data Access**: Comprehensive API endpoints for properties, neighborhoods, and Wikipedia content
+- **Advanced Filtering**: Location-based search, confidence scoring, relevance thresholds, and custom sorting
+- **Statistics & Analytics**: Real-time data analysis with distributions, coverage metrics, and enrichment statistics
+- **Health Monitoring**: System health checks with database connectivity and data availability validation
+- **Type-Safe Schemas**: Pydantic models for request validation and structured responses
+- **Comprehensive Documentation**: OpenAPI/Swagger integration with interactive testing interface
+
+#### API Endpoints
+
+**Property & Neighborhood Data**
+```bash
+GET /api/v1/properties              # List all properties with filtering
+GET /api/v1/properties/{id}         # Get single property by ID
+GET /api/v1/neighborhoods           # List all neighborhoods with filtering  
+GET /api/v1/neighborhoods/{id}      # Get single neighborhood by ID
+```
+
+**Wikipedia Content**
+```bash
+GET /api/v1/wikipedia/articles      # List articles with location/relevance filtering
+GET /api/v1/wikipedia/articles/{page_id}    # Get single article
+GET /api/v1/wikipedia/summaries     # List summaries with confidence filtering
+GET /api/v1/wikipedia/summaries/{page_id}   # Get single summary
+```
+
+**Statistics & Analytics**  
+```bash
+GET /api/v1/stats/summary           # Overall data summary with counts and metrics
+GET /api/v1/stats/properties        # Property statistics and price distributions
+GET /api/v1/stats/neighborhoods     # Neighborhood analysis and characteristics
+GET /api/v1/stats/wikipedia         # Wikipedia quality metrics and coverage
+GET /api/v1/stats/coverage          # Geographic coverage analysis
+GET /api/v1/stats/enrichment        # Data enrichment success rates
+```
+
+**System Health**
+```bash
+GET /api/v1/health                  # System health with database connectivity
+```
+
+#### Starting the API Server
+```bash
+# Start the FastAPI server
+uvicorn common_ingest.api.app:app --host 0.0.0.0 --port 8000 --reload
+
+# Access interactive documentation
+open http://localhost:8000/docs
+```
+
 ## Generative AI Technologies
 
 This project leverages an extensive suite of cutting-edge generative AI frameworks, models, and techniques:

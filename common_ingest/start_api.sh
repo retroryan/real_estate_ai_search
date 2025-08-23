@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Common Ingest API Start Script
+# Starts the FastAPI server using uvicorn with configuration from config.yaml
+
+echo "Starting Common Ingest API Server..."
+echo "=================================="
+
+# Check if uvicorn is installed
+if ! command -v uvicorn &> /dev/null; then
+    echo "Error: uvicorn is not installed"
+    echo "Please install with: pip install uvicorn"
+    exit 1
+fi
+
+# Set Python path to ensure module can be imported
+export PYTHONPATH="${PYTHONPATH}:$(dirname $(dirname $(realpath $0)))"
+
+# Read configuration from config.yaml using Python
+CONFIG_OUTPUT=$(python -c "
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath('$0'))))
+from common_ingest.utils.config import get_settings
+settings = get_settings()
+print(f'{settings.api.host}|{settings.api.port}|{settings.logging.level}')
+" 2>&1)
+
+# Check if configuration was read successfully
+if echo "$CONFIG_OUTPUT" | grep -q "WARNING\|ERROR\|Exception"; then
+    echo "Note: Using default configuration"
+    HOST="0.0.0.0"
+    PORT="8000"
+    LOG_LEVEL="info"
+else
+    IFS='|' read -r HOST PORT LOG_LEVEL <<< "$CONFIG_OUTPUT"
+    # Ensure values are not empty
+    HOST="${HOST:-0.0.0.0}"
+    PORT="${PORT:-8000}"
+    LOG_LEVEL="${LOG_LEVEL:-info}"
+fi
+
+# Check if port is already in use
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
+    echo "Warning: Port $PORT is already in use"
+    echo "Another service might be running on this port"
+    echo "You can stop it with: ./stop_api.sh"
+    echo ""
+    read -p "Do you want to continue anyway? (y/n): " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Save PID for stop script
+PID_FILE="/tmp/common_ingest_api.pid"
+
+echo "Configuration (from config.yaml):"
+echo "  Host: $HOST"
+echo "  Port: $PORT"
+echo "  Log Level: $LOG_LEVEL"
+echo "  Config: common_ingest/config.yaml"
+echo "  PID File: $PID_FILE"
+echo ""
+
+# Start uvicorn in background and save PID
+echo "Starting server..."
+nohup uvicorn common_ingest.api.app:app \
+    --reload \
+    --log-level "$LOG_LEVEL" \
+    > /tmp/common_ingest_api.log 2>&1 &
+
+# Save the PID
+echo $! > "$PID_FILE"
+
+# Wait a moment for server to start
+sleep 2
+
+# Check if server started successfully
+if kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+    echo "✓ Server started successfully (PID: $(cat $PID_FILE))"
+    echo ""
+    echo "Access points:"
+    echo "  API Root:        http://localhost:$PORT/"
+    echo "  Interactive Docs: http://localhost:$PORT/docs"
+    echo "  ReDoc:           http://localhost:$PORT/redoc"
+    echo "  Health Check:    http://localhost:$PORT/api/v1/health"
+    echo ""
+    echo "Logs: tail -f /tmp/common_ingest_api.log"
+    echo "Stop: ./stop_api.sh"
+else
+    echo "✗ Failed to start server"
+    echo "Check logs: cat /tmp/common_ingest_api.log"
+    rm -f "$PID_FILE"
+    exit 1
+fi

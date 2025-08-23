@@ -104,7 +104,7 @@ class WikipediaArticleFilter(BaseModel):
     )
     sort_by: Optional[str] = Field(
         default="relevance",
-        regex="^(relevance|title|page_id)$",
+        pattern="^(relevance|title|page_id)$",
         description="Sort articles by: relevance, title, or page_id"
     )
     include_embeddings: bool = Field(

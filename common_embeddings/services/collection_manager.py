@@ -144,8 +144,14 @@ class CollectionManager:
             entity_type, model_identifier, force_recreate
         )
         
-        # Switch to the collection
-        self.store.create_collection(collection_name, {}, False)  # Don't recreate
+        # Switch to the collection - reuse the same metadata
+        metadata = {
+            "entity_type": entity_type.value,
+            "model": model_identifier,
+            "created_by": "common_embeddings",
+            "version": "1.0"
+        }
+        self.store.create_collection(collection_name, metadata, False)  # Don't recreate
         
         # Store embeddings
         self.store.add_embeddings(embeddings, texts, metadatas, ids)
@@ -170,8 +176,14 @@ class CollectionManager:
         collection_name = self.get_collection_name(entity_type, model_identifier)
         
         try:
-            # Switch to collection
-            self.store.create_collection(collection_name, {}, False)
+            # Switch to collection with proper metadata
+            metadata = {
+                "entity_type": entity_type.value,
+                "model": model_identifier,
+                "created_by": "common_embeddings",
+                "version": "1.0"
+            }
+            self.store.create_collection(collection_name, metadata, False)
             count = self.store.count()
             
             return CollectionInfo(

@@ -45,20 +45,87 @@ python -m common_ingest
 
 ### Running the REST API Server
 
-```bash
-# Start the FastAPI server
-python common_ingest/api_main.py
+#### Using Convenience Scripts (Recommended)
 
-# Or with uvicorn directly
-uvicorn common_ingest.api_main:app --reload --host 0.0.0.0 --port 8000
+```bash
+# Start the API server in background
+./common_ingest/start_api.sh
+
+# Stop the API server
+./common_ingest/stop_api.sh
+
+# View server logs
+tail -f /tmp/common_ingest_api.log
 ```
 
-The API server will start on http://localhost:8000 with:
+The start script will:
+- Read configuration from `common_ingest/config.yaml`
+- Check if uvicorn is installed
+- Verify port availability (from config)
+- Start the server in background with auto-reload
+- Save the process ID for easy stopping
+- Display access URLs for all endpoints
+
+#### Manual Start with Uvicorn
+
+```bash
+# Start with uvicorn directly (uses config.yaml settings)
+uvicorn common_ingest.api.app:app --reload
+
+# Or use the Python module
+python -m uvicorn common_ingest.api.app:app --reload
+```
+
+The API server configuration is managed via `common_ingest/config.yaml`:
+```yaml
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  debug: false
+```
+
+The API server will start based on config.yaml settings with:
 - **Interactive API docs**: http://localhost:8000/docs
 - **Health check**: http://localhost:8000/api/v1/health
 - **API root**: http://localhost:8000/
 
 ### API Usage Examples
+
+#### Interactive API Documentation (OpenAPI/Swagger)
+
+The fastest way to explore and test the API is through the interactive documentation:
+
+```bash
+# Start the API server
+uvicorn common_ingest.api.app:app --host 0.0.0.0 --port 8000 --reload
+
+# Open in your browser:
+open http://localhost:8000/docs
+```
+
+The interactive documentation provides:
+- **Complete API reference** with all endpoints and parameters
+- **Try it out** buttons to test endpoints directly from the browser
+- **Request/response examples** with sample data
+- **Schema documentation** for all Pydantic models
+- **Authentication testing** (if enabled)
+- **Download OpenAPI specification** in JSON format
+
+#### Alternative Documentation Formats
+
+```bash
+# ReDoc documentation (alternative UI)
+open http://localhost:8000/redoc
+
+# Raw OpenAPI specification (JSON)
+curl http://localhost:8000/openapi.json
+
+# API root information
+curl http://localhost:8000/
+```
+
+#### Command Line Examples
 
 ```bash
 # Get all properties with pagination
@@ -75,6 +142,16 @@ curl "http://localhost:8000/api/v1/neighborhoods"
 
 # Filter neighborhoods by city
 curl "http://localhost:8000/api/v1/neighborhoods?city=Park City"
+
+# Wikipedia articles with filtering
+curl "http://localhost:8000/api/v1/wikipedia/articles?city=Park City&relevance_min=0.7"
+
+# Statistics and analytics
+curl "http://localhost:8000/api/v1/stats/summary"
+curl "http://localhost:8000/api/v1/stats/properties"
+
+# System health check
+curl "http://localhost:8000/api/v1/health"
 ```
 
 ### API Response Format

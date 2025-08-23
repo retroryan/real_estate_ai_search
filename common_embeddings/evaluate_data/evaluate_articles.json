@@ -1,0 +1,630 @@
+{
+  "articles": [
+    {
+      "page_id": 26974,
+      "title": "San Francisco Peninsula",
+      "summary": "The San Francisco Peninsula is a significant geographical region in the San Francisco Bay Area, separating San Francisco Bay from the Pacific Ocean. It includes parts of San Francisco, San Mateo, and Santa Clara counties, and is home to numerous cities and towns. The Peninsula is known for its diverse landscapes, from urban and suburban areas to rural and unincorporated regions, and serves as a vital commuter area between San Francisco and San Jose. It also features key transportation routes and is part of the broader Silicon Valley region.",
+      "long_summary": "The San Francisco Peninsula is a prominent peninsula in the San Francisco Bay Area, demarcating the boundary between San Francisco Bay and the Pacific Ocean. Its northern tip is anchored by the City and County of San Francisco, while its southern base extends into Santa Clara County, encompassing cities like Los Altos and Mountain View. The majority of the Peninsula is covered by San Mateo County, which lies between San Francisco and Santa Clara counties. The region includes a mix of urban, suburban, and rural areas, with notable cities such as Redwood City, San Mateo, and Palo Alto. Historically, the Peninsula was part of Spanish land grants, with Rancho de las Pulgas being one of the largest. Geographically, the Peninsula is marked by the Santa Cruz Mountains and the San Andreas Fault, with significant water bodies like the Crystal Springs Reservoir. The east side is densely populated and forms part of Silicon Valley, while the west and south-central areas remain more rural. Transportation infrastructure is robust, featuring major highways like US 101 and Interstate 280, as well as public transit options such as Caltrain and BART. The Peninsula's unique blend of natural beauty, historical significance, and modern urban development makes it a key region in the Bay Area.",
+      "key_topics": "Geography, Transportation, Urban and Suburban Development, Silicon Valley, Historical Land Grants",
+      "city": null,
+      "county": "San Mateo County",
+      "state": "California",
+      "confidence": 0.825,
+      "html_file": "26974.html",
+      "latitude": 37.58333333,
+      "longitude": -122.40111111,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "mountain",
+        "california"
+      ]
+    },
+    {
+      "page_id": 17997272,
+      "title": "Deer Creek State Park (Utah)",
+      "summary": "Deer Creek State Park is a 3,260-acre recreational area in Wasatch County, Utah, featuring the large Deer Creek Reservoir. Established in 1971, the park is popular for fishing, boating, and other water sports, attracting over 338,000 visitors annually. It also serves as a crucial water source for the Salt Lake City area, stemming from its origins in the 1930s Provo River Project.",
+      "long_summary": "Deer Creek State Park, located in southwestern Wasatch County, Utah, is a 3,260-acre recreational area centered around the Deer Creek Reservoir. Established as a state park in 1971, it offers a variety of water-based activities including fishing, boating, sailing, swimming, and windsurfing. The park sits at an elevation of 5,400 feet and features amenities such as boat-launching ramps, a 75-unit campground, picnic areas, and fish cleaning stations. Additionally, visitors can access a restaurant, gas station, and boat rentals. The park recorded 338,865 visitors in 2017, highlighting its popularity. Historically, the reservoir was created as part of the Provo River Project in the 1930s to address water shortages in the Salt Lake City area. Construction began in 1938, with water becoming available by 1941 and the project completed in 1955. Initially managed by the Bureau of Reclamation and the Provo River Water Users Association, the area transitioned to a state park in 1971, expanding its recreational offerings beyond fishing.",
+      "key_topics": "water sports, state park, recreation, water resource management, Utah tourism",
+      "city": "Charleston",
+      "county": "Wasatch County",
+      "state": "Utah",
+      "confidence": 0.8916666666666667,
+      "html_file": "17997272.html",
+      "latitude": 40.41388889,
+      "longitude": -111.50555556,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "historical",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 34629558,
+      "title": "Black Mountains (Utah)",
+      "summary": "The Black Mountains are a 30-mile long mountain range in southwestern Utah, spanning Iron and Beaver Counties. Known for their complex shape and highpoint Mahogany Knoll, the range features significant sites like the Parowan Gap Petroglyphs and the Old Spanish National Historic Trail. The area is accessible via Utah State Routes 21 and 130, connecting to nearby towns and natural features.",
+      "long_summary": "The Black Mountains are a prominent 30-mile (48 km) long mountain range located in northeastern Iron County and southeastern Beaver County in southwestern Utah, United States. The range borders the Escalante Desert to the northeast and trends with the Hurricane Cliffs and Parowan Valley to the southeast. Notable features include the Parowan Gap Petroglyphs Site and the Old Spanish National Historic Trail, which crosses the range into Cedar Valley. The range has a complex shape with an east-west ridgeline at the northern perimeter, bordered by the Beaver River and Minersville Reservoir. The highpoint, Mahogany Knoll, is located in the northeast on the ridgeline separating Iron and Beaver Counties. Access to the range is provided by Utah State Route 21, which follows the Beaver River, and Utah State Route 130, which dissects the range north-south, connecting Minersville to Cedar City via Parowan Canyon and Long Hollow. The Black Mountains are a significant geographical and historical landmark in the region, offering insights into both natural and cultural history.",
+      "key_topics": "mountain range, historical sites, geography, access routes, natural landmarks",
+      "city": "Black Mountains",
+      "county": "Iron County; Beaver County",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "34629558.html",
+      "latitude": 38.08914,
+      "longitude": -112.83439,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "landmark",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 36842068,
+      "title": "California Historical Landmarks in Solano County",
+      "summary": "This article lists and describes the California Historical Landmarks located in Solano County, California. It provides coordinates and a map for viewing these significant historical properties and districts, highlighting the county's rich historical heritage.",
+      "long_summary": "The article serves as a comprehensive guide to the California Historical Landmarks situated in Solano County, California. It includes detailed listings of properties and districts that have been recognized for their historical significance. The content provides coordinates for each landmark, allowing readers to locate them easily via a linked Google map. Solano County, known for its rich history, is home to numerous landmarks that reflect the cultural and historical evolution of the region. This resource is valuable for historians, tourists, and locals interested in exploring the county's heritage. The landmarks cover a wide range of historical periods and themes, offering insights into the diverse history of Solano County.",
+      "key_topics": "Historical Landmarks, Solano County, California History, Heritage Sites, Tourism",
+      "city": null,
+      "county": "Solano County",
+      "state": "California",
+      "confidence": 0.8388888888888889,
+      "html_file": "36842068.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "landmark",
+        "tourist_destination",
+        "california"
+      ]
+    },
+    {
+      "page_id": 71083,
+      "title": "Wayne County, Utah",
+      "summary": "Wayne County is a sparsely populated county in Utah, known for its rugged terrain and natural beauty. Established in 1892, it features significant geographic landmarks like the Green River, Capitol Reef National Park, and the San Rafael Desert. With a population of just 2,486 as of 2020, it is one of Utah's least populous counties, offering a remote and scenic landscape.",
+      "long_summary": "Wayne County, located in the U.S. state of Utah, is a remote and sparsely populated area known for its striking natural landscapes. Established in 1892 from the eastern portion of Piute County, it was named after Wayne County, Tennessee, which in turn honors Anthony Wayne. The county's terrain is diverse, ranging from forested areas in the west to arid deserts in the east, with significant features like the Green River, Capitol Reef National Park, and the San Rafael Desert. The county seat is Loa, and the population was recorded at 2,486 in the 2020 census, making it one of Utah's least populous counties. Wayne County's geography includes the Fremont River, Muddy Creek, and the Dirty Devil River, with elevations reaching up to 9,888 feet. The area is also home to parts of Canyonlands National Park and the Henry Mountains. Despite its small population, the county boasts rich natural resources and outdoor recreational opportunities, attracting visitors to its national parks and scenic vistas.",
+      "key_topics": "National Parks, Remote Geography, Low Population, Historical Settlement, Outdoor Recreation",
+      "city": "Loa",
+      "county": "Wayne",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "71083.html",
+      "latitude": 38.36,
+      "longitude": -110.9,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "landmark",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 34482485,
+      "title": "Cedar Mountains (Tooele County, Utah)",
+      "summary": "The Cedar Mountains are a 45-mile-long mountain range in Tooele County, Utah, bordering the Great Salt Lake Desert. The range features the Cedar Mountain Wilderness, notable peaks like Tabbys Peak, and several mountain passes. It is accessible via various roads and highways, making it a significant natural landmark in the region.",
+      "long_summary": "The Cedar Mountains, located in Tooele County, Utah, are a 45-mile-long mountain range that borders the eastern sections of the Great Salt Lake Desert. The range is divided into a 30-mile north section and a 15-mile southeast section, with elevations ranging from 5,000 to over 6,000 feet. Notable features include the Cedar Mountain Wilderness, Tabbys Peak (the highest point at 6,921 feet), and several mountain passes such as Hastings Pass, Rydalch Pass, and Six Horse Pass. The range is accessible from various points, including Interstate 80 and Utah State Route 196, with unimproved roads leading to its interior. The Cedar Mountains are a significant natural landmark, offering diverse landscapes and recreational opportunities in the region.",
+      "key_topics": "mountain range, wilderness area, geography, recreation, natural landmarks",
+      "city": null,
+      "county": "Tooele",
+      "state": "Utah",
+      "confidence": 0.8446428571428571,
+      "html_file": "34482485.html",
+      "latitude": 40.56355,
+      "longitude": -112.98137,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "landmark",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 22770046,
+      "title": "Eureka Historic District (Eureka, Utah)",
+      "summary": "Eureka is a historic mining city in Juab County, Utah, known for its role in the Tintic Mining District. With a population of 662 as of 2020, it sits in the East Tintic Mountains at an elevation of 6,430 feet. Eureka was a financial hub for mining operations and is listed in the National Register of Historic Places for its significant mining heritage.",
+      "long_summary": "Eureka, located in Juab County, Utah, is a historic city with a rich mining heritage. Situated in the East Tintic Mountains at an elevation of 6,430 feet, Eureka was originally known as Ruby Hollow before becoming a bustling mining town. Incorporated in 1892, it served as the financial center for the Tintic Mining District, one of Utah's top mineral-producing areas. The city housed the 'Big Four' mines and was home to notable mining entrepreneurs like John Q. Packard and Jesse Knight. Eureka's population was 662 in 2020, down slightly from 669 in 2010. The city features a humid continental climate with large seasonal temperature variations. Eureka's historic significance is recognized by its inclusion in the National Register of Historic Places as part of the Tintic Mining District Multiple Resource Area. The city also boasts a unique cultural history, including early 20th-century soccer championships and the second-ever JCPenney store.",
+      "key_topics": "Mining history, Historic preservation, Geography, Demographics, Climate",
+      "city": "Eureka",
+      "county": "Juab",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "22770046.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 71060,
+      "title": "Iron County, Utah",
+      "summary": "Iron County is a county in southwestern Utah, known for its diverse geography ranging from the Escalante Desert to the High Plateau. The county seat is Parowan, while Cedar City is the largest city. Rich in history, it features evidence of Fremont culture and Paiute habitation, and was settled by LDS members in the 19th century. The area is also home to Cedar Breaks National Monument and Brian Head, the county's highest point.",
+      "long_summary": "Iron County, located in southwestern Utah, is a region of contrasting landscapes, from the arid Escalante Desert to the lush meadows and forests of the High Plateau. The county seat is Parowan, and the largest city is Cedar City, which is also the headquarters of the Southern Paiute Indian Reservation. The area has a rich history, with evidence of Fremont culture habitation dating back to 750-1250 AD and petroglyphs at Parowan Gap. The Dom\u00ednguez\u2013Escalante expedition passed through in 1776, and fur trapper Jedediah Smith was the first recorded Anglo-American to visit in 1826. Settled by LDS members in 1851, the county was officially created in 1850 and named for its iron deposits. Geographically, it includes the Markagunt Plateau and Cedar Breaks National Monument, with Brian Head being the highest point at 11,307 feet. The 2020 census recorded a population of 57,289, with a median age of 28.9 years. The county is politically conservative, having not voted Democratic in a presidential election since 1936.",
+      "key_topics": "History, Geography, Demographics, Recreation, Politics",
+      "city": "Cedar City",
+      "county": "Iron County",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "71060.html",
+      "latitude": 37.86,
+      "longitude": -113.28,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 605117,
+      "title": "Bidwell Mansion State Historic Park",
+      "summary": "Bidwell Mansion State Historic Park was a historic Victorian mansion in Chico, California, built by General John Bidwell in 1868. It served as the social and cultural center of the upper Sacramento Valley until its destruction by arson in 2024. The mansion was a California Historical Landmark and listed on the National Register of Historic Places.",
+      "long_summary": "Bidwell Mansion State Historic Park was a significant historic site located in Chico, California. Built in 1868 by General John Bidwell, the three-story, 26-room Victorian mansion was a $60,000 project and featured modern amenities like plumbing and gas lighting for its time. The mansion, constructed on Bidwell's 26,000-acre Rancho del Arroyo Chico, became the social and cultural hub of the upper Sacramento Valley. It was listed as a California Historical Landmark in 1939 and added to the National Register of Historic Places in 1972. Tragically, the mansion was destroyed by arson in December 2024 while undergoing renovations. The building's Italianate-style architecture and pink-tinted plaster exterior were notable features. The site holds historical importance due to its association with General Bidwell and his wife Annie, who were prominent figures in California's history.",
+      "key_topics": "historic landmark, Victorian architecture, California history, arson destruction, cultural center",
+      "city": "Chico",
+      "county": "Butte",
+      "state": "California",
+      "confidence": 0.8916666666666667,
+      "html_file": "605117.html",
+      "latitude": 39.73235278,
+      "longitude": -121.84348056,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "historical",
+        "landmark",
+        "california"
+      ]
+    },
+    {
+      "page_id": 7369514,
+      "title": "Bear Lake State Park (Utah)",
+      "summary": "Bear Lake State Park is a scenic Utah state park located along Bear Lake on the Idaho border, offering diverse recreational activities like boating, fishing, and camping. The park features three main areas: Rendezvous Beach, Bear Lake Marina, and East Side, each providing unique amenities and historical significance. It's particularly known for its annual events like the Mountain Man Rendezvous and Bear Lake Raspberry Days.",
+      "long_summary": "Bear Lake State Park is a prominent recreational area in Utah, situated along the shores of Bear Lake near the Idaho border. The park is divided into three main recreation areas: Rendezvous Beach, Bear Lake Marina, and East Side. Rendezvous Beach, named for historic fur trapper rendezvous in the 1820s, offers 220 campsites and is popular for family gatherings. Bear Lake Marina provides boating facilities with a sheltered harbor and boat rentals, while the East Side features primitive camping and boat ramps. The park hosts annual events like the Mountain Man Rendezvous and Bear Lake Raspberry Days, celebrating local history and culture. Recreational activities include waterskiing, swimming, scuba diving, sailing, and year-round fishing for species like cutthroat trout and Bonneville cisco. The park's rich history and diverse amenities make it a favorite destination for outdoor enthusiasts.",
+      "key_topics": "outdoor recreation, historical significance, fishing, camping, annual events",
+      "city": "Garden City",
+      "county": "Rich County",
+      "state": "Utah",
+      "confidence": 0.8694444444444445,
+      "html_file": "7369514.html",
+      "latitude": 41.84555556,
+      "longitude": -111.34555556,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "historical",
+        "recreation",
+        "coastal",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 1848431,
+      "title": "Eastern span replacement of the San Francisco\u2013Oakland Bay Bridge",
+      "summary": "The eastern span replacement of the San Francisco\u2013Oakland Bay Bridge is a major engineering project in California, completed in 2013 after a decade of construction. It replaced a seismically unsound portion of the bridge with a new self-anchored suspension bridge and viaducts, becoming the world's widest bridge. The project, costing $6.5 billion, was initiated after the 1989 Loma Prieta earthquake highlighted the bridge's vulnerability.",
+      "long_summary": "The eastern span replacement of the San Francisco\u2013Oakland Bay Bridge was a monumental construction project undertaken between 2002 and 2013 to replace a seismically unsafe section of the bridge. Located in California, the bridge connects Yerba Buena Island and Oakland across the San Francisco Bay. The new design features a self-anchored suspension bridge (SAS) and a pair of viaducts, making it the world's widest bridge with a width of 258.33 feet and 10 general-purpose lanes. The project, initially estimated at $250 million, ballooned to $6.5 billion due to various delays and complexities. The need for replacement became evident after the 1989 Loma Prieta earthquake caused a section of the bridge to collapse, prompting extensive seismic safety evaluations. The bridge's design and construction were influenced by the high probability of future earthquakes in the region, with experts estimating a 70% chance of a major quake within 30 years. The replacement bridge is expected to have a lifespan of 75 to 100 years, with significantly lower maintenance costs compared to the original structure.",
+      "key_topics": "Engineering and construction, Seismic safety, Public works projects, Transportation infrastructure, Earthquake preparedness",
+      "city": "San Francisco\u2013Oakland",
+      "county": "Alameda",
+      "state": "California",
+      "confidence": 0.8785714285714286,
+      "html_file": "1848431.html",
+      "latitude": 37.8168,
+      "longitude": -122.3519,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "california"
+      ]
+    },
+    {
+      "page_id": 57883619,
+      "title": "California Historical Landmarks in Contra Costa County, California",
+      "summary": "Contra Costa County in California is home to numerous California Historical Landmarks, highlighting its rich historical significance. These landmarks preserve the county's heritage and offer insights into its past. The area is notable for its contributions to California's history and culture.",
+      "long_summary": "Contra Costa County, located in Northern California, is renowned for its array of California Historical Landmarks that underscore its historical and cultural importance. These landmarks, which are listed and preserved, reflect the county's diverse heritage, from its early Native American inhabitants to its role in California's development during the Spanish, Mexican, and American periods. The county's landmarks include sites of significant events, historic buildings, and natural features that have shaped its identity. Contra Costa County's commitment to preserving these landmarks ensures that future generations can appreciate its rich history. The area is a focal point for historians, tourists, and locals interested in exploring California's past.",
+      "key_topics": "historical landmarks, California history, heritage preservation, cultural significance",
+      "city": null,
+      "county": "Contra Costa County",
+      "state": "California",
+      "confidence": 0.825,
+      "html_file": "57883619.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "landmark",
+        "tourist_destination",
+        "california"
+      ]
+    },
+    {
+      "page_id": 35975775,
+      "title": "Sage, California",
+      "summary": "Sage is an unincorporated community and census-designated place in Riverside County, California, with a population of 3,370 as of the 2020 census. Located at an elevation of 2,313 feet, it is part of the Hemet Unified School District and the Temecula Valley Unified School District.",
+      "long_summary": "Sage is an unincorporated community and census-designated place (CDP) in Riverside County, California, United States. According to the 2020 census, it has a population of 3,370. The community is situated at an elevation of 2,313 feet (705 meters). Sage first appeared as a census-designated place in the 2020 U.S. Census, marking its official recognition in demographic records. The majority of the CDP falls under the jurisdiction of the Hemet Unified School District, with a smaller portion being served by the Temecula Valley Unified School District. This rural community is part of the larger Riverside County, which is known for its diverse landscapes ranging from deserts to mountains. Sage's inclusion in the 2020 census highlights its growth and development as a distinct locality within the region.",
+      "key_topics": "Demographics, Education, Census-designated place, Riverside County, Unincorporated community",
+      "city": "Sage",
+      "county": "Riverside",
+      "state": "California",
+      "confidence": 0.8785714285714286,
+      "html_file": "35975775.html",
+      "latitude": 33.58166667,
+      "longitude": -116.93222222,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "mountain",
+        "education",
+        "california"
+      ]
+    },
+    {
+      "page_id": 64464228,
+      "title": "Lakeview Parkway (Utah County, Utah)",
+      "summary": "Lakeview Parkway is a partially completed connector road in Utah County, Utah, primarily within Provo. It runs along the south and west sides of Provo, serving key locations like Provo High School and Provo Municipal Airport. Upon completion, it will be a four- to five-lane road connecting Geneva Road to South State Street.",
+      "long_summary": "Lakeview Parkway is a developing connector street in Utah County, Utah, currently spanning approximately 7.3 miles (11.7 km) and primarily located within Provo city limits. The parkway runs along the south and west sides of Provo, serving important local facilities such as the Provo Municipal Airport and the new campus of Provo High School, completed in 2019. Upon final completion, Lakeview Parkway will extend as a four- to five-lane road from Geneva Road (State Route 114) at 2000 North to South State Street (U.S. Route 89), nearly encircling Provo's west and south sides. The parkway's construction began in 2014, with initial sections opening by 2016. It passes through areas like Lakeview, its namesake, and features connections to local roads such as Bulldog Drive and Lakeshore Drive. The project reflects ongoing infrastructure development in Utah County to support growing transportation needs.",
+      "key_topics": "transportation infrastructure, Provo landmarks, road construction, Utah County development, urban planning",
+      "city": "Provo",
+      "county": "Utah",
+      "state": "Utah",
+      "confidence": 0.8916666666666667,
+      "html_file": "64464228.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "education",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 1706289,
+      "title": "Fillmore District, San Francisco",
+      "summary": "The Fillmore District is a historic neighborhood in San Francisco, known for its rich cultural history and as a former center of the city's Jewish and African-American communities. It rose to prominence after the 1906 earthquake and became a vibrant commercial and cultural hub, though redevelopment in the 1960s led to significant changes. Today, it remains an important part of San Francisco's cultural and historical landscape.",
+      "long_summary": "The Fillmore District is a historically significant neighborhood in San Francisco, generally considered part of the Western Addition. It is centered around Fillmore Street, stretching from Geary Boulevard to McAllister or Fulton Street. The district gained prominence after the 1906 San Francisco earthquake, as it was largely unaffected by the disaster, becoming a major commercial and cultural center. Over the years, it has been home to diverse communities, including Jewish, Japanese, and African-American populations, each leaving a lasting cultural imprint. The Fillmore was once the heart of San Francisco's jazz scene and a bustling commercial area, though urban redevelopment in the 1960s led to displacement and the decline of its cultural vibrancy. Today, the Fillmore District is recognized for its historical significance, with remnants of its past still visible in its architecture and community spaces. The neighborhood's boundaries are somewhat fluid, but it is generally bordered by Van Ness Avenue, Divisadero Street, Geary Boulevard, and Grove Street. Despite changes over the decades, the Fillmore remains a vital part of San Francisco's cultural heritage.",
+      "key_topics": "historical significance, cultural diversity, urban redevelopment, jazz scene, neighborhood evolution",
+      "city": "Fillmore District",
+      "county": "San Francisco",
+      "state": "California",
+      "confidence": 0.9214285714285715,
+      "html_file": "1706289.html",
+      "latitude": 37.78086,
+      "longitude": -122.42542,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "california"
+      ]
+    },
+    {
+      "page_id": 2262677,
+      "title": "California Courts of Appeal",
+      "summary": "The California Courts of Appeal are the intermediate appellate courts in California, divided into six districts. They form the largest state-level intermediate appellate court system in the U.S., with 106 justices. Their decisions are binding on all superior courts in the state, and they play a crucial role in the state's judicial system.",
+      "long_summary": "The California Courts of Appeal serve as the state's intermediate appellate courts, geographically divided into six districts along county lines. With 106 justices, they constitute the largest state-level intermediate appellate court system in the United States. These courts have a unique role in California's judicial hierarchy: their decisions are binding on all superior courts statewide, unlike the federal system where trial courts are only bound by their specific circuit's appellate decisions. The Courts of Appeal operate under the supervision of the Supreme Court of California, which remains the ultimate judicial authority in the state. Historically, these courts were established to relieve the overburdened state Supreme Court as California's population grew rapidly during the 19th century. Today, they handle the majority of appeals in the state, ensuring access to appellate review while maintaining judicial efficiency. The system's structure allows for diverse legal interpretations across districts until the state Supreme Court provides definitive rulings.",
+      "key_topics": "Judicial system, Appellate courts, California law, Legal precedent, State government",
+      "city": null,
+      "county": null,
+      "state": "California",
+      "confidence": 0.73,
+      "html_file": "2262677.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "historical",
+        "california"
+      ]
+    },
+    {
+      "page_id": 137014,
+      "title": "Enoch, Utah",
+      "summary": "Enoch is a small city in Iron County, Utah, located northeast of Cedar City. Founded in 1851 and originally named Johnson's Springs, it was later renamed to avoid confusion with another settlement. Enoch has a population of around 7,000 and is known for its historical significance as part of an iron mission. The city features a marine west coast climate and is accessible via Interstate 15.",
+      "long_summary": "Enoch is a city in Iron County, Utah, situated approximately 7 miles northeast of Cedar City in the Cedar Valley. Founded in 1851 by Joel H. Johnson, it was originally known as Johnson's Springs and Fort Johnson. The city was renamed Enoch in 1890 to avoid confusion with another settlement and was officially incorporated in 1966, absorbing nearby communities like Grimshawville, Stevensville, and Williamsville. Enoch's name derives from the Order of Enoch. The city covers 7.2 square miles and is bordered by Cedar City to the south, with Interstate 15 forming its southeastern border. Enoch has a marine west coast climate with mild temperature variations and adequate rainfall. The population has grown steadily, reaching 7,374 in 2020, with a predominantly White demographic. The city is governed by a six-member council system, with a mayor and a city manager handling day-to-day administration. Enoch's historical roots as part of an iron mission and its proximity to major highways make it a notable location in Utah.",
+      "key_topics": "History, Geography, Demographics, Government, Climate",
+      "city": "Enoch",
+      "county": "Iron",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "137014.html",
+      "latitude": 37.75888889,
+      "longitude": -113.05638889,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "coastal",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 62769106,
+      "title": "Cedar Highlands, Utah",
+      "summary": "Cedar Highlands is a small subdivision east of Cedar City in Iron County, Utah. Originally a private cabin development established in 1981, it briefly incorporated as a town from 2018 to 2020. The community, managed by an HOA, experienced significant population decline from 368 in 2010 to 99 in 2020. Its history includes contentious governance issues and debates about incorporation.",
+      "long_summary": "Cedar Highlands is a residential subdivision located east of Cedar City in Iron County, Utah. Established in 1981 as a private development of cabins managed by a homeowners association (HOA), the community underwent significant changes in its political status. After years of debate, residents voted to incorporate as a town in 2016 (79-44), with formal incorporation occurring in December 2017. However, this status was short-lived as residents voted to dissolve the town in 2020. The community experienced a dramatic population decline from 368 in 2010 to just 99 in 2020. The push for incorporation stemmed from concerns about property tax allocation, fire management, and road maintenance issues that exceeded the HOA's capabilities. The town's brief existence was marked by governance challenges, including accounting violations identified in a 2019 state audit and subsequent leadership changes. The community remains notable for its scenic mountain location near Cedar City and its unique history of transitioning from a private development to a short-lived incorporated town.",
+      "key_topics": "Community governance, Population decline, HOA management, Municipal incorporation, Rural development",
+      "city": "Cedar Highlands",
+      "county": "Iron",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "62769106.html",
+      "latitude": 37.63583333,
+      "longitude": -113.03888889,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 137169,
+      "title": "Spring Lake, Utah",
+      "summary": "Spring Lake is a small rural town in Utah County, Utah, with a population of 528 as of 2020. Known for its farms and ranches, the town is part of the Provo\u2013Orem Metropolitan Statistical Area. It features a small lake, historic significance as the birthplace of Ute leader Antonga Black Hawk, and is undergoing incorporation as a town.",
+      "long_summary": "Spring Lake is a rural town located in southern Utah County, Utah, and is part of the Provo\u2013Orem Metropolitan Statistical Area. With a population of 528 as of the 2020 census, the town is characterized by its agricultural landscape, where residents often own horses, cattle, and cultivate alfalfa and hay. The town is situated between Payson and Santaquin, with Utah State Route 198 serving as the main transportation route. Spring Lake has no businesses or stoplights as of 2018, and its rural nature is preserved by zoning laws that limit housing density due to the reliance on wells for water. The town is historically significant as the birthplace of Antonga Black Hawk, a prominent Ute leader during Utah's Black Hawk War. As of July 2023, Spring Lake is in the process of becoming an incorporated town, with proposed limits extending west to include areas beyond Interstate 15. The small lake in Spring Lake, after being dredged in 2006, now supports trout. The town's demographics reflect a predominantly White population with a growing Hispanic community.",
+      "key_topics": "Agriculture, Rural Life, Historical Significance, Incorporation Process, Geography",
+      "city": "Spring Lake",
+      "county": "Utah",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "137169.html",
+      "latitude": 40.00027778,
+      "longitude": -111.74861111,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 71077,
+      "title": "Tooele County, Utah",
+      "summary": "Tooele County is a county in Utah, USA, known for its diverse geography ranging from the Great Salt Lake Desert to mountainous regions. It has a rich history tied to mining, military bases, and indigenous cultures. The county seat is Tooele, and it is part of the Salt Lake City metropolitan area. Notable for its economic reliance on hazardous waste disposal and historical significance in atomic weapon development, Tooele County is a unique blend of natural beauty and industrial activity.",
+      "long_summary": "Tooele County, located in the U.S. state of Utah, is a region of significant geographical and historical importance. Established in 1850, the county spans a diverse landscape that includes the Great Salt Lake Desert, the Cedar and Stansbury Mountains, and the Tooele Valley. The county seat and largest city, Tooele, along with other towns like Grantsville and Wendover, are situated in the eastern edge of the county. Historically, Tooele County was home to the Goshute tribe and later became a focal point for non-Mormon political activity in the late 19th century. The 20th century saw the county's economy heavily influenced by mining and military activities, including the Wendover Air Force Base and the Tooele Army Depot, which played roles in atomic weapon development and chemical weapons storage. In recent decades, the county has become known for its hazardous waste disposal facilities, leading to its reputation as a 'sacrifice zone.' Despite these industrial aspects, Tooele County offers a mix of natural beauty and historical sites, making it a unique part of Utah.",
+      "key_topics": "Mining history, Military bases, Hazardous waste disposal, Native American heritage, Geographical diversity",
+      "city": "Tooele",
+      "county": "Tooele",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "71077.html",
+      "latitude": 40.45,
+      "longitude": -113.18,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 748746,
+      "title": "Snowbird, Utah",
+      "summary": "Snowbird is an unincorporated community in Utah's Little Cottonwood Canyon, renowned for its Snowbird Ski and Summer Resort. Established in 1971, it offers world-class alpine skiing and snowboarding, along with summer activities like hiking and mountain biking. The area has a rich mining history dating back to 1869, when silver was discovered in what became the Emma Mine.",
+      "long_summary": "Snowbird is an unincorporated community located in Little Cottonwood Canyon within Utah's Wasatch Range of the Rocky Mountains, near Salt Lake City. It is most famous for the Snowbird Ski and Summer Resort, which opened in December 1971 and has become a premier destination for alpine skiing and snowboarding. The resort operates year-round, catering to winter sports enthusiasts and summer visitors who enjoy hiking, mountain biking, and other outdoor activities. The area's history dates back to 1869 when silver was discovered, leading to significant mining operations in what became known as the Emma Mine. At its peak, the mining community housed 8,000 residents before being destroyed by avalanches. Today, Snowbird features extensive facilities including ski lifts, hotels, condominiums, and restaurants. The resort shares Little Cottonwood Canyon with Alta Ski Area, and since 2002, they have offered joint access passes. Snowbird's terrain includes Hidden Peak, the highest point at 10,992 feet, with a subalpine climate. The resort is known for its unique features like a 600-foot tunnel with a conveyor lift, the only one of its kind in North America.",
+      "key_topics": "ski resort, mountain recreation, mining history, alpine climate, tourism",
+      "city": "Snowbird",
+      "county": "Salt Lake",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "748746.html",
+      "latitude": 40.58111111,
+      "longitude": -111.65638889,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "recreation",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 1587679,
+      "title": "List of mayors of Oakland, California",
+      "summary": "Oakland, California, founded in 1852, is a major city in the San Francisco Bay Area known for its strong mayor form of government. The city has a rich political history, with mayors serving varying term lengths over time, now limited to two 4-year terms. Early mayors like Horace W. Carpentier played significant roles in shaping Oakland's development, particularly in land acquisitions and infrastructure.",
+      "long_summary": "Oakland, California, is a prominent city in the San Francisco Bay Area, founded in 1852 and incorporated in 1854. The city operates under a strong mayor form of government, with mayors initially serving one or two-year terms until the early 20th century, now serving 4-year terms limited to two terms. The article details the lives and contributions of early mayors like Horace W. Carpentier, who secured vast land acquisitions and built critical infrastructure, including wharves and a toll bridge. Other notable mayors include Charles Campbell, who fought against Carpentier's monopolies, and Andrew Williams, a key figure in establishing the Oakland Public Library. Oakland's political history reflects its growth from a small settlement to a major urban center, with its mayors playing pivotal roles in its development. The city's strategic location and early infrastructure investments laid the foundation for its current status as a vital part of the Bay Area.",
+      "key_topics": "political history, urban development, mayoral governance, historical figures, infrastructure",
+      "city": "Oakland",
+      "county": "Alameda County",
+      "state": "California",
+      "confidence": 0.8916666666666667,
+      "html_file": "1587679.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "california"
+      ]
+    },
+    {
+      "page_id": 73883105,
+      "title": "Liberty Hill Historic District (San Francisco, California)",
+      "summary": "The Liberty Hill Historic District is a historic residential neighborhood in San Francisco, California, known for its 19th-century middle-class housing and notable landmarks. It includes the Liberty Street Historic District and features homes designed by prominent architects. The area is a designated San Francisco Landmark and holds historical significance.",
+      "long_summary": "The Liberty Hill Historic District is a historic residential neighborhood located in the Dolores Heights area of San Francisco, California. Bounded by 20th, Mission, Dolores, and 22nd Streets, the district is a San Francisco Designated Landmark, recognized since October 25, 1985. It includes the Liberty Street Historic District, a two-block area listed as a California Historical Landmark and on the National Register of Historic Places. The district's name originates from Liberty Street and Hill Street, with the hyphen eventually dropped. The area features 19th-century middle-class housing of varying sizes, with notable homes like the Marsden Kershaw House and the John McMullen House, both San Francisco Designated Landmarks. Prominent architects such as the Newsom Brothers, Albert Pissis, and Charles Shaner contributed to the district's architectural heritage. The neighborhood has associations with notable figures like Mark Zuckerberg and Susan B. Anthony, adding to its historical and cultural significance.",
+      "key_topics": "Historic Landmark, 19th-century Architecture, Residential Neighborhood, Notable Residents, San Francisco Landmarks",
+      "city": "San Francisco",
+      "county": "San Francisco",
+      "state": "California",
+      "confidence": 0.8916666666666667,
+      "html_file": "73883105.html",
+      "latitude": 37.75694444,
+      "longitude": -122.42222222,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "landmark",
+        "california"
+      ]
+    },
+    {
+      "page_id": 21836932,
+      "title": "National Register of Historic Places listings in Iron County, Utah",
+      "summary": "This article lists the properties and districts in Iron County, Utah that are listed on the National Register of Historic Places. It provides a comprehensive catalog of historic sites in the county, including their locations via latitude and longitude coordinates.",
+      "long_summary": "The article serves as a detailed inventory of all properties and districts in Iron County, Utah that have been recognized and listed on the National Register of Historic Places. It includes current listings and former listings, providing a historical record of significant sites within the county. The inclusion of latitude and longitude coordinates for many of these locations allows for geographical mapping and study. Iron County, located in southwestern Utah, is known for its rich history and natural landmarks, and this list highlights the cultural and historical significance of its built environment. The National Register listings help preserve the county's heritage and promote awareness of its historical assets.",
+      "key_topics": "National Register of Historic Places, historic preservation, Iron County history, cultural heritage, historical landmarks",
+      "city": null,
+      "county": "Iron County",
+      "state": "Utah",
+      "confidence": 0.8388888888888889,
+      "html_file": "21836932.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "landmark",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 18792127,
+      "title": "National Register of Historic Places listings in Riverside County, California",
+      "summary": "This is a comprehensive list of properties and districts in Riverside County, California that are listed on the National Register of Historic Places. The listings include various historically significant sites across the county, with geographic coordinates provided for many locations.",
+      "long_summary": "The National Register of Historic Places listings in Riverside County, California encompass a wide range of historically significant properties and districts throughout the county. Riverside County, located in the southern part of California, is home to numerous sites recognized for their historical importance. These listings include buildings, structures, objects, and districts that meet the criteria for preservation due to their architectural, cultural, or historical significance. The list serves as an official inventory of these protected sites, with many entries including precise latitude and longitude coordinates to facilitate mapping and location. The National Register program is administered by the National Park Service, and inclusion on the list provides formal recognition and certain protections for these historic resources. Riverside County's diverse history is reflected in the variety of properties included in these listings, which may span different periods and themes of California's development.",
+      "key_topics": "Historic preservation, National Register of Historic Places, Riverside County history, California landmarks, Cultural heritage",
+      "city": null,
+      "county": "Riverside",
+      "state": "California",
+      "confidence": 0.8388888888888889,
+      "html_file": "18792127.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "park",
+        "historical",
+        "california"
+      ]
+    }
+  ],
+  "metadata": {
+    "selection_date": "2025-08-23T15:03:39.684583",
+    "total_selected": 25,
+    "selection_method": "stratified_random",
+    "seed": 42,
+    "database_path": "data/wikipedia/wikipedia.db"
+  }
+}
