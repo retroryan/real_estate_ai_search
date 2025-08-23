@@ -1,5 +1,5 @@
 """
-Enhanced query generator for evaluation dataset with 40 queries.
+Query generator for evaluation dataset.
 
 Creates test queries based on selected Wikipedia articles.
 """
@@ -106,7 +106,7 @@ class QueryGenerator:
         """Generate geographic queries."""
         queries = []
         
-        # Query 1: Wasatch County locations
+        # Query 1: Cities in specific counties
         if self.articles_by_county.get("Wasatch County"):
             wasatch_ids = [a["page_id"] for a in self.articles_by_county["Wasatch County"]]
             relevance = self._calculate_geographic_relevance("Wasatch County", county_match=True)
@@ -126,7 +126,7 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 3: Park City vicinity
+        # Query 3: Areas near specific locations
         park_city_nearby = self._find_nearby_articles("Park City", state="Utah")
         if park_city_nearby:
             relevance = self._calculate_proximity_relevance("Park City", "Utah")
@@ -136,19 +136,19 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 4: Peninsula regions
+        # Query 4: Peninsula areas
         peninsula_articles = [a for a in self.articles if "peninsula" in a["title"].lower()]
         if peninsula_articles:
             relevance = self._calculate_keyword_relevance("peninsula", title_weight=3)
             queries.append((
-                "Peninsula regions in the Bay Area",
+                "Show me peninsula regions in the Bay Area",
                 [a["page_id"] for a in peninsula_articles[:3]],
                 relevance
             ))
         
-        # Query 5: Northern California
+        # Query 5: Northern California locations
         norcal_articles = [a for a in self.articles if a.get("state") == "California" 
-                          and any(word in str(a).lower() for word in ["northern", "north", "bay", "sacramento"])]
+                          and any(word in str(a).lower() for word in ["northern", "north", "bay area", "sacramento"])]
         if norcal_articles:
             relevance = self._calculate_keyword_relevance("northern", summary_weight=2)
             queries.append((
@@ -157,7 +157,7 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 6: Southern Utah
+        # Query 6: Southern Utah locations
         south_utah = [a for a in self.articles if a.get("state") == "Utah"
                      and any(word in str(a).lower() for word in ["southern", "south", "washington", "iron"])]
         if south_utah:
@@ -168,7 +168,7 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 7: Bay Area communities
+        # Query 7: Bay Area specific
         bay_area = [a for a in self.articles if "bay" in str(a).lower() or "san francisco" in str(a).lower()]
         if bay_area:
             relevance = self._calculate_keyword_relevance("bay", summary_weight=2)
@@ -183,29 +183,8 @@ class QueryGenerator:
         if mountain:
             relevance = self._calculate_category_relevance("mountain")
             queries.append((
-                "Mountain ranges and peaks in Utah and California",
+                "Mountain ranges and peaks",
                 [a["page_id"] for a in mountain[:3]],
-                relevance
-            ))
-        
-        # Additional queries if more space
-        # Query 9: Summit County areas
-        if self.articles_by_county.get("Summit County"):
-            summit_ids = [a["page_id"] for a in self.articles_by_county["Summit County"]]
-            relevance = self._calculate_geographic_relevance("Summit County", county_match=True)
-            queries.append((
-                "Summit County Utah locations",
-                summit_ids[:3],
-                relevance
-            ))
-        
-        # Query 10: Lake regions
-        lake_articles = [a for a in self.articles if "lake" in a["title"].lower() or "lake" in str(a.get("summary", "")).lower()]
-        if lake_articles:
-            relevance = self._calculate_keyword_relevance("lake", title_weight=2)
-            queries.append((
-                "Lake regions and reservoirs",
-                [a["page_id"] for a in lake_articles[:3]],
                 relevance
             ))
         
@@ -220,18 +199,18 @@ class QueryGenerator:
         if park_articles:
             relevance = self._calculate_category_relevance("park")
             queries.append((
-                "State parks for recreation",
+                "Find state parks for recreation",
                 [a["page_id"] for a in park_articles[:3]],
                 relevance
             ))
         
-        # Query 2: Utah mountains
-        mountain_articles = [a for a in self.articles_by_category.get("mountain", []) if a.get("state") == "Utah"]
+        # Query 2: Mountain areas
+        mountain_articles = self.articles_by_category.get("mountain", [])
         if mountain_articles:
             relevance = self._calculate_category_relevance("mountain")
             queries.append((
                 "Mountain regions in Utah",
-                [a["page_id"] for a in mountain_articles[:3]],
+                [a["page_id"] for a in mountain_articles if a.get("state") == "Utah"][:3],
                 relevance
             ))
         
@@ -245,7 +224,7 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 4: Water sports areas
+        # Query 4: Recreation areas
         recreation_articles = self.articles_by_category.get("recreation", [])
         if recreation_articles:
             relevance = self._calculate_category_relevance("recreation")
@@ -255,63 +234,23 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 5: Ski resorts
-        ski_articles = [a for a in self.articles if "ski" in str(a).lower() or "resort" in str(a).lower()]
-        if ski_articles:
-            relevance = self._calculate_keyword_relevance("ski", summary_weight=2)
-            queries.append((
-                "Ski resorts and winter sports areas",
-                [a["page_id"] for a in ski_articles[:3]],
-                relevance
-            ))
-        
-        # Query 6: National landmarks
-        landmark_articles = [a for a in self.articles if "landmark" in str(a).lower() or "monument" in str(a).lower()]
-        if landmark_articles:
-            relevance = self._calculate_keyword_relevance("landmark", summary_weight=2)
-            queries.append((
-                "National landmarks and monuments",
-                [a["page_id"] for a in landmark_articles[:3]],
-                relevance
-            ))
-        
-        # Query 7: Beach and coastal recreation
-        beach_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["beach", "coast", "ocean"])]
-        if beach_articles:
-            relevance = self._calculate_keyword_relevance("beach", summary_weight=2)
-            queries.append((
-                "Beach and coastal recreation areas",
-                [a["page_id"] for a in beach_articles[:3]],
-                relevance
-            ))
-        
-        # Query 8: Nature preserves
-        nature_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["preserve", "wilderness", "nature"])]
-        if nature_articles:
-            relevance = self._calculate_keyword_relevance("preserve", summary_weight=2)
-            queries.append((
-                "Nature preserves and wilderness areas",
-                [a["page_id"] for a in nature_articles[:3]],
-                relevance
-            ))
-        
         return queries[:n]
     
     def _generate_historical_queries(self, n: int) -> List[tuple]:
         """Generate historical queries."""
         queries = []
         
-        # Query 1: California Historical Landmarks
-        historical_articles = [a for a in self.articles_by_category.get("historical", []) if a.get("state") == "California"]
+        # Query 1: Historical landmarks
+        historical_articles = self.articles_by_category.get("historical", [])
         if historical_articles:
             relevance = self._calculate_category_relevance("historical")
             queries.append((
                 "California Historical Landmarks",
-                [a["page_id"] for a in historical_articles[:3]],
+                [a["page_id"] for a in historical_articles if a.get("state") == "California"][:3],
                 relevance
             ))
         
-        # Query 2: Spanish colonial sites
+        # Query 2: Spanish colonial history
         spanish_articles = [a for a in self.articles 
                            if "spanish" in (a.get("summary", "") + a.get("long_summary", "")).lower()]
         if spanish_articles:
@@ -333,54 +272,14 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 4: 1930s infrastructure
+        # Query 4: 1930s projects
         thirties_articles = [a for a in self.articles 
-                           if any(year in str(a) for year in ["1930", "1931", "1932", "1933", "1934", "1935", "1936", "1937", "1938", "1939"])]
+                           if "1930" in (a.get("summary", "") + a.get("long_summary", ""))]
         if thirties_articles:
             relevance = self._calculate_keyword_relevance("1930", summary_weight=1)
             queries.append((
                 "Infrastructure projects from the 1930s",
                 [a["page_id"] for a in thirties_articles[:3]],
-                relevance
-            ))
-        
-        # Query 5: Gold Rush era
-        gold_articles = [a for a in self.articles if "gold" in str(a).lower() or "mining" in str(a).lower()]
-        if gold_articles:
-            relevance = self._calculate_keyword_relevance("gold", summary_weight=2)
-            queries.append((
-                "Gold Rush era locations",
-                [a["page_id"] for a in gold_articles[:3]],
-                relevance
-            ))
-        
-        # Query 6: Native American heritage
-        native_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["native", "indian", "tribe", "indigenous"])]
-        if native_articles:
-            relevance = self._calculate_keyword_relevance("native", summary_weight=2)
-            queries.append((
-                "Native American heritage sites",
-                [a["page_id"] for a in native_articles[:3]],
-                relevance
-            ))
-        
-        # Query 7: Mormon pioneer sites
-        mormon_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["mormon", "lds", "pioneer", "brigham"])]
-        if mormon_articles:
-            relevance = self._calculate_keyword_relevance("mormon", summary_weight=2)
-            queries.append((
-                "Mormon pioneer historical sites",
-                [a["page_id"] for a in mormon_articles[:3]],
-                relevance
-            ))
-        
-        # Query 8: Railroad history
-        railroad_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["railroad", "railway", "train", "transcontinental"])]
-        if railroad_articles:
-            relevance = self._calculate_keyword_relevance("railroad", summary_weight=2)
-            queries.append((
-                "Railroad and railway historical sites",
-                [a["page_id"] for a in railroad_articles[:3]],
                 relevance
             ))
         
@@ -390,13 +289,13 @@ class QueryGenerator:
         """Generate administrative queries."""
         queries = []
         
-        # Query 1: Utah counties
-        county_articles = [a for a in self.articles_by_category.get("county", []) if a.get("state") == "Utah"]
+        # Query 1: Counties
+        county_articles = self.articles_by_category.get("county", [])
         if county_articles:
             relevance = self._calculate_category_relevance("county")
             queries.append((
                 "Counties in Utah",
-                [a["page_id"] for a in county_articles[:3]],
+                [a["page_id"] for a in county_articles if a.get("state") == "Utah"][:3],
                 relevance
             ))
         
@@ -411,11 +310,12 @@ class QueryGenerator:
             ))
         
         # Query 3: Census designated places
-        census_articles = [a for a in self.articles if "census" in a.get("summary", "").lower()]
+        census_articles = [a for a in self.articles 
+                          if "census" in a.get("summary", "").lower()]
         if census_articles:
             relevance = self._calculate_keyword_relevance("census", summary_weight=2)
             queries.append((
-                "Census designated places",
+                "Census designated places in Summit County",
                 [a["page_id"] for a in census_articles[:3]],
                 relevance
             ))
@@ -431,53 +331,13 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 5: California counties
-        ca_county_articles = [a for a in self.articles_by_category.get("county", []) if a.get("state") == "California"]
-        if ca_county_articles:
-            relevance = self._calculate_category_relevance("county")
-            queries.append((
-                "Counties in California",
-                [a["page_id"] for a in ca_county_articles[:3]],
-                relevance
-            ))
-        
-        # Query 6: City governments
-        city_articles = self.articles_by_category.get("city", [])
-        if city_articles:
-            relevance = self._calculate_category_relevance("city")
-            queries.append((
-                "City governments and municipalities",
-                [a["page_id"] for a in city_articles[:3]],
-                relevance
-            ))
-        
-        # Query 7: Water districts
-        water_articles = [a for a in self.articles if "water" in str(a).lower() and "district" in str(a).lower()]
-        if water_articles:
-            relevance = self._calculate_keyword_relevance("district", summary_weight=2)
-            queries.append((
-                "Water management districts",
-                [a["page_id"] for a in water_articles[:3]],
-                relevance
-            ))
-        
-        # Query 8: Transportation authorities
-        transport_articles = [a for a in self.articles if any(word in str(a).lower() for word in ["transportation", "transit", "highway", "authority"])]
-        if transport_articles:
-            relevance = self._calculate_keyword_relevance("transportation", summary_weight=2)
-            queries.append((
-                "Transportation and transit authorities",
-                [a["page_id"] for a in transport_articles[:3]],
-                relevance
-            ))
-        
         return queries[:n]
     
     def _generate_semantic_queries(self, n: int) -> List[tuple]:
         """Generate semantic/conceptual queries."""
         queries = []
         
-        # Query 1: Family destinations
+        # Query 1: Family-friendly destinations
         family_articles = [a for a in self.articles 
                           if any(cat in a.get("categories", []) 
                                 for cat in ["park", "recreation", "tourist_destination"])]
@@ -501,10 +361,9 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 3: Technology areas
+        # Query 3: Silicon Valley area
         silicon_articles = [a for a in self.articles 
-                           if "silicon" in (a.get("summary", "") + a.get("long_summary", "")).lower()
-                           or "tech" in str(a).lower()]
+                           if "silicon" in (a.get("summary", "") + a.get("long_summary", "")).lower()]
         if silicon_articles:
             relevance = self._calculate_keyword_relevance("silicon", summary_weight=2)
             queries.append((
@@ -513,7 +372,7 @@ class QueryGenerator:
                 relevance
             ))
         
-        # Query 4: Rural regions
+        # Query 4: Rural and unincorporated areas
         rural_articles = [a for a in self.articles 
                          if "rural" in (a.get("summary", "") + a.get("long_summary", "")).lower()
                          or "unincorporated" in (a.get("summary", "") + a.get("long_summary", "")).lower()]
@@ -522,50 +381,6 @@ class QueryGenerator:
             queries.append((
                 "Rural and unincorporated regions",
                 [a["page_id"] for a in rural_articles[:3]],
-                relevance
-            ))
-        
-        # Query 5: Adventure tourism
-        adventure_articles = [a for a in self.articles 
-                            if any(word in str(a).lower() for word in ["adventure", "extreme", "climbing", "rafting"])]
-        if adventure_articles:
-            relevance = self._calculate_semantic_relevance("adventure", ["recreation", "mountain"])
-            queries.append((
-                "Adventure tourism destinations",
-                [a["page_id"] for a in adventure_articles[:3]],
-                relevance
-            ))
-        
-        # Query 6: Wine regions
-        wine_articles = [a for a in self.articles 
-                        if any(word in str(a).lower() for word in ["wine", "vineyard", "napa", "sonoma"])]
-        if wine_articles:
-            relevance = self._calculate_keyword_relevance("wine", summary_weight=2)
-            queries.append((
-                "Wine country and vineyard regions",
-                [a["page_id"] for a in wine_articles[:3]],
-                relevance
-            ))
-        
-        # Query 7: Desert areas
-        desert_articles = [a for a in self.articles 
-                          if any(word in str(a).lower() for word in ["desert", "mojave", "arid"])]
-        if desert_articles:
-            relevance = self._calculate_keyword_relevance("desert", summary_weight=2)
-            queries.append((
-                "Desert regions and landscapes",
-                [a["page_id"] for a in desert_articles[:3]],
-                relevance
-            ))
-        
-        # Query 8: Agricultural regions
-        ag_articles = [a for a in self.articles 
-                      if any(word in str(a).lower() for word in ["agricultural", "farming", "ranch", "crop"])]
-        if ag_articles:
-            relevance = self._calculate_keyword_relevance("agricultural", summary_weight=2)
-            queries.append((
-                "Agricultural and farming regions",
-                [a["page_id"] for a in ag_articles[:3]],
                 relevance
             ))
         
@@ -745,10 +560,10 @@ def main():
     # Create query generator
     generator = QueryGenerator(articles)
     
-    # Generate queries (8 per category for 40 total)
+    # Generate queries
     print("\nGenerating test queries...")
     queries = generator.generate_queries(
-        queries_per_category=8,
+        queries_per_category=4,
         categories=["geographic", "landmark", "historical", "administrative", "semantic"]
     )
     

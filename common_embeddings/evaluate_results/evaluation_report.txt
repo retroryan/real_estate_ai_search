@@ -1,0 +1,70 @@
+============================================================
+EVALUATION METRICS
+============================================================
+
+OVERALL METRICS:
+  Precision: 0.480
+  Recall: 0.430
+  F1 Score: 0.454
+  Mean Average Precision (MAP): 0.593
+  Mean Reciprocal Rank (MRR): 0.785
+
+METRICS AT DIFFERENT K VALUES:
+
+  @K=1:
+    Precision: 0.725
+    Recall: 0.189
+    F1: 0.241
+    NDCG: 0.683
+
+  @K=3:
+    Precision: 0.650
+    Recall: 0.417
+    F1: 0.380
+    NDCG: 0.768
+
+  @K=5:
+    Precision: 0.550
+    Recall: 0.519
+    F1: 0.385
+    NDCG: 0.774
+
+  @K=10:
+    Precision: 0.480
+    Recall: 0.749
+    F1: 0.433
+    NDCG: 0.814
+
+CATEGORY-WISE METRICS:
+
+  GEOGRAPHIC:
+    precision_at_5: 0.500
+    recall_at_10: 0.720
+    f1_at_5: 0.364
+    map: 0.581
+
+  LANDMARK:
+    precision_at_5: 0.500
+    recall_at_10: 0.854
+    f1_at_5: 0.407
+    map: 0.759
+
+  HISTORICAL:
+    precision_at_5: 0.300
+    recall_at_10: 0.500
+    f1_at_5: 0.204
+    map: 0.250
+
+  ADMINISTRATIVE:
+    precision_at_5: 0.750
+    recall_at_10: 0.477
+    f1_at_5: 0.341
+    map: 0.382
+
+  SEMANTIC:
+    precision_at_5: 0.700
+    recall_at_10: 1.196
+    f1_at_5: 0.607
+    map: 0.994
+
+============================================================

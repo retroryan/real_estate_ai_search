@@ -251,7 +251,7 @@ class ReportGenerator:
         <ul>
             <li><strong>Total Articles:</strong> {len(articles_data['articles'])}</li>
             <li><strong>Total Queries:</strong> {len(queries_data['queries'])}</li>
-            <li><strong>Query Categories:</strong> {', '.join(queries_data.get('categories', {{}}).keys())}</li>
+            <li><strong>Query Categories:</strong> {', '.join(queries_data.get('categories', {}).keys())}</li>
         </ul>
         
         <div class="timestamp">

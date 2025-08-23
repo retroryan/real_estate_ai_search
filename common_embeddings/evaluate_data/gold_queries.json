@@ -250,7 +250,6 @@
       "category": "geographic",
       "expected_results": [
         26974,
-        605117,
         1848431
       ],
       "relevance_annotations": {
@@ -311,9 +310,7 @@
       "query_text": "Southern Utah locations and landmarks",
       "category": "geographic",
       "expected_results": [
-        17997272,
-        34629558,
-        34482485
+        34629558
       ],
       "relevance_annotations": {
         "26974": 1,
@@ -392,7 +389,7 @@
         "57883619": 0,
         "35975775": 0,
         "64464228": 0,
-        "1706289": 0,
+        "1706289": 3,
         "2262677": 0,
         "137014": 0,
         "62769106": 0,
@@ -498,7 +495,6 @@
       "category": "landmark",
       "expected_results": [
         17997272,
-        71083,
         605117
       ],
       "relevance_annotations": {
@@ -506,7 +502,7 @@
         "17997272": 3,
         "34629558": 0,
         "36842068": 0,
-        "71083": 3,
+        "71083": 0,
         "34482485": 0,
         "22770046": 0,
         "71060": 0,
@@ -683,8 +679,7 @@
       "query_text": "Outdoor recreation areas with water sports",
       "category": "landmark",
       "expected_results": [
-        7369514,
-        748746
+        7369514
       ],
       "relevance_annotations": {
         "26974": 0,
@@ -707,7 +702,7 @@
         "62769106": 0,
         "137169": 0,
         "71077": 0,
-        "748746": 3,
+        "748746": 0,
         "1587679": 0,
         "73883105": 0,
         "21836932": 0,
@@ -991,12 +986,10 @@
       "query_text": "California Historical Landmarks",
       "category": "historical",
       "expected_results": [
-        26974,
-        36842068,
-        605117
+        36842068
       ],
       "relevance_annotations": {
-        "26974": 3,
+        "26974": 0,
         "17997272": 3,
         "34629558": 3,
         "36842068": 3,
@@ -1004,7 +997,7 @@
         "34482485": 0,
         "22770046": 3,
         "71060": 3,
-        "605117": 3,
+        "605117": 0,
         "7369514": 3,
         "1848431": 0,
         "57883619": 3,
@@ -1115,9 +1108,7 @@
       "query_text": "Historical land grants in California",
       "category": "historical",
       "expected_results": [
-        26974,
-        71077,
-        15862936
+        26974
       ],
       "relevance_annotations": {
         "26974": 1,
@@ -1139,7 +1130,7 @@
         "137014": 0,
         "62769106": 0,
         "137169": 0,
-        "71077": 1,
+        "71077": 0,
         "748746": 0,
         "1587679": 0,
         "73883105": 0,
@@ -1150,7 +1141,7 @@
         "35200423": 0,
         "21511470": 0,
         "35190408": 0,
-        "15862936": 2,
+        "15862936": 0,
         "8961274": 0,
         "1582456": 0,
         "137003": 0,
@@ -1177,9 +1168,7 @@
       "query_text": "Infrastructure projects from the 1930s",
       "category": "historical",
       "expected_results": [
-        17997272,
-        71060,
-        605117
+        17997272
       ],
       "relevance_annotations": {
         "26974": 0,
@@ -1797,16 +1786,16 @@
       "query_text": "City governments and municipalities",
       "category": "administrative",
       "expected_results": [
-        17997272,
-        34629558,
-        71083
+        71060,
+        22770046,
+        605117
       ],
       "relevance_annotations": {
         "26974": 0,
-        "17997272": 3,
-        "34629558": 3,
+        "17997272": 0,
+        "34629558": 0,
         "36842068": 0,
-        "71083": 3,
+        "71083": 0,
         "34482485": 0,
         "22770046": 3,
         "71060": 3,
@@ -1983,7 +1972,6 @@
       "category": "semantic",
       "expected_results": [
         17997272,
-        36842068,
         71083
       ],
       "relevance_annotations": {
@@ -2045,8 +2033,7 @@
       "category": "semantic",
       "expected_results": [
         17997272,
-        7369514,
-        137014
+        7369514
       ],
       "relevance_annotations": {
         "26974": 1,
@@ -2065,7 +2052,7 @@
         "64464228": 2,
         "1706289": 0,
         "2262677": 0,
-        "137014": 2,
+        "137014": 0,
         "62769106": 0,
         "137169": 1,
         "71077": 0,
@@ -2231,7 +2218,8 @@
       "category": "semantic",
       "expected_results": [
         137003,
-        107783
+        748746,
+        7369514
       ],
       "relevance_annotations": {
         "26974": 2,
@@ -2481,9 +2469,11 @@
     "semantic": 8
   },
   "metadata": {
-    "generation_date": "2025-08-23T16:18:29.035554",
+    "generation_date": "2025-08-23T16:30:57.235808",
     "total_queries": 40,
     "total_articles": 50,
-    "generation_method": "category-based"
+    "generation_method": "category-based",
+    "version": "gold_v1",
+    "notes": "Gold standard dataset with validated query-article mappings"
   }
 }

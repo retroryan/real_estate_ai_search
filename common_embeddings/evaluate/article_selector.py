@@ -223,9 +223,9 @@ def main():
     """Main function to select and save evaluation articles."""
     selector = ArticleSelector()
     
-    # Select 25 random articles
-    print("Selecting 25 random Wikipedia articles...")
-    articles = selector.select_random(n=25, require_summary=True, seed=42)
+    # Select 50 random articles
+    print("Selecting 50 random Wikipedia articles...")
+    articles = selector.select_random(n=50, require_summary=True, seed=42)
     
     # Print summary
     print(f"\nSelected {len(articles)} articles:")

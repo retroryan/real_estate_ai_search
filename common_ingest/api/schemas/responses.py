@@ -8,8 +8,12 @@ import time
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 
-from ...models.property import EnrichedProperty, EnrichedNeighborhood
-from ...models.wikipedia import EnrichedWikipediaArticle, WikipediaSummary
+from property_finder_models import (
+    EnrichedProperty,
+    EnrichedNeighborhood,
+    EnrichedWikipediaArticle,
+    WikipediaSummary
+)
 
 
 class ResponseMetadata(BaseModel):

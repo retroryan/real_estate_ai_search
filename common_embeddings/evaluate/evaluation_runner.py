@@ -108,13 +108,20 @@ class EvaluationRunner:
         )
         collection = self.chroma_store.collection
         
+        # Create embedding function to match what was used during indexing
+        from common_embeddings import EmbeddingPipeline
+        pipeline = EmbeddingPipeline(self.config)
+        
         for query in queries:
             query_id = query["query_id"]
             query_text = query["query_text"]
             
-            # Query collection
+            # Generate embedding for query using the same model
+            query_embedding = pipeline.embed_model.get_query_embedding(query_text)
+            
+            # Query collection with pre-computed embedding
             query_results = collection.query(
-                query_texts=[query_text],
+                query_embeddings=[query_embedding],
                 n_results=10  # Get top 10 results
             )
             

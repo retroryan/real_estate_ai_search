@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "common-embeddings"
+version = "1.0.0"
+description = "Embedding generation pipeline for Property Finder"
+requires-python = ">=3.9"
+dependencies = [
+    # Shared models package (local)
+    "property-finder-models @ file:///Users/ryanknight/projects/temporal/real_estate_ai_search/property_finder_models",
+    
+    # Core dependencies
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+    
+    # Vector database
+    "chromadb>=0.4",
+    
+    # Embedding providers
+    "ollama>=0.1",
+    
+    # Data processing
+    "numpy>=1.24",
+    "pandas>=2.0",
+    
+    # Utilities
+    "pyyaml>=6.0",
+    "tenacity>=8.2",
+]
+
+[project.optional-dependencies]
+providers = [
+    "openai>=1.0",
+    "google-generativeai>=0.3",
+    "voyageai>=0.2",
+    "cohere>=4.0",
+    "tiktoken>=0.5",  # For OpenAI token counting
+]
+
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+]
+
+viz = [
+    "rich>=13.0",
+    "tqdm>=4.65",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["common_embeddings*"]
+exclude = ["tests*", "correlation*"]
+
+[tool.setuptools.package-data]
+common_embeddings = ["*.yaml", "*.json"]

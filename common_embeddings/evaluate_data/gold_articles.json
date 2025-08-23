@@ -1242,10 +1242,12 @@
     }
   ],
   "metadata": {
-    "selection_date": "2025-08-23T16:14:21.850358",
+    "selection_date": "2025-08-23T16:30:57.235815",
     "total_selected": 50,
     "selection_method": "stratified_random",
     "seed": 42,
-    "database_path": "data/wikipedia/wikipedia.db"
+    "database_path": "data/wikipedia/wikipedia.db",
+    "version": "gold_v1",
+    "notes": "Gold standard dataset - 50 curated Wikipedia articles"
   }
 }

@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 from contextlib import contextmanager
 
 from .base import BaseLoader, log_operation
-from ..models.wikipedia import (
+from property_finder_models import (
     EnrichedWikipediaArticle,
     WikipediaSummary,
     LocationInfo

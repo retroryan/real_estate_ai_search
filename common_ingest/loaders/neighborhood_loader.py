@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from .base import BaseLoader, log_operation
-from ..models.property import (
+from property_finder_models import (
     EnrichedNeighborhood,
     GeoLocation,
     GeoPolygon

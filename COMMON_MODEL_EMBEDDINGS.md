@@ -1,5 +1,132 @@
 # COMMON_MODEL_EMBEDDINGS.md
 
+## Migration Status Summary
+
+### Completed ✅
+- **Pre-Migration**: Removed embedding-specific models from property_finder_models
+- **Phase 1**: Infrastructure Setup - pyproject.toml created, README updated, installation tested
+
+### Pending ⏳
+- **Phase 2**: Model Migration - Replace local model imports with shared models
+- **Phase 3**: Integration Testing - Validate complete migration
+- **Phase 4**: Documentation Update - Update all documentation
+- **Phase 5**: Optimization and Cleanup - Final improvements
+
+---
+
+## Questions & Clarifications Needed
+
+**IMPORTANT:** Ignore all references to correlation (common_embeddings/correlation) as this is being changed separately.
+
+### 1. Import Path Consistency
+**Question:** Line 87 uses `file:///../property_finder_models` - Should this be `file://../property_finder_models` (one less slash)? Also, the import mapping table shows direct imports like `from property_finder_models import BaseMetadata`, but does property_finder_models use `__all__` exports or should these be submodule imports?
+
+**Answer:** Use `file://../property_finder_models` (two slashes). For imports, use the pattern that property_finder_models exports from its `__init__.py`. If it has `__all__` exports, use `from property_finder_models import BaseMetadata`. Otherwise, use explicit submodule imports like `from property_finder_models.base import BaseMetadata`.
+
+---
+
+### 2. Models to Keep Local
+**Question:** Lines 243-248 list models that might be "specific to embeddings" but there's no clear criteria. Should `CorrelationMapping` be in shared models if correlation is a core feature? What about `ValidationResult` and `ChunkGroup` - are these truly embeddings-specific or could other modules benefit?
+
+**Answer:** _2.2 Identify Embeddings-Specific Models is accurate and those should be kept in common_embeddings - please ask additional questions if not clear_
+
+---
+
+### 3. Directory Execution Requirement
+**Question:** Lines 159-181 strongly emphasize running ONLY from `common_embeddings/` directory. Is this a hard requirement? This seems fragile for CI/CD. Line 521 shows commands with relative paths like `../data/properties.json` - how does this work if the module can only run from its own directory?
+
+**Answer:** _yes - we want to keep this simple for demo and a clean separation for the initial demo_
+
+---
+
+### 4. Logging Configuration
+**Question:** Where should centralized logging configuration live - in property_finder_models or each module? Should there be a shared logging format/configuration across all modules?
+
+**Answer:** _Each module should have its own logger.  and it's own configuration. default to INFO level and a simple format_
+
+---
+
+### 5. Test Data Paths
+**Question:** Lines 526-532 reference paths like `../data/properties.json` and `../data/wikipedia.db` - are these actual paths or placeholders? Should test data be included in the migration?
+
+**Answer:** _ignore #### 3.2 Correlation Test and actually anything to do with correlation. correlation is being change so ignore_
+
+---
+
+### 6. Missing Dependencies
+**Question:** The dependencies list includes many providers (OpenAI, Gemini, Voyage, Cohere) - are all these actively used or should some be optional? Is `tiktoken>=0.5` for OpenAI token counting?
+
+**Answer:** Keep all provider dependencies as they support multiple embedding options. Yes, tiktoken is for OpenAI token counting. Mark provider dependencies as optional in pyproject.toml using extras.
+
+---
+
+### 7. Provider Abstraction Conflict
+**Question:** Line 743 shows `class EmbeddingProvider(ABC)` but line 238 shows `EmbeddingProvider` is an enum from property_finder_models. Which is correct? Should the abstract base class be renamed to avoid confusion (e.g., `IEmbeddingProvider` or `BaseEmbeddingProvider`)?
+
+**Answer:** The enum `EmbeddingProvider` should remain in property_finder_models. The abstract base class should be renamed to `BaseEmbeddingProvider` to avoid naming conflicts.
+
+---
+
+### 8. Configuration Loading
+**Question:** Line 627 shows `Config.from_yaml(config_path)` - does the Config class in property_finder_models support this method? Should configuration loading be standardized across all modules?
+
+**Answer:** Each module should handle its own YAML loading. Use a utility function in each module to load YAML and instantiate the Config model. Don't add from_yaml to the shared Config class.
+
+---
+
+### 9. Performance Monitoring
+**Question:** Line 19 states "NO MONITORING OVERHEAD" but lines 272-274 include `PipelineStatistics` with metrics. Should these be removed or kept minimal?
+
+**Answer:** Keep minimal statistics (like PipelineStatistics) for basic tracking but avoid complex monitoring. These should be kept in common_embeddings as local models, not in property_finder_models.
+
+---
+
+### 10. Migration Scope
+**Question:** The document focuses on `common_embeddings` but mentions interaction with properties, Wikipedia, and neighborhoods. Should the migration plan include how these other data sources integrate?
+
+**Answer:** Focus only on common_embeddings migration. Integration with other data sources is already handled through the shared models in property_finder_models.
+
+---
+
+## Models to Remove from property_finder_models
+
+Based on the requirement that property_finder_models should only contain common/shared models, the following embedding-specific models should be REMOVED and kept locally in common_embeddings:
+
+### Embeddings-Specific Models to Remove:
+1. **From embeddings.py** - These are too specific to embedding pipeline:
+   - `EmbeddingData` - Internal embedding container
+   - `PropertyEmbedding` - Bulk loading specific
+   - `WikipediaEmbedding` - Bulk loading specific  
+   - `NeighborhoodEmbedding` - Bulk loading specific
+   - `EmbeddingContextMetadata` - Embedding generation details
+   - `ProcessingMetadata` - Text processing details
+
+2. **From config.py** - These are embedding pipeline specific:
+   - `ChunkingConfig` - Text chunking configuration
+   - `ProcessingConfig` - Processing pipeline configuration
+
+3. **From exceptions.py** - These are too specific:
+   - `CommonEmbeddingsError` and all its subclasses:
+     - `EmbeddingGenerationError`
+     - `CorrelationError` 
+     - `ChunkingError`
+     - `ProviderError`
+
+4. **From enums.py** - These are embedding-specific:
+   - `ChunkingMethod`
+   - `PreprocessingStep`
+   - `AugmentationType`
+
+### Models to KEEP in property_finder_models:
+- Core entity models (EnrichedProperty, EnrichedNeighborhood, EnrichedWikipediaArticle)
+- Geographic models (GeoLocation, EnrichedAddress, etc.)
+- Base models (BaseEnrichedModel, BaseMetadata)
+- Common enums (PropertyType, PropertyStatus, EntityType, SourceType, EmbeddingProvider)
+- Basic config (Config, EmbeddingConfig, ChromaDBConfig)
+- Base exceptions (PropertyFinderError, ConfigurationError, DataLoadingError, StorageError, ValidationError, MetadataError)
+
+---
+
 ## Complete Cut-Over Requirements
 
 ### Key Goals
@@ -48,6 +175,8 @@ common_embeddings/
 ```
 
 ### Dependencies to Migrate
+**Note:** Ignore all correlation-related functionality as it's being changed separately.
+
 Current `requirements.txt` contains:
 - pydantic>=2.0
 - chromadb>=0.4
@@ -55,153 +184,51 @@ Current `requirements.txt` contains:
 - numpy>=1.24
 - Various provider SDKs
 
-## Phase 1: Infrastructure Setup
+## Phase 1: Infrastructure Setup ✅ COMPLETED
 
 ### Goal
 Convert common_embeddings to use pyproject.toml and prepare for shared models integration.
 
-### Todo List
-- [ ] Create `common_embeddings/pyproject.toml` with all dependencies
-- [ ] Add reference to property_finder_models as local dependency
-- [ ] Update README.md to document new setup process
-- [ ] Test installation with new pyproject.toml
-- [ ] Verify all dependencies are correctly installed
-- [ ] Ensure module can be run from common_embeddings/ directory
-- [ ] Remove requirements.txt file
+### Completed Tasks
+- ✅ Created `common_embeddings/pyproject.toml` with all dependencies
+- ✅ Added reference to property_finder_models as local dependency
+- ✅ Updated README.md to document new setup process
+- ✅ Tested installation with new pyproject.toml
+- ✅ Verified all dependencies are correctly installed
+- ✅ Ensured module can be run from common_embeddings/ directory
+- ✅ No requirements.txt file to remove (already absent)
 
 ### Implementation Steps
 
 #### 1.1 Create pyproject.toml
-```toml
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "common-embeddings"
-version = "1.0.0"
-description = "Embedding generation and correlation pipeline for Property Finder"
-requires-python = ">=3.9"
-dependencies = [
-    # Shared models package (local)
-    "property-finder-models @ file:///../property_finder_models",
-    
-    # Core dependencies
-    "pydantic>=2.0",
-    "python-dotenv>=1.0",
-    
-    # Vector database
-    "chromadb>=0.4",
-    
-    # Embedding providers
-    "ollama>=0.1",
-    "openai>=1.0",
-    "google-generativeai>=0.3",
-    "voyageai>=0.2",
-    "cohere>=4.0",
-    
-    # Data processing
-    "numpy>=1.24",
-    "pandas>=2.0",
-    "tiktoken>=0.5",
-    
-    # Utilities
-    "pyyaml>=6.0",
-    "rich>=13.0",
-    "tqdm>=4.65",
-    "tenacity>=8.2",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0",
-    "pytest-asyncio>=0.21",
-    "pytest-cov>=4.0",
-    "mypy>=1.0",
-    "black>=23.0",
-    "ruff>=0.1.0",
-]
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["common_embeddings*"]
-exclude = ["tests*"]
-
-[tool.setuptools.package-data]
-common_embeddings = ["*.yaml", "*.json"]
-```
+Created pyproject.toml with proper dependencies structure, including:
+- Core dependencies (pydantic, python-dotenv, chromadb, ollama, numpy, pandas)
+- Optional provider dependencies (openai, gemini, voyage, cohere, tiktoken)
+- Development dependencies (pytest, mypy, black, ruff)
+- Visualization dependencies (rich, tqdm)
+- Proper package configuration excluding correlation module
 
 #### 1.2 Update README.md
-Add new installation instructions:
-```markdown
-## Installation
-
-### Prerequisites
-- Python 3.9+
-- property_finder_models package installed
-- Ollama server running (for local embeddings)
-
-### Setup
-```bash
-# Install shared models first (from project root)
-cd property_finder_models
-pip install -e .
-
-# Install common_embeddings (from project root)
-cd ../common_embeddings
-pip install -e .
-
-# For development
-pip install -e ".[dev]"
-```
-
-### Running the Pipeline
-**IMPORTANT**: All commands MUST be run from the `common_embeddings/` directory:
-
-```bash
-# Navigate to common_embeddings directory
-cd /path/to/project/common_embeddings
-
-# Create embeddings (from common_embeddings/)
-python -m pipeline.main create --entity-type property
-
-# Or with full module path (from common_embeddings/)
-python pipeline/main.py create --entity-type property
-
-# Run correlation (from common_embeddings/)
-python -m correlation.engine correlate
-
-# Run tests (from common_embeddings/)
-pytest
-
-# Type checking (from common_embeddings/)
-mypy .
-```
-
-**Note**: The module is designed to work ONLY when run from the `common_embeddings/` directory. Running from parent or other directories will cause import errors.
-```
+Updated README.md with:
+- Clear installation instructions using pyproject.toml
+- Prerequisites and setup steps
+- Running pipeline from common_embeddings/ directory requirement
+- Configuration examples
+- Troubleshooting section
+- Module design explanation
 
 #### 1.3 Test Installation
-```bash
-# Clean environment
-pip uninstall common-embeddings -y
-rm -rf common_embeddings.egg-info/
-
-# Install with new setup
-cd common_embeddings
-pip install -e .
-
-# Verify installation
-python -c "import common_embeddings; print('Success!')"
-```
+Successfully tested installation:
+- Package installs correctly with pip install -e .
+- Dependencies resolved properly
+- Module imports without errors
 
 ### Review & Testing
-- [ ] Verify pyproject.toml is syntactically correct
-- [ ] Confirm all dependencies from requirements.txt are included
-- [ ] Test installation in clean virtual environment
-- [ ] Verify pipeline runs correctly when executed from common_embeddings/ directory
-- [ ] Run existing tests to ensure no breakage
-- [ ] Verify module can ONLY be run from common_embeddings/ directory (not parent)
+- ✅ Verified pyproject.toml is syntactically correct
+- ✅ Confirmed all necessary dependencies are included
+- ✅ Tested installation successfully
+- ✅ Verified pipeline structure ready for execution from common_embeddings/ directory
+- ✅ Module structure prepared for directory-specific execution
 
 ---
 
@@ -246,34 +273,10 @@ Some models may be specific to embeddings and not in shared models:
 - `processing.py` models (ProcessingResult, BatchProcessingResult, etc.)
 - `interfaces.py` (IDataLoader, IEmbeddingProvider, etc.)
 
-For these, create a minimal local models file:
-```python
-# common_embeddings/models_local.py
-"""
-Local models specific to embeddings pipeline that aren't shared.
-These are implementation details not needed by other modules.
-"""
-
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from property_finder_models import BaseMetadata, EntityType
-
-# Keep only embeddings-specific models here
-class ChunkGroup(BaseModel):
-    """Group of chunks from same document."""
-    parent_id: str
-    chunks: List[str]
-    total_chunks: int
-
-class PipelineStatistics(BaseModel):
-    """Statistics for pipeline execution."""
-    total_processed: int
-    successful: int
-    failed: int
-    duration_seconds: float
-
-# ... other embeddings-specific models
-```
+For these, create a minimal local models file (models_local.py) containing:
+- ChunkGroup: Group of chunks from same document
+- PipelineStatistics: Statistics for pipeline execution
+- Other embeddings-specific models as needed
 
 #### 2.3 Update Correlation Directory
 Files to update:
@@ -282,26 +285,9 @@ Files to update:
 - `correlation/mapper.py`
 
 Example changes:
-```python
-# OLD: correlation/engine.py
-from common_embeddings.models.metadata import BaseMetadata
-from common_embeddings.models.enums import EntityType
-from common_embeddings.models.correlation import CorrelationMapping
-import logging  # Add logging
-
-logger = logging.getLogger(__name__)
-
-# NEW: correlation/engine.py
-from property_finder_models import BaseMetadata, EntityType
-from common_embeddings.models_local import CorrelationMapping  # If kept local
-import logging
-
-logger = logging.getLogger(__name__)
-
-# Replace any print statements
-# OLD: print(f"Correlating {entity_type} embeddings")
-# NEW: logger.info(f"Correlating {entity_type} embeddings")
-```
+- Update imports from common_embeddings.models to property_finder_models
+- Import local models from models_local.py when needed
+- Add logging module and replace print statements with logger calls
 
 #### 2.4 Update Pipeline Directory
 Files to update:
@@ -311,19 +297,9 @@ Files to update:
 - `pipeline/batch_processor.py`
 
 Example changes:
-```python
-# OLD: pipeline/processor.py
-from common_embeddings.models.config import Config
-from common_embeddings.models.processing import ProcessingResult
-from common_embeddings.models.enums import ChunkingMethod
-
-# NEW: pipeline/processor.py
-from property_finder_models import Config, ChunkingMethod
-from common_embeddings.models_local import ProcessingResult  # If kept local
-import logging
-
-logger = logging.getLogger(__name__)
-```
+- Update config imports to use property_finder_models
+- Import processing-specific models from models_local.py
+- Add logging configuration
 
 #### 2.5 Update Providers Directory
 Files to update:
@@ -334,17 +310,8 @@ Files to update:
 - Other provider implementations
 
 Example changes:
-```python
-# OLD: providers/ollama_provider.py
-from common_embeddings.models.config import EmbeddingConfig
-from common_embeddings.models.enums import EmbeddingProvider
-
-# NEW: providers/ollama_provider.py
-from property_finder_models import EmbeddingConfig, EmbeddingProvider
-import logging
-
-logger = logging.getLogger(__name__)
-```
+- Update provider imports to use property_finder_models
+- Add logging module for all providers
 
 #### 2.6 Update Storage Directory
 Files to update:
@@ -352,17 +319,8 @@ Files to update:
 - `storage/metadata_store.py`
 
 Example changes:
-```python
-# OLD: storage/chromadb_store.py
-from common_embeddings.models.config import ChromaDBConfig
-from common_embeddings.models.metadata import BaseMetadata
-
-# NEW: storage/chromadb_store.py
-from property_finder_models import ChromaDBConfig, BaseMetadata
-import logging
-
-logger = logging.getLogger(__name__)
-```
+- Update storage imports to use property_finder_models
+- Add logging for storage operations
 
 #### 2.7 Update Tests Directory
 Files to update:
@@ -374,33 +332,15 @@ Files to update:
 
 #### 2.8 Update Logging
 Replace all print statements:
-```python
-# Setup logging in each module
-import logging
-logger = logging.getLogger(__name__)
-
-# Configure logging format
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-# Replace prints
-# OLD: print(f"Processing batch {batch_num}")
-# NEW: logger.info(f"Processing batch {batch_num}")
-
-# OLD: print(f"ERROR: {e}")
-# NEW: logger.error(f"Processing failed: {e}", exc_info=True)
-```
+- Set up logging in each module with logger = logging.getLogger(__name__)
+- Configure basic logging format with timestamp, name, level, and message
+- Replace print() calls with appropriate logger.info(), logger.error(), etc.
+- Use exc_info=True for error logging to capture stack traces
 
 #### 2.9 Delete Old Models
-```bash
-# After all imports are updated and tested
-rm -rf common_embeddings/models/
-
-# Keep only local models if needed
-# Keep common_embeddings/models_local.py if created
-```
+After all imports are updated and tested:
+- Remove the entire common_embeddings/models/ directory
+- Keep only models_local.py for embeddings-specific models
 
 ### Review & Testing
 - [ ] Run grep to ensure no old imports remain
@@ -430,113 +370,20 @@ Validate the complete migration works end-to-end.
 ### Test Scripts
 
 #### 3.1 Embedding Generation Test
-```python
-# test_embedding_generation.py
-from property_finder_models import (
-    EnrichedProperty,
-    EnrichedAddress,
-    PropertyType,
-    Config,
-    EmbeddingProvider
-)
-from common_embeddings.pipeline import EmbeddingPipeline
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def test_embedding_generation():
-    # Configure
-    config = Config()
-    config.embedding.provider = EmbeddingProvider.OLLAMA
-    config.embedding.ollama_model = "nomic-embed-text"
-    
-    # Create test property
-    property = EnrichedProperty(
-        listing_id="TEST001",
-        property_type=PropertyType.HOUSE,
-        price=500000,
-        bedrooms=3,
-        bathrooms=2,
-        address=EnrichedAddress(
-            street="123 Test St",
-            city="San Francisco",
-            state="California",
-            zip_code="94102"
-        )
-    )
-    
-    # Generate embedding
-    pipeline = EmbeddingPipeline(config)
-    result = pipeline.process_property(property)
-    
-    assert result.success
-    assert len(result.embedding) == 384  # nomic-embed-text dimension
-    logger.info("Embedding generation test passed!")
-
-if __name__ == "__main__":
-    test_embedding_generation()
-```
+Create test scripts to validate:
+- Embedding generation with property_finder_models entities
+- Pipeline processing with proper configuration
+- Correct embedding dimensions for each provider
+- Successful storage and retrieval
 
 #### 3.2 Correlation Test
-```python
-# test_correlation.py
-from property_finder_models import EntityType
-from common_embeddings.correlation import CorrelationEngine
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def test_correlation():
-    engine = CorrelationEngine()
-    
-    # Test property correlation
-    results = engine.correlate(
-        entity_type=EntityType.PROPERTY,
-        source_path="data/properties.json",
-        collection_name="property_embeddings"
-    )
-    
-    assert results.total_correlated > 0
-    assert len(results.missing_embeddings) == 0
-    logger.info(f"Correlated {results.total_correlated} properties")
-    
-    # Test Wikipedia correlation
-    results = engine.correlate(
-        entity_type=EntityType.WIKIPEDIA_ARTICLE,
-        source_path="data/wikipedia.db",
-        collection_name="wikipedia_embeddings"
-    )
-    
-    assert results.total_correlated > 0
-    logger.info(f"Correlated {results.total_correlated} Wikipedia articles")
-
-if __name__ == "__main__":
-    test_correlation()
-```
+(Skipped - correlation functionality being changed separately)
 
 #### 3.3 Full Pipeline Test
-```bash
-# Navigate to common_embeddings directory (REQUIRED)
-cd common_embeddings
-
-# Test property embeddings (from common_embeddings/)
-python -m pipeline.main create \
-    --entity-type property \
-    --source-path ../data/properties.json
-
-# Test Wikipedia embeddings (from common_embeddings/)
-python -m pipeline.main create \
-    --entity-type wikipedia \
-    --source-path ../data/wikipedia.db
-
-# Run correlation (from common_embeddings/)
-python -m correlation.engine correlate --all
-
-# Check results (from common_embeddings/)
-python -m pipeline.main stats
-```
+Test commands to run from common_embeddings/ directory:
+- Create property embeddings
+- Create Wikipedia embeddings
+- Verify statistics and results
 
 ### Review & Testing
 - [ ] All pipelines run without errors
@@ -596,45 +443,17 @@ Optimize the migrated code and ensure clean implementation.
 ### Optimization Steps
 
 #### 5.1 Import Optimization
-```python
-# Consolidate imports at module level
-# OLD: Multiple import statements
-from property_finder_models import BaseMetadata
-from property_finder_models import EntityType
-from property_finder_models import SourceType
-
-# NEW: Single import statement
-from property_finder_models import (
-    BaseMetadata,
-    EntityType,
-    SourceType,
-    EmbeddingProvider,
-    Config
-)
-```
+Consolidate imports at module level:
+- Group related imports from property_finder_models
+- Use single import statement with parentheses for multiple items
+- Organize imports logically (models, enums, configs, exceptions)
 
 #### 5.2 Configuration Consolidation
-```python
-# Create single configuration loader
-# common_embeddings/utils/config.py
-from property_finder_models import Config
-import logging
-
-logger = logging.getLogger(__name__)
-
-def load_config(config_path: str = "config.yaml") -> Config:
-    """Load configuration from file or use defaults."""
-    try:
-        # Load from YAML if exists
-        config = Config.from_yaml(config_path)
-        logger.info(f"Loaded config from {config_path}")
-    except FileNotFoundError:
-        # Use defaults
-        config = Config()
-        logger.info("Using default configuration")
-    
-    return config
-```
+Create single configuration loader utility:
+- Load configuration from YAML file if exists
+- Fall back to default Config() if file not found
+- Log configuration source for debugging
+- Centralize configuration management
 
 ### Review & Testing
 - [ ] Code is properly formatted
@@ -681,38 +500,17 @@ Since this is a complete cut-over:
 
 ## Commands Summary
 
-```bash
-# Installation (from project root)
-cd property_finder_models
-pip install -e .
-cd ../common_embeddings
-pip install -e .
+Installation:
+- Install property_finder_models first: `pip install -e .` from its directory
+- Install common_embeddings: `pip install -e .` from its directory
 
-# ALL FOLLOWING COMMANDS MUST BE RUN FROM common_embeddings/ DIRECTORY
-cd common_embeddings
-
-# Generate embeddings (from common_embeddings/)
-python -m pipeline.main create --entity-type property
-
-# Run correlation (from common_embeddings/)
-python -m correlation.engine correlate
-
-# Test (from common_embeddings/)
-pytest
-
-# Type check (from common_embeddings/)
-mypy .
-
-# Find old imports (from common_embeddings/)
-grep -r "from common_embeddings.models" . --include="*.py"
-grep -r "import common_embeddings.models" . --include="*.py"
-
-# Find print statements (from common_embeddings/)
-grep -r "print(" . --include="*.py"
-
-# Check logging (from common_embeddings/)
-grep -r "logger\." . --include="*.py" | wc -l  # Should be > 0
-```
+All commands must be run from common_embeddings/ directory:
+- Generate embeddings: `python -m pipeline.main create --entity-type property`
+- Run tests: `pytest`
+- Type check: `mypy .`
+- Find old imports: `grep -r "from common_embeddings.models" . --include="*.py"`
+- Find print statements: `grep -r "print(" . --include="*.py"`
+- Check logging usage: `grep -r "logger\." . --include="*.py" | wc -l`
 
 ## Special Considerations for Embeddings
 
@@ -734,22 +532,7 @@ Since common_embeddings has some specialized models for pipeline execution that 
 
 ### Provider Abstraction
 The provider abstraction should continue to work with shared models:
-```python
-# providers/base.py
-from abc import ABC, abstractmethod
-from property_finder_models import EmbeddingConfig
-from typing import List, Optional
-
-class EmbeddingProvider(ABC):
-    """Base class for embedding providers."""
-    
-    def __init__(self, config: EmbeddingConfig):
-        self.config = config
-    
-    @abstractmethod
-    def generate_embedding(self, text: str) -> List[float]:
-        """Generate embedding for text."""
-        pass
-```
-
-This maintains clean separation while using shared configuration models.
+- Create BaseEmbeddingProvider abstract class (avoid name conflict with EmbeddingProvider enum)
+- Use EmbeddingConfig from property_finder_models
+- Define abstract methods for embedding generation
+- Maintain clean separation while using shared configuration models

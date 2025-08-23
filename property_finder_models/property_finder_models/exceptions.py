@@ -10,51 +10,26 @@ class PropertyFinderError(Exception):
     pass
 
 
-class CommonEmbeddingsError(PropertyFinderError):
-    """Base exception for embedding-related errors."""
-    pass
-
-
-class ConfigurationError(CommonEmbeddingsError):
+class ConfigurationError(PropertyFinderError):
     """Raised when configuration is invalid or missing."""
     pass
 
 
-class DataLoadingError(CommonEmbeddingsError):
+class DataLoadingError(PropertyFinderError):
     """Raised when data cannot be loaded from source."""
     pass
 
 
-class EmbeddingGenerationError(CommonEmbeddingsError):
-    """Raised when embedding generation fails."""
-    pass
-
-
-class StorageError(CommonEmbeddingsError):
+class StorageError(PropertyFinderError):
     """Raised when storage operations fail."""
     pass
 
 
-class CorrelationError(CommonEmbeddingsError):
-    """Raised when correlation between embeddings and source data fails."""
-    pass
-
-
-class ValidationError(CommonEmbeddingsError):
+class ValidationError(PropertyFinderError):
     """Raised when data validation fails."""
     pass
 
 
-class MetadataError(CommonEmbeddingsError):
+class MetadataError(PropertyFinderError):
     """Raised when metadata operations fail."""
-    pass
-
-
-class ChunkingError(CommonEmbeddingsError):
-    """Raised when text chunking fails."""
-    pass
-
-
-class ProviderError(CommonEmbeddingsError):
-    """Raised when embedding provider operations fail."""
     pass

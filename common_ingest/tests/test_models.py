@@ -7,26 +7,19 @@ from decimal import Decimal
 from datetime import datetime
 import uuid
 
-from common_ingest.models.base import BaseEnrichedModel, generate_uuid
-from common_ingest.models.property import (
+from property_finder_models import (
+    BaseEnrichedModel,
+    generate_uuid,
     EnrichedProperty,
     EnrichedAddress,
     EnrichedNeighborhood,
     PropertyType,
     PropertyStatus,
     GeoLocation,
-    GeoPolygon
-)
-from common_ingest.models.wikipedia import (
+    GeoPolygon,
     EnrichedWikipediaArticle,
     WikipediaSummary,
     LocationInfo
-)
-from common_ingest.models.embedding import (
-    EmbeddingData,
-    PropertyEmbedding,
-    WikipediaEmbedding,
-    NeighborhoodEmbedding
 )
 from common_ingest.utils.logger import setup_logger
 
@@ -245,52 +238,6 @@ def test_wikipedia_summary_model():
     
     logger.info("✅ WikipediaSummary model test passed")
 
-
-def test_embedding_models():
-    """Test embedding data models."""
-    logger.info("Testing embedding models...")
-    
-    # Test base EmbeddingData
-    embedding_data = EmbeddingData(
-        embedding_id="emb_123",
-        vector=[0.1, 0.2, 0.3, 0.4, 0.5],
-        dimension=5,
-        model_name="text-embedding-ada-002",
-        provider="openai",
-        created_at=datetime.now()
-    )
-    
-    assert embedding_data.embedding_id == "emb_123"
-    assert len(embedding_data.vector) == 5
-    assert embedding_data.dimension == 5
-    assert embedding_data.model_name == "text-embedding-ada-002"
-    
-    # Test PropertyEmbedding
-    prop_embedding = PropertyEmbedding(
-        embedding_id="prop_emb_123",
-        listing_id="prop_001",
-        vector=[0.1, 0.2, 0.3],
-        text="Beautiful home with ocean view",
-        metadata={"chunk_index": 0}
-    )
-    
-    assert prop_embedding.listing_id == "prop_001"
-    assert prop_embedding.embedding_id == "prop_emb_123"
-    assert len(prop_embedding.vector) == 3
-    
-    # Test WikipediaEmbedding
-    wiki_embedding = WikipediaEmbedding(
-        embedding_id="wiki_emb_123",
-        page_id=12345,
-        vector=[0.4, 0.5, 0.6],
-        text="San Francisco is a city...",
-        metadata={"chunk_index": 1}
-    )
-    
-    assert wiki_embedding.page_id == 12345
-    assert wiki_embedding.embedding_id == "wiki_emb_123"
-    
-    logger.info("✅ Embedding models test passed")
 
 
 def test_property_type_enum():

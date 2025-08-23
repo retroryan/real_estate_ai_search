@@ -9,7 +9,7 @@ from typing import Optional
 from pathlib import Path
 import os
 
-from .enums import EmbeddingProvider, ChunkingMethod
+from .enums import EmbeddingProvider
 
 
 class EmbeddingConfig(BaseModel):
@@ -145,92 +145,6 @@ class ChromaDBConfig(BaseModel):
         return str(path)
 
 
-class ChunkingConfig(BaseModel):
-    """
-    Configuration for text chunking strategies.
-    """
-    
-    method: ChunkingMethod = Field(
-        default=ChunkingMethod.SEMANTIC,
-        description="Chunking method to use"
-    )
-    
-    # Simple chunking parameters
-    chunk_size: int = Field(
-        default=800,
-        ge=128,
-        le=2048,
-        description="Maximum chunk size in tokens"
-    )
-    chunk_overlap: int = Field(
-        default=100,
-        ge=0,
-        le=200,
-        description="Overlap between chunks"
-    )
-    
-    # Semantic chunking parameters
-    breakpoint_percentile: int = Field(
-        default=90,
-        ge=50,
-        le=99,
-        description="Percentile for semantic breakpoints"
-    )
-    buffer_size: int = Field(
-        default=2,
-        ge=1,
-        le=10,
-        description="Buffer size for semantic chunking"
-    )
-    
-    # Processing options
-    split_oversized_chunks: bool = Field(
-        default=False,
-        description="Split chunks exceeding max size"
-    )
-    max_chunk_size: int = Field(
-        default=1000,
-        ge=200,
-        le=2000,
-        description="Maximum size for any chunk"
-    )
-
-
-class ProcessingConfig(BaseModel):
-    """
-    Configuration for batch processing and performance.
-    """
-    
-    batch_size: int = Field(
-        default=100,
-        ge=1,
-        le=1000,
-        description="Batch size for processing"
-    )
-    max_workers: int = Field(
-        default=4,
-        ge=1,
-        le=16,
-        description="Maximum parallel workers"
-    )
-    show_progress: bool = Field(
-        default=True,
-        description="Show progress indicators"
-    )
-    rate_limit_delay: float = Field(
-        default=0.0,
-        ge=0.0,
-        le=10.0,
-        description="Delay between API calls in seconds"
-    )
-    document_batch_size: int = Field(
-        default=20,
-        ge=1,
-        le=100,
-        description="Batch size for processing documents during chunking"
-    )
-
-
 class Config(BaseModel):
     """
     Main configuration for the Property Finder ecosystem.
@@ -245,14 +159,6 @@ class Config(BaseModel):
     chromadb: ChromaDBConfig = Field(
         default_factory=ChromaDBConfig,
         description="ChromaDB storage configuration"
-    )
-    chunking: ChunkingConfig = Field(
-        default_factory=ChunkingConfig,
-        description="Text chunking configuration"
-    )
-    processing: ProcessingConfig = Field(
-        default_factory=ProcessingConfig,
-        description="Processing and performance configuration"
     )
     
     # Metadata version for tracking

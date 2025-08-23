@@ -19,19 +19,34 @@ All data is returned as fully validated and enriched Pydantic models with:
 
 ## Quick Start
 
+### Prerequisites
+
+- Python 3.9+
+- property_finder_models package (shared models)
+
 ### Installation
 
 ```bash
-# Install dependencies
-pip install pydantic pydantic-settings fastapi uvicorn
+# Install shared models first (from project root)
+cd property_finder_models
+pip install -e .
 
-# Optional: Install ChromaDB for embedding support (future feature)
-pip install chromadb
+# Install common_ingest (from project root)
+cd ../common_ingest
+pip install -e .
+
+# For development (includes testing and linting tools)
+pip install -e ".[dev]"
 ```
+
+**IMPORTANT**: All commands MUST be run from the `common_ingest/` directory for proper module resolution.
 
 ### Running the Data Loading Module
 
 ```bash
+# Navigate to common_ingest directory (REQUIRED)
+cd /path/to/project/common_ingest
+
 # Run the ingestion pipeline and view summary statistics
 python -m common_ingest
 

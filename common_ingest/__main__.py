@@ -10,8 +10,12 @@ from typing import List, Dict, Any
 from decimal import Decimal
 
 from .loaders import PropertyLoader, NeighborhoodLoader, WikipediaLoader
-from .models.property import EnrichedProperty, EnrichedNeighborhood
-from .models.wikipedia import EnrichedWikipediaArticle, WikipediaSummary
+from property_finder_models import (
+    EnrichedProperty,
+    EnrichedNeighborhood,
+    EnrichedWikipediaArticle,
+    WikipediaSummary
+)
 from .utils.config import get_settings
 from .utils.logger import setup_logger
 
@@ -225,11 +229,11 @@ def main():
         logger.warning(f"Wikipedia database not found at {wikipedia_db_path}")
     
     # Display summaries
-    print("\n")  # Add space before summaries
+    logger.info("")  # Add space before summaries
     print_property_summary(properties)
-    print("\n")
+    logger.info("")
     print_neighborhood_summary(neighborhoods)
-    print("\n")
+    logger.info("")
     print_wikipedia_summary(wikipedia_articles, wikipedia_summaries)
     
     # Final summary

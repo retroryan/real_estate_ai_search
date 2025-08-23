@@ -12,13 +12,11 @@ from decimal import Decimal
 from common_ingest.loaders.property_loader import PropertyLoader
 from common_ingest.loaders.neighborhood_loader import NeighborhoodLoader
 from common_ingest.loaders.wikipedia_loader import WikipediaLoader
-from common_ingest.models.property import (
+from property_finder_models import (
     EnrichedProperty,
     EnrichedNeighborhood,
     PropertyType,
-    PropertyStatus
-)
-from common_ingest.models.wikipedia import (
+    PropertyStatus,
     EnrichedWikipediaArticle,
     WikipediaSummary
 )
@@ -183,12 +181,16 @@ def test_wikipedia_loader():
             CREATE TABLE page_summaries (
                 page_id INTEGER PRIMARY KEY,
                 article_id INTEGER NOT NULL,
+                title TEXT,
+                short_summary TEXT,
+                long_summary TEXT,
                 summary TEXT NOT NULL,
                 key_topics TEXT,
                 best_city TEXT,
                 best_county TEXT,
                 best_state TEXT,
                 overall_confidence REAL,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (article_id) REFERENCES articles(id)
             )
@@ -203,8 +205,8 @@ def test_wikipedia_loader():
         
         # Insert test summary
         cursor.execute("""
-            INSERT INTO page_summaries (page_id, article_id, summary, key_topics, best_city, best_state, overall_confidence)
-            VALUES (12345, 1, 'Park City is a mountain resort town...', 
+            INSERT INTO page_summaries (page_id, article_id, title, short_summary, long_summary, summary, key_topics, best_city, best_state, overall_confidence)
+            VALUES (12345, 1, 'Park City, Utah', 'Park City is a mountain resort town...', 'Park City is a mountain resort town...', 'Park City is a mountain resort town...', 
                     '["skiing", "Skiing", "resort", "Resort", "olympics"]',
                     'Park City', 'UT', 0.92)
         """)
@@ -355,12 +357,16 @@ def test_location_filtering_wikipedia():
             CREATE TABLE page_summaries (
                 page_id INTEGER PRIMARY KEY,
                 article_id INTEGER NOT NULL,
+                title TEXT,
+                short_summary TEXT,
+                long_summary TEXT,
                 summary TEXT NOT NULL,
                 key_topics TEXT,
                 best_city TEXT,
                 best_county TEXT,
                 best_state TEXT,
                 overall_confidence REAL,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (article_id) REFERENCES articles(id)
             )
@@ -379,13 +385,13 @@ def test_location_filtering_wikipedia():
         
         # Insert summaries
         cursor.execute("""
-            INSERT INTO page_summaries (page_id, article_id, summary, best_city, best_state, overall_confidence)
-            VALUES (11111, 1, 'SF summary', 'San Francisco', 'CA', 0.9)
+            INSERT INTO page_summaries (page_id, article_id, title, short_summary, long_summary, summary, best_city, best_state, overall_confidence)
+            VALUES (11111, 1, 'San Francisco', 'SF summary', 'SF summary', 'SF summary', 'San Francisco', 'CA', 0.9)
         """)
         
         cursor.execute("""
-            INSERT INTO page_summaries (page_id, article_id, summary, best_city, best_state, overall_confidence)
-            VALUES (22222, 2, 'PC summary', 'Park City', 'UT', 0.92)
+            INSERT INTO page_summaries (page_id, article_id, title, short_summary, long_summary, summary, best_city, best_state, overall_confidence)
+            VALUES (22222, 2, 'Park City, Utah', 'PC summary', 'PC summary', 'PC summary', 'Park City', 'UT', 0.92)
         """)
         
         conn.commit()
