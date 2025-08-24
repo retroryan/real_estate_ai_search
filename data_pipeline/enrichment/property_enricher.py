@@ -209,6 +209,21 @@ class PropertyEnricher:
             enriched_df = self._calculate_quality_scores(enriched_df)
             logger.info("Calculated property quality scores")
         
+        # Extract coordinates if present
+        if "coordinates.latitude" in enriched_df.columns:
+            enriched_df = enriched_df.withColumn("latitude", col("coordinates.latitude"))
+            enriched_df = enriched_df.withColumn("longitude", col("coordinates.longitude"))
+        
+        # Extract property details if nested
+        if "property_details.square_feet" in enriched_df.columns:
+            enriched_df = enriched_df.withColumn("square_feet", col("property_details.square_feet"))
+            enriched_df = enriched_df.withColumn("bedrooms", col("property_details.bedrooms"))
+            enriched_df = enriched_df.withColumn("bathrooms", col("property_details.bathrooms"))
+            enriched_df = enriched_df.withColumn("year_built", col("property_details.year_built"))
+            enriched_df = enriched_df.withColumn("lot_size", col("property_details.lot_size"))
+            enriched_df = enriched_df.withColumn("stories", col("property_details.stories"))
+            enriched_df = enriched_df.withColumn("garage_spaces", col("property_details.garage_spaces"))
+        
         # Categorize price ranges
         enriched_df = self.categorize_price_range(enriched_df)
         logger.info("Categorized properties into price ranges")
@@ -255,8 +270,11 @@ class PropertyEnricher:
         Returns:
             DataFrame with normalized address fields
         """
-        # Extract city, state, and zip_code from nested address structure
-        df_with_location = df.withColumn("city", col("address.city")).withColumn("state", col("address.state")).withColumn("zip_code", col("address.zip_code"))
+        # Extract city, state, county, and zip_code from nested address structure
+        df_with_location = df.withColumn("city", col("address.city"))\
+            .withColumn("state", col("address.state"))\
+            .withColumn("county", col("address.county"))\
+            .withColumn("zip_code", col("address.zip"))
         
         # Normalize cities
         df_with_city = df_with_location.join(
@@ -298,31 +316,43 @@ class PropertyEnricher:
         Returns:
             DataFrame with calculated price fields
         """
-        # Price per square foot
-        df_with_price_sqft = df.withColumn(
-            "price_per_sqft",
-            when(
-                (col("square_feet") > 0) & col("price").isNotNull(),
-                (col("price") / col("square_feet")).cast("decimal(10,2)")
-            ).otherwise(lit(None))
-        )
+        # Extract property details fields if nested, or use direct fields
+        if "property_details.square_feet" in df.columns:
+            df = df.withColumn("square_feet", col("property_details.square_feet"))
+            df = df.withColumn("bedrooms", col("property_details.bedrooms"))
+            df = df.withColumn("bathrooms", col("property_details.bathrooms"))
+        
+        # Handle both 'price' and 'listing_price' field names
+        price_col = "listing_price" if "listing_price" in df.columns else "price"
+        
+        # Price per square foot (handle if price_per_sqft already exists in source data)
+        if "price_per_sqft" not in df.columns:
+            df_with_price_sqft = df.withColumn(
+                "price_per_sqft",
+                when(
+                    (col("square_feet") > 0) & col(price_col).isNotNull(),
+                    (col(price_col) / col("square_feet")).cast("decimal(10,2)")
+                ).otherwise(lit(None))
+            )
+        else:
+            df_with_price_sqft = df
         
         # Price per bedroom
         df_with_price_bedroom = df_with_price_sqft.withColumn(
             "price_per_bedroom",
             when(
-                (col("bedrooms") > 0) & col("price").isNotNull(),
-                (col("price") / col("bedrooms")).cast("decimal(10,2)")
+                (col("bedrooms") > 0) & col(price_col).isNotNull(),
+                (col(price_col) / col("bedrooms")).cast("decimal(10,2)")
             ).otherwise(lit(None))
         )
         
         # Price category
         df_with_price_category = df_with_price_bedroom.withColumn(
             "price_category",
-            when(col("price") < 200000, lit("budget"))
-            .when(col("price") < 500000, lit("mid-range"))
-            .when(col("price") < 1000000, lit("high-end"))
-            .when(col("price") >= 1000000, lit("luxury"))
+            when(col(price_col) < 200000, lit("budget"))
+            .when(col(price_col) < 500000, lit("mid-range"))
+            .when(col(price_col) < 1000000, lit("high-end"))
+            .when(col(price_col) >= 1000000, lit("luxury"))
             .otherwise(lit("unknown"))
         )
         
@@ -348,11 +378,22 @@ class PropertyEnricher:
         Returns:
             DataFrame with quality scores
         """
+        # Extract property details if nested
+        if "property_details.square_feet" in df.columns:
+            df = df.withColumn("square_feet", col("property_details.square_feet"))
+            df = df.withColumn("bedrooms", col("property_details.bedrooms"))
+            df = df.withColumn("bathrooms", col("property_details.bathrooms"))
+            df = df.withColumn("year_built", col("property_details.year_built"))
+            df = df.withColumn("property_type", col("property_details.property_type"))
+        
+        # Handle both 'price' and 'listing_price' field names
+        price_col = "listing_price" if "listing_price" in df.columns else "price"
+        
         # Property-specific quality score calculation
         quality_expr = (
             # Essential fields (50% weight)
             (when(col("listing_id").isNotNull(), 0.1).otherwise(0.0)) +
-            (when(col("price").isNotNull() & (col("price") > 0), 0.15).otherwise(0.0)) +
+            (when(col(price_col).isNotNull() & (col(price_col) > 0), 0.15).otherwise(0.0)) +
             (when(col("bedrooms").isNotNull() & (col("bedrooms") >= 0), 0.1).otherwise(0.0)) +
             (when(col("bathrooms").isNotNull() & (col("bathrooms") >= 0), 0.05).otherwise(0.0)) +
             (when(col("square_feet").isNotNull() & (col("square_feet") > 0), 0.1).otherwise(0.0)) +
@@ -403,17 +444,20 @@ class PropertyEnricher:
             DataFrame with location enhancements
         """
         try:
-            # Extract city and state from address if not already extracted
+            # Extract city, state, and county from address if not already extracted
             if "city" not in df.columns:
                 df = df.withColumn("city", col("address.city"))
             if "state" not in df.columns:
                 df = df.withColumn("state", col("address.state"))
+            if "county" not in df.columns and "address.county" in df.columns:
+                df = df.withColumn("county", col("address.county"))
             
             # Enhance with hierarchy (adds county information)
             enhanced_df = self.location_enricher.enhance_with_hierarchy(df, "city", "state")
             
-            # Rename county_resolved to county for consistency with graph model
-            if "county_resolved" in enhanced_df.columns:
+            # Keep both county and county_resolved if available
+            # county comes from source data, county_resolved from location enrichment
+            if "county_resolved" in enhanced_df.columns and "county" not in enhanced_df.columns:
                 enhanced_df = enhanced_df.withColumnRenamed("county_resolved", "county")
             
             # Add neighborhood linking if enabled
@@ -503,14 +547,17 @@ class PropertyEnricher:
         """
         from pyspark.sql.functions import when
         
+        # Handle both 'price' and 'listing_price' field names
+        price_col = "listing_price" if "listing_price" in df.columns else "price"
+        
         # Define price range thresholds and IDs
         df_with_range = df.withColumn(
             "price_range_id",
-            when(col("price") < 500000, lit("range_0_500k"))
-            .when(col("price") < 1000000, lit("range_500k_1m"))
-            .when(col("price") < 2000000, lit("range_1m_2m"))
-            .when(col("price") < 3000000, lit("range_2m_3m"))
-            .when(col("price") < 5000000, lit("range_3m_5m"))
+            when(col(price_col) < 500000, lit("range_0_500k"))
+            .when(col(price_col) < 1000000, lit("range_500k_1m"))
+            .when(col(price_col) < 2000000, lit("range_1m_2m"))
+            .when(col(price_col) < 3000000, lit("range_2m_3m"))
+            .when(col(price_col) < 5000000, lit("range_3m_5m"))
             .otherwise(lit("range_5m_plus"))
         )
         
@@ -579,10 +626,13 @@ class PropertyEnricher:
         """
         from pyspark.sql.functions import regexp_replace, lower, trim
         
-        # Normalize property type if it exists in property_details
-        if "property_details.type" in df.columns or "property_type" in df.columns:
-            # Get the property type column name
-            type_col = "property_details.type" if "property_details.type" in df.columns else "property_type"
+        # Extract property type from nested structure if needed
+        if "property_details.property_type" in df.columns:
+            df = df.withColumn("property_type", col("property_details.property_type"))
+        
+        # Normalize property type if it exists
+        if "property_type" in df.columns:
+            type_col = "property_type"
             
             # Create normalized type
             df_normalized = df.withColumn(

@@ -37,22 +37,41 @@ class PropertyLoader(BaseLoader):
         """
         return StructType([
             StructField("listing_id", StringType(), False),
-            StructField("neighborhood_id", StringType(), True),  # Add neighborhood_id to schema
-            StructField("property_type", StringType(), True),
-            StructField("price", DecimalType(12, 2), True),
-            StructField("bedrooms", IntegerType(), True),
-            StructField("bathrooms", DoubleType(), True),
-            StructField("square_feet", IntegerType(), True),
-            StructField("year_built", IntegerType(), True),
-            StructField("lot_size", IntegerType(), True),
-            StructField("features", ArrayType(StringType()), True),
-            StructField("description", StringType(), True),
+            StructField("neighborhood_id", StringType(), True),
             StructField("address", StructType([
                 StructField("street", StringType(), True),
                 StructField("city", StringType(), True),
+                StructField("county", StringType(), True),
                 StructField("state", StringType(), True),
-                StructField("zip_code", StringType(), True),
+                StructField("zip", StringType(), True),  # Note: source uses 'zip' not 'zip_code'
             ]), True),
+            StructField("coordinates", StructType([
+                StructField("latitude", DoubleType(), True),
+                StructField("longitude", DoubleType(), True),
+            ]), True),
+            StructField("property_details", StructType([
+                StructField("square_feet", IntegerType(), True),
+                StructField("bedrooms", IntegerType(), True),
+                StructField("bathrooms", DoubleType(), True),
+                StructField("property_type", StringType(), True),
+                StructField("year_built", IntegerType(), True),
+                StructField("lot_size", DoubleType(), True),
+                StructField("stories", IntegerType(), True),
+                StructField("garage_spaces", IntegerType(), True),
+            ]), True),
+            StructField("listing_price", DecimalType(12, 2), True),
+            StructField("price_per_sqft", IntegerType(), True),
+            StructField("description", StringType(), True),
+            StructField("features", ArrayType(StringType()), True),
+            StructField("listing_date", StringType(), True),
+            StructField("days_on_market", IntegerType(), True),
+            StructField("virtual_tour_url", StringType(), True),
+            StructField("images", ArrayType(StringType()), True),
+            StructField("price_history", ArrayType(StructType([
+                StructField("date", StringType(), True),
+                StructField("price", DecimalType(12, 2), True),
+                StructField("event", StringType(), True),
+            ])), True),
         ])
     
     
@@ -67,20 +86,23 @@ class PropertyLoader(BaseLoader):
         Returns:
             DataFrame conforming to property-specific schema
         """
+        # Return all the nested structures - the enricher will handle flattening
         return df.select(
             # Core property fields
             col("listing_id"),
-            col("neighborhood_id"),  # Include neighborhood_id for relationship building
-            col("property_type"),
-            col("price"),
-            col("bedrooms"),
-            col("bathrooms"),
-            col("square_feet"),
-            col("year_built"),
-            col("lot_size"),
-            col("features"),
+            col("neighborhood_id"),
+            col("address"),
+            col("coordinates"),
+            col("property_details"),
+            col("listing_price"),
+            col("price_per_sqft"),
             col("description"),
-            col("address")
+            col("features"),
+            col("listing_date"),
+            col("days_on_market"),
+            col("virtual_tour_url"),
+            col("images"),
+            col("price_history")
         )
     
     def validate(self, df: DataFrame) -> bool:
