@@ -216,7 +216,7 @@ class LlamaIndexOptimizedPipeline:
                 # Create metadata using metadata factory
                 if self.metadata_factory:
                     storage_metadata = self.metadata_factory.create_metadata(
-                        chunk_metadata.to_dict(),
+                        chunk_metadata,  # Pass Pydantic model directly
                         entity_type,
                         source_type,
                         source_file,
@@ -370,15 +370,23 @@ class LlamaIndexOptimizedPipeline:
         Returns:
             ProcessingChunkMetadata object
         """
-        return ProcessingChunkMetadata.from_combined_dict(
-            document_metadata=node.metadata,
-            chunk_metadata={
-                'chunk_index': node.metadata.get('chunk_index', 0),
-                'chunk_total': node.metadata.get('chunk_total', 1),
-                'text_hash': hash_text(node.text),
-                'node_id': node.node_id
-            },
-            source_doc_id=getattr(node, 'ref_doc_id', None)
+        # Create ProcessingChunkMetadata directly from node metadata
+        # All fields are already flat in node.metadata from node processor
+        return ProcessingChunkMetadata(
+            source_doc_id=getattr(node, 'ref_doc_id', 'unknown'),
+            chunk_index=node.metadata.get('chunk_index', 0),
+            chunk_total=node.metadata.get('chunk_total', 1),
+            text_hash=node.metadata.get('text_hash', hash_text(node.text)),
+            # Entity-specific fields from node metadata
+            listing_id=node.metadata.get('listing_id'),
+            property_type=node.metadata.get('property_type'),
+            source_file_index=node.metadata.get('source_file_index'),
+            neighborhood_id=node.metadata.get('neighborhood_id'),
+            neighborhood_name=node.metadata.get('neighborhood_name'),
+            page_id=node.metadata.get('page_id'),
+            article_id=node.metadata.get('article_id'),
+            title=node.metadata.get('title'),
+            # No extra_metadata needed - all fields are explicit
         )
     
     def get_statistics(self) -> PipelineStatistics:

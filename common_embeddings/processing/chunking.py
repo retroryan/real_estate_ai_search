@@ -15,6 +15,7 @@ from llama_index.core.node_parser import (
 from llama_index.core.schema import TextNode
 
 from ..models import ChunkingConfig, ChunkingMethod, ChunkingError
+from ..models.processing import ChunkData
 from ..utils.logging import get_logger
 from ..utils.hashing import hash_text
 
@@ -94,7 +95,7 @@ class TextChunker:
         self,
         text: str,
         metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Tuple[str, Dict[str, Any]]]:
+    ) -> List[ChunkData]:
         """
         Chunk text into smaller pieces with metadata.
         
@@ -103,17 +104,18 @@ class TextChunker:
             metadata: Base metadata to attach to chunks
             
         Returns:
-            List of (chunk_text, chunk_metadata) tuples
+            List of ChunkData models
         """
         if self.config.method == ChunkingMethod.NONE:
             # No chunking - return as single chunk
-            chunk_metadata = (metadata or {}).copy()
-            chunk_metadata.update({
-                'chunk_index': 0,
-                'chunk_total': 1,
-                'text_hash': hash_text(text)
-            })
-            return [(text, chunk_metadata)]
+            chunk = ChunkData(
+                text=text,
+                chunk_index=0,
+                chunk_total=1,
+                text_hash=hash_text(text),
+                chunk_method=self.config.method.value
+            )
+            return [chunk]
         
         # Create document with metadata
         doc = Document(
@@ -132,27 +134,23 @@ class TextChunker:
         if self.config.split_oversized_chunks:
             nodes = self._split_oversized_chunks(nodes)
         
-        # Convert nodes to tuples with enhanced metadata
+        # Convert nodes to ChunkData models
         chunks = []
         total_chunks = len(nodes)
+        parent_hash = hash_text(text) if total_chunks > 1 else None
         
         for i, node in enumerate(nodes):
-            chunk_text = node.text
-            chunk_metadata = node.metadata.copy()
-            
-            # Add chunking metadata
-            chunk_metadata.update({
-                'chunk_index': i,
-                'chunk_total': total_chunks,
-                'text_hash': hash_text(chunk_text),
-                'chunk_method': self.config.method.value
-            })
-            
-            # Add parent document hash if multiple chunks
-            if total_chunks > 1:
-                chunk_metadata['parent_hash'] = hash_text(text)
-            
-            chunks.append((chunk_text, chunk_metadata))
+            chunk = ChunkData(
+                text=node.text,
+                chunk_index=i,
+                chunk_total=total_chunks,
+                text_hash=hash_text(node.text),
+                chunk_method=self.config.method.value,
+                parent_hash=parent_hash,
+                start_position=getattr(node, 'start_char_idx', None),
+                end_position=getattr(node, 'end_char_idx', None)
+            )
+            chunks.append(chunk)
         
         logger.debug(f"Created {len(chunks)} chunks from {len(text)} characters")
         return chunks

@@ -7,7 +7,6 @@ using metadata identifiers (listing_id, neighborhood_id, page_id) for matching.
 
 import logging
 from typing import List, Dict, Optional, Any
-from datetime import datetime
 
 from property_finder_models import EnrichedProperty, EnrichedNeighborhood, EmbeddingData
 
@@ -38,41 +37,52 @@ class CorrelationService:
     def correlate_properties_with_embeddings(
         self,
         properties: List[EnrichedProperty],
-        collection_name: str,
+        collection_name: Optional[str] = None,
         include_vectors: bool = False
     ) -> List[EnrichedProperty]:
         """
-        Correlate properties with their embeddings from ChromaDB.
+        Correlate properties with their embeddings using fast bulk-loaded lookup.
         
-        Directly populates embedding fields on the property models.
+        Uses O(1) in-memory lookup from pre-loaded embeddings map.
         
         Args:
             properties: List of properties to correlate
-            collection_name: ChromaDB collection to retrieve embeddings from
+            collection_name: Optional ChromaDB collection name (auto-discovers if not provided)
             include_vectors: Whether to include embedding vectors
             
         Returns:
             List of EnrichedProperty objects with populated embedding fields
         """
-        logger.info(f"Correlating {len(properties)} properties with collection '{collection_name}'")
-        
         if not properties:
             return []
         
-        # Extract listing IDs for bulk retrieval
-        listing_ids = [prop.listing_id for prop in properties]
+        logger.info(f"Correlating {len(properties)} properties")
         
-        # Bulk retrieve embeddings from ChromaDB
-        embeddings_map = self.embedding_service.get_embeddings_by_ids(
-            collection_name=collection_name,
-            entity_ids=listing_ids,
-            include_vectors=include_vectors
+        # Bulk load all property embeddings (uses cache after first load)
+        embeddings_map = self.embedding_service.bulk_load_property_embeddings(
+            collection_name=collection_name
         )
         
-        # Populate embedding fields on each property
+        if not embeddings_map:
+            logger.warning("No property embeddings available for correlation")
+            # Return properties without embeddings
+            for prop in properties:
+                prop.embeddings = None
+                prop.embedding_count = 0
+                prop.has_embeddings = False
+                prop.correlation_confidence = 0.0
+            return properties
+        
+        # Fast O(1) correlation using in-memory lookup
         successful_correlations = 0
         for prop in properties:
+            # Direct dictionary lookup - no database query needed!
             embeddings = embeddings_map.get(prop.listing_id, [])
+            
+            # Filter out vectors if not requested
+            if not include_vectors and embeddings:
+                for emb in embeddings:
+                    emb.vector = None
             
             # Directly populate the embedding fields
             prop.embeddings = embeddings if embeddings else None
@@ -90,41 +100,52 @@ class CorrelationService:
     def correlate_neighborhoods_with_embeddings(
         self,
         neighborhoods: List[EnrichedNeighborhood],
-        collection_name: str,
+        collection_name: Optional[str] = None,
         include_vectors: bool = False
     ) -> List[EnrichedNeighborhood]:
         """
-        Correlate neighborhoods with their embeddings from ChromaDB.
+        Correlate neighborhoods with their embeddings using fast bulk-loaded lookup.
         
-        Directly populates embedding fields on the neighborhood models.
+        Uses O(1) in-memory lookup from pre-loaded embeddings map.
         
         Args:
             neighborhoods: List of neighborhoods to correlate
-            collection_name: ChromaDB collection to retrieve embeddings from
+            collection_name: Optional ChromaDB collection name (auto-discovers if not provided)
             include_vectors: Whether to include embedding vectors
             
         Returns:
             List of EnrichedNeighborhood objects with populated embedding fields
         """
-        logger.info(f"Correlating {len(neighborhoods)} neighborhoods with collection '{collection_name}'")
-        
         if not neighborhoods:
             return []
         
-        # Extract neighborhood IDs for bulk retrieval
-        neighborhood_ids = [n.neighborhood_id for n in neighborhoods]
+        logger.info(f"Correlating {len(neighborhoods)} neighborhoods")
         
-        # Bulk retrieve embeddings from ChromaDB
-        embeddings_map = self.embedding_service.get_embeddings_by_ids(
-            collection_name=collection_name,
-            entity_ids=neighborhood_ids,
-            include_vectors=include_vectors
+        # Bulk load all neighborhood embeddings (uses cache after first load)
+        embeddings_map = self.embedding_service.bulk_load_neighborhood_embeddings(
+            collection_name=collection_name
         )
         
-        # Populate embedding fields on each neighborhood
+        if not embeddings_map:
+            logger.warning("No neighborhood embeddings available for correlation")
+            # Return neighborhoods without embeddings
+            for neighborhood in neighborhoods:
+                neighborhood.embeddings = None
+                neighborhood.embedding_count = 0
+                neighborhood.has_embeddings = False
+                neighborhood.correlation_confidence = 0.0
+            return neighborhoods
+        
+        # Fast O(1) correlation using in-memory lookup
         successful_correlations = 0
         for neighborhood in neighborhoods:
+            # Direct dictionary lookup - no database query needed!
             embeddings = embeddings_map.get(neighborhood.neighborhood_id, [])
+            
+            # Filter out vectors if not requested
+            if not include_vectors and embeddings:
+                for emb in embeddings:
+                    emb.vector = None
             
             # Directly populate the embedding fields
             neighborhood.embeddings = embeddings if embeddings else None
@@ -142,50 +163,89 @@ class CorrelationService:
     def correlate_wikipedia_with_embeddings(
         self,
         wikipedia_data: List[Dict[str, Any]],
-        collection_name: str,
+        collection_name: Optional[str] = None,
         include_vectors: bool = False
     ) -> List[Dict[str, Any]]:
         """
-        Correlate Wikipedia articles with their embeddings from ChromaDB.
+        Correlate Wikipedia articles with their embeddings using fast bulk-loaded lookup.
         
-        Handles multi-chunk documents by grouping embeddings by page_id.
+        Uses O(1) in-memory lookup with proper multi-chunk handling.
+        Chunks are automatically sorted by chunk_index (flat field).
         
         Args:
             wikipedia_data: List of Wikipedia article dictionaries
-            collection_name: ChromaDB collection to retrieve embeddings from
+            collection_name: Optional ChromaDB collection name (auto-discovers if not provided)
             include_vectors: Whether to include embedding vectors
             
         Returns:
             List of dictionaries with correlated data and embedding fields
         """
-        logger.info(f"Correlating {len(wikipedia_data)} Wikipedia articles with collection '{collection_name}'")
-        
         if not wikipedia_data:
             return []
         
-        # Extract page IDs for bulk retrieval (convert to string for ChromaDB)
-        page_ids = [str(article.get('page_id', '')) for article in wikipedia_data if article.get('page_id')]
+        logger.info(f"Correlating {len(wikipedia_data)} Wikipedia articles")
         
-        # Bulk retrieve embeddings from ChromaDB
-        embeddings_map = self.embedding_service.get_embeddings_by_ids(
-            collection_name=collection_name,
-            entity_ids=page_ids,
-            include_vectors=include_vectors
+        # Bulk load all Wikipedia embeddings (uses cache after first load)
+        embeddings_map = self.embedding_service.bulk_load_wikipedia_embeddings(
+            collection_name=collection_name
         )
         
-        # Correlate each article with its embeddings
+        if not embeddings_map:
+            logger.warning("No Wikipedia embeddings available for correlation")
+            # Return articles without embeddings
+            results = []
+            for article in wikipedia_data:
+                result = dict(article)
+                result.update({
+                    'embeddings': None,
+                    'has_embeddings': False,
+                    'embedding_count': 0,
+                    'correlation_confidence': 0.0
+                })
+                results.append(result)
+            return results
+        
+        # Fast O(1) correlation using in-memory lookup
         results = []
+        successful_correlations = 0
+        
         for article in wikipedia_data:
-            page_id = str(article.get('page_id', ''))
-            if not page_id:
+            page_id = article.get('page_id')
+            if page_id is None:
                 logger.warning(f"Wikipedia article missing page_id: {article.get('title', 'Unknown')}")
+                result = dict(article)
+                result.update({
+                    'embeddings': None,
+                    'has_embeddings': False,
+                    'embedding_count': 0,
+                    'correlation_confidence': 0.0
+                })
+                results.append(result)
                 continue
             
+            # Ensure page_id is int for lookup
+            try:
+                page_id = int(page_id)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid page_id: {page_id}")
+                result = dict(article)
+                result.update({
+                    'embeddings': None,
+                    'has_embeddings': False,
+                    'embedding_count': 0,
+                    'correlation_confidence': 0.0
+                })
+                results.append(result)
+                continue
+            
+            # Direct dictionary lookup - no database query needed!
+            # Embeddings are already sorted by chunk_index from bulk load
             embeddings = embeddings_map.get(page_id, [])
             
-            # Sort multi-chunk embeddings by chunk_index
-            if embeddings:
-                embeddings.sort(key=lambda e: e.chunk_index or 0)
+            # Filter out vectors if not requested
+            if not include_vectors and embeddings:
+                for emb in embeddings:
+                    emb.vector = None
             
             # Create result dictionary combining source data with embedding fields
             result = dict(article)  # Copy all original fields
@@ -196,8 +256,10 @@ class CorrelationService:
                 'correlation_confidence': 1.0 if embeddings else 0.0
             })
             results.append(result)
+            
+            if embeddings:
+                successful_correlations += 1
         
-        successful_correlations = sum(1 for r in results if r['has_embeddings'])
         logger.info(f"Successfully correlated {successful_correlations}/{len(results)} Wikipedia articles")
         
         # Log multi-chunk statistics

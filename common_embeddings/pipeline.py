@@ -185,14 +185,28 @@ class EmbeddingPipeline:
                     )
                     
                     # Add document-level metadata to chunks using Pydantic model
-                    for chunk_text, chunk_metadata in chunks:
-                        # Create structured metadata using ProcessingChunkMetadata
-                        combined_metadata = ProcessingChunkMetadata.from_combined_dict(
-                            document_metadata=doc.metadata,
-                            chunk_metadata=chunk_metadata,
-                            source_doc_id=doc.metadata.get('id', hash_text(doc.text)[:8])
+                    for chunk_data in chunks:
+                        # Create ProcessingChunkMetadata directly from ChunkData and document metadata
+                        combined_metadata = ProcessingChunkMetadata(
+                            source_doc_id=doc.metadata.get('id', hash_text(doc.text)[:8]),
+                            chunk_index=chunk_data.chunk_index,
+                            chunk_total=chunk_data.chunk_total,
+                            text_hash=chunk_data.text_hash,
+                            chunk_method=chunk_data.chunk_method,
+                            parent_hash=chunk_data.parent_hash,
+                            # Entity-specific fields from document metadata
+                            listing_id=doc.metadata.get('listing_id'),
+                            property_type=doc.metadata.get('property_type'),
+                            source_file_index=doc.metadata.get('source_file_index'),
+                            neighborhood_id=doc.metadata.get('neighborhood_id'),
+                            neighborhood_name=doc.metadata.get('neighborhood_name'),
+                            page_id=doc.metadata.get('page_id'),
+                            article_id=doc.metadata.get('article_id'),
+                            title=doc.metadata.get('title'),
+                            start_position=chunk_data.start_position,
+                            end_position=chunk_data.end_position,
                         )
-                        all_chunks.append((chunk_text, combined_metadata))
+                        all_chunks.append((chunk_data.text, combined_metadata))
                     
                     self.stats["documents_processed"] += 1
                     
@@ -230,7 +244,7 @@ class EmbeddingPipeline:
                 # Create appropriate BaseMetadata object using metadata factory
                 if self.metadata_factory:
                     storage_metadata = self.metadata_factory.create_metadata(
-                        chunk_metadata.to_dict(),  # Convert to dict for compatibility
+                        chunk_metadata,  # Pass Pydantic model directly
                         entity_type,
                         source_type,
                         source_file,

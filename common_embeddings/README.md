@@ -27,6 +27,24 @@ pip install -e ".[dev,viz]"
 pip install -e ".[providers]"
 ```
 
+### Environment Configuration
+
+Create a `.env` file in the project root directory with your API keys:
+
+```bash
+# .env file
+# For Voyage AI embeddings
+VOYAGE_API_KEY=your-voyage-api-key-here
+
+# For OpenAI embeddings (optional)
+OPENAI_API_KEY=your-openai-api-key-here
+
+# For Google Gemini embeddings (optional)
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+The framework automatically loads the `.env` file when running, simplifying API key management.
+
 ## Running the Pipeline
 
 Run the pipeline as a Python module from the **parent directory** (this is required for proper module imports):
@@ -124,10 +142,12 @@ python -m common_embeddings.evaluate.run_comparison
 
 This will:
 1. Load embeddings from configured collections
-2. Run queries against each model
+2. Run queries against each model (using the correct embedding model for each)
 3. Calculate metrics (Precision, Recall, F1, MAP, MRR)
 4. Determine winner based on primary metric
 5. Generate comparison report
+
+**Important**: The evaluation framework automatically uses the correct embedding model for generating query embeddings that match each collection's embeddings. This ensures accurate comparisons between models with different dimensions.
 
 ## Configuration
 
@@ -143,6 +163,67 @@ chromadb:
   
 # Processing settings configured per-module as needed
 ```
+
+### Using Voyage AI Embeddings
+
+Voyage AI provides high-quality cloud-based embeddings that outperform local models in many scenarios.
+
+#### Setup
+
+1. **Get API Key**: Sign up at [Voyage AI](https://dash.voyageai.com) to get your API key
+
+2. **Add to .env file**: Create or update the `.env` file in the project root:
+```bash
+# .env file in project root
+VOYAGE_API_KEY=your-voyage-api-key-here
+```
+
+The framework automatically loads the `.env` file when running, so no need to export manually.
+
+3. **Configure Provider**: Update your config to use Voyage:
+
+```yaml
+# config.yaml or eval config
+embedding:
+  provider: voyage
+  voyage_model: voyage-3  # 1024 dimensions, optimized for semantic similarity
+  # Other options: voyage-large-2 (1536 dims), voyage-code-2 (for code)
+
+processing:
+  rate_limit_delay: 0.1  # Add small delay to respect API rate limits
+```
+
+#### Available Voyage Models
+
+- **voyage-3**: Latest general-purpose model (1024 dims) - Recommended
+- **voyage-large-2**: Higher dimension model (1536 dims) for maximum accuracy
+- **voyage-code-2**: Optimized for code and technical content
+- **voyage-2**: Previous generation model (1024 dims)
+
+#### Running with Voyage
+
+```bash
+# Create embeddings with Voyage (API key loaded from .env automatically)
+python -m common_embeddings --data-type eval --config common_embeddings/eval_configs/voyage.yaml
+
+# Compare Voyage with other models
+python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/
+
+# Use Voyage for production data
+python -m common_embeddings --data-type wikipedia --force-recreate
+```
+
+#### Performance Comparison
+
+Based on our evaluation on the gold dataset:
+
+| Model | Provider | Dimensions | F1 Score | MRR | Best For |
+|-------|----------|------------|----------|-----|----------|
+| voyage-3 | Voyage AI | 1024 | 0.406 | 0.866 | Semantic, Historical, Landmarks |
+| nomic-embed-text | Ollama | 768 | 0.373 | 0.727 | Administrative queries |
+| mxbai-embed-large | Ollama | 1024 | 0.366 | 0.756 | Geographic queries |
+
+Voyage-3 shows superior performance for most query types, particularly excelling at semantic understanding and historical/landmark identification.
 
 ## Directory Structure
 

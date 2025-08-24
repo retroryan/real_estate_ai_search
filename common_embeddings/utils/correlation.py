@@ -204,7 +204,7 @@ class CorrelationValidator:
                 
                 # Try relative to common parent paths
                 common_roots = [
-                    "/Users/ryanknight/projects/temporal/real_estate_ai_search",
+                    ".",
                     "real_estate_data",
                     "data/wikipedia"
                 ]

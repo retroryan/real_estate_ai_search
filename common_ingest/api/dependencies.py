@@ -165,7 +165,8 @@ def get_embedding_service(
     chromadb_path = getattr(settings, 'chromadb_path', './data/chroma_db')
     logger.debug(f"Creating EmbeddingService with chromadb_path: {chromadb_path}")
     
-    return EmbeddingService(chromadb_path)
+    # Pass ChromaDB config for collection pattern discovery
+    return EmbeddingService(chromadb_path, settings.chromadb)
 
 
 def get_correlation_service(

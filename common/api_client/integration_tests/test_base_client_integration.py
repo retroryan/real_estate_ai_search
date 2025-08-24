@@ -211,8 +211,15 @@ class TestBaseAPIClientIntegration:
         
         test_client._http_client.request = Mock(return_value=mock_response)
         
-        with caplog.at_level(logging.DEBUG):
+        # Temporarily set logger to DEBUG level
+        original_level = test_client.logger.level
+        test_client.logger.setLevel(logging.DEBUG)
+        
+        with caplog.at_level(logging.DEBUG, logger=test_client.logger.name):
             test_client.get("/test")
+        
+        # Restore original level
+        test_client.logger.setLevel(original_level)
         
         # Verify debug logging occurred
         debug_messages = [record.message for record in caplog.records if record.levelname == "DEBUG"]

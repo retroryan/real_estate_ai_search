@@ -6,7 +6,7 @@ Clean, type-safe models for system statistics and performance metrics.
 
 from typing import Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from common.property_finder_models import EntityType, EmbeddingProvider
 from .enums import ChunkingMethod
@@ -29,11 +29,11 @@ class CollectionInfo(BaseModel):
     created_at: Optional[datetime] = Field(None, description="Collection creation time")
     version: Optional[str] = Field(None, description="Collection version")
     
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class PipelineStatistics(BaseModel):
@@ -103,11 +103,11 @@ class BatchProcessorStatistics(BaseModel):
     processing_time_seconds: Optional[float] = Field(None, ge=0.0, description="Total processing time")
     items_per_second: Optional[float] = Field(None, ge=0.0, description="Processing rate")
     
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
     
     @property
     def success_rate_percentage(self) -> float:
@@ -136,8 +136,8 @@ class SystemStatistics(BaseModel):
     # Timestamps
     generated_at: datetime = Field(default_factory=datetime.now, description="Statistics generation time")
     
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )

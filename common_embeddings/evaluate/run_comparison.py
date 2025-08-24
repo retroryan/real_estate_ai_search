@@ -6,12 +6,21 @@ Simple, sequential evaluation of multiple embedding models for comparison.
 NO parallel execution, NO caching - clean and straightforward.
 """
 
+import os
 import argparse
 import json
 import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+# Try to load from current directory first, then parent
+if Path(".env").exists():
+    load_dotenv(".env")
+elif Path("../.env").exists():
+    load_dotenv("../.env")
 
 from ..models.config import ExtendedConfig, load_config_from_yaml
 from ..models.eval_config import EvalConfig, load_eval_config

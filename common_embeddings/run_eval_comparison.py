@@ -5,11 +5,20 @@ Simple evaluation comparison runner.
 Runs evaluation with multiple config files and compares results.
 """
 
+import os
 import argparse
 import subprocess
 import sys
 from pathlib import Path
 import logging
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+# Try to load from current directory first, then parent
+if Path(".env").exists():
+    load_dotenv(".env")
+elif Path("../.env").exists():
+    load_dotenv("../.env")
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)

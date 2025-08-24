@@ -8,7 +8,7 @@ class APIClientConfig(BaseModel):
     """Configuration for API clients."""
     
     base_url: HttpUrl = Field(..., description="Base URL for the API")
-    timeout: int = Field(default=30, description="Request timeout in seconds", gt=0)
+    timeout: float = Field(default=30.0, description="Request timeout in seconds", gt=0)
     default_headers: Optional[Dict[str, str]] = Field(
         default=None, 
         description="Default headers to include with all requests"

@@ -11,7 +11,7 @@ description = "Embedding generation pipeline for Property Finder"
 requires-python = ">=3.9"
 dependencies = [
     # Shared models package (local)
-    "common @ file:///Users/ryanknight/projects/temporal/real_estate_ai_search/common",
+    "common @ file://../common",
     
     # Core dependencies
     "pydantic>=2.0",

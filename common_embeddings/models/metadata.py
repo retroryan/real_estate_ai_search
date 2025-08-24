@@ -5,7 +5,7 @@ These models extend the base metadata from common with
 embedding-specific fields for correlation and tracking.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
@@ -34,12 +34,12 @@ class PropertyMetadata(BaseMetadata):
     property_type: Optional[str] = Field(None, description="Type of property")
     price: Optional[float] = Field(None, description="Property price")
     
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
-        json_encoders = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class NeighborhoodMetadata(BaseMetadata):
@@ -54,12 +54,12 @@ class NeighborhoodMetadata(BaseMetadata):
     city: Optional[str] = Field(None, description="City name")
     state: Optional[str] = Field(None, description="State name")
     
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
-        json_encoders = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class WikipediaMetadata(BaseMetadata):
@@ -67,20 +67,30 @@ class WikipediaMetadata(BaseMetadata):
     Metadata for Wikipedia article embeddings.
     
     Extends BaseMetadata with Wikipedia-specific fields.
+    All fields are stored flat for direct ChromaDB access without parsing.
     """
     
+    # Core Wikipedia fields
     page_id: int = Field(description="Wikipedia page ID")
+    article_id: int = Field(description="Database article ID - critical for correlation")
     title: str = Field(description="Article title")
     url: Optional[str] = Field(None, description="Wikipedia URL")
     relevance_score: Optional[float] = Field(None, ge=0.0, le=1.0,
                                              description="Relevance score for location articles")
     
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
-        json_encoders = {
+    # Chunk fields - stored flat for easy access, no nested objects
+    chunk_index: int = Field(0, description="Position of this chunk in the document")
+    chunk_total: int = Field(1, description="Total number of chunks from this document")
+    chunk_parent_id: Optional[str] = Field(None, description="Parent document ID for multi-chunk docs")
+    chunk_start_position: Optional[int] = Field(None, description="Starting character position in original text")
+    chunk_end_position: Optional[int] = Field(None, description="Ending character position in original text")
+    
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class ChunkMetadata(BaseModel):

@@ -34,7 +34,7 @@ class RealDataSampler:
         Args:
             data_root_path: Root path to project data files
         """
-        self.data_root_path = data_root_path or "/Users/ryanknight/projects/temporal/real_estate_ai_search"
+        self.data_root_path = data_root_path or "."
         self.validation_errors: List[ValidationError] = []
         
         # Data caches

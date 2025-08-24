@@ -6,7 +6,7 @@ Defines Pydantic models for structured API responses with metadata and paginatio
 
 import time
 from typing import List, Optional, Any, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from property_finder_models import (
     EnrichedProperty,
@@ -127,8 +127,8 @@ class ErrorResponse(BaseModel):
     
     error: Dict[str, Any] = Field(description="Error details")
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "error": {
                     "code": "INVALID_PARAMETER",
@@ -142,6 +142,7 @@ class ErrorResponse(BaseModel):
                 }
             }
         }
+    )
 
 
 class WikipediaArticleResponse(BaseModel):

@@ -1,24 +1,29 @@
-# Model Comparison Configuration
-# Simple, clean configuration for comparing embedding models
+# Model Comparison Configuration for Gold Dataset with Voyage
+# Testing all three embedding providers on full evaluation dataset
 
 version: "1.0"
 
 # Base configuration file for embedding settings
 base_config: common_embeddings/eval.config.yaml
 
-# Evaluation settings (simple, no caching or parallel execution)
+# Evaluation settings
 evaluation:
   dataset: gold  # Use gold standard dataset
   top_k: 10      # Retrieve top 10 results for each query
 
 # Models to compare (sequential evaluation)
-# Collection names will be auto-generated as: {prefix}_{provider}_{model}
 models:
   - name: nomic-embed-text
     provider: ollama
+    collection_name: gold_ollama_nomic_embed_text
     
   - name: mxbai-embed-large
     provider: ollama
+    collection_name: gold_ollama_mxbai_embed_large
+    
+  - name: voyage-3
+    provider: voyage
+    collection_name: gold_voyage_voyage_3
 
 # Comparison settings (simple winner determination)
 comparison:
@@ -27,4 +32,4 @@ comparison:
 # Reporting configuration (simple HTML report)
 reporting:
   format: html
-  output_directory: ./common_embeddings/evaluate_results/comparisons
+  output_directory: ./common_embeddings/evaluate_results/comparisons_with_voyage

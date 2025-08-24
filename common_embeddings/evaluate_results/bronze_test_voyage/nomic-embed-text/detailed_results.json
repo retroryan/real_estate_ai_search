@@ -1,0 +1,126 @@
+{
+  "queries": [
+    {
+      "query_id": "bronze_geo_001",
+      "query_text": "What cities are located on the San Francisco Peninsula?",
+      "category": "geographic",
+      "expected_results": [
+        26974
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.6589978933334351
+        },
+        {
+          "page_id": 1706289,
+          "similarity": 0.24785268306732178
+        },
+        {
+          "page_id": 71083,
+          "similarity": -0.022000670433044434
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "bronze_admin_001",
+      "query_text": "What is the county seat of Wayne County, Utah?",
+      "category": "administrative",
+      "expected_results": [
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 71083,
+          "similarity": 0.7282233238220215
+        },
+        {
+          "page_id": 26974,
+          "similarity": -0.04847311973571777
+        },
+        {
+          "page_id": 1706289,
+          "similarity": -0.07229733467102051
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "bronze_hist_001",
+      "query_text": "Which San Francisco neighborhood became known as the Harlem of the West?",
+      "category": "historical",
+      "expected_results": [
+        1706289
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 1706289,
+          "similarity": 0.5914721786975861
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.2948044538497925
+        },
+        {
+          "page_id": 71083,
+          "similarity": -0.20719468593597412
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "bronze_geo_002",
+      "query_text": "What national park is located in Wayne County, Utah?",
+      "category": "geographic",
+      "expected_results": [
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 71083,
+          "similarity": 0.7512236535549164
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.03497040271759033
+        },
+        {
+          "page_id": 1706289,
+          "similarity": -0.05796802043914795
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "bronze_semantic_001",
+      "query_text": "Tell me about areas affected by the 1906 San Francisco earthquake",
+      "category": "semantic",
+      "expected_results": [
+        1706289
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 1706289,
+          "similarity": 0.4067012071609497
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.3676993250846863
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.046744346618652344
+        }
+      ],
+      "relevant_retrieved": 2
+    }
+  ],
+  "summary": {
+    "total_queries": 5,
+    "mean_precision_at_5": 0.4666666666666666,
+    "mean_recall_at_10": 1.0,
+    "mean_f1_at_5": 0.6199999999999999
+  },
+  "timestamp": "2025-08-23T21:37:06.975650"
+}

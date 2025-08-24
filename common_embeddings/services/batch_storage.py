@@ -163,6 +163,13 @@ class BatchStorageManager:
         # Convert Pydantic model to dict for ChromaDB
         metadata_dict = metadata.model_dump()
         
+        # Validate that metadata is flat (no nested dicts/objects)
+        for key, value in metadata_dict.items():
+            if isinstance(value, dict):
+                logger.warning(f"Nested dict found in metadata field '{key}' - this will be stringified by ChromaDB")
+            elif hasattr(value, '__dict__') and not isinstance(value, (str, int, float, bool, type(None))):
+                logger.warning(f"Object found in metadata field '{key}' - this will be stringified by ChromaDB")
+        
         # Debug: Log the metadata fields for troubleshooting
         logger.debug(f"Storing metadata with fields: {list(metadata_dict.keys())}")
         

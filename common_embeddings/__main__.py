@@ -9,8 +9,18 @@ Usage:
 """
 
 import sys
+import os
 import json
 from pathlib import Path
+
+# Load environment variables from .env file before importing other modules
+from dotenv import load_dotenv
+# Try to load from parent directory .env first, then current directory
+if Path(".env").exists():
+    load_dotenv(".env")
+elif Path("../.env").exists():
+    load_dotenv("../.env")
+    
 from .main import main
 from .utils import get_logger
 

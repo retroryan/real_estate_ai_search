@@ -18,7 +18,7 @@ from ..models import (
     EmbeddingProvider,
     Config
 )
-from ..models.metadata import ChunkMetadata
+from ..models.processing import ProcessingChunkMetadata
 from ..utils import get_logger
 
 logger = get_logger(__name__)
@@ -45,7 +45,7 @@ class MetadataFactory:
     
     def create_metadata(
         self,
-        chunk_metadata: Dict[str, Any],
+        chunk_metadata: ProcessingChunkMetadata,
         entity_type: EntityType,
         source_type: SourceType,
         source_file: str,
@@ -55,7 +55,7 @@ class MetadataFactory:
         Create appropriate metadata object for the entity type.
         
         Args:
-            chunk_metadata: Chunk-level metadata dictionary
+            chunk_metadata: ProcessingChunkMetadata Pydantic model
             entity_type: Type of entity being processed
             source_type: Source data type
             source_file: Path to source file
@@ -101,7 +101,7 @@ class MetadataFactory:
         source_type: SourceType,
         source_file: str,
         embedding: List[float],
-        chunk_metadata: Dict[str, Any]
+        chunk_metadata: ProcessingChunkMetadata
     ) -> Dict[str, Any]:
         """
         Create common base fields for all metadata objects.
@@ -111,13 +111,13 @@ class MetadataFactory:
             source_type: Source type  
             source_file: Source file path
             embedding: Embedding vector
-            chunk_metadata: Chunk metadata dictionary
+            chunk_metadata: ProcessingChunkMetadata Pydantic model
             
         Returns:
             Dictionary of common base fields
         """
         # Generate unique embedding ID
-        embedding_id = f"{chunk_metadata.get('text_hash', 'unknown')}_{entity_type.value}"
+        embedding_id = f"{chunk_metadata.text_hash}_{entity_type.value}"
         
         return {
             "embedding_id": embedding_id,
@@ -130,7 +130,7 @@ class MetadataFactory:
             "embedding_provider": self.config.embedding.provider,
             "embedding_dimension": len(embedding),
             "embedding_version": self.config.metadata_version,
-            "text_hash": chunk_metadata.get('text_hash', ''),
+            "text_hash": chunk_metadata.text_hash,
         }
     
     def _create_collection_name(self, entity_type: EntityType) -> str:
@@ -148,97 +148,77 @@ class MetadataFactory:
     
     def _create_property_metadata(
         self, 
-        chunk_metadata: Dict[str, Any], 
+        chunk_metadata: ProcessingChunkMetadata, 
         base_fields: Dict[str, Any]
     ) -> PropertyMetadata:
         """
         Create PropertyMetadata object.
         
         Args:
-            chunk_metadata: Chunk metadata dictionary
+            chunk_metadata: ProcessingChunkMetadata Pydantic model
             base_fields: Common base fields
             
         Returns:
             PropertyMetadata object with validation
         """
         return PropertyMetadata(
-            listing_id=chunk_metadata.get('listing_id', ''),
-            source_file_index=chunk_metadata.get('source_file_index'),
+            listing_id=chunk_metadata.listing_id or '',
+            source_file_index=chunk_metadata.source_file_index,
             **base_fields
         )
     
     def _create_neighborhood_metadata(
         self, 
-        chunk_metadata: Dict[str, Any], 
+        chunk_metadata: ProcessingChunkMetadata, 
         base_fields: Dict[str, Any]
     ) -> NeighborhoodMetadata:
         """
         Create NeighborhoodMetadata object.
         
         Args:
-            chunk_metadata: Chunk metadata dictionary
+            chunk_metadata: ProcessingChunkMetadata Pydantic model
             base_fields: Common base fields
             
         Returns:
             NeighborhoodMetadata object with validation
         """
         return NeighborhoodMetadata(
-            neighborhood_id=chunk_metadata.get('neighborhood_id', ''),
-            neighborhood_name=chunk_metadata.get('neighborhood_name', ''),
-            source_file_index=chunk_metadata.get('source_file_index'),
+            neighborhood_id=chunk_metadata.neighborhood_id or '',
+            neighborhood_name=chunk_metadata.neighborhood_name or '',
+            source_file_index=chunk_metadata.source_file_index,
             **base_fields
         )
     
     def _create_wikipedia_metadata(
         self, 
-        chunk_metadata: Dict[str, Any], 
+        chunk_metadata: ProcessingChunkMetadata, 
         base_fields: Dict[str, Any]
     ) -> WikipediaMetadata:
         """
-        Create WikipediaMetadata object.
+        Create WikipediaMetadata object with flat chunk fields.
         
         Args:
-            chunk_metadata: Chunk metadata dictionary
+            chunk_metadata: ProcessingChunkMetadata Pydantic model
             base_fields: Common base fields
             
         Returns:
-            WikipediaMetadata object with validation
+            WikipediaMetadata object with flat fields for ChromaDB
         """
-        # Handle chunking metadata if present
-        chunk_meta = self._create_chunk_metadata(chunk_metadata)
+        # Create parent_id from page_id if multi-chunk document
+        parent_id = None
+        if chunk_metadata.chunk_total > 1:
+            parent_id = str(chunk_metadata.page_id or '')
         
         return WikipediaMetadata(
-            page_id=chunk_metadata.get('page_id', 0),
-            article_id=chunk_metadata.get('article_id'),
-            has_summary=chunk_metadata.get('has_summary', False),
-            chunk_metadata=chunk_meta,
-            title=chunk_metadata.get('title', 'Unknown'),
+            page_id=chunk_metadata.page_id or 0,
+            article_id=chunk_metadata.article_id or 0,  # Required field for correlation
+            title=chunk_metadata.title or 'Unknown',
+            # Flat chunk fields for direct ChromaDB access
+            chunk_index=chunk_metadata.chunk_index,
+            chunk_total=chunk_metadata.chunk_total,
+            chunk_parent_id=parent_id,
+            chunk_start_position=chunk_metadata.start_position,
+            chunk_end_position=chunk_metadata.end_position,
             **base_fields
         )
     
-    def _create_chunk_metadata(self, chunk_metadata: Dict[str, Any]) -> Optional[ChunkMetadata]:
-        """
-        Create ChunkMetadata object if chunk information is present.
-        
-        Args:
-            chunk_metadata: Chunk metadata dictionary
-            
-        Returns:
-            ChunkMetadata object or None if not applicable
-        """
-        chunk_total = chunk_metadata.get('chunk_total', 1)
-        
-        # Only create chunk metadata for multi-chunk documents
-        if chunk_total <= 1:
-            return None
-        
-        return ChunkMetadata(
-            chunk_index=chunk_metadata.get('chunk_index', 0),
-            chunk_total=chunk_total,
-            parent_id=str(chunk_metadata.get('page_id', '')),
-            start_position=chunk_metadata.get('start_position', 0),
-            end_position=chunk_metadata.get('end_position', len(chunk_metadata.get('text', ''))),
-            token_count=chunk_metadata.get('token_count'),
-            overlap_previous=chunk_metadata.get('overlap_previous'),
-            overlap_next=chunk_metadata.get('overlap_next')
-        )

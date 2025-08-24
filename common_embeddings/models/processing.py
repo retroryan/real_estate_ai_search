@@ -6,10 +6,25 @@ Clean, type-safe models for metadata combination and processing results.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from common.property_finder_models import EntityType, SourceType, BaseMetadata
 from .enums import ChunkingMethod
+
+
+class ChunkData(BaseModel):
+    """
+    Simple model for chunk data from the chunking process.
+    All fields are flat for direct use.
+    """
+    text: str = Field(description="The chunk text content")
+    chunk_index: int = Field(0, description="Position of chunk in document")
+    chunk_total: int = Field(1, description="Total chunks in document")
+    text_hash: str = Field(description="Hash of chunk text")
+    chunk_method: Optional[str] = Field(None, description="Chunking method used")
+    parent_hash: Optional[str] = Field(None, description="Hash of parent document")
+    start_position: Optional[int] = Field(None, description="Start position in original text")
+    end_position: Optional[int] = Field(None, description="End position in original text")
 
 
 class ProcessingChunkMetadata(BaseModel):
@@ -38,87 +53,19 @@ class ProcessingChunkMetadata(BaseModel):
     bedrooms: Optional[int] = Field(None, description="Number of bedrooms")
     city: Optional[str] = Field(None, description="Property city")
     state: Optional[str] = Field(None, description="Property state")
+    source_file_index: Optional[int] = Field(None, description="Index in source file")
     
     neighborhood_id: Optional[str] = Field(None, description="Neighborhood identifier")
     neighborhood_name: Optional[str] = Field(None, description="Neighborhood name")
     
     page_id: Optional[int] = Field(None, description="Wikipedia page ID")
+    article_id: Optional[int] = Field(None, description="Database article ID for correlation")
     title: Optional[str] = Field(None, description="Wikipedia article title")
     
-    # Additional metadata as flexible dict
-    extra_metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata fields")
+    # Position information for chunks
+    start_position: Optional[int] = Field(None, description="Starting character position in original text")
+    end_position: Optional[int] = Field(None, description="Ending character position in original text")
     
-    @classmethod
-    def from_combined_dict(
-        cls, 
-        document_metadata: Dict[str, Any], 
-        chunk_metadata: Dict[str, Any],
-        source_doc_id: Optional[str] = None
-    ) -> "ChunkMetadata":
-        """
-        Create ChunkMetadata from combined document and chunk metadata dictionaries.
-        
-        Args:
-            document_metadata: Original document metadata
-            chunk_metadata: Chunk-specific metadata from chunking process
-            source_doc_id: Optional source document ID override
-            
-        Returns:
-            ChunkMetadata instance with combined data
-        """
-        # Combine both metadata dicts
-        combined = {**document_metadata, **chunk_metadata}
-        
-        # Generate source_doc_id if not provided
-        if source_doc_id:
-            combined['source_doc_id'] = source_doc_id
-        elif 'id' in document_metadata:
-            combined['source_doc_id'] = document_metadata['id']
-        elif 'text_hash' in chunk_metadata:
-            combined['source_doc_id'] = chunk_metadata['text_hash'][:8]
-        else:
-            combined['source_doc_id'] = 'unknown'
-        
-        # Extract known fields
-        known_fields = {
-            'source_doc_id', 'chunk_index', 'chunk_total', 'text_hash', 
-            'chunk_method', 'parent_hash', 'listing_id', 'property_type',
-            'bedrooms', 'city', 'state', 'neighborhood_id', 'neighborhood_name',
-            'page_id', 'title'
-        }
-        
-        # Separate known fields from extra metadata
-        field_data = {}
-        extra_data = {}
-        
-        for key, value in combined.items():
-            if key in known_fields:
-                field_data[key] = value
-            else:
-                extra_data[key] = value
-        
-        # Set extra metadata
-        field_data['extra_metadata'] = extra_data
-        
-        return cls(**field_data)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert to dictionary for ChromaDB storage.
-        
-        Returns:
-            Dictionary with all fields flattened, excluding None values
-        """
-        result = {}
-        
-        # Add main fields
-        data = self.model_dump(exclude_none=True, exclude={'extra_metadata'})
-        result.update(data)
-        
-        # Add extra metadata fields
-        result.update(self.extra_metadata)
-        
-        return result
 
 
 class ProcessingResult(BaseModel):
@@ -139,9 +86,9 @@ class ProcessingResult(BaseModel):
     # Processing timestamps
     processed_at: datetime = Field(default_factory=datetime.now, description="Processing timestamp")
     
-    class Config:
-        """Pydantic configuration."""
-        arbitrary_types_allowed = True  # Allow BaseMetadata subclasses
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True  # Allow BaseMetadata subclasses
+    )
 
 
 class BatchProcessingResult(BaseModel):

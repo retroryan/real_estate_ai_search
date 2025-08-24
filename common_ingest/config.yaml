@@ -4,7 +4,7 @@
 # Data source paths
 data_paths:
   # Base path for the project (can be absolute or relative)
-  base_path: "/Users/ryanknight/projects/temporal/real_estate_ai_search"
+  base_path: ".."
   
   # Property data directory (relative to base_path)
   property_data_dir: "real_estate_data"

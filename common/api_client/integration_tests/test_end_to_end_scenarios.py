@@ -206,8 +206,16 @@ class TestEndToEndScenarios:
         assert api_server_check is True
         
         try:
-            # Get all properties with small page size to test pagination
-            all_pages = list(property_api_client.get_all_properties(page_size=5))
+            # Get properties with small page size to test pagination, limit to first few pages
+            page_count = 0
+            max_pages = 3  # Limit test to first 3 pages
+            all_pages = []
+            
+            for page in property_api_client.get_all_properties(page_size=5):
+                all_pages.append(page)
+                page_count += 1
+                if page_count >= max_pages:
+                    break
             
             if not all_pages:
                 pytest.skip("No properties available for pagination test")

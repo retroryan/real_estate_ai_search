@@ -21,7 +21,7 @@ class DataPaths(BaseModel):
     
     # Base path for the project
     base_path: Path = Field(
-        default=Path("/Users/ryanknight/projects/temporal/real_estate_ai_search"),
+        default=Path(".."),
         description="Base path for the project"
     )
     

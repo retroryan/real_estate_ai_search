@@ -1,0 +1,2111 @@
+{
+  "queries": [
+    {
+      "query_id": "geo_001",
+      "query_text": "What locations are in Wasatch County, Utah?",
+      "category": "geographic",
+      "expected_results": [
+        17997272
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 71077,
+          "similarity": 0.5139774680137634
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.48655688762664795
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.47877049446105957
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.47348225116729736
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.42638981342315674
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.4175059199333191
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.4174119234085083
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.4079650044441223
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.4027025103569031
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.4007803201675415
+        }
+      ],
+      "relevant_retrieved": 0
+    },
+    {
+      "query_id": "geo_002",
+      "query_text": "Find coastal areas in California",
+      "category": "geographic",
+      "expected_results": [
+        7369514,
+        137014,
+        107783
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.3974815607070923
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.3693622350692749
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.34400928020477295
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.32466983795166016
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.31029343605041504
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.3011324405670166
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.30105268955230713
+        },
+        {
+          "page_id": 2262677,
+          "similarity": 0.2977970242500305
+        },
+        {
+          "page_id": 16990669,
+          "similarity": 0.2952619791030884
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.2535945177078247
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "geo_003",
+      "query_text": "What places are near Park City, Utah?",
+      "category": "geographic",
+      "expected_results": [
+        76583242,
+        2588177,
+        34831668
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 76583242,
+          "similarity": 0.47047537565231323
+        },
+        {
+          "page_id": 34831668,
+          "similarity": 0.4017326831817627
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.3811837434768677
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.369934618473053
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.36044031381607056
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.3375921845436096
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.3340078592300415
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.3332953453063965
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.3319394588470459
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.3182578682899475
+        }
+      ],
+      "relevant_retrieved": 10
+    },
+    {
+      "query_id": "geo_004",
+      "query_text": "Peninsula regions in the Bay Area",
+      "category": "geographic",
+      "expected_results": [
+        26974
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.6579716205596924
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.3076822757720947
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.25961899757385254
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.24729472398757935
+        },
+        {
+          "page_id": 16990669,
+          "similarity": 0.19493019580841064
+        },
+        {
+          "page_id": 21511470,
+          "similarity": 0.15325498580932617
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.14863401651382446
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.13725554943084717
+        },
+        {
+          "page_id": 2262677,
+          "similarity": 0.13541078567504883
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.13369131088256836
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "geo_005",
+      "query_text": "Northern California regions and cities",
+      "category": "geographic",
+      "expected_results": [
+        26974,
+        1848431
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.43744075298309326
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.3302376866340637
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.3248302936553955
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.30220699310302734
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.2604779005050659
+        },
+        {
+          "page_id": 16990669,
+          "similarity": 0.23155200481414795
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.219884991645813
+        },
+        {
+          "page_id": 107916,
+          "similarity": 0.20790743827819824
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.20743513107299805
+        },
+        {
+          "page_id": 2262677,
+          "similarity": 0.20163226127624512
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "geo_006",
+      "query_text": "Southern Utah locations and landmarks",
+      "category": "geographic",
+      "expected_results": [
+        34629558
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34629558,
+          "similarity": 0.4400275945663452
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.41113030910491943
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.3763999938964844
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.3647043704986572
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.3542732000350952
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.3494407534599304
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.3473471403121948
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.34114688634872437
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.32790571451187134
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.3238309621810913
+        }
+      ],
+      "relevant_retrieved": 3
+    },
+    {
+      "query_id": "geo_007",
+      "query_text": "San Francisco Bay Area communities",
+      "category": "geographic",
+      "expected_results": [
+        26974,
+        1848431,
+        1706289
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.4905722141265869
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.38060617446899414
+        },
+        {
+          "page_id": 1706289,
+          "similarity": 0.3000870943069458
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.28738099336624146
+        },
+        {
+          "page_id": 21511470,
+          "similarity": 0.28441131114959717
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.263685405254364
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.21736609935760498
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.17968648672103882
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.1749361753463745
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.17451101541519165
+        }
+      ],
+      "relevant_retrieved": 4
+    },
+    {
+      "query_id": "geo_008",
+      "query_text": "Mountain ranges and peaks in Utah and California",
+      "category": "geographic",
+      "expected_results": [
+        26974,
+        34629558,
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34482485,
+          "similarity": 0.5662206709384918
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.5632534027099609
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.47725534439086914
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.39143574237823486
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.39125919342041016
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.38368499279022217
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.3763766884803772
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.37342536449432373
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.3629608750343323
+        },
+        {
+          "page_id": 2588177,
+          "similarity": 0.3279327154159546
+        }
+      ],
+      "relevant_retrieved": 7
+    },
+    {
+      "query_id": "lan_009",
+      "query_text": "State parks for recreation",
+      "category": "landmark",
+      "expected_results": [
+        17997272,
+        605117
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 17997272,
+          "similarity": 0.4526931047439575
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.4443744421005249
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.24110722541809082
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.19719135761260986
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.13595223426818848
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.11831432580947876
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.1140979528427124
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.11026132106781006
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.10861486196517944
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.08981537818908691
+        }
+      ],
+      "relevant_retrieved": 4
+    },
+    {
+      "query_id": "lan_010",
+      "query_text": "Mountain regions in Utah",
+      "category": "landmark",
+      "expected_results": [
+        34629558,
+        71083,
+        34482485
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34629558,
+          "similarity": 0.5296292304992676
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.5007311105728149
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.4713418483734131
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.40310293436050415
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.39325547218322754
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.38559091091156006
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.383816123008728
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.37682318687438965
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.36256521940231323
+        },
+        {
+          "page_id": 22770046,
+          "similarity": 0.3506527543067932
+        }
+      ],
+      "relevant_retrieved": 8
+    },
+    {
+      "query_id": "lan_011",
+      "query_text": "Popular tourist destinations",
+      "category": "landmark",
+      "expected_results": [
+        36842068,
+        57883619,
+        14640027
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 137003,
+          "similarity": 0.1135169267654419
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.09954112768173218
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.09452438354492188
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.06879985332489014
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.06354880332946777
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.05602598190307617
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.05016064643859863
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.0437808632850647
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.043774306774139404
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.041071295738220215
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "lan_012",
+      "query_text": "Outdoor recreation areas with water sports",
+      "category": "landmark",
+      "expected_results": [
+        7369514
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 17997272,
+          "similarity": 0.3491050601005554
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.31890153884887695
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.19889098405838013
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.13904356956481934
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.13594728708267212
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.1295325756072998
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.12004822492599487
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.11438345909118652
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.1106177568435669
+        },
+        {
+          "page_id": 78041174,
+          "similarity": 0.11032187938690186
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "lan_013",
+      "query_text": "Ski resorts and winter sports areas",
+      "category": "landmark",
+      "expected_results": [
+        7369514,
+        748746
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 748746,
+          "similarity": 0.33609187602996826
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.17671632766723633
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.14639437198638916
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.13492995500564575
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.12883734703063965
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.12530595064163208
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.10269802808761597
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.08393257856369019
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.0805196762084961
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.0681760311126709
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "lan_014",
+      "query_text": "National landmarks and monuments",
+      "category": "landmark",
+      "expected_results": [
+        34629558,
+        36842068,
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 57883619,
+          "similarity": 0.3092893958091736
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.26210570335388184
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.2377943992614746
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.21427369117736816
+        },
+        {
+          "page_id": 605117,
+          "similarity": 0.15258026123046875
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.1464303731918335
+        },
+        {
+          "page_id": 73883105,
+          "similarity": 0.13814520835876465
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.11047112941741943
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.10203540325164795
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.10110592842102051
+        }
+      ],
+      "relevant_retrieved": 7
+    },
+    {
+      "query_id": "lan_015",
+      "query_text": "Beach and coastal recreation areas",
+      "category": "landmark",
+      "expected_results": [
+        26974,
+        7369514,
+        137014
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 7369514,
+          "similarity": 0.25130969285964966
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.2202143669128418
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.15152597427368164
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.14696723222732544
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.14011305570602417
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.11139994859695435
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.10984086990356445
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.09623295068740845
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.09120607376098633
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.08703887462615967
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "lan_016",
+      "query_text": "Nature preserves and wilderness areas",
+      "category": "landmark",
+      "expected_results": [
+        34482485,
+        57883619,
+        137169
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34482485,
+          "similarity": 0.26339614391326904
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.21706557273864746
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.1801367998123169
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.17622196674346924
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.17504459619522095
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.13403069972991943
+        },
+        {
+          "page_id": 35200423,
+          "similarity": 0.12470710277557373
+        },
+        {
+          "page_id": 60980771,
+          "similarity": 0.12320864200592041
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.12063443660736084
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.11649835109710693
+        }
+      ],
+      "relevant_retrieved": 0
+    },
+    {
+      "query_id": "his_017",
+      "query_text": "California Historical Landmarks",
+      "category": "historical",
+      "expected_results": [
+        36842068
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 57883619,
+          "similarity": 0.708360344171524
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.6016470789909363
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.45658040046691895
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.39205580949783325
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.35321950912475586
+        },
+        {
+          "page_id": 73883105,
+          "similarity": 0.35084688663482666
+        },
+        {
+          "page_id": 605117,
+          "similarity": 0.34036707878112793
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.33543556928634644
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.26350319385528564
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.2518121004104614
+        }
+      ],
+      "relevant_retrieved": 8
+    },
+    {
+      "query_id": "his_018",
+      "query_text": "Spanish colonial history sites",
+      "category": "historical",
+      "expected_results": [
+        26974,
+        34629558,
+        57883619
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 14640027,
+          "similarity": 0.31269317865371704
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.24849152565002441
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.2328242063522339
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.1336078643798828
+        },
+        {
+          "page_id": 605117,
+          "similarity": 0.10971659421920776
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.10715019702911377
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.1030084490776062
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.08343690633773804
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.07587933540344238
+        },
+        {
+          "page_id": 73883105,
+          "similarity": 0.06651830673217773
+        }
+      ],
+      "relevant_retrieved": 3
+    },
+    {
+      "query_id": "his_019",
+      "query_text": "Historical land grants in California",
+      "category": "historical",
+      "expected_results": [
+        26974
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 57883619,
+          "similarity": 0.44621604681015015
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.39315974712371826
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.34961462020874023
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.34714001417160034
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.2956608533859253
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.2875293493270874
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.28217613697052
+        },
+        {
+          "page_id": 605117,
+          "similarity": 0.2593778967857361
+        },
+        {
+          "page_id": 2262677,
+          "similarity": 0.2361067533493042
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.2162090539932251
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "his_020",
+      "query_text": "Infrastructure projects from the 1930s",
+      "category": "historical",
+      "expected_results": [
+        17997272
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 3093985,
+          "similarity": 0.010144233703613281
+        },
+        {
+          "page_id": 1848431,
+          "similarity": -0.00203096866607666
+        },
+        {
+          "page_id": 605117,
+          "similarity": -0.018357515335083008
+        },
+        {
+          "page_id": 21836932,
+          "similarity": -0.021334409713745117
+        },
+        {
+          "page_id": 18792127,
+          "similarity": -0.021392345428466797
+        },
+        {
+          "page_id": 14640027,
+          "similarity": -0.02443552017211914
+        },
+        {
+          "page_id": 2577317,
+          "similarity": -0.027608275413513184
+        },
+        {
+          "page_id": 22770046,
+          "similarity": -0.03242027759552002
+        },
+        {
+          "page_id": 10524847,
+          "similarity": -0.035035133361816406
+        },
+        {
+          "page_id": 62769106,
+          "similarity": -0.041962623596191406
+        }
+      ],
+      "relevant_retrieved": 0
+    },
+    {
+      "query_id": "his_021",
+      "query_text": "Gold Rush era locations",
+      "category": "historical",
+      "expected_results": [
+        22770046,
+        71077,
+        748746
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 22770046,
+          "similarity": 0.29663532972335815
+        },
+        {
+          "page_id": 10524847,
+          "similarity": 0.24833011627197266
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.21299117803573608
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.18340140581130981
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.17330139875411987
+        },
+        {
+          "page_id": 15862936,
+          "similarity": 0.1646357774734497
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.1645011305809021
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.15472853183746338
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.14939665794372559
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.1466909646987915
+        }
+      ],
+      "relevant_retrieved": 2
+    },
+    {
+      "query_id": "his_022",
+      "query_text": "Native American heritage sites",
+      "category": "historical",
+      "expected_results": [
+        71060,
+        57883619,
+        71077
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 57883619,
+          "similarity": 0.2848259210586548
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.25510549545288086
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.2394406795501709
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.21448087692260742
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.17357909679412842
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.15408986806869507
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.14263153076171875
+        },
+        {
+          "page_id": 1706289,
+          "similarity": 0.10008883476257324
+        },
+        {
+          "page_id": 22770046,
+          "similarity": 0.08681648969650269
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.08269500732421875
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "his_023",
+      "query_text": "Mormon pioneer historical sites",
+      "category": "historical",
+      "expected_results": [
+        71060,
+        605117,
+        71077
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 21836932,
+          "similarity": 0.32443010807037354
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.32131850719451904
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.3172866106033325
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.29700374603271484
+        },
+        {
+          "page_id": 10524847,
+          "similarity": 0.28709518909454346
+        },
+        {
+          "page_id": 2588177,
+          "similarity": 0.28281092643737793
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.25273239612579346
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.2515833377838135
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.2390272617340088
+        },
+        {
+          "page_id": 22770046,
+          "similarity": 0.23243415355682373
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "his_024",
+      "query_text": "Railroad and railway historical sites",
+      "category": "historical",
+      "expected_results": [
+        26974,
+        21511470,
+        35190408
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 21836932,
+          "similarity": 0.31774067878723145
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.2961074113845825
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.28350865840911865
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.27044981718063354
+        },
+        {
+          "page_id": 2588177,
+          "similarity": 0.24539148807525635
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.23996353149414062
+        },
+        {
+          "page_id": 605117,
+          "similarity": 0.21532249450683594
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.18679404258728027
+        },
+        {
+          "page_id": 22770046,
+          "similarity": 0.17335355281829834
+        },
+        {
+          "page_id": 10524847,
+          "similarity": 0.16196107864379883
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "adm_025",
+      "query_text": "Counties in Utah",
+      "category": "administrative",
+      "expected_results": [
+        17997272,
+        34629558,
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 71083,
+          "similarity": 0.5396354496479034
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.534235805273056
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.48417794704437256
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.4607126712799072
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.3966100215911865
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.38331425189971924
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.3780289888381958
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.354150652885437
+        },
+        {
+          "page_id": 78041174,
+          "similarity": 0.34235697984695435
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.3391491770744324
+        }
+      ],
+      "relevant_retrieved": 10
+    },
+    {
+      "query_id": "adm_026",
+      "query_text": "School districts and education facilities",
+      "category": "administrative",
+      "expected_results": [
+        35975775,
+        64464228,
+        8961274
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34831668,
+          "similarity": 0.32739973068237305
+        },
+        {
+          "page_id": 1440571,
+          "similarity": 0.1921665072441101
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.18061989545822144
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.12206882238388062
+        },
+        {
+          "page_id": 21836932,
+          "similarity": 0.094230055809021
+        },
+        {
+          "page_id": 1706289,
+          "similarity": 0.09150528907775879
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.0855555534362793
+        },
+        {
+          "page_id": 73883105,
+          "similarity": 0.07226061820983887
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.06999069452285767
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.06092613935470581
+        }
+      ],
+      "relevant_retrieved": 6
+    },
+    {
+      "query_id": "adm_027",
+      "query_text": "Census designated places",
+      "category": "administrative",
+      "expected_results": [
+        35975775,
+        137129,
+        2588177
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 21836932,
+          "similarity": 0.14178705215454102
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.1124727725982666
+        },
+        {
+          "page_id": 107916,
+          "similarity": 0.09844326972961426
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.09760284423828125
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.0927233099937439
+        },
+        {
+          "page_id": 62769106,
+          "similarity": 0.06797206401824951
+        },
+        {
+          "page_id": 57883619,
+          "similarity": 0.0633009672164917
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.05155372619628906
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.050670742988586426
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.049298107624053955
+        }
+      ],
+      "relevant_retrieved": 3
+    },
+    {
+      "query_id": "adm_028",
+      "query_text": "Metropolitan statistical areas",
+      "category": "administrative",
+      "expected_results": [
+        137169,
+        71077,
+        16990669
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.05450725555419922
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.03858768939971924
+        },
+        {
+          "page_id": 71082,
+          "similarity": -0.0073996782302856445
+        },
+        {
+          "page_id": 2577317,
+          "similarity": -0.028767824172973633
+        },
+        {
+          "page_id": 22770046,
+          "similarity": -0.0373380184173584
+        },
+        {
+          "page_id": 107916,
+          "similarity": -0.03935885429382324
+        },
+        {
+          "page_id": 3093985,
+          "similarity": -0.04935610294342041
+        },
+        {
+          "page_id": 137129,
+          "similarity": -0.05013883113861084
+        },
+        {
+          "page_id": 35975775,
+          "similarity": -0.056181907653808594
+        },
+        {
+          "page_id": 107790,
+          "similarity": -0.05716979503631592
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "adm_029",
+      "query_text": "Counties in California",
+      "category": "administrative",
+      "expected_results": [
+        26974,
+        36842068,
+        605117
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 57883619,
+          "similarity": 0.4122857451438904
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.395058810710907
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.3858720064163208
+        },
+        {
+          "page_id": 2262677,
+          "similarity": 0.38305819034576416
+        },
+        {
+          "page_id": 107916,
+          "similarity": 0.3703109622001648
+        },
+        {
+          "page_id": 16990669,
+          "similarity": 0.36948490142822266
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.36587727069854736
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.3502918481826782
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.3326519727706909
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.32976317405700684
+        }
+      ],
+      "relevant_retrieved": 9
+    },
+    {
+      "query_id": "adm_030",
+      "query_text": "City governments and municipalities",
+      "category": "administrative",
+      "expected_results": [
+        71060,
+        22770046,
+        605117
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 1587679,
+          "similarity": 0.10886508226394653
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.07691788673400879
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.04043710231781006
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.01770097017288208
+        },
+        {
+          "page_id": 62769106,
+          "similarity": 0.008779644966125488
+        },
+        {
+          "page_id": 2577317,
+          "similarity": -0.015670061111450195
+        },
+        {
+          "page_id": 76583242,
+          "similarity": -0.020414233207702637
+        },
+        {
+          "page_id": 14640027,
+          "similarity": -0.023673534393310547
+        },
+        {
+          "page_id": 137014,
+          "similarity": -0.029494285583496094
+        },
+        {
+          "page_id": 1582456,
+          "similarity": -0.04978322982788086
+        }
+      ],
+      "relevant_retrieved": 9
+    },
+    {
+      "query_id": "adm_031",
+      "query_text": "Water management districts",
+      "category": "administrative",
+      "expected_results": [
+        2588177,
+        107916
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 2577317,
+          "similarity": 0.11463421583175659
+        },
+        {
+          "page_id": 34831668,
+          "similarity": 0.10183024406433105
+        },
+        {
+          "page_id": 16990669,
+          "similarity": 0.09297442436218262
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.08556497097015381
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.07475471496582031
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.05549919605255127
+        },
+        {
+          "page_id": 1706289,
+          "similarity": 0.05250561237335205
+        },
+        {
+          "page_id": 62769106,
+          "similarity": 0.04546242952346802
+        },
+        {
+          "page_id": 22770046,
+          "similarity": 0.03754627704620361
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.03073441982269287
+        }
+      ],
+      "relevant_retrieved": 7
+    },
+    {
+      "query_id": "adm_032",
+      "query_text": "Transportation and transit authorities",
+      "category": "administrative",
+      "expected_results": [
+        26974,
+        17997272,
+        34482485
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 2262677,
+          "similarity": 0.0034235119819641113
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.0014066696166992188
+        },
+        {
+          "page_id": 64464228,
+          "similarity": -0.001706242561340332
+        },
+        {
+          "page_id": 2577317,
+          "similarity": -0.023792624473571777
+        },
+        {
+          "page_id": 16990669,
+          "similarity": -0.034018516540527344
+        },
+        {
+          "page_id": 14640027,
+          "similarity": -0.04940462112426758
+        },
+        {
+          "page_id": 1848431,
+          "similarity": -0.05174887180328369
+        },
+        {
+          "page_id": 3093985,
+          "similarity": -0.05599367618560791
+        },
+        {
+          "page_id": 15862936,
+          "similarity": -0.06782078742980957
+        },
+        {
+          "page_id": 137014,
+          "similarity": -0.08559751510620117
+        }
+      ],
+      "relevant_retrieved": 3
+    },
+    {
+      "query_id": "sem_033",
+      "query_text": "Family-friendly outdoor destinations",
+      "category": "semantic",
+      "expected_results": [
+        17997272,
+        71083
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 7369514,
+          "similarity": 0.2014176845550537
+        },
+        {
+          "page_id": 748746,
+          "similarity": 0.19840377569198608
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.17257535457611084
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.160186767578125
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.16016757488250732
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.15182960033416748
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.1401039958000183
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.12941694259643555
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.11166322231292725
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.10713869333267212
+        }
+      ],
+      "relevant_retrieved": 6
+    },
+    {
+      "query_id": "sem_034",
+      "query_text": "Places for water sports and activities",
+      "category": "semantic",
+      "expected_results": [
+        17997272,
+        7369514
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 7369514,
+          "similarity": 0.3176614046096802
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.3138316869735718
+        },
+        {
+          "page_id": 35190408,
+          "similarity": 0.1581750512123108
+        },
+        {
+          "page_id": 137129,
+          "similarity": 0.15188384056091309
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.13132166862487793
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.11842864751815796
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.11757773160934448
+        },
+        {
+          "page_id": 18792127,
+          "similarity": 0.11476325988769531
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.11434108018875122
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.11195617914199829
+        }
+      ],
+      "relevant_retrieved": 9
+    },
+    {
+      "query_id": "sem_035",
+      "query_text": "Technology hub areas in Silicon Valley",
+      "category": "semantic",
+      "expected_results": [
+        26974,
+        35200423,
+        71082
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.2770509719848633
+        },
+        {
+          "page_id": 2577317,
+          "similarity": 0.2365807294845581
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.16143959760665894
+        },
+        {
+          "page_id": 3093985,
+          "similarity": 0.12931668758392334
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.12166345119476318
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.11667406558990479
+        },
+        {
+          "page_id": 64464228,
+          "similarity": 0.08108973503112793
+        },
+        {
+          "page_id": 60980771,
+          "similarity": 0.08073246479034424
+        },
+        {
+          "page_id": 1582456,
+          "similarity": 0.0805392861366272
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.07516252994537354
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "sem_036",
+      "query_text": "Rural and unincorporated regions",
+      "category": "semantic",
+      "expected_results": [
+        26974,
+        35975775,
+        137169
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 62769106,
+          "similarity": 0.18846279382705688
+        },
+        {
+          "page_id": 35975775,
+          "similarity": 0.1829950213432312
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.1682795286178589
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.14235109090805054
+        },
+        {
+          "page_id": 107916,
+          "similarity": 0.12284207344055176
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.11990344524383545
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.09319603443145752
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.0930016040802002
+        },
+        {
+          "page_id": 78041174,
+          "similarity": 0.08722096681594849
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.08213555812835693
+        }
+      ],
+      "relevant_retrieved": 4
+    },
+    {
+      "query_id": "sem_037",
+      "query_text": "Adventure tourism destinations",
+      "category": "semantic",
+      "expected_results": [
+        137003,
+        748746,
+        7369514
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 748746,
+          "similarity": 0.2105809450149536
+        },
+        {
+          "page_id": 7369514,
+          "similarity": 0.20024484395980835
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.18098896741867065
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.17224496603012085
+        },
+        {
+          "page_id": 14640027,
+          "similarity": 0.1362045407295227
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.1268804669380188
+        },
+        {
+          "page_id": 36842068,
+          "similarity": 0.12135958671569824
+        },
+        {
+          "page_id": 17997272,
+          "similarity": 0.12091481685638428
+        },
+        {
+          "page_id": 20488050,
+          "similarity": 0.11164599657058716
+        },
+        {
+          "page_id": 10524847,
+          "similarity": 0.10693413019180298
+        }
+      ],
+      "relevant_retrieved": 7
+    },
+    {
+      "query_id": "sem_038",
+      "query_text": "Wine country and vineyard regions",
+      "category": "semantic",
+      "expected_results": [
+        8961274,
+        107783,
+        107790
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 26974,
+          "similarity": 0.20713579654693604
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.17770779132843018
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.17271459102630615
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.11534225940704346
+        },
+        {
+          "page_id": 107790,
+          "similarity": 0.1097184419631958
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.10641002655029297
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.09591299295425415
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.08433574438095093
+        },
+        {
+          "page_id": 62769106,
+          "similarity": 0.08371788263320923
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.061424851417541504
+        }
+      ],
+      "relevant_retrieved": 1
+    },
+    {
+      "query_id": "sem_039",
+      "query_text": "Desert regions and landscapes",
+      "category": "semantic",
+      "expected_results": [
+        34629558,
+        71083,
+        34482485
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 34482485,
+          "similarity": 0.2827965021133423
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.2565267086029053
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.22415661811828613
+        },
+        {
+          "page_id": 71083,
+          "similarity": 0.216647207736969
+        },
+        {
+          "page_id": 71082,
+          "similarity": 0.18940985202789307
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.18309342861175537
+        },
+        {
+          "page_id": 137003,
+          "similarity": 0.17624115943908691
+        },
+        {
+          "page_id": 71077,
+          "similarity": 0.16773110628128052
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.1454523801803589
+        },
+        {
+          "page_id": 107783,
+          "similarity": 0.11367994546890259
+        }
+      ],
+      "relevant_retrieved": 6
+    },
+    {
+      "query_id": "sem_040",
+      "query_text": "Agricultural and farming regions",
+      "category": "semantic",
+      "expected_results": [
+        26974,
+        605117,
+        137169
+      ],
+      "retrieved_results": [
+        {
+          "page_id": 107783,
+          "similarity": 0.20295631885528564
+        },
+        {
+          "page_id": 30467216,
+          "similarity": 0.06505799293518066
+        },
+        {
+          "page_id": 26974,
+          "similarity": 0.06302684545516968
+        },
+        {
+          "page_id": 8961274,
+          "similarity": 0.06161308288574219
+        },
+        {
+          "page_id": 137169,
+          "similarity": 0.035934507846832275
+        },
+        {
+          "page_id": 34629558,
+          "similarity": 0.024325132369995117
+        },
+        {
+          "page_id": 34482485,
+          "similarity": 0.019999325275421143
+        },
+        {
+          "page_id": 71060,
+          "similarity": 0.019709110260009766
+        },
+        {
+          "page_id": 71082,
+          "similarity": -0.0019301176071166992
+        },
+        {
+          "page_id": 62769106,
+          "similarity": -0.010474562644958496
+        }
+      ],
+      "relevant_retrieved": 3
+    }
+  ],
+  "summary": {
+    "total_queries": 40,
+    "mean_precision_at_5": 0.48,
+    "mean_recall_at_10": 0.5096262717606979,
+    "mean_f1_at_5": 0.31781944715170873
+  },
+  "timestamp": "2025-08-23T21:48:02.688189"
+}

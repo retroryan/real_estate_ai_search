@@ -13,11 +13,20 @@ Usage:
 """
 
 import sys
+import os
 import argparse
 import json
 from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+# Try to load from parent directory .env first, then current directory
+if Path("../.env").exists():
+    load_dotenv("../.env")
+else:
+    load_dotenv()
 
 from .models import Config, EntityType, SourceType
 from .models.config import load_config_from_yaml
@@ -295,15 +304,8 @@ def process_json_articles(config: Config, json_path: Path, force_recreate: bool 
         str(json_path)
     ):
         # Collect embeddings to batch add
-        # Ensure metadata is a dict
-        if hasattr(result.metadata, 'to_dict'):
-            metadata_dict = result.metadata.to_dict()
-        elif hasattr(result.metadata, 'dict'):
-            metadata_dict = result.metadata.dict()
-        elif hasattr(result.metadata, 'model_dump'):
-            metadata_dict = result.metadata.model_dump()
-        else:
-            metadata_dict = dict(result.metadata) if not isinstance(result.metadata, dict) else result.metadata
+        # Convert Pydantic model to dict for ChromaDB
+        metadata_dict = result.metadata.model_dump()
         
         doc_id = metadata_dict.get("page_id", f"doc_{doc_count}")
         

@@ -46,7 +46,7 @@ class CorrelationManager:
             data_root_path: Root path for source data files
         """
         self.query_manager = query_manager
-        self.data_root_path = data_root_path or "/Users/ryanknight/projects/temporal/real_estate_ai_search"
+        self.data_root_path = data_root_path or "."
         
         # Initialize components
         self.validator = CorrelationValidator()
