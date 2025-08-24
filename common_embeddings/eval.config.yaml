@@ -1,0 +1,45 @@
+# Evaluation Configuration
+# Controls embedding model settings for evaluation/comparison
+
+# Embedding provider and model settings
+embedding:
+  provider: ollama  # Options: ollama, openai, gemini, voyage
+  
+  # Ollama settings
+  ollama_model: nomic-embed-text  # Default model for ollama
+  ollama_host: http://localhost:11434
+  
+  # OpenAI settings (if provider: openai)
+  openai_model: text-embedding-3-small
+  openai_api_key: ${OPENAI_API_KEY}
+  
+  # Gemini settings (if provider: gemini)  
+  gemini_model: models/text-embedding-004
+  gemini_api_key: ${GEMINI_API_KEY}
+  
+  # Voyage settings (if provider: voyage)
+  voyage_model: voyage-3
+  voyage_api_key: ${VOYAGE_API_KEY}
+
+# ChromaDB storage settings
+chromadb:
+  persist_directory: ./data/wiki_chroma_db
+  collection_prefix: gold  # Prefix for evaluation collections
+
+# Chunking configuration
+chunking:
+  method: simple  # Options: simple, semantic
+  chunk_size: 1000
+  chunk_overlap: 100
+  
+# Processing configuration
+processing:
+  batch_size: 32
+  max_workers: 4
+  verbose: true
+
+# Data settings for evaluation
+evaluation_data:
+  articles_path: common_embeddings/evaluate_data/gold_articles.json
+  queries_path: common_embeddings/evaluate_data/gold_queries.json
+  dataset_type: gold  # Options: gold, generated

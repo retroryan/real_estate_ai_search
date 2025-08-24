@@ -29,11 +29,16 @@ pip install -e ".[providers]"
 
 ## Running the Pipeline
 
-Run the pipeline as a Python module from the parent directory:
+Run the pipeline as a Python module from the **parent directory** (this is required for proper module imports):
 
 ```bash
 # Navigate to parent directory (real_estate_ai_search)
 cd /path/to/real_estate_ai_search
+
+# ❌ WRONG: Running from inside common_embeddings/ directory
+# cd common_embeddings && python main.py  # This will fail with import errors
+
+# ✅ CORRECT: Running as module from parent directory
 
 # Process real estate data only
 python -m common_embeddings --data-type real_estate
@@ -109,23 +114,6 @@ common_embeddings/
 - Comprehensive metadata tracking
 - Entity type support (properties, neighborhoods, Wikipedia articles)
 
-## Environment Variables
-
-For API-based providers, set the appropriate environment variables:
-
-```bash
-# For OpenAI
-export OPENAI_API_KEY=your-key
-
-# For Gemini
-export GOOGLE_API_KEY=your-key
-
-# For Voyage
-export VOYAGE_API_KEY=your-key
-
-# For Cohere
-export COHERE_API_KEY=your-key
-```
 
 ## Testing
 
@@ -195,8 +183,22 @@ ollama pull mxbai-embed-large
 ```
 
 ### Import Errors
-- Ensure you're running commands from the `common_embeddings/` directory
+
+**"attempted relative import with no known parent package"**
+```bash
+# ❌ WRONG: Running directly from common_embeddings/
+cd common_embeddings
+python main.py  # This fails!
+
+# ✅ CORRECT: Running as module from parent directory
+cd /path/to/real_estate_ai_search  # Parent directory
+python -m common_embeddings        # This works!
+```
+
+**Other import issues:**
 - Verify property_finder_models is installed: `pip list | grep property-finder-models`
+- Ensure you're in the correct parent directory with `pwd`
+- Check that `common_embeddings/__main__.py` exists
 
 ## Module Design
 

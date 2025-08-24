@@ -4,8 +4,8 @@ Test configuration models for model comparison.
 Clean, simple Pydantic models for parsing test.config.yaml.
 """
 
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel, Field, validator
+from typing import List, Optional
 from pathlib import Path
 import yaml
 import logging
@@ -18,7 +18,15 @@ class ModelConfig(BaseModel):
     
     name: str = Field(description="Model display name")
     provider: str = Field(description="Provider (ollama, openai, etc.)")
-    collection_name: str = Field(description="ChromaDB collection name")
+    collection_name: Optional[str] = Field(None, description="ChromaDB collection name (auto-generated if not provided)")
+    
+    def generate_collection_name(self, prefix: str = "gold") -> str:
+        """Generate collection name if not provided."""
+        if self.collection_name:
+            return self.collection_name
+        # Auto-generate: {prefix}_{provider}_{model_name}
+        model_clean = self.name.replace("-", "_").replace(".", "_")
+        return f"{prefix}_{self.provider}_{model_clean}"
 
 
 class EvaluationConfig(BaseModel):
@@ -51,16 +59,18 @@ class TestConfig(BaseModel):
     """Root test configuration for model comparison."""
     
     version: str = Field(description="Configuration version")
+    base_config: Optional[str] = Field(None, description="Path to base eval config for embeddings")
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     models: List[ModelConfig] = Field(description="Models to compare")
     comparison: ComparisonConfig = Field(default_factory=ComparisonConfig)
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)
     
-    def validate_models(self) -> bool:
+    @validator('models')
+    def validate_models(cls, v):
         """Validate that we have at least 2 models to compare."""
-        if len(self.models) < 2:
+        if len(v) < 2:
             raise ValueError("At least 2 models required for comparison")
-        return True
+        return v
 
 
 def load_test_config(config_path: str = "common_embeddings/test.config.yaml") -> TestConfig:
@@ -90,10 +100,14 @@ def load_test_config(config_path: str = "common_embeddings/test.config.yaml") ->
         # Create TestConfig with validation
         config = TestConfig(**data)
         
-        # Validate we have enough models
-        config.validate_models()
-        
         logger.info(f"Loaded test config with {len(config.models)} models for comparison")
+        
+        # Generate collection names for models that don't have them
+        for model in config.models:
+            if not model.collection_name:
+                model.collection_name = model.generate_collection_name()
+                logger.info(f"Generated collection name for {model.name}: {model.collection_name}")
+        
         return config
         
     except Exception as e:

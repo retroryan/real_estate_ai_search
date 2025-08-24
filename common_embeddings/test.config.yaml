@@ -3,20 +3,22 @@
 
 version: "1.0"
 
+# Base configuration file for embedding settings
+base_config: common_embeddings/eval.config.yaml
+
 # Evaluation settings (simple, no caching or parallel execution)
 evaluation:
   dataset: gold  # Use gold standard dataset
   top_k: 10      # Retrieve top 10 results for each query
 
 # Models to compare (sequential evaluation)
+# Collection names will be auto-generated as: {prefix}_{provider}_{model}
 models:
   - name: nomic-embed-text
     provider: ollama
-    collection_name: wikipedia_ollama_nomic_embed_text_v1
     
-  - name: mxbai-embed-large  
+  - name: mxbai-embed-large
     provider: ollama
-    collection_name: wikipedia_ollama_mxbai_embed_large_v1
 
 # Comparison settings (simple winner determination)
 comparison:

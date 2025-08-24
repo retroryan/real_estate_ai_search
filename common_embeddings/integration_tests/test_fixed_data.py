@@ -179,7 +179,7 @@ class FixedDataIntegrationTester:
         try:
             # Create documents from test articles
             documents = []
-            for article in self.test_articles[:2]:  # Test with 2 articles
+            for article in self.test_articles:  # Test with all articles
                 text_content = f"{article['title']}\n\n{article['summary']}\n\n{article['long_summary']}"
                 
                 doc = Document(

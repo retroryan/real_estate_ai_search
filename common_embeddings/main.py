@@ -187,7 +187,7 @@ def process_wikipedia_data(config: Config, force_recreate: bool = False, max_art
     return stats
 
 
-def process_json_articles(config: Config, json_path: Path, force_recreate: bool = False):
+def process_json_articles(config: Config, json_path: Path, force_recreate: bool = False, collection_name: str = None):
     """
     Process Wikipedia articles from evaluation JSON file.
     
@@ -195,6 +195,7 @@ def process_json_articles(config: Config, json_path: Path, force_recreate: bool 
         config: Configuration object
         json_path: Path to JSON file with articles
         force_recreate: Whether to recreate collections
+        collection_name: Optional collection name to use
         
     Returns:
         Pipeline statistics
@@ -256,30 +257,52 @@ def process_json_articles(config: Config, json_path: Path, force_recreate: bool 
     logger.info("Setting up ChromaDB collection for evaluation...")
     collection_manager = CollectionManager(config)
     
-    # Create collection for evaluation articles
-    eval_collection = collection_manager.create_collection_for_entity(
-        entity_type=EntityType.WIKIPEDIA_ARTICLE,
-        model_identifier=pipeline.model_identifier,
-        force_recreate=force_recreate,
-        additional_metadata={
-            "source": "evaluation_set",
-            "json_path": str(json_path),
-            "article_count": len(articles)
-        }
-    )
+    # Use provided collection name or generate one
+    if collection_name:
+        logger.info(f"Using specified collection name: {collection_name}")
+        eval_collection = collection_name
+        # Create the collection directly with the store
+        collection_manager.chroma_store.create_collection(
+            name=collection_name,
+            metadata={
+                "source": "evaluation_set",
+                "json_path": str(json_path),
+                "article_count": len(articles),
+                "model_identifier": pipeline.model_identifier
+            },
+            force_recreate=force_recreate
+        )
+    else:
+        # Create collection for evaluation articles using default naming
+        eval_collection = collection_manager.create_collection_for_entity(
+            entity_type=EntityType.WIKIPEDIA_ARTICLE,
+            model_identifier=pipeline.model_identifier,
+            force_recreate=force_recreate,
+            additional_metadata={
+                "source": "evaluation_set",
+                "json_path": str(json_path),
+                "article_count": len(articles)
+            }
+        )
     
     # Get the ChromaDB store to add embeddings
     from .storage import ChromaDBStore
     chroma_store = ChromaDBStore(config.chromadb)
-    chroma_store.create_collection(
-        name=eval_collection,
-        metadata={
-            "source": "evaluation_set",
-            "json_path": str(json_path),
-            "article_count": len(articles)
-        },
-        force_recreate=False  # Already recreated above
-    )
+    
+    # Only create collection if not already created above
+    if not collection_name:
+        chroma_store.create_collection(
+            name=eval_collection,
+            metadata={
+                "source": "evaluation_set",
+                "json_path": str(json_path),
+                "article_count": len(articles)
+            },
+            force_recreate=False  # Already recreated above
+        )
+    else:
+        # Just select the existing collection we created above
+        chroma_store.collection = chroma_store.client.get_collection(eval_collection)
     
     doc_count = 0
     embeddings_to_add = []
@@ -434,7 +457,7 @@ def main():
         if not json_path.exists():
             logger.error(f"Evaluation JSON file not found: {json_path}")
             sys.exit(1)
-        eval_stats = process_json_articles(config, json_path, args.force_recreate)
+        eval_stats = process_json_articles(config, json_path, args.force_recreate, args.collection_name)
         if eval_stats:
             all_stats['evaluation'] = eval_stats
     

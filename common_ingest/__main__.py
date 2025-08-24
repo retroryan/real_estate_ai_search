@@ -2,12 +2,24 @@
 Main entry point for the common_ingest module.
 
 Runs the data ingestion pipeline and displays summary statistics.
+Can be run from within the module or from the parent directory.
+
+Usage:
+    python -m common_ingest (from parent directory)
+    python __main__.py (from within common_ingest directory)
 """
 
 import sys
 from pathlib import Path
 from typing import List, Dict, Any
 from decimal import Decimal
+
+# Ensure project root is in Python path for imports
+if __name__ == "__main__":
+    # When running as python -m common_ingest from parent directory
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
 
 from .loaders import PropertyLoader, NeighborhoodLoader, WikipediaLoader
 from property_finder_models import (

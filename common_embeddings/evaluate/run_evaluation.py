@@ -34,6 +34,10 @@ def main():
         help="Path to configuration file"
     )
     parser.add_argument(
+        "--test-config",
+        help="Path to test configuration file for model comparison (overrides other options)"
+    )
+    parser.add_argument(
         "--dataset",
         default="gold",
         choices=["gold", "generated", "both"],
@@ -77,6 +81,28 @@ def main():
     logger.info("=" * 60)
     logger.info("Wikipedia Embeddings Evaluation")
     logger.info("=" * 60)
+    
+    # Handle test configuration for model comparison
+    if args.test_config:
+        logger.info(f"Using test configuration: {args.test_config}")
+        logger.info("Running model comparison...")
+        
+        # Import and run comparison
+        from common_embeddings.evaluate.run_comparison import ComparisonRunner
+        from common_embeddings.evaluate.test_config import load_test_config
+        
+        # Load configurations
+        test_config = load_test_config(args.test_config)
+        base_config = load_config_from_yaml(args.config)
+        
+        # Run comparison
+        runner = ComparisonRunner(test_config, base_config)
+        results = runner.run_comparison()
+        
+        if results and "winner" in results:
+            logger.info(f"\n🏆 OVERALL WINNER: {results['winner']}")
+        
+        return  # Exit after comparison
     
     # Load configuration using existing utility
     config = load_config_from_yaml(args.config)
