@@ -17,7 +17,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from common_embeddings import Config
+from common_embeddings.models.config import ExtendedConfig, load_config_from_yaml
 from common_embeddings.evaluate import EvaluationRunner
 from common_embeddings.utils import setup_logging, get_logger
 import yaml
@@ -78,10 +78,8 @@ def main():
     logger.info("Wikipedia Embeddings Evaluation")
     logger.info("=" * 60)
     
-    # Load configuration
-    with open(args.config, 'r') as f:
-        config_dict = yaml.safe_load(f)
-    config = Config(**config_dict)
+    # Load configuration using existing utility
+    config = load_config_from_yaml(args.config)
     logger.info(f"Loaded configuration: provider={config.embedding.provider}")
     
     # Determine which dataset files to use

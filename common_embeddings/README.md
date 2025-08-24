@@ -129,8 +129,10 @@ export COHERE_API_KEY=your-key
 
 ## Testing
 
+### Unit Tests
+
 ```bash
-# Run all tests
+# Run all unit tests
 pytest
 
 # Run with coverage
@@ -139,6 +141,40 @@ pytest --cov=common_embeddings
 # Run specific test
 pytest tests/test_pipeline.py
 ```
+
+### Integration Tests
+
+The integration tests use fixed test data for reproducible results. They test the complete embedding pipeline with real Wikipedia articles and predefined queries.
+
+```bash
+# Run comprehensive integration tests (recommended)
+python common_embeddings/integration_tests/test_fixed_data.py
+```
+
+**Integration Test Coverage:**
+- ✅ Document creation from fixed test articles
+- ✅ Pipeline initialization (standard and LlamaIndex-optimized)
+- ✅ Embedding generation with semantic chunking
+- ✅ Statistics tracking and metrics collection
+- ✅ Collection management operations
+- ✅ Query retrieval with fixed test queries
+
+**Test Data:**
+- **5 Wikipedia articles**: Diverse geographic locations and content types
+- **10 test queries**: Cover geographic, recreational, historical, and cultural queries
+- **Fixed results**: Consistent, reproducible test outcomes
+
+The integration tests automatically:
+1. Load fixed test articles from `integration_tests/fixed_test_articles.json`
+2. Create temporary ChromaDB collections for testing
+3. Generate embeddings using the configured provider (default: Ollama nomic-embed-text)
+4. Test retrieval accuracy with predefined queries
+5. Clean up all temporary data after completion
+
+**Prerequisites for Integration Tests:**
+- Ollama server running with `nomic-embed-text` model
+- Sufficient disk space for temporary ChromaDB collections
+- Network access for embedding generation
 
 ## Troubleshooting
 

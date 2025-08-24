@@ -1,0 +1,32 @@
+# Example Model Comparison Configuration
+# Shows configuration with 3 models for comparison
+
+version: "1.0"
+
+# Evaluation settings
+evaluation:
+  dataset: gold  # or "generated" for generated dataset
+  top_k: 10      # Number of top results to retrieve
+
+# Models to compare (add or remove as needed)
+models:
+  - name: nomic-embed-text
+    provider: ollama
+    collection_name: wikipedia_ollama_nomic_embed_text_v1
+    
+  - name: mxbai-embed-large  
+    provider: ollama
+    collection_name: wikipedia_ollama_mxbai_embed_large_v1
+    
+  - name: text-embedding-3-small
+    provider: openai
+    collection_name: wikipedia_openai_text_embedding_3_small_v1
+
+# Comparison settings
+comparison:
+  primary_metric: f1_score  # Options: f1_score, precision, recall, map, mrr
+
+# Reporting configuration
+reporting:
+  format: html  # Options: html, json, markdown
+  output_directory: ./common_embeddings/evaluate_results/comparisons

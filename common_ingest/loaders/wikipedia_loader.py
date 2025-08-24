@@ -150,6 +150,8 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
         Returns:
             List of EnrichedWikipediaArticle models matching the filters
         """
+        articles = []
+        
         # Build query with filters
         query_parts = ["""
             SELECT 

@@ -1,106 +1,28 @@
-# Test Configuration for Model Comparison
-# This file specifies which embedding models to compare during evaluation
+# Model Comparison Configuration
+# Simple, clean configuration for comparing embedding models
 
-# Evaluation settings
+version: "1.0"
+
+# Evaluation settings (simple, no caching or parallel execution)
 evaluation:
-  # Dataset to use: 'gold', 'generated', or 'both'
-  dataset: gold
-  
-  # Number of top results to retrieve for each query
-  top_k: 10
-  
-  # Whether to run evaluations in parallel
-  parallel: true
-  
-  # Cache results to avoid re-computation
-  use_cache: true
-  cache_dir: common_embeddings/evaluate_results/cache
+  dataset: gold  # Use gold standard dataset
+  top_k: 10      # Retrieve top 10 results for each query
 
-# Models to compare
+# Models to compare (sequential evaluation)
 models:
   - name: nomic-embed-text
     provider: ollama
-    config:
-      model: nomic-embed-text
-      base_url: http://localhost:11434
     collection_name: wikipedia_ollama_nomic_embed_text_v1
     
-  - name: mxbai-embed-large
+  - name: mxbai-embed-large  
     provider: ollama
-    config:
-      model: mxbai-embed-large
-      base_url: http://localhost:11434
     collection_name: wikipedia_ollama_mxbai_embed_large_v1
-    
-  - name: text-embedding-3-small
-    provider: openai
-    config:
-      model: text-embedding-3-small
-      dimensions: 1536
-    collection_name: wikipedia_openai_text_embedding_3_small_v1
-    
-  # - name: text-embedding-3-large
-  #   provider: openai
-  #   config:
-  #     model: text-embedding-3-large
-  #     dimensions: 3072
-  #   collection_name: wikipedia_openai_text_embedding_3_large_v1
-    
-  # - name: gemini-embedding
-  #   provider: gemini
-  #   config:
-  #     model: models/text-embedding-004
-  #   collection_name: wikipedia_gemini_text_embedding_004_v1
 
-# Comparison settings
+# Comparison settings (simple winner determination)
 comparison:
-  # Metrics to focus on for comparison
-  primary_metric: f1_score  # Options: precision, recall, f1_score, map, mrr
-  
-  # Statistical significance testing
-  significance_test: true
-  significance_level: 0.05
-  
-  # Performance thresholds
-  thresholds:
-    minimum_precision: 0.5
-    minimum_recall: 0.4
-    minimum_f1: 0.45
+  primary_metric: f1_score  # Main metric for determining winner
 
-# Report generation
+# Reporting configuration (simple HTML report)
 reporting:
-  # Output directory for comparison reports
-  output_dir: common_embeddings/evaluate_results/comparison
-  
-  # Report formats to generate
-  formats:
-    - html
-    - json
-    - markdown
-  
-  # Visualization settings
-  visualizations:
-    enabled: true
-    include_charts:
-      - metric_comparison_bar
-      - category_heatmap
-      - performance_radar
-      - ranking_table
-  
-  # Include detailed per-query results
-  include_detailed_results: true
-  
-  # Generate executive summary
-  generate_summary: true
-
-# Data preparation (if embeddings need to be created)
-data_preparation:
-  # Whether to create missing embeddings before evaluation
-  auto_create_embeddings: false
-  
-  # Force recreation of all embeddings
-  force_recreate: false
-  
-  # Articles and queries for evaluation
-  articles_source: common_embeddings/evaluate_data/gold_articles.json
-  queries_source: common_embeddings/evaluate_data/gold_queries.json
+  format: html
+  output_directory: ./common_embeddings/evaluate_results/comparisons

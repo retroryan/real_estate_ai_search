@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from datetime import datetime
 
-from ..models import Config
+from ..models.config import ExtendedConfig as Config
 from ..services import CollectionManager
 from ..storage import ChromaDBStore
 from .metrics_calculator import MetricsCalculator, AggregateMetrics

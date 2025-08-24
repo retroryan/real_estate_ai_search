@@ -1,0 +1,139 @@
+{
+  "articles": [
+    {
+      "page_id": 26974,
+      "title": "San Francisco Peninsula",
+      "summary": "The San Francisco Peninsula is a significant geographical region in the San Francisco Bay Area, separating San Francisco Bay from the Pacific Ocean. It includes parts of San Francisco, San Mateo, and Santa Clara counties, and is home to numerous cities and towns. The Peninsula is known for its diverse landscapes, from urban and suburban areas to rural and unincorporated regions, and serves as a vital commuter area between San Francisco and San Jose. It also features key transportation routes and is part of the broader Silicon Valley region.",
+      "long_summary": "The San Francisco Peninsula is a prominent peninsula in the San Francisco Bay Area, demarcating the boundary between San Francisco Bay and the Pacific Ocean. Its northern tip is anchored by the City and County of San Francisco, while its southern base extends into Santa Clara County, encompassing cities like Los Altos and Mountain View. The majority of the Peninsula is covered by San Mateo County, which lies between San Francisco and Santa Clara counties. The region includes a mix of urban, suburban, and rural areas, with notable cities such as Redwood City, San Mateo, and Palo Alto. Historically, the Peninsula was part of Spanish land grants, with Rancho de las Pulgas being one of the largest. Geographically, the Peninsula is marked by the Santa Cruz Mountains and the San Andreas Fault, with significant water bodies like the Crystal Springs Reservoir. The east side is densely populated and forms part of Silicon Valley, while the west and south-central areas remain more rural. Transportation infrastructure is robust, featuring major highways like US 101 and Interstate 280, as well as public transit options such as Caltrain and BART. The Peninsula's unique blend of natural beauty, historical significance, and modern urban development makes it a key region in the Bay Area.",
+      "key_topics": "Geography, Transportation, Urban and Suburban Development, Silicon Valley, Historical Land Grants",
+      "city": null,
+      "county": "San Mateo County",
+      "state": "California",
+      "confidence": 0.825,
+      "html_file": "26974.html",
+      "latitude": 37.58333333,
+      "longitude": -122.40111111,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "mountain",
+        "california"
+      ]
+    },
+    {
+      "page_id": 17997272,
+      "title": "Deer Creek State Park (Utah)",
+      "summary": "Deer Creek State Park is a 3,260-acre recreational area in Wasatch County, Utah, featuring the large Deer Creek Reservoir. Established in 1971, the park is popular for fishing, boating, and other water sports, attracting over 338,000 visitors annually. It also serves as a crucial water source for the Salt Lake City area, stemming from its origins in the 1930s Provo River Project.",
+      "long_summary": "Deer Creek State Park, located in southwestern Wasatch County, Utah, is a 3,260-acre recreational area centered around the Deer Creek Reservoir. Established as a state park in 1971, it offers a variety of water-based activities including fishing, boating, sailing, swimming, and windsurfing. The park sits at an elevation of 5,400 feet and features amenities such as boat-launching ramps, a 75-unit campground, picnic areas, and fish cleaning stations. Additionally, visitors can access a restaurant, gas station, and boat rentals. The park recorded 338,865 visitors in 2017, highlighting its popularity. Historically, the reservoir was created as part of the Provo River Project in the 1930s to address water shortages in the Salt Lake City area. Construction began in 1938, with water becoming available by 1941 and the project completed in 1955. Initially managed by the Bureau of Reclamation and the Provo River Water Users Association, the area transitioned to a state park in 1971, expanding its recreational offerings beyond fishing.",
+      "key_topics": "water sports, state park, recreation, water resource management, Utah tourism",
+      "city": "Charleston",
+      "county": "Wasatch County",
+      "state": "Utah",
+      "confidence": 0.8916666666666667,
+      "html_file": "17997272.html",
+      "latitude": 40.41388889,
+      "longitude": -111.50555556,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "historical",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 34629558,
+      "title": "Black Mountains (Utah)",
+      "summary": "The Black Mountains are a 30-mile long mountain range in southwestern Utah, spanning Iron and Beaver Counties. Known for their complex shape and highpoint Mahogany Knoll, the range features significant sites like the Parowan Gap Petroglyphs and the Old Spanish National Historic Trail. The area is accessible via Utah State Routes 21 and 130, connecting to nearby towns and natural features.",
+      "long_summary": "The Black Mountains are a prominent 30-mile (48 km) long mountain range located in northeastern Iron County and southeastern Beaver County in southwestern Utah, United States. The range borders the Escalante Desert to the northeast and trends with the Hurricane Cliffs and Parowan Valley to the southeast. Notable features include the Parowan Gap Petroglyphs Site and the Old Spanish National Historic Trail, which crosses the range into Cedar Valley. The range has a complex shape with an east-west ridgeline at the northern perimeter, bordered by the Beaver River and Minersville Reservoir. The highpoint, Mahogany Knoll, is located in the northeast on the ridgeline separating Iron and Beaver Counties. Access to the range is provided by Utah State Route 21, which follows the Beaver River, and Utah State Route 130, which dissects the range north-south, connecting Minersville to Cedar City via Parowan Canyon and Long Hollow. The Black Mountains are a significant geographical and historical landmark in the region, offering insights into both natural and cultural history.",
+      "key_topics": "mountain range, historical sites, geography, access routes, natural landmarks",
+      "city": "Black Mountains",
+      "county": "Iron County; Beaver County",
+      "state": "Utah",
+      "confidence": 0.8785714285714286,
+      "html_file": "34629558.html",
+      "latitude": 38.08914,
+      "longitude": -112.83439,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "historical",
+        "landmark",
+        "mountain",
+        "utah"
+      ]
+    },
+    {
+      "page_id": 36842068,
+      "title": "California Historical Landmarks in Solano County",
+      "summary": "This article lists and describes the California Historical Landmarks located in Solano County, California. It provides coordinates and a map for viewing these significant historical properties and districts, highlighting the county's rich historical heritage.",
+      "long_summary": "The article serves as a comprehensive guide to the California Historical Landmarks situated in Solano County, California. It includes detailed listings of properties and districts that have been recognized for their historical significance. The content provides coordinates for each landmark, allowing readers to locate them easily via a linked Google map. Solano County, known for its rich history, is home to numerous landmarks that reflect the cultural and historical evolution of the region. This resource is valuable for historians, tourists, and locals interested in exploring the county's heritage. The landmarks cover a wide range of historical periods and themes, offering insights into the diverse history of Solano County.",
+      "key_topics": "Historical Landmarks, Solano County, California History, Heritage Sites, Tourism",
+      "city": null,
+      "county": "Solano County",
+      "state": "California",
+      "confidence": 0.8388888888888889,
+      "html_file": "36842068.html",
+      "latitude": null,
+      "longitude": null,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "historical",
+        "landmark",
+        "tourist_destination",
+        "california"
+      ]
+    },
+    {
+      "page_id": 7369514,
+      "title": "Bear Lake State Park (Utah)",
+      "summary": "Bear Lake State Park is a scenic Utah state park located along Bear Lake on the Idaho border, offering diverse recreational activities like boating, fishing, and camping. The park features three main areas: Rendezvous Beach, Bear Lake Marina, and East Side, each providing unique amenities and historical significance. It's particularly known for its annual events like the Mountain Man Rendezvous and Bear Lake Raspberry Days.",
+      "long_summary": "Bear Lake State Park is a prominent recreational area in Utah, situated along the shores of Bear Lake near the Idaho border. The park is divided into three main recreation areas: Rendezvous Beach, Bear Lake Marina, and East Side. Rendezvous Beach, named for historic fur trapper rendezvous in the 1820s, offers 220 campsites and is popular for family gatherings. Bear Lake Marina provides boating facilities with a sheltered harbor and boat rentals, while the East Side features primitive camping and boat ramps. The park hosts annual events like the Mountain Man Rendezvous and Bear Lake Raspberry Days, celebrating local history and culture. Recreational activities include waterskiing, swimming, scuba diving, sailing, and year-round fishing for species like cutthroat trout and Bonneville cisco. The park's rich history and diverse amenities make it a favorite destination for outdoor enthusiasts.",
+      "key_topics": "outdoor recreation, historical significance, fishing, camping, annual events",
+      "city": "Garden City",
+      "county": "Rich County",
+      "state": "Utah",
+      "confidence": 0.8694444444444445,
+      "html_file": "7369514.html",
+      "latitude": 41.84555556,
+      "longitude": -111.34555556,
+      "embedding_metadata": {
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 512
+      },
+      "categories": [
+        "county",
+        "city",
+        "park",
+        "historical",
+        "recreation",
+        "coastal",
+        "mountain",
+        "utah"
+      ]
+    }
+  ],
+  "metadata": {
+    "source": "common_embeddings/evaluate_data/gold_articles.json",
+    "selection_criteria": "Diverse geographic locations, content types, and categories",
+    "total_articles": 5,
+    "selected_for": "integration_tests",
+    "created_date": "2025-08-23"
+  }
+}

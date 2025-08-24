@@ -14,7 +14,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Request
 
 from ...utils.logger import setup_logger
-from ..dependencies import PropertyLoaderDep, NeighborhoodLoaderDep, WikipediaLoaderDep
+from ..dependencies import PropertyServiceDep, NeighborhoodServiceDep, WikipediaServiceDep
 from ..schemas.stats import (
     StatsSummaryResponse,
     PropertyStatsResponse, 
@@ -110,9 +110,9 @@ def _calculate_completeness(data_list: List[Any], fields: List[str]) -> Dict[str
 @router.get("/summary", response_model=StatsSummaryResponse)
 async def get_data_summary(
     request: Request,
-    property_loader: PropertyLoaderDep,
-    neighborhood_loader: NeighborhoodLoaderDep,
-    wikipedia_loader: WikipediaLoaderDep
+    property_service: PropertyServiceDep,
+    neighborhood_service: NeighborhoodServiceDep,
+    wikipedia_service: WikipediaServiceDep
 ):
     """
     Get overall data summary statistics.
@@ -126,19 +126,18 @@ async def get_data_summary(
     logger.info("Generating data summary statistics", extra={"correlation_id": correlation_id})
     
     try:
-        # Load all data
-        properties = property_loader.load_all()
-        neighborhoods = neighborhood_loader.load_all()
+        # Load all data using services
+        properties = property_service.property_loader.load_all()
+        neighborhoods = neighborhood_service.neighborhood_loader.load_all()
         
         # Wikipedia data (handle potential unavailability)
         articles = []
         summaries = []
-        if hasattr(wikipedia_loader, 'database_path') and Path(wikipedia_loader.database_path).exists():
-            try:
-                articles = wikipedia_loader.load_all()
-                summaries = wikipedia_loader.load_summaries()
-            except Exception as e:
-                logger.warning(f"Could not load Wikipedia data: {e}", extra={"correlation_id": correlation_id})
+        try:
+            articles = wikipedia_service.wikipedia_loader.load_all()
+            summaries = wikipedia_service.wikipedia_loader.load_summaries()
+        except Exception as e:
+            logger.warning(f"Could not load Wikipedia data: {e}", extra={"correlation_id": correlation_id})
         
         # Calculate geographic coverage
         all_cities = set()
@@ -189,7 +188,7 @@ async def get_data_summary(
 @router.get("/properties", response_model=PropertyStatsResponse)
 async def get_property_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep
+    property_service: PropertyServiceDep
 ):
     """
     Get detailed property statistics and distributions.
@@ -203,7 +202,7 @@ async def get_property_statistics(
     
     try:
         # Load property data
-        properties = property_loader.load_all()
+        properties = property_service.property_loader.load_all()
         
         if not properties:
             # Return empty statistics if no properties
@@ -289,7 +288,7 @@ async def get_property_statistics(
 @router.get("/neighborhoods", response_model=NeighborhoodStatsResponse)
 async def get_neighborhood_statistics(
     request: Request,
-    neighborhood_loader: NeighborhoodLoaderDep
+    neighborhood_service: NeighborhoodServiceDep
 ):
     """
     Get detailed neighborhood statistics and distributions.
@@ -303,7 +302,7 @@ async def get_neighborhood_statistics(
     
     try:
         # Load neighborhood data
-        neighborhoods = neighborhood_loader.load_all()
+        neighborhoods = neighborhood_service.neighborhood_loader.load_all()
         
         if not neighborhoods:
             # Return empty statistics if no neighborhoods
@@ -372,7 +371,7 @@ async def get_neighborhood_statistics(
 @router.get("/wikipedia", response_model=WikipediaStatsResponse)
 async def get_wikipedia_statistics(
     request: Request,
-    wikipedia_loader: WikipediaLoaderDep
+    wikipedia_service: WikipediaServiceDep
 ):
     """
     Get detailed Wikipedia data statistics and quality metrics.
@@ -385,9 +384,13 @@ async def get_wikipedia_statistics(
     logger.info("Generating Wikipedia statistics", extra={"correlation_id": correlation_id})
     
     try:
-        # Check if Wikipedia database exists
-        if not hasattr(wikipedia_loader, 'database_path') or not Path(wikipedia_loader.database_path).exists():
-            # Return empty statistics if no Wikipedia database
+        # Load Wikipedia data using service
+        try:
+            articles = wikipedia_service.wikipedia_loader.load_all()
+            summaries = wikipedia_service.wikipedia_loader.load_summaries()
+        except Exception as e:
+            logger.warning(f"Could not load Wikipedia data: {e}", extra={"correlation_id": correlation_id})
+            # Return empty statistics if Wikipedia database unavailable
             empty_stats = WikipediaStats(
                 total_articles=0,
                 total_summaries=0,
@@ -404,10 +407,6 @@ async def get_wikipedia_statistics(
                     "correlation_id": correlation_id
                 }
             )
-        
-        # Load Wikipedia data
-        articles = wikipedia_loader.load_all()
-        summaries = wikipedia_loader.load_summaries()
         
         # Calculate relevance score distribution for articles
         relevance_scores = [article.relevance_score for article in articles if article.relevance_score is not None]
@@ -482,9 +481,9 @@ async def get_wikipedia_statistics(
 @router.get("/coverage", response_model=CoverageStatsResponse)
 async def get_coverage_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep,
-    neighborhood_loader: NeighborhoodLoaderDep,
-    wikipedia_loader: WikipediaLoaderDep
+    property_service: PropertyServiceDep,
+    neighborhood_service: NeighborhoodServiceDep,
+    wikipedia_service: WikipediaServiceDep
 ):
     """
     Get geographic coverage and data distribution metrics.
@@ -497,17 +496,16 @@ async def get_coverage_statistics(
     logger.info("Generating coverage statistics", extra={"correlation_id": correlation_id})
     
     try:
-        # Load all data
-        properties = property_loader.load_all()
-        neighborhoods = neighborhood_loader.load_all()
+        # Load all data using services
+        properties = property_service.property_loader.load_all()
+        neighborhoods = neighborhood_service.neighborhood_loader.load_all()
         
         # Wikipedia data (handle potential unavailability)
         summaries = []
-        if hasattr(wikipedia_loader, 'database_path') and Path(wikipedia_loader.database_path).exists():
-            try:
-                summaries = wikipedia_loader.load_summaries()
-            except Exception as e:
-                logger.warning(f"Could not load Wikipedia summaries: {e}", extra={"correlation_id": correlation_id})
+        try:
+            summaries = wikipedia_service.wikipedia_loader.load_summaries()
+        except Exception as e:
+            logger.warning(f"Could not load Wikipedia summaries: {e}", extra={"correlation_id": correlation_id})
         
         # Calculate coverage by city
         city_coverage = defaultdict(lambda: {"properties": 0, "neighborhoods": 0, "wikipedia": 0})
@@ -588,9 +586,9 @@ async def get_coverage_statistics(
 @router.get("/enrichment", response_model=EnrichmentStatsResponse)
 async def get_enrichment_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep,
-    neighborhood_loader: NeighborhoodLoaderDep,
-    wikipedia_loader: WikipediaLoaderDep
+    property_service: PropertyServiceDep,
+    neighborhood_service: NeighborhoodServiceDep,
+    wikipedia_service: WikipediaServiceDep
 ):
     """
     Get data enrichment success rates and quality metrics.
@@ -603,17 +601,16 @@ async def get_enrichment_statistics(
     logger.info("Generating enrichment statistics", extra={"correlation_id": correlation_id})
     
     try:
-        # Load all data
-        properties = property_loader.load_all()
-        neighborhoods = neighborhood_loader.load_all()
+        # Load all data using services
+        properties = property_service.property_loader.load_all()
+        neighborhoods = neighborhood_service.neighborhood_loader.load_all()
         
         # Wikipedia data (handle potential unavailability) 
         summaries = []
-        if hasattr(wikipedia_loader, 'database_path') and Path(wikipedia_loader.database_path).exists():
-            try:
-                summaries = wikipedia_loader.load_summaries()
-            except Exception as e:
-                logger.warning(f"Could not load Wikipedia summaries: {e}", extra={"correlation_id": correlation_id})
+        try:
+            summaries = wikipedia_service.wikipedia_loader.load_summaries()
+        except Exception as e:
+            logger.warning(f"Could not load Wikipedia summaries: {e}", extra={"correlation_id": correlation_id})
         
         # Calculate address enrichment success rates
         total_properties = len(properties)
