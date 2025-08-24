@@ -32,16 +32,36 @@ if [ $# -eq 0 ]; then
     integration_exit_code=$?
     
     echo ""
+    echo "============== CORRELATION INTEGRATION TESTS ========"
+    echo "Testing embedding correlation functionality with bronze articles..."
+    echo "Running: python -m pytest -v -s integration_tests/test_correlation_bronze.py"
+    python -m pytest -v -s integration_tests/test_correlation_bronze.py
+    correlation_exit_code=$?
+    
+    echo ""
     echo "==================== TEST SUMMARY ==================="
-    if [ $unit_exit_code -eq 0 ] && [ $integration_exit_code -eq 0 ]; then
+    if [ $unit_exit_code -eq 0 ] && [ $integration_exit_code -eq 0 ] && [ $correlation_exit_code -eq 0 ]; then
         echo "✅ All tests passed!"
+        echo "  - Unit tests: ✅"
+        echo "  - Integration tests: ✅"
+        echo "  - Correlation tests: ✅"
         exit 0
     else
+        echo "❌ Some tests failed:"
         if [ $unit_exit_code -ne 0 ]; then
-            echo "❌ Unit tests failed (exit code: $unit_exit_code)"
+            echo "  - Unit tests: ❌ (exit code: $unit_exit_code)"
+        else
+            echo "  - Unit tests: ✅"
         fi
         if [ $integration_exit_code -ne 0 ]; then
-            echo "❌ Integration tests failed (exit code: $integration_exit_code)"
+            echo "  - Integration tests: ❌ (exit code: $integration_exit_code)"
+        else
+            echo "  - Integration tests: ✅"
+        fi
+        if [ $correlation_exit_code -ne 0 ]; then
+            echo "  - Correlation tests: ❌ (exit code: $correlation_exit_code)"
+        else
+            echo "  - Correlation tests: ✅"
         fi
         exit 1
     fi

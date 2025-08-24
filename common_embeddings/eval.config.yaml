@@ -24,7 +24,7 @@ embedding:
 # ChromaDB storage settings
 chromadb:
   persist_directory: ./data/wiki_chroma_db
-  collection_prefix: gold  # Prefix for evaluation collections
+  collection_name: gold_ollama_nomic_embed_text  # Specific collection name for this eval
 
 # Chunking configuration
 chunking:

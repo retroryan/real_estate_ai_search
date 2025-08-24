@@ -3,7 +3,6 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["common_embeddings"]
 
 [project]
 name = "common-embeddings"
@@ -12,7 +11,7 @@ description = "Embedding generation pipeline for Property Finder"
 requires-python = ">=3.9"
 dependencies = [
     # Shared models package (local)
-    "property-finder-models @ file:///Users/ryanknight/projects/temporal/real_estate_ai_search/property_finder_models",
+    "common @ file:///Users/ryanknight/projects/temporal/real_estate_ai_search/common",
     
     # Core dependencies
     "pydantic>=2.0",

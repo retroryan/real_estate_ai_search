@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from property_finder_models import EntityType, SourceType, BaseMetadata
+from common.property_finder_models import EntityType, SourceType, BaseMetadata
 from .enums import ChunkingMethod
 
 

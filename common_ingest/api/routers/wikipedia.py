@@ -13,7 +13,10 @@ from fastapi import APIRouter, HTTPException, Query, Path as PathParam, Request
 from fastapi.responses import JSONResponse
 
 from ...utils.logger import setup_logger
-from ..dependencies import WikipediaServiceDep
+from ..dependencies import (
+    WikipediaServiceDep,
+    CorrelationServiceDep
+)
 from ..schemas.requests import WikipediaArticleFilter, WikipediaSummaryFilter, PaginationParams
 from ..schemas.responses import (
     WikipediaArticleListResponse,
@@ -69,11 +72,13 @@ def _build_pagination_links(
 async def get_articles(
     request: Request,
     wikipedia_service: WikipediaServiceDep,
+    correlation_service: CorrelationServiceDep,
     city: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by city name"),
     state: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by state name"),
     relevance_min: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum relevance score"),
     sort_by: str = Query("relevance", pattern="^(relevance|title|page_id)$", description="Sort by relevance, title, or page_id"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
+    collection_name: Optional[str] = Query(None, description="ChromaDB collection name for embeddings"),
     page: int = Query(1, ge=1, le=1000, description="Page number"),
     page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
@@ -112,10 +117,49 @@ async def get_articles(
             correlation_id=correlation_id
         )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Convert data to dictionary format for correlation
+            data_dicts = [item.model_dump() for item in paginated_articles if hasattr(item, 'model_dump')]
+            if not data_dicts and paginated_articles:
+                # Fallback for non-Pydantic models
+                data_dicts = [dict(item) if isinstance(item, dict) else item for item in paginated_articles]
+            
+            # Correlate with embeddings
+            correlation_results = correlation_service.correlate_wikipedia_with_embeddings(
+                wikipedia_data=data_dicts,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Enrich with embeddings
+            # enriched_data = enrichment_service.enrich_wikipedia(
+            #     correlation_results=correlation_results,
+            #     include_embeddings=True
+            # )
+            
+            # # Update paginated data with enriched information
+            # for i, enriched in enumerate(enriched_data):
+            #     if i < len(paginated_articles):
+            #         # Add embedding data to existing items
+            #         setattr(paginated_articles[i], 'embeddings', enriched.embeddings)
+            #         setattr(paginated_articles[i], 'embedding_count', enriched.embedding_count)
+            #         setattr(paginated_articles[i], 'has_embeddings', enriched.has_embeddings)
+            #         setattr(paginated_articles[i], 'chunk_count', getattr(enriched, 'chunk_count', 0))
+            #         setattr(paginated_articles[i], 'correlation_confidence', enriched.correlation_confidence)
+            
+            # logger.info(
+            #     f"Successfully correlated {len(enriched_data)} items with embeddings",
+            #     extra={"correlation_id": correlation_id}
+            # )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         
@@ -201,10 +245,49 @@ async def get_article(
                 detail=f"Wikipedia article with page_id '{page_id}' not found"
             )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Convert data to dictionary format for correlation
+            data_dicts = [item.model_dump() for item in paginated_articles if hasattr(item, 'model_dump')]
+            if not data_dicts and paginated_articles:
+                # Fallback for non-Pydantic models
+                data_dicts = [dict(item) if isinstance(item, dict) else item for item in paginated_articles]
+            
+            # Correlate with embeddings
+            correlation_results = correlation_service.correlate_wikipedia_with_embeddings(
+                wikipedia_data=data_dicts,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Enrich with embeddings
+            # enriched_data = enrichment_service.enrich_wikipedia(
+            #     correlation_results=correlation_results,
+            #     include_embeddings=True
+            # )
+            
+            # # Update paginated data with enriched information
+            # for i, enriched in enumerate(enriched_data):
+            #     if i < len(paginated_articles):
+            #         # Add embedding data to existing items
+            #         setattr(paginated_articles[i], 'embeddings', enriched.embeddings)
+            #         setattr(paginated_articles[i], 'embedding_count', enriched.embedding_count)
+            #         setattr(paginated_articles[i], 'has_embeddings', enriched.has_embeddings)
+            #         setattr(paginated_articles[i], 'chunk_count', getattr(enriched, 'chunk_count', 0))
+            #         setattr(paginated_articles[i], 'correlation_confidence', enriched.correlation_confidence)
+            
+            # logger.info(
+            #     f"Successfully correlated {len(enriched_data)} items with embeddings",
+            #     extra={"correlation_id": correlation_id}
+            # )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         
@@ -240,11 +323,13 @@ async def get_article(
 async def get_summaries(
     request: Request,
     wikipedia_service: WikipediaServiceDep,
+    correlation_service: CorrelationServiceDep,
     city: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by city name"),
     state: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by state name"),
     confidence_min: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence score"),
     include_key_topics: bool = Query(True, description="Include key topics in response"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
+    collection_name: Optional[str] = Query(None, description="ChromaDB collection name for embeddings"),
     page: int = Query(1, ge=1, le=1000, description="Page number"),
     page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
@@ -282,10 +367,49 @@ async def get_summaries(
             correlation_id=correlation_id
         )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Convert data to dictionary format for correlation
+            data_dicts = [item.model_dump() for item in paginated_articles if hasattr(item, 'model_dump')]
+            if not data_dicts and paginated_articles:
+                # Fallback for non-Pydantic models
+                data_dicts = [dict(item) if isinstance(item, dict) else item for item in paginated_articles]
+            
+            # Correlate with embeddings
+            correlation_results = correlation_service.correlate_wikipedia_with_embeddings(
+                wikipedia_data=data_dicts,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Enrich with embeddings
+            # enriched_data = enrichment_service.enrich_wikipedia(
+            #     correlation_results=correlation_results,
+            #     include_embeddings=True
+            # )
+            
+            # # Update paginated data with enriched information
+            # for i, enriched in enumerate(enriched_data):
+            #     if i < len(paginated_articles):
+            #         # Add embedding data to existing items
+            #         setattr(paginated_articles[i], 'embeddings', enriched.embeddings)
+            #         setattr(paginated_articles[i], 'embedding_count', enriched.embedding_count)
+            #         setattr(paginated_articles[i], 'has_embeddings', enriched.has_embeddings)
+            #         setattr(paginated_articles[i], 'chunk_count', getattr(enriched, 'chunk_count', 0))
+            #         setattr(paginated_articles[i], 'correlation_confidence', enriched.correlation_confidence)
+            
+            # logger.info(
+            #     f"Successfully correlated {len(enriched_data)} items with embeddings",
+            #     extra={"correlation_id": correlation_id}
+            # )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         
@@ -373,10 +497,49 @@ async def get_summary(
                 detail=f"Wikipedia summary with page_id '{page_id}' not found"
             )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Convert data to dictionary format for correlation
+            data_dicts = [item.model_dump() for item in paginated_articles if hasattr(item, 'model_dump')]
+            if not data_dicts and paginated_articles:
+                # Fallback for non-Pydantic models
+                data_dicts = [dict(item) if isinstance(item, dict) else item for item in paginated_articles]
+            
+            # Correlate with embeddings
+            correlation_results = correlation_service.correlate_wikipedia_with_embeddings(
+                wikipedia_data=data_dicts,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Enrich with embeddings
+            # enriched_data = enrichment_service.enrich_wikipedia(
+            #     correlation_results=correlation_results,
+            #     include_embeddings=True
+            # )
+            
+            # # Update paginated data with enriched information
+            # for i, enriched in enumerate(enriched_data):
+            #     if i < len(paginated_articles):
+            #         # Add embedding data to existing items
+            #         setattr(paginated_articles[i], 'embeddings', enriched.embeddings)
+            #         setattr(paginated_articles[i], 'embedding_count', enriched.embedding_count)
+            #         setattr(paginated_articles[i], 'has_embeddings', enriched.has_embeddings)
+            #         setattr(paginated_articles[i], 'chunk_count', getattr(enriched, 'chunk_count', 0))
+            #         setattr(paginated_articles[i], 'correlation_confidence', enriched.correlation_confidence)
+            
+            # logger.info(
+            #     f"Successfully correlated {len(enriched_data)} items with embeddings",
+            #     extra={"correlation_id": correlation_id}
+            # )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         

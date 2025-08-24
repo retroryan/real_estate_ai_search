@@ -24,7 +24,7 @@ self.client = chromadb.PersistentClient(
 )
 ```
 
-**What to ensure**: The ChromaDBConfig model in property_finder_models MUST have `persist_directory` field, not `path`. This is already correct in the codebase.
+**What to ensure**: The ChromaDBConfig model in common MUST have `persist_directory` field, not `path`. This is already correct in the codebase.
 
 ### 2. Config YAML Parser - Reuse Existing
 **Existing Utility Found**:

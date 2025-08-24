@@ -2,7 +2,7 @@
 Configuration models specific to embeddings processing.
 
 Core configuration models (Config, EmbeddingConfig, ChromaDBConfig) are 
-imported from property_finder_models.
+imported from common.
 """
 
 from pydantic import BaseModel, Field
@@ -11,7 +11,7 @@ import yaml
 import logging
 from typing import Optional
 
-from property_finder_models import Config as BaseConfig
+from common.property_finder_models import Config as BaseConfig
 from .enums import ChunkingMethod
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ class ExtendedConfig(BaseConfig):
     """
     Extended configuration for embeddings with chunking and processing.
     
-    Extends the base Config from property_finder_models with embedding-specific
+    Extends the base Config from common with embedding-specific
     configuration options.
     """
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)

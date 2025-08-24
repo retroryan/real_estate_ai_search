@@ -2,7 +2,7 @@
 Custom exceptions specific to embeddings processing.
 
 Core exceptions (ConfigurationError, DataLoadingError, StorageError, 
-ValidationError, MetadataError) are imported from property_finder_models.
+ValidationError, MetadataError) are imported from common.
 """
 
 

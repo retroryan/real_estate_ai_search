@@ -8,7 +8,7 @@ correlation with source data.
 
 __version__ = "0.1.0"
 
-from property_finder_models import (
+from common.property_finder_models import (
     # Enums
     EntityType,
     SourceType,

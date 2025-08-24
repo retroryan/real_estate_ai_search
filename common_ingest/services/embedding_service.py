@@ -11,21 +11,11 @@ from pathlib import Path
 
 import chromadb
 from chromadb.api.models.Collection import Collection
-from pydantic import BaseModel, Field
+from property_finder_models import EmbeddingData
 
 from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
-
-
-class EmbeddingData(BaseModel):
-    """Model for embedding data with metadata."""
-    
-    embedding_id: str = Field(description="Unique identifier for the embedding")
-    vector: Optional[List[float]] = Field(None, description="Embedding vector (optional for performance)")
-    metadata: Dict[str, Any] = Field(description="Metadata associated with the embedding")
-    document: Optional[str] = Field(None, description="Original text that was embedded")
-    chunk_index: Optional[int] = Field(None, description="Chunk index for multi-chunk documents")
 
 
 class EmbeddingService:
@@ -132,7 +122,6 @@ class EmbeddingService:
                         embedding_id=results["ids"][i] if "ids" in results else f"emb_{i}",
                         vector=results["embeddings"][i] if include_vectors and "embeddings" in results else None,
                         metadata=metadata,
-                        document=results["documents"][i] if "documents" in results else None,
                         chunk_index=metadata.get("chunk_index")
                     )
                     result[entity_id].append(embedding_data)
@@ -194,7 +183,6 @@ class EmbeddingService:
                     embedding_id=results["ids"][i],
                     vector=results["embeddings"][i] if include_vectors and "embeddings" in results else None,
                     metadata=results["metadatas"][i] if "metadatas" in results else {},
-                    document=results["documents"][i] if "documents" in results else None,
                     chunk_index=results["metadatas"][i].get("chunk_index") if "metadatas" in results else None
                 )
                 embeddings.append(embedding_data)

@@ -5,11 +5,15 @@ Provides shared fixtures and configuration for testing the FastAPI application
 with real data and proper dependency injection.
 """
 
+import json
 import pytest
+from pathlib import Path
 from fastapi.testclient import TestClient
 
 from ..api.app import create_app
 from ..utils.logger import setup_logger
+from ..services.embedding_service import EmbeddingService
+from ..services.correlation_service import CorrelationService
 
 logger = setup_logger(__name__)
 
@@ -93,3 +97,86 @@ def invalid_city():
         str: A city name that should not exist in the test data
     """
     return "NonExistentCity"
+
+
+@pytest.fixture(scope="session")
+def bronze_articles_data():
+    """
+    Load bronze articles test data for correlation testing.
+    
+    Returns:
+        dict: Bronze articles test data with Wikipedia pages
+    """
+    bronze_path = Path(__file__).parent.parent.parent / "common_embeddings" / "evaluate_data" / "bronze_articles.json"
+    
+    if bronze_path.exists():
+        with open(bronze_path, 'r') as f:
+            return json.load(f)
+    else:
+        return {
+            "articles": [
+                {
+                    "page_id": 26974,
+                    "title": "San Francisco Peninsula",
+                    "summary": "The San Francisco Peninsula is a peninsula in the San Francisco Bay Area.",
+                    "city": "San Francisco",
+                    "state": "California"
+                },
+                {
+                    "page_id": 71083,
+                    "title": "Wayne County, Utah",
+                    "summary": "Wayne County is a county in the U.S. state of Utah.",
+                    "city": "Loa", 
+                    "state": "Utah"
+                },
+                {
+                    "page_id": 1706289,
+                    "title": "Fillmore District, San Francisco",
+                    "summary": "The Fillmore District is a historical neighborhood in San Francisco.",
+                    "city": "San Francisco",
+                    "state": "California"
+                }
+            ],
+            "metadata": {
+                "total_articles": 3,
+                "dataset_type": "bronze",
+                "description": "Small test dataset for quick evaluation"
+            }
+        }
+
+
+@pytest.fixture(scope="session")
+def embedding_service():
+    """
+    Create an embedding service instance for testing.
+    
+    Returns:
+        EmbeddingService: Service for reading ChromaDB collections
+    """
+    chromadb_path = Path(__file__).parent.parent / "data" / "chroma_db"
+    return EmbeddingService(chromadb_path=str(chromadb_path))
+
+
+@pytest.fixture(scope="session")
+def correlation_service(embedding_service):
+    """
+    Create a correlation service instance for testing.
+    
+    Args:
+        embedding_service: EmbeddingService fixture
+        
+    Returns:
+        CorrelationService: Service for correlating embeddings with source data
+    """
+    return CorrelationService(embedding_service)
+
+
+@pytest.fixture(scope="session")
+def test_collection_name():
+    """
+    Provide the ChromaDB collection name for testing.
+    
+    Returns:
+        str: Collection name to use for correlation tests
+    """
+    return "embeddings_nomic-embed-text"

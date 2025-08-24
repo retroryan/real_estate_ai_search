@@ -2,7 +2,7 @@
 Enumerations specific to embeddings processing.
 
 Core enums (EntityType, SourceType, EmbeddingProvider) are imported 
-from property_finder_models.
+from common.
 """
 
 from enum import Enum

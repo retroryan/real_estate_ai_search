@@ -109,7 +109,7 @@ __all__ = [
 from typing import List, Optional, Tuple
 from ..loaders.property_loader import PropertyLoader
 from ..utils.logger import setup_logger
-from property_finder_models import EnrichedProperty
+from common import EnrichedProperty
 
 logger = setup_logger(__name__)
 

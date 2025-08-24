@@ -21,13 +21,13 @@ All data is returned as fully validated and enriched Pydantic models with:
 ### Prerequisites
 
 - Python 3.9+
-- property_finder_models package (shared models)
+- common package (shared models)
 
 ### Installation
 
 ```bash
 # Install shared models first (from project root)
-cd property_finder_models && pip install -e .
+cd common && pip install -e .
 
 # Install common_ingest (from project root) 
 cd ../common_ingest && pip install -e .
@@ -94,14 +94,23 @@ curl "http://localhost:8000/api/v1/properties?page=1&page_size=10"
 # Filter properties by city
 curl "http://localhost:8000/api/v1/properties?city=San Francisco"
 
+# Get properties with embeddings (requires ChromaDB collections)
+curl "http://localhost:8000/api/v1/properties?include_embeddings=true&collection_name=embeddings_nomic-embed-text"
+
 # Get a specific property
 curl "http://localhost:8000/api/v1/properties/prop-oak-125"
 
 # Get all neighborhoods
 curl "http://localhost:8000/api/v1/neighborhoods"
 
+# Get neighborhoods with embeddings
+curl "http://localhost:8000/api/v1/neighborhoods?include_embeddings=true&collection_name=embeddings_nomic-embed-text"
+
 # Wikipedia articles with filtering
 curl "http://localhost:8000/api/v1/wikipedia/articles?city=Park City&relevance_min=0.7"
+
+# Wikipedia articles with embeddings (correlation functionality)
+curl "http://localhost:8000/api/v1/wikipedia/articles?include_embeddings=true&collection_name=embeddings_nomic-embed-text&page_size=5"
 
 # Statistics and analytics
 curl "http://localhost:8000/api/v1/stats/summary"
@@ -119,6 +128,51 @@ curl "http://localhost:8000/api/v1/health"
 # Run specific test modules
 ./run_tests.sh tests/test_models.py
 ./run_tests.sh integration_tests/
+
+# Run correlation integration tests specifically
+./run_correlation_tests.sh
+
+# Or run correlation tests with pytest directly
+python -m pytest integration_tests/test_correlation_bronze.py -v -s
+```
+
+#### Correlation Integration Tests
+
+The correlation integration tests validate the embedding functionality that enriches data with ChromaDB embeddings:
+
+```bash
+# Run all correlation scenarios (7 tests)
+python -m pytest integration_tests/test_correlation_bronze.py -v -s
+
+# Run specific test scenarios
+python -m pytest integration_tests/test_correlation_bronze.py::TestBronzeCorrelation::test_basic_correlation -v
+python -m pytest integration_tests/test_correlation_bronze.py::TestBronzeCorrelation::test_api_endpoint_correlation -v
+python -m pytest integration_tests/test_correlation_bronze.py::TestPropertyCorrelation::test_property_api_with_embeddings -v
+```
+
+**Test Scenarios Covered:**
+- **Basic correlation** with bronze articles dataset (3 Wikipedia articles)
+- **API endpoint integration** through `/api/v1/wikipedia/articles` with embeddings
+- **Multi-chunk document handling** for large Wikipedia articles
+- **Performance validation** (correlation under 2 seconds)
+- **Missing embeddings graceful handling**
+- **Property API with embeddings** through `/api/v1/properties`
+- **Neighborhood API with embeddings** through `/api/v1/neighborhoods`
+
+**Test Data:** Uses `common_embeddings/evaluate_data/bronze_articles.json` with known Wikipedia articles:
+- San Francisco Peninsula (page_id: 26974)
+- Wayne County, Utah (page_id: 71083) 
+- Fillmore District, San Francisco (page_id: 1706289)
+
+**Prerequisites for Full Testing:**
+```bash
+# Ensure ChromaDB collections exist (run from common_embeddings)
+cd ../common_embeddings
+python main.py create --collection-name embeddings_nomic-embed-text
+
+# Then run correlation tests
+cd ../common_ingest
+./run_correlation_tests.sh
 ```
 
 ## Advanced Usage Guide

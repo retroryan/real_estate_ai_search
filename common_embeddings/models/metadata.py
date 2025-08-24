@@ -1,7 +1,7 @@
 """
 Metadata models for embeddings tracking.
 
-These models extend the base metadata from property_finder_models with
+These models extend the base metadata from common with
 embedding-specific fields for correlation and tracking.
 """
 
@@ -10,7 +10,7 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
 
-from property_finder_models import (
+from common.property_finder_models import (
     BaseMetadata,
     EntityType,
     SourceType,

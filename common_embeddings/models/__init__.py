@@ -1,12 +1,12 @@
 """
 Pydantic models for the common embeddings module.
 
-This module imports shared models from property_finder_models and defines
+This module imports shared models from common and defines
 embeddings-specific models for processing and pipeline operations.
 """
 
-# Import shared models from property_finder_models
-from property_finder_models import (
+# Import shared models from common
+from common.property_finder_models import (
     # Core
     BaseMetadata,
     
@@ -85,7 +85,7 @@ from .correlation import (
 )
 
 __all__ = [
-    # From property_finder_models
+    # From common
     "BaseMetadata",
     "EntityType",
     "SourceType",

@@ -3,68 +3,68 @@ EVALUATION METRICS
 ============================================================
 
 OVERALL METRICS:
-  Precision: 0.000
-  Recall: 0.000
-  F1 Score: 0.000
-  Mean Average Precision (MAP): 0.000
-  Mean Reciprocal Rank (MRR): 0.000
+  Precision: 0.383
+  Recall: 0.350
+  F1 Score: 0.366
+  Mean Average Precision (MAP): 0.373
+  Mean Reciprocal Rank (MRR): 0.756
 
 METRICS AT DIFFERENT K VALUES:
 
   @K=1:
-    Precision: 0.000
-    Recall: 0.000
-    F1: 0.000
-    NDCG: 0.000
+    Precision: 0.625
+    Recall: 0.147
+    F1: 0.190
+    NDCG: 0.596
 
   @K=3:
-    Precision: 0.000
-    Recall: 0.000
-    F1: 0.000
-    NDCG: 0.000
+    Precision: 0.542
+    Recall: 0.309
+    F1: 0.293
+    NDCG: 0.602
 
   @K=5:
-    Precision: 0.000
-    Recall: 0.000
-    F1: 0.000
-    NDCG: 0.000
+    Precision: 0.475
+    Recall: 0.398
+    F1: 0.317
+    NDCG: 0.612
 
   @K=10:
-    Precision: 0.000
-    Recall: 0.000
-    F1: 0.000
-    NDCG: 0.000
+    Precision: 0.382
+    Recall: 0.566
+    F1: 0.341
+    NDCG: 0.627
 
 CATEGORY-WISE METRICS:
 
   GEOGRAPHIC:
-    precision_at_5: 0.000
-    recall_at_10: 0.000
-    f1_at_5: 0.000
-    map: 0.000
+    precision_at_5: 0.450
+    recall_at_10: 0.557
+    f1_at_5: 0.308
+    map: 0.382
 
   LANDMARK:
-    precision_at_5: 0.000
-    recall_at_10: 0.000
-    f1_at_5: 0.000
-    map: 0.000
+    precision_at_5: 0.475
+    recall_at_10: 0.735
+    f1_at_5: 0.406
+    map: 0.493
 
   HISTORICAL:
-    precision_at_5: 0.000
-    recall_at_10: 0.000
-    f1_at_5: 0.000
-    map: 0.000
+    precision_at_5: 0.275
+    recall_at_10: 0.561
+    f1_at_5: 0.211
+    map: 0.247
 
   ADMINISTRATIVE:
-    precision_at_5: 0.000
-    recall_at_10: 0.000
-    f1_at_5: 0.000
-    map: 0.000
+    precision_at_5: 0.650
+    recall_at_10: 0.345
+    f1_at_5: 0.282
+    map: 0.227
 
   SEMANTIC:
-    precision_at_5: 0.000
-    recall_at_10: 0.000
-    f1_at_5: 0.000
-    map: 0.000
+    precision_at_5: 0.525
+    recall_at_10: 0.634
+    f1_at_5: 0.376
+    map: 0.517
 
 ============================================================

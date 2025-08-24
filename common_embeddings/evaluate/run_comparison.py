@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Dict, List
 
 from ..models.config import ExtendedConfig, load_config_from_yaml
+from ..models.eval_config import EvalConfig, load_eval_config
 from ..storage.chromadb_store import ChromaDBStore
 from ..utils import setup_logging, get_logger
 from .test_config import TestConfig, load_test_config
@@ -99,31 +100,50 @@ class ComparisonRunner:
                     else:
                         articles_file = "common_embeddings/evaluate_data/evaluate_articles.json"
                     
-                    # Create embeddings using main.py with evaluation data
+                    # Create a temporary eval config for this specific model
+                    import yaml
+                    eval_config_path = self.test_config.base_config or "common_embeddings/eval.config.yaml"
+                    
+                    with open(eval_config_path, 'r') as f:
+                        eval_config = yaml.safe_load(f)
+                    
+                    # Update the provider and model in config
+                    eval_config['embedding']['provider'] = model_config.provider
+                    if model_config.provider == "ollama":
+                        eval_config['embedding']['ollama_model'] = model_config.name
+                    elif model_config.provider == "openai":
+                        eval_config['embedding']['openai_model'] = model_config.name
+                    elif model_config.provider == "gemini":
+                        eval_config['embedding']['gemini_model'] = model_config.name
+                    elif model_config.provider == "voyage":
+                        eval_config['embedding']['voyage_model'] = model_config.name
+                    
+                    # Set the specific collection name in config
+                    eval_config['chromadb']['collection_name'] = collection_name
+                    
+                    # Write updated config temporarily
+                    temp_config_path = f"common_embeddings/eval_temp_{model_config.name.replace('-', '_')}.yaml"
+                    with open(temp_config_path, 'w') as f:
+                        yaml.dump(eval_config, f, default_flow_style=False)
+                    
+                    # Create embeddings using main.py eval mode with temp config
                     cmd = [
-                        sys.executable, "-m", "common_embeddings.main", "create",
-                        "--collection-name", collection_name,
-                        "--data-type", "evaluation",
-                        "--evaluation-json", articles_file,
+                        sys.executable, "-m", "common_embeddings",
+                        "--data-type", "eval",
+                        "--config", temp_config_path,
                         "--force-recreate"
                     ]
                     
-                    # Add model-specific arguments based on provider
-                    if model_config.provider == "ollama":
-                        cmd.extend(["--provider", "ollama", "--ollama-model", model_config.name])
-                    elif model_config.provider == "openai":
-                        cmd.extend(["--provider", "openai", "--openai-model", model_config.name])
-                    elif model_config.provider == "gemini":
-                        cmd.extend(["--provider", "gemini", "--gemini-model", model_config.name])
-                    elif model_config.provider == "voyage":
-                        cmd.extend(["--provider", "voyage", "--voyage-model", model_config.name])
-                    
-                    # Use the eval config if specified
-                    if self.test_config.base_config:
-                        cmd.extend(["--config", self.test_config.base_config])
-                    
-                    logger.info(f"Creating embeddings with: {' '.join(cmd)}")
+                    logger.info(f"Creating embeddings for {model_config.name}")
+                    logger.info(f"Command: {' '.join(cmd)}")
                     result = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    # Clean up temp config
+                    import os
+                    try:
+                        os.remove(temp_config_path)
+                    except:
+                        pass
                     
                     if result.returncode != 0:
                         logger.error(f"Failed to create embeddings: {result.stderr}")
@@ -145,13 +165,31 @@ class ComparisonRunner:
             logger.info(f"  Collection: {model_config.collection_name}")
             
             try:
-                # Run evaluation using existing EvaluationRunner
-                runner = EvaluationRunner(self.base_config)
+                # Create a config specific to this model for evaluation
+                import copy
+                model_config_copy = copy.deepcopy(self.base_config)
+                
+                # Update the embedding provider and model to match what's being evaluated
+                model_config_copy.embedding.provider = model_config.provider
+                if model_config.provider == "ollama":
+                    model_config_copy.embedding.ollama_model = model_config.name
+                elif model_config.provider == "openai":
+                    model_config_copy.embedding.openai_model = model_config.name
+                elif model_config.provider == "gemini":
+                    model_config_copy.embedding.gemini_model = model_config.name
+                elif model_config.provider == "voyage":
+                    model_config_copy.embedding.voyage_model = model_config.name
+                
+                # Run evaluation using model-specific config
+                runner = EvaluationRunner(model_config_copy)
                 
                 # Determine dataset files
                 if self.test_config.evaluation.dataset == "gold":
                     articles_json = Path("common_embeddings/evaluate_data/gold_articles.json")
                     queries_json = Path("common_embeddings/evaluate_data/gold_queries.json")
+                elif self.test_config.evaluation.dataset == "bronze":
+                    articles_json = Path("common_embeddings/evaluate_data/bronze_articles.json")
+                    queries_json = Path("common_embeddings/evaluate_data/bronze_queries.json")
                 else:
                     articles_json = Path("common_embeddings/evaluate_data/evaluate_articles.json")
                     queries_json = Path("common_embeddings/evaluate_data/evaluate_queries.json")
@@ -245,13 +283,13 @@ def main():
         logger.info("Loading configurations...")
         test_config = load_test_config("common_embeddings/test.config.yaml")
         
-        # Use base_config from test config if specified, otherwise default
+        # Use base_config from test config if specified, otherwise use eval config
         if test_config.base_config:
-            base_config = load_config_from_yaml(test_config.base_config)
+            base_config = load_eval_config(test_config.base_config)
             logger.info(f"Using eval config: {test_config.base_config}")
         else:
-            base_config = load_config_from_yaml("common_embeddings/config.yaml")
-            logger.info("Using default config: common_embeddings/config.yaml")
+            base_config = load_eval_config("common_embeddings/eval.config.yaml")
+            logger.info("Using eval config: common_embeddings/eval.config.yaml")
         
         # Run comparison
         runner = ComparisonRunner(test_config, base_config)

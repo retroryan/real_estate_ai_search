@@ -12,7 +12,11 @@ from fastapi import APIRouter, HTTPException, Query, Path, Request
 from fastapi.responses import JSONResponse
 
 from ...utils.logger import setup_logger
-from ..dependencies import PropertyServiceDep, NeighborhoodServiceDep
+from ..dependencies import (
+    PropertyServiceDep, 
+    NeighborhoodServiceDep,
+    CorrelationServiceDep
+)
 from ..schemas.requests import PropertyFilter, NeighborhoodFilter, PaginationParams
 from ..schemas.responses import (
     PropertyListResponse,
@@ -68,8 +72,10 @@ def _build_pagination_links(
 async def get_properties(
     request: Request,
     property_service: PropertyServiceDep,
+    correlation_service: CorrelationServiceDep,
     city: Optional[str] = Query(None, description="Filter by city name (case-insensitive)"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
+    collection_name: Optional[str] = Query(None, description="ChromaDB collection name for embeddings"),
     page: int = Query(1, ge=1, le=1000, description="Page number (1-based)"),
     page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
@@ -102,10 +108,30 @@ async def get_properties(
             correlation_id=correlation_id
         )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating properties with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Correlate properties with embeddings - directly populates embedding fields
+            paginated_properties = correlation_service.correlate_properties_with_embeddings(
+                properties=paginated_properties,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Count successful correlations for logging
+            successful_correlations = sum(1 for p in paginated_properties if p.has_embeddings)
+            
+            logger.info(
+                f"Successfully correlated {successful_correlations}/{len(paginated_properties)} properties with embeddings",
+                extra={"correlation_id": correlation_id}
+            )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         
@@ -212,8 +238,10 @@ async def get_property(
 async def get_neighborhoods(
     request: Request,
     neighborhood_service: NeighborhoodServiceDep,
+    correlation_service: CorrelationServiceDep,
     city: Optional[str] = Query(None, description="Filter by city name (case-insensitive)"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
+    collection_name: Optional[str] = Query(None, description="ChromaDB collection name for embeddings"),
     page: int = Query(1, ge=1, le=1000, description="Page number (1-based)"),
     page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
@@ -245,10 +273,30 @@ async def get_neighborhoods(
             correlation_id=correlation_id
         )
         
-        # TODO: Handle include_embeddings when embedding integration is implemented
-        if include_embeddings:
+        # Handle embedding correlation if requested
+        if include_embeddings and collection_name:
+            logger.info(
+                f"Correlating neighborhoods with embeddings from collection: {collection_name}",
+                extra={"correlation_id": correlation_id}
+            )
+            
+            # Correlate neighborhoods with embeddings - directly populates embedding fields
+            paginated_neighborhoods = correlation_service.correlate_neighborhoods_with_embeddings(
+                neighborhoods=paginated_neighborhoods,
+                collection_name=collection_name,
+                include_vectors=False  # Don't include vectors for performance
+            )
+            
+            # Count successful correlations for logging
+            successful_correlations = sum(1 for n in paginated_neighborhoods if n.has_embeddings)
+            
+            logger.info(
+                f"Successfully correlated {successful_correlations}/{len(paginated_neighborhoods)} neighborhoods with embeddings",
+                extra={"correlation_id": correlation_id}
+            )
+        elif include_embeddings and not collection_name:
             logger.warning(
-                "Embedding inclusion requested but not yet implemented",
+                "Embedding inclusion requested but no collection_name provided",
                 extra={"correlation_id": correlation_id}
             )
         

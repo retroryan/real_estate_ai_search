@@ -165,8 +165,8 @@ python -m common_embeddings.evaluate.run_evaluation --test-config test.config.ya
 
 ### Phase 0: Fix Configuration Issues (IMMEDIATE - Day 1)
 **Critical**: The refactored codebase needs config alignment
-- [ ] Add ChunkingConfig to property_finder_models
-- [ ] Add ProcessingConfig to property_finder_models  
+- [ ] Add ChunkingConfig to common
+- [ ] Add ProcessingConfig to common  
 - [ ] Update Config model to include chunking and processing
 - [ ] Fix ChromaDBStore to use persist_directory consistently
 - [ ] Ensure all imports use correct model locations
@@ -243,7 +243,7 @@ python -m common_embeddings.evaluate.run_evaluation --test-config test.config.ya
 
 ### 1. Configuration Alignment (2 hours)
 ```python
-# Add to property_finder_models/config.py
+# Add to common/config.py
 class ChunkingConfig(BaseModel):
     method: ChunkingMethod
     chunk_size: int = 800

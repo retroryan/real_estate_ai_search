@@ -21,6 +21,7 @@ from datetime import datetime
 
 from .models import Config, EntityType, SourceType
 from .models.config import load_config_from_yaml
+from .models.eval_config import load_eval_config
 from .pipeline import EmbeddingPipeline
 from .utils import setup_logging, get_logger
 from .utils.progress import create_progress_indicator
@@ -257,52 +258,32 @@ def process_json_articles(config: Config, json_path: Path, force_recreate: bool 
     logger.info("Setting up ChromaDB collection for evaluation...")
     collection_manager = CollectionManager(config)
     
-    # Use provided collection name or generate one
-    if collection_name:
-        logger.info(f"Using specified collection name: {collection_name}")
-        eval_collection = collection_name
-        # Create the collection directly with the store
-        collection_manager.chroma_store.create_collection(
-            name=collection_name,
-            metadata={
-                "source": "evaluation_set",
-                "json_path": str(json_path),
-                "article_count": len(articles),
-                "model_identifier": pipeline.model_identifier
-            },
-            force_recreate=force_recreate
-        )
+    # Get collection name from config
+    if hasattr(config.chromadb, 'collection_name'):
+        eval_collection = config.chromadb.collection_name
     else:
-        # Create collection for evaluation articles using default naming
-        eval_collection = collection_manager.create_collection_for_entity(
-            entity_type=EntityType.WIKIPEDIA_ARTICLE,
-            model_identifier=pipeline.model_identifier,
-            force_recreate=force_recreate,
-            additional_metadata={
-                "source": "evaluation_set",
-                "json_path": str(json_path),
-                "article_count": len(articles)
-            }
-        )
+        # Fallback to using model identifier if not specified
+        eval_collection = f"eval_{pipeline.model_identifier}"
     
-    # Get the ChromaDB store to add embeddings
+    logger.info(f"Using collection name: {eval_collection}")
+    
+    # Create the collection
+    collection_manager.store.create_collection(
+        name=eval_collection,
+        metadata={
+            "source": "evaluation_set",
+            "json_path": str(json_path),
+            "article_count": len(articles),
+            "model_identifier": pipeline.model_identifier
+        },
+        force_recreate=force_recreate
+    )
+    
+    
+    # Get the ChromaDB store - it will use the collection we just created
     from .storage import ChromaDBStore
     chroma_store = ChromaDBStore(config.chromadb)
-    
-    # Only create collection if not already created above
-    if not collection_name:
-        chroma_store.create_collection(
-            name=eval_collection,
-            metadata={
-                "source": "evaluation_set",
-                "json_path": str(json_path),
-                "article_count": len(articles)
-            },
-            force_recreate=False  # Already recreated above
-        )
-    else:
-        # Just select the existing collection we created above
-        chroma_store.collection = chroma_store.client.get_collection(eval_collection)
+    chroma_store.collection = chroma_store.client.get_collection(eval_collection)
     
     doc_count = 0
     embeddings_to_add = []
@@ -389,9 +370,9 @@ def main():
     )
     parser.add_argument(
         "--data-type",
-        choices=["real_estate", "wikipedia", "all", "evaluation"],
+        choices=["real_estate", "wikipedia", "all", "evaluation", "eval"],
         default="all",
-        help="Type of data to process"
+        help="Type of data to process (eval uses eval.config.yaml)"
     )
     parser.add_argument(
         "--force-recreate",
@@ -432,9 +413,17 @@ def main():
     logger.info("Common Embeddings - Real Data Processing")
     logger.info("=" * 60)
     
-    # Load configuration
-    config = load_config_from_yaml(args.config)
-    logger.info(f"Loaded configuration: provider={config.embedding.provider}")
+    # Load configuration - use specified config file or default
+    if args.data_type == "eval":
+        # Use specified config for eval mode, defaulting to eval.config.yaml
+        config_path = args.config if args.config != "common_embeddings/config.yaml" else "common_embeddings/eval.config.yaml"
+        logger.info(f"Using eval mode configuration from {config_path}")
+        config = load_eval_config(config_path)
+        logger.info(f"Loaded eval config: provider={config.embedding.provider}, collection={config.chromadb.collection_name}")
+    else:
+        config_path = args.config
+        config = load_config_from_yaml(config_path)
+        logger.info(f"Loaded configuration from {config_path}: provider={config.embedding.provider}")
     
     # Process based on data type and collect statistics
     all_stats = {}
@@ -451,13 +440,31 @@ def main():
         if wikipedia_stats:
             all_stats['wikipedia'] = wikipedia_stats
     
-    if args.data_type == "evaluation":
+    if args.data_type in ["evaluation", "eval"]:
         logger.info("\n--- Processing Evaluation Data ---")
-        json_path = Path(args.evaluation_json)
+        
+        # For eval mode, use articles path from config
+        if args.data_type == "eval":
+            # Check if eval config specifies articles path, otherwise default to gold
+            if hasattr(config, 'evaluation_data') and hasattr(config.evaluation_data, 'articles_path'):
+                json_path = Path(config.evaluation_data.articles_path)
+            else:
+                json_path = Path("common_embeddings/evaluate_data/gold_articles.json")
+        else:
+            # For evaluation mode, use the provided path
+            json_path = Path(args.evaluation_json)
+        
         if not json_path.exists():
             logger.error(f"Evaluation JSON file not found: {json_path}")
             sys.exit(1)
-        eval_stats = process_json_articles(config, json_path, args.force_recreate, args.collection_name)
+            
+        # In eval mode, collection name comes from config
+        collection_name = None
+        if args.data_type == "eval" and hasattr(config.chromadb, 'collection_prefix'):
+            # Collection name will be auto-generated from prefix and model
+            collection_name = None  # Let process_json_articles generate it
+        
+        eval_stats = process_json_articles(config, json_path, args.force_recreate, collection_name)
         if eval_stats:
             all_stats['evaluation'] = eval_stats
     

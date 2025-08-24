@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-08-23T21:04:29.497422",
+  "configuration": {
+    "dataset": "bronze",
+    "top_k": 5,
+    "primary_metric": "f1_score",
+    "models_compared": 2
+  },
+  "overall_winner": "nomic-embed-text",
+  "ranking": [
+    {
+      "rank": 1,
+      "model": "nomic-embed-text",
+      "f1_score": 0.6363636363636364,
+      "precision": 0.4666666666666667,
+      "recall": 1.0
+    },
+    {
+      "rank": 2,
+      "model": "mxbai-embed-large",
+      "f1_score": 0.6363636363636364,
+      "precision": 0.4666666666666667,
+      "recall": 1.0
+    }
+  ],
+  "model_metrics": {
+    "nomic-embed-text": {
+      "precision": 0.4666666666666667,
+      "recall": 1.0,
+      "f1_score": 0.6363636363636364,
+      "map": 1.0,
+      "mrr": 1.0
+    },
+    "mxbai-embed-large": {
+      "precision": 0.4666666666666667,
+      "recall": 1.0,
+      "f1_score": 0.6363636363636364,
+      "map": 1.0,
+      "mrr": 1.0
+    }
+  },
+  "category_winners": {
+    "geographic": {
+      "winner": "nomic-embed-text",
+      "f1_score": 0.65
+    },
+    "landmark": {
+      "winner": "nomic-embed-text",
+      "f1_score": 0
+    },
+    "historical": {
+      "winner": "nomic-embed-text",
+      "f1_score": 0.5
+    },
+    "administrative": {
+      "winner": "nomic-embed-text",
+      "f1_score": 0.5
+    },
+    "semantic": {
+      "winner": "nomic-embed-text",
+      "f1_score": 0.8
+    }
+  },
+  "winner": "nomic-embed-text"
+}

@@ -15,14 +15,14 @@ Following the complete refactoring of `common_embeddings`, this document provide
 ### Issues Discovered During Refactoring
 1. **Config Model Mismatch**: Config missing ChunkingConfig attribute
 2. **ChromaDB Path Issue**: Using persist_directory vs path
-3. **Import Structure**: Models split between property_finder_models and local models
+3. **Import Structure**: Models split between common and local models
 4. **Pipeline Dependencies**: EmbeddingPipeline expects chunking configuration
 
 ## Phase 1: Configuration Alignment (Days 1-2)
 
 ### 1.1 Fix Config Model Structure
 ```python
-# Update property_finder_models/config.py to include:
+# Update common/config.py to include:
 class Config(BaseModel):
     embedding: EmbeddingConfig
     chromadb: ChromaDBConfig
@@ -54,8 +54,8 @@ class ProcessingConfig(BaseModel):
 ```
 
 ### Todo List:
-- [ ] Add ChunkingConfig to property_finder_models
-- [ ] Add ProcessingConfig to property_finder_models
+- [ ] Add ChunkingConfig to common
+- [ ] Add ProcessingConfig to common
 - [ ] Update Config model to include new configs
 - [ ] Fix all import statements to use correct models
 - [ ] Test configuration loading with new structure
@@ -621,8 +621,8 @@ def test_full_comparison_pipeline():
 ## Next Immediate Steps
 
 1. **Fix Config Models** (TODAY)
-   - Add ChunkingConfig to property_finder_models
-   - Add ProcessingConfig to property_finder_models
+   - Add ChunkingConfig to common
+   - Add ProcessingConfig to common
    - Update Config to include new fields
    - Test configuration loading
 

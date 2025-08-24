@@ -6,14 +6,14 @@ A unified embedding generation and storage system that provides centralized mana
 
 ### Prerequisites
 - Python 3.9+
-- property_finder_models package installed
+- common package installed
 - Ollama server running (for local embeddings)
 
 ### Setup
 
 ```bash
 # Install shared models first (from project root)
-cd property_finder_models
+cd common
 pip install -e .
 
 # Install common_embeddings (from project root)
@@ -63,6 +63,71 @@ mypy common_embeddings/
 ```
 
 **Important**: Always use `python -m common_embeddings` to run the pipeline. Direct execution with `python common_embeddings/main.py` is not supported.
+
+## Evaluation Mode
+
+The evaluation mode allows you to test and compare different embedding models on standardized datasets.
+
+### Running Evaluations
+
+```bash
+# Run evaluation with a specific config
+python -m common_embeddings --data-type eval --config common_embeddings/eval_configs/nomic.yaml
+
+# Compare multiple models (run all configs in a directory)
+python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/
+
+# Compare specific models
+python common_embeddings/run_eval_comparison.py \
+  common_embeddings/eval_configs/nomic.yaml \
+  common_embeddings/eval_configs/mxbai.yaml
+
+# Force recreate embeddings
+python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/ --force-recreate
+
+# Skip comparison step (just create embeddings)
+python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/ --skip-comparison
+```
+
+### Evaluation Datasets
+
+- **Bronze** (3 articles, 5 queries): Quick testing dataset
+- **Gold** (50 articles, 40 queries): Standard evaluation dataset
+
+### Creating Evaluation Configs
+
+Each model needs its own eval config in `eval_configs/`. Example:
+
+```yaml
+# eval_configs/nomic.yaml
+embedding:
+  provider: ollama
+  ollama_model: nomic-embed-text
+
+chromadb:
+  persist_directory: ./data/wiki_chroma_db
+  collection_name: bronze_ollama_nomic  # Explicit collection name
+
+evaluation_data:
+  articles_path: common_embeddings/evaluate_data/bronze_articles.json
+  queries_path: common_embeddings/evaluate_data/bronze_queries.json
+  dataset_type: bronze
+```
+
+### Model Comparison
+
+After creating embeddings for multiple models, run comparison:
+
+```bash
+python -m common_embeddings.evaluate.run_comparison
+```
+
+This will:
+1. Load embeddings from configured collections
+2. Run queries against each model
+3. Calculate metrics (Precision, Recall, F1, MAP, MRR)
+4. Determine winner based on primary metric
+5. Generate comparison report
 
 ## Configuration
 
@@ -196,7 +261,7 @@ python -m common_embeddings        # This works!
 ```
 
 **Other import issues:**
-- Verify property_finder_models is installed: `pip list | grep property-finder-models`
+- Verify common is installed: `pip list | grep common`
 - Ensure you're in the correct parent directory with `pwd`
 - Check that `common_embeddings/__main__.py` exists
 
@@ -204,7 +269,7 @@ python -m common_embeddings        # This works!
 
 This module follows a clean architecture with clear separation of concerns:
 
-### Shared Models (from property_finder_models)
+### Shared Models (from common)
 - **Core entity definitions**: BaseMetadata as the foundation for all metadata
 - **Common enums**: EntityType, SourceType, EmbeddingProvider
 - **Shared configuration**: Config, EmbeddingConfig, ChromaDBConfig
@@ -226,7 +291,7 @@ This module follows a clean architecture with clear separation of concerns:
 3. **Type safety**: Full Pydantic v2 model validation with field validators
 4. **Modular design**: Clear separation between shared and local models
 5. **Single responsibility**: Each model file has a specific purpose
-6. **No duplication**: Shared models used from property_finder_models, no redundancy
+6. **No duplication**: Shared models used from common, no redundancy
 7. **Extensibility**: Easy to add new embedding providers or processing methods
 
 ### Processing Pipeline
@@ -238,7 +303,7 @@ The embedding generation follows this flow:
 5. **Correlation**: Link embeddings back to source data (handled separately)
 
 ### Configuration Management
-- Base configuration from property_finder_models
+- Base configuration from common
 - Local extensions for chunking and processing
 - YAML configuration support with `load_config_from_yaml` utility
 - Environment variable support for API keys

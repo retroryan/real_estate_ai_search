@@ -1,0 +1,32 @@
+# Model Comparison Configuration for Bronze Dataset (Small Test)
+# Simple, clean configuration for comparing embedding models
+
+version: "1.0"
+
+# Base configuration file for embedding settings
+base_config: common_embeddings/eval.config.yaml
+
+# Evaluation settings (using bronze dataset for quick testing)
+evaluation:
+  dataset: bronze  # Use bronze test dataset
+  top_k: 5        # Retrieve top 5 results for each query (bronze has only 3 articles)
+
+# Models to compare (sequential evaluation)
+# Collection names will be auto-generated as: {prefix}_{provider}_{model}
+models:
+  - name: nomic-embed-text
+    provider: ollama
+    collection_name: bronze_ollama_nomic
+    
+  - name: mxbai-embed-large
+    provider: ollama
+    collection_name: bronze_ollama_mxbai
+
+# Comparison settings (simple winner determination)
+comparison:
+  primary_metric: f1_score  # Main metric for determining winner
+
+# Reporting configuration (simple HTML report)
+reporting:
+  format: html
+  output_directory: ./common_embeddings/evaluate_results/bronze_test

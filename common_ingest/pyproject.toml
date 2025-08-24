@@ -25,7 +25,7 @@ classifiers = [
 
 dependencies = [
     # Shared models package (assumed to be installed separately)
-    "property-finder-models",
+    "common",
     
     # Core dependencies
     "pydantic>=2.0.0",
@@ -132,4 +132,4 @@ ignore = [
 "__init__.py" = ["F401"]  # imported but unused
 
 [tool.ruff.isort]
-known-first-party = ["common_ingest", "property_finder_models"]
+known-first-party = ["common_ingest", "common"]
