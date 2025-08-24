@@ -776,20 +776,30 @@ class ElasticsearchConfig(BaseModel):
         return self.password
 
 
+class EntityOutputConfig(BaseModel):
+    """Configuration for entity-specific output."""
+    
+    path: str = Field(description="Output path for this entity")
+    partition_by: List[str] = Field(
+        default_factory=list,
+        description="Columns to partition by"
+    )
+    coalesce_partitions: Optional[int] = Field(
+        default=None,
+        description="Number of partitions to coalesce to"
+    )
+
+
 class ParquetWriterConfig(BaseModel):
-    """Enhanced Parquet writer configuration."""
+    """Enhanced Parquet writer configuration with entity-specific settings."""
     
     enabled: bool = Field(
         default=True,
         description="Whether Parquet writer is enabled"
     )
-    path: str = Field(
-        default="data/processed/entity_datasets",
-        description="Output path for Parquet files"
-    )
-    partitioning_columns: List[str] = Field(
-        default_factory=lambda: ["source_entity"],
-        description="Columns to use for partitioning"
+    base_path: str = Field(
+        default="data/entities",
+        description="Base output path for all entity files"
     )
     compression: str = Field(
         default="snappy",
@@ -798,6 +808,32 @@ class ParquetWriterConfig(BaseModel):
     mode: str = Field(
         default="overwrite",
         description="Write mode (overwrite, append, etc.)"
+    )
+    
+    # Entity-specific configurations
+    properties: EntityOutputConfig = Field(
+        default_factory=lambda: EntityOutputConfig(
+            path="properties",
+            partition_by=["state", "city"],
+            coalesce_partitions=10
+        ),
+        description="Property output configuration"
+    )
+    neighborhoods: EntityOutputConfig = Field(
+        default_factory=lambda: EntityOutputConfig(
+            path="neighborhoods",
+            partition_by=["state"],
+            coalesce_partitions=5
+        ),
+        description="Neighborhood output configuration"
+    )
+    wikipedia: EntityOutputConfig = Field(
+        default_factory=lambda: EntityOutputConfig(
+            path="wikipedia",
+            partition_by=["best_state"],
+            coalesce_partitions=10
+        ),
+        description="Wikipedia output configuration"
     )
 
 

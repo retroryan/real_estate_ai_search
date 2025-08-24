@@ -7,7 +7,7 @@ including price calculations, address normalization, and quality scoring.
 
 import logging
 import uuid
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
@@ -15,6 +15,7 @@ from pyspark.sql.functions import (
     broadcast,
     coalesce,
     col,
+    concat,
     current_timestamp,
     expr,
     lit,
@@ -79,6 +80,16 @@ class PropertyEnrichmentConfig(BaseModel):
         },
         description="State abbreviation mappings"
     )
+    
+    enable_location_enhancement: bool = Field(
+        default=True,
+        description="Enable location hierarchy enhancement using reference data"
+    )
+    
+    enable_neighborhood_linking: bool = Field(
+        default=True,
+        description="Link properties to neighborhoods via neighborhood_id"
+    )
 
 
 class PropertyEnricher:
@@ -87,16 +98,19 @@ class PropertyEnricher:
     and quality metrics specific to real estate listings.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[PropertyEnrichmentConfig] = None):
+    def __init__(self, spark: SparkSession, config: Optional[PropertyEnrichmentConfig] = None, 
+                 location_broadcast: Optional[Any] = None):
         """
         Initialize the property enricher.
         
         Args:
             spark: Active SparkSession
             config: Property enrichment configuration
+            location_broadcast: Broadcast variable containing location reference data
         """
         self.spark = spark
         self.config = config or PropertyEnrichmentConfig()
+        self.location_broadcast = location_broadcast
         
         # Register UDF for UUID generation
         self._register_udfs()
@@ -104,6 +118,35 @@ class PropertyEnricher:
         # Create broadcast variables for location lookups
         if self.config.enable_address_normalization:
             self._create_location_broadcasts()
+        
+        # Create LocationEnricher if location data is available
+        if self.location_broadcast and self.config.enable_location_enhancement:
+            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
+            location_config = LocationEnrichmentConfig(
+                enable_hierarchy_resolution=True,
+                enable_neighborhood_linking=self.config.enable_neighborhood_linking
+            )
+            self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
+        else:
+            self.location_enricher = None
+    
+    def set_location_data(self, location_broadcast: Any):
+        """
+        Set location broadcast data and create LocationEnricher after initialization.
+        
+        Args:
+            location_broadcast: Broadcast variable containing location reference data
+        """
+        self.location_broadcast = location_broadcast
+        
+        if self.location_broadcast and self.config.enable_location_enhancement:
+            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
+            location_config = LocationEnrichmentConfig(
+                enable_hierarchy_resolution=True,
+                enable_neighborhood_linking=self.config.enable_neighborhood_linking
+            )
+            self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
+            logger.info("LocationEnricher initialized with broadcast data")
     
     def _register_udfs(self):
         """Register necessary UDFs."""
@@ -151,6 +194,11 @@ class PropertyEnricher:
             enriched_df = self._normalize_addresses(enriched_df)
             logger.info("Normalized property addresses")
         
+        # Enhance with location hierarchy and neighborhood linking
+        if self.location_enricher and self.config.enable_location_enhancement:
+            enriched_df = self._enhance_with_location_data(enriched_df)
+            logger.info("Enhanced properties with location hierarchy")
+        
         # Calculate price-related fields
         if self.config.enable_price_calculations:
             enriched_df = self._calculate_price_fields(enriched_df)
@@ -160,6 +208,18 @@ class PropertyEnricher:
         if self.config.enable_quality_scoring:
             enriched_df = self._calculate_quality_scores(enriched_df)
             logger.info("Calculated property quality scores")
+        
+        # Categorize price ranges
+        enriched_df = self.categorize_price_range(enriched_df)
+        logger.info("Categorized properties into price ranges")
+        
+        # Categorize features
+        enriched_df = self.categorize_features(enriched_df)
+        logger.info("Categorized property features")
+        
+        # Normalize property types
+        enriched_df = self.normalize_property_type(enriched_df)
+        logger.info("Normalized property types")
         
         # Add processing timestamp
         enriched_df = enriched_df.withColumn("processed_at", current_timestamp())
@@ -332,6 +392,53 @@ class PropertyEnricher:
         
         return df_with_validation
     
+    def _enhance_with_location_data(self, df: DataFrame) -> DataFrame:
+        """
+        Enhance properties with location hierarchy and neighborhood linking.
+        
+        Args:
+            df: Property DataFrame to enhance
+            
+        Returns:
+            DataFrame with location enhancements
+        """
+        try:
+            # Extract city and state from address if not already extracted
+            if "city" not in df.columns:
+                df = df.withColumn("city", col("address.city"))
+            if "state" not in df.columns:
+                df = df.withColumn("state", col("address.state"))
+            
+            # Enhance with hierarchy (adds county information)
+            enhanced_df = self.location_enricher.enhance_with_hierarchy(df, "city", "state")
+            
+            # Rename county_resolved to county for consistency with graph model
+            if "county_resolved" in enhanced_df.columns:
+                enhanced_df = enhanced_df.withColumnRenamed("county_resolved", "county")
+            
+            # Add neighborhood linking if enabled
+            if self.config.enable_neighborhood_linking:
+                # For properties, we'll try to match against neighborhoods in the same city/state
+                # This is a simplified approach - in reality you might want more sophisticated matching
+                enhanced_df = self.location_enricher.link_to_neighborhood(
+                    enhanced_df, "city", "city", "state"  # Using city as neighborhood for now
+                )
+            
+            # Standardize location names
+            enhanced_df = self.location_enricher.standardize_location_names(
+                enhanced_df, "city", "state"
+            )
+            
+            # Normalize state names from abbreviations to full names
+            enhanced_df = self.location_enricher.normalize_state_names(enhanced_df, "state")
+            
+            return enhanced_df
+            
+        except Exception as e:
+            logger.error(f"Failed to enhance with location data: {e}")
+            # Return original DataFrame if enhancement fails
+            return df
+    
     def get_enrichment_statistics(self, df: DataFrame) -> Dict:
         """
         Calculate statistics about the enrichment process.
@@ -383,3 +490,129 @@ class PropertyEnricher:
             stats["price_categories"] = {row["price_category"]: row["count"] for row in category_counts}
         
         return stats
+    
+    def categorize_price_range(self, df: DataFrame) -> DataFrame:
+        """
+        Categorize properties into price ranges for graph relationships.
+        
+        Args:
+            df: Property DataFrame
+            
+        Returns:
+            DataFrame with price_range_id column
+        """
+        from pyspark.sql.functions import when
+        
+        # Define price range thresholds and IDs
+        df_with_range = df.withColumn(
+            "price_range_id",
+            when(col("price") < 500000, lit("range_0_500k"))
+            .when(col("price") < 1000000, lit("range_500k_1m"))
+            .when(col("price") < 2000000, lit("range_1m_2m"))
+            .when(col("price") < 3000000, lit("range_2m_3m"))
+            .when(col("price") < 5000000, lit("range_3m_5m"))
+            .otherwise(lit("range_5m_plus"))
+        )
+        
+        return df_with_range
+    
+    def categorize_features(self, df: DataFrame) -> DataFrame:
+        """
+        Categorize property features into types for better organization.
+        
+        Args:
+            df: Property DataFrame with features array
+            
+        Returns:
+            DataFrame with feature_categories column
+        """
+        if "features" not in df.columns:
+            logger.warning("No 'features' column found in DataFrame")
+            return df
+        
+        # Create feature_ids by normalizing feature names
+        df_with_ids = df.withColumn(
+            "feature_ids",
+            expr("""
+                transform(
+                    features,
+                    x -> concat('feature_', lower(regexp_replace(x, '[^a-zA-Z0-9]', '_')))
+                )
+            """)
+        )
+        
+        # Simple categorization using SQL expressions instead of UDF
+        # This is more efficient and cleaner
+        df_with_categories = df_with_ids.withColumn(
+            "feature_categories",
+            expr("""
+                transform(
+                    features,
+                    feature -> CASE
+                        WHEN lower(feature) RLIKE 'pool|hot tub|gym|sauna|spa|clubhouse|tennis' THEN 'amenity'
+                        WHEN lower(feature) RLIKE 'view|vista|panoramic' THEN 'view'
+                        WHEN lower(feature) RLIKE 'garage|parking|carport|ev charging' THEN 'parking'
+                        WHEN lower(feature) RLIKE 'garden|patio|deck|balcony|yard|terrace|bbq' THEN 'outdoor'
+                        WHEN lower(feature) RLIKE 'smart|security|automation' THEN 'smart'
+                        WHEN lower(feature) RLIKE 'wine cellar|theater|chef|walk-in|library' THEN 'luxury'
+                        WHEN lower(feature) RLIKE 'solar|energy efficient|leed|green' THEN 'environmental'
+                        ELSE 'other'
+                    END
+                )
+            """)
+        ).withColumn(
+            "feature_categories_distinct",
+            expr("array_distinct(feature_categories)")
+        )
+        
+        return df_with_categories
+    
+    def normalize_property_type(self, df: DataFrame) -> DataFrame:
+        """
+        Normalize property types to standard enum values.
+        
+        Args:
+            df: Property DataFrame
+            
+        Returns:
+            DataFrame with normalized property_type
+        """
+        from pyspark.sql.functions import regexp_replace, lower, trim
+        
+        # Normalize property type if it exists in property_details
+        if "property_details.type" in df.columns or "property_type" in df.columns:
+            # Get the property type column name
+            type_col = "property_details.type" if "property_details.type" in df.columns else "property_type"
+            
+            # Create normalized type
+            df_normalized = df.withColumn(
+                "property_type_normalized",
+                lower(trim(col(type_col)))
+            )
+            
+            # Map variations to standard types
+            df_normalized = df_normalized.withColumn(
+                "property_type_normalized",
+                when(col("property_type_normalized").isin("single-family", "single_family", "single family", "sfh"), 
+                     lit("single_family"))
+                .when(col("property_type_normalized").isin("condo", "condominium"), 
+                      lit("condo"))
+                .when(col("property_type_normalized").isin("townhouse", "townhome", "town_house"), 
+                      lit("townhome"))
+                .when(col("property_type_normalized").isin("multi-family", "multi_family", "multifamily", "mfh"), 
+                      lit("multi_family"))
+                .when(col("property_type_normalized").isNull(), 
+                      lit("unknown"))
+                .otherwise(lit("other"))
+            )
+            
+            # Create property_type_id for relationships
+            df_normalized = df_normalized.withColumn(
+                "property_type_id",
+                concat(lit("type_"), col("property_type_normalized"))
+            )
+            
+            return df_normalized
+        else:
+            logger.warning("No property type column found in DataFrame")
+            return df

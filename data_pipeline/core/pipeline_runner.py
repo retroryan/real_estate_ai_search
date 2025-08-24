@@ -25,14 +25,14 @@ from data_pipeline.processing.wikipedia_text_processor import WikipediaTextProce
 from data_pipeline.enrichment.property_enricher import PropertyEnricher, PropertyEnrichmentConfig
 from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher, NeighborhoodEnrichmentConfig
 from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher, WikipediaEnrichmentConfig
+from data_pipeline.enrichment.relationship_builder import RelationshipBuilder
 from data_pipeline.writers.orchestrator import WriterOrchestrator
-from data_pipeline.writers.neo4j import Neo4jOrchestrator
-from data_pipeline.writers.parquet_writer import ParquetWriter
-from data_pipeline.writers.elasticsearch import (
-    PropertyElasticsearchWriter,
-    NeighborhoodElasticsearchWriter,
-    WikipediaElasticsearchWriter
+from data_pipeline.models.writer_models import (
+    EntityType,
+    WriteMetadata,
+    WriteRequest,
 )
+from data_pipeline.writers.parquet_writer import ParquetWriter
 
 logger = logging.getLogger(__name__)
 
@@ -40,22 +40,28 @@ logger = logging.getLogger(__name__)
 class DataPipelineRunner:
     """Main pipeline orchestrator."""
     
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, config_override: Optional[Any] = None):
         """
         Initialize pipeline runner.
         
         Args:
             config_path: Path to configuration file
+            config_override: Optional configuration object to use instead of loading from file
         """
         # Load configuration
-        self.config_manager = ConfigurationManager(config_path)
-        self.config = self.config_manager.load_config()
+        if config_override is not None:
+            # Use the provided configuration directly
+            self.config = config_override
+            self.config_manager = None
+        else:
+            self.config_manager = ConfigurationManager(config_path)
+            self.config = self.config_manager.load_config()
         
         # Configure logging
         self._setup_logging()
         
-        # Initialize Spark session
-        self.spark = get_or_create_spark_session(self.config.spark)
+        # Initialize Spark session with conditional Neo4j configuration
+        self.spark = get_or_create_spark_session(self.config.spark, self.config)
         
         # Initialize components
         self.loader = DataLoaderOrchestrator(self.spark, self.config)
@@ -64,6 +70,9 @@ class DataPipelineRunner:
         self._init_entity_processors()
         # Entity-specific embedding generators will be created as needed
         self.embedding_config = self._init_embedding_config()
+        
+        # Initialize relationship builder
+        self.relationship_builder = RelationshipBuilder(self.spark)
         
         # Initialize writer orchestrator if configured
         self.writer_orchestrator = self._init_writer_orchestrator()
@@ -166,14 +175,14 @@ class DataPipelineRunner:
             # Add Neo4j graph writer if enabled
             if "neo4j" in dest_config.enabled_destinations and dest_config.neo4j.enabled:
                 logger.info("Initializing Neo4j graph writer")
+                from data_pipeline.writers.neo4j import Neo4jOrchestrator
                 writers.append(Neo4jOrchestrator(dest_config.neo4j, self.spark))
             
-            # Add entity-specific Elasticsearch writers if enabled
+            # Add Elasticsearch writer if enabled
             if "elasticsearch" in dest_config.enabled_destinations and dest_config.elasticsearch.enabled:
-                logger.info("Initializing entity-specific Elasticsearch writers")
-                writers.append(PropertyElasticsearchWriter(dest_config.elasticsearch, self.spark))
-                writers.append(NeighborhoodElasticsearchWriter(dest_config.elasticsearch, self.spark))
-                writers.append(WikipediaElasticsearchWriter(dest_config.elasticsearch, self.spark))
+                logger.info("Initializing Elasticsearch writer")
+                from data_pipeline.writers.elasticsearch import ElasticsearchOrchestrator
+                writers.append(ElasticsearchOrchestrator(dest_config.elasticsearch, self.spark))
         
         
         if writers:
@@ -267,6 +276,11 @@ class DataPipelineRunner:
         Returns:
             Processed property DataFrame
         """
+        # Set location data if available
+        location_broadcast = self.loader.get_location_broadcast()
+        if location_broadcast:
+            self.property_enricher.set_location_data(location_broadcast)
+        
         # Apply property-specific enrichment
         enriched_df = self.property_enricher.enrich(df)
         
@@ -289,6 +303,11 @@ class DataPipelineRunner:
         Returns:
             Processed neighborhood DataFrame
         """
+        # Set location data if available
+        location_broadcast = self.loader.get_location_broadcast()
+        if location_broadcast:
+            self.neighborhood_enricher.set_location_data(location_broadcast)
+        
         # Apply neighborhood-specific enrichment
         enriched_df = self.neighborhood_enricher.enrich(df)
         
@@ -311,6 +330,11 @@ class DataPipelineRunner:
         Returns:
             Processed Wikipedia DataFrame
         """
+        # Set location data if available
+        location_broadcast = self.loader.get_location_broadcast()
+        if location_broadcast:
+            self.wikipedia_enricher.set_location_data(location_broadcast)
+        
         # Apply Wikipedia-specific enrichment
         enriched_df = self.wikipedia_enricher.enrich(df)
         
@@ -532,10 +556,65 @@ class DataPipelineRunner:
             logger.info("Validating destination connections...")
             self.writer_orchestrator.validate_all_connections()
             
-            # Write to all destinations
-            self.writer_orchestrator.write_to_all(df, metadata)
+            # Write to all destinations (legacy single DataFrame support)
+            # For backward compatibility, wrap single DataFrame as "property" entity
+            write_metadata = WriteMetadata(
+                pipeline_name=metadata["pipeline_name"],
+                pipeline_version=metadata["pipeline_version"],
+                entity_type=EntityType.PROPERTY,
+                record_count=metadata["record_count"],
+                environment=metadata.get("environment", "development")
+            )
+            request = WriteRequest(
+                entity_type=EntityType.PROPERTY,
+                dataframe=df,
+                metadata=write_metadata
+            )
+            self.writer_orchestrator.write_entity(request)
             
             logger.info("="*60)
+    
+    def _build_relationships(self, entity_dataframes: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+        """
+        Build all relationships between entities.
+        
+        Args:
+            entity_dataframes: Dictionary of entity DataFrames
+            
+        Returns:
+            Dictionary of relationship DataFrames
+        """
+        logger.info("")
+        logger.info("="*60)
+        logger.info("🔗 Building Entity Relationships...")
+        logger.info("="*60)
+        
+        relationships = {}
+        
+        # Build all relationships using the RelationshipBuilder
+        try:
+            all_relationships = self.relationship_builder.build_all_relationships(
+                properties_df=entity_dataframes.get('properties'),
+                neighborhoods_df=entity_dataframes.get('neighborhoods'),
+                wikipedia_df=entity_dataframes.get('wikipedia')
+            )
+            
+            # Log relationship counts
+            for rel_name, rel_df in all_relationships.items():
+                if rel_df is not None:
+                    count = rel_df.count()
+                    if count > 0:
+                        logger.info(f"   Built {count:,} {rel_name} relationships")
+                        relationships[rel_name] = rel_df
+            
+            if not relationships:
+                logger.warning("   No relationships built")
+            
+        except Exception as e:
+            logger.error(f"Failed to build relationships: {e}")
+            # Continue without relationships rather than failing pipeline
+        
+        return relationships
     
     def write_entity_outputs(self, entity_dataframes: Optional[Dict[str, DataFrame]] = None) -> None:
         """
@@ -560,7 +639,7 @@ class DataPipelineRunner:
             "timestamp": datetime.now().isoformat(),
             "total_record_count": total_records,
             "entity_types": list(output_dataframes.keys()),
-            "environment": self.config_manager.environment
+            "environment": self.config_manager.environment if self.config_manager else "test"
         }
         
         if self.writer_orchestrator:
@@ -573,11 +652,44 @@ class DataPipelineRunner:
             logger.info("Validating destination connections...")
             self.writer_orchestrator.validate_all_connections()
             
-            # Write all entity DataFrames to destinations
-            self.writer_orchestrator.write_entity_dataframes(output_dataframes, metadata)
+            # Step 1: Write all entity nodes first
+            properties_df = output_dataframes.get('properties')
+            neighborhoods_df = output_dataframes.get('neighborhoods')
+            wikipedia_df = output_dataframes.get('wikipedia')
+            
+            logger.info("📝 Writing entity nodes...")
+            result = self.writer_orchestrator.write_dataframes(
+                properties_df=properties_df,
+                neighborhoods_df=neighborhoods_df,
+                wikipedia_df=wikipedia_df,
+                pipeline_name=self.config.metadata.name,
+                pipeline_version=self.config.metadata.version,
+                environment=self.config_manager.environment if self.config_manager else "test"
+            )
+            
+            # Log node write results
+            if result.all_successful():
+                logger.info(f"✅ Entity nodes written successfully")
+                logger.info(f"   Total records written: {result.total_records_written:,}")
+            else:
+                logger.error(f"⚠️ Entity node write had failures")
+                logger.error(f"   Failed writes: {result.failed_writes}")
+                # Continue to try relationships even if some writes failed
+            
+            # Step 2: Build and write relationships (if any writers support them)
+            # Build relationships after nodes are written
+            relationships = self._build_relationships(output_dataframes)
+            
+            if relationships:
+                # Use the generic orchestrator method to write to all relationship-supporting writers
+                success = self.writer_orchestrator.write_all_relationships(relationships)
+                if success:
+                    logger.info("✅ All relationships written successfully")
+                else:
+                    logger.warning("⚠️ Some relationships failed to write")
             
             logger.info("="*60)
-            logger.info("✅ Successfully wrote to all destinations")
+            logger.info("✅ Pipeline write completed")
             logger.info("="*60)
         else:
             # Use direct Parquet output when no orchestrator configured

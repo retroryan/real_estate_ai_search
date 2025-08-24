@@ -194,6 +194,36 @@ class SparkSessionManager:
         logger.info(f"Shuffle partitions set to: {num_partitions}")
 
 
+def _add_neo4j_config_if_enabled(spark_config: SparkConfig, pipeline_config: Any) -> SparkConfig:
+    """
+    Add Neo4j configuration to Spark config if Neo4j writer is enabled.
+    
+    Args:
+        spark_config: Base Spark configuration
+        pipeline_config: Pipeline configuration to check for Neo4j settings
+        
+    Returns:
+        Updated SparkConfig with Neo4j settings if enabled
+    """
+    # Check if Neo4j writer is enabled in the pipeline configuration
+    if (hasattr(pipeline_config, 'output_destinations') and 
+        hasattr(pipeline_config.output_destinations, 'neo4j') and
+        pipeline_config.output_destinations.neo4j.enabled):
+        
+        neo4j_cfg = pipeline_config.output_destinations.neo4j
+        logger.info("Neo4j writer enabled - adding connection configuration to SparkSession")
+        
+        # Add Neo4j connection settings to Spark config
+        spark_config.config["neo4j.url"] = neo4j_cfg.uri
+        spark_config.config["neo4j.authentication.basic.username"] = neo4j_cfg.username
+        spark_config.config["neo4j.authentication.basic.password"] = neo4j_cfg.get_password() or ""
+        spark_config.config["neo4j.database"] = neo4j_cfg.database
+        
+        logger.debug(f"Added Neo4j config for database: {neo4j_cfg.database}")
+    
+    return spark_config
+
+
 @contextmanager
 def spark_session_context(config: SparkConfig) -> Generator[SparkSession, None, None]:
     """
@@ -224,12 +254,13 @@ def spark_session_context(config: SparkConfig) -> Generator[SparkSession, None, 
             manager.stop_session()
 
 
-def get_or_create_spark_session(config: SparkConfig) -> SparkSession:
+def get_or_create_spark_session(config: SparkConfig, pipeline_config: Optional[Any] = None) -> SparkSession:
     """
     Get existing or create new Spark session.
     
     Args:
         config: Spark configuration
+        pipeline_config: Optional pipeline configuration to check for Neo4j settings
         
     Returns:
         SparkSession instance
@@ -239,6 +270,10 @@ def get_or_create_spark_session(config: SparkConfig) -> SparkSession:
     
     if existing is not None:
         return existing
+    
+    # Check if Neo4j should be configured at session level
+    if pipeline_config is not None:
+        config = _add_neo4j_config_if_enabled(config, pipeline_config)
     
     return manager.create_session(config)
 

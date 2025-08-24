@@ -1,5 +1,5 @@
 """
-Neo4j writer orchestrator.
+Neo4j writer orchestrator for entity-specific graph creation.
 
 This module coordinates entity-specific Neo4j writers to create the complete
 graph structure with proper dependencies between entity types.
@@ -12,9 +12,6 @@ from pyspark.sql import DataFrame, SparkSession
 
 from data_pipeline.config.models import Neo4jConfig
 from data_pipeline.writers.base import DataWriter
-from data_pipeline.writers.neo4j.neo4j_properties import PropertyNeo4jWriter
-from data_pipeline.writers.neo4j.neo4j_neighborhoods import NeighborhoodNeo4jWriter
-from data_pipeline.writers.neo4j.neo4j_wikipedia import WikipediaNeo4jWriter
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +20,7 @@ class Neo4jOrchestrator(DataWriter):
     """
     Orchestrator for entity-specific Neo4j writers.
     
-    This writer coordinates the entity-specific writers to create the complete
-    graph structure with proper write ordering and dependencies.
+    Routes each entity type to its dedicated Neo4j writer.
     """
     
     def __init__(self, config: Neo4jConfig, spark: SparkSession):
@@ -40,13 +36,17 @@ class Neo4jOrchestrator(DataWriter):
         self.spark = spark
         self.logger = logging.getLogger(__name__)
         
+        # FAIL FAST - Check for required session-level configuration
+        spark_conf = spark.sparkContext.getConf()
+        if not spark_conf.contains("neo4j.url"):
+            raise ValueError(
+                "Neo4j configuration not found in SparkSession. "
+                "Neo4j must be configured at session level for proper connection pooling. "
+                "Ensure neo4j.* configs are set when creating SparkSession."
+            )
+        
         # Neo4j Spark connector format
         self.format_string = "org.neo4j.spark.DataSource"
-        
-        # Initialize entity-specific writers
-        self.property_writer = PropertyNeo4jWriter(config, spark)
-        self.neighborhood_writer = NeighborhoodNeo4jWriter(config, spark)
-        self.wikipedia_writer = WikipediaNeo4jWriter(config, spark)
     
     def validate_connection(self) -> bool:
         """
@@ -56,109 +56,277 @@ class Neo4jOrchestrator(DataWriter):
             True if connection is valid, False otherwise
         """
         try:
+            # Connection config comes from SparkSession, only need query
             test_df = (self.spark.read
                       .format(self.format_string)
-                      .option("url", self.config.uri)
-                      .option("authentication.basic.username", self.config.username)
-                      .option("authentication.basic.password", self.config.get_password() or "")
-                      .option("database", self.config.database)
                       .option("query", "RETURN 1 as test")
                       .load())
             
             test_df.collect()
-            self.logger.info(f"Successfully validated Neo4j connection to {self.config.uri}")
+            self.logger.info(f"Successfully validated Neo4j connection")
             return True
             
         except Exception as e:
             self.logger.error(f"Neo4j connection validation failed: {e}")
             return False
     
-    def write(self, data: Dict[str, DataFrame], metadata: Dict[str, Any]) -> bool:
+    def write(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
         """
-        Write complete graph structure to Neo4j using entity-specific writers.
+        Write entity-specific DataFrame to Neo4j.
         
         Args:
-            data: Dictionary with keys 'properties', 'neighborhoods', 'wikipedia' mapped to DataFrames
-            metadata: Metadata about the data being written
+            df: DataFrame to write
+            metadata: Metadata including entity_type
             
         Returns:
             True if write was successful, False otherwise
         """
-        try:
-            # Clear database if configured
-            if self.config.clear_before_write:
-                self._clear_database()
-            
-            return self._write_entities(data, metadata)
-            
-        except Exception as e:
-            self.logger.error(f"Failed to write graph to Neo4j: {e}")
+        entity_type = metadata.get("entity_type", "").lower()
+        
+        if entity_type == "property":
+            return self._write_properties(df, metadata)
+        elif entity_type == "neighborhood":
+            return self._write_neighborhoods(df, metadata)
+        elif entity_type == "wikipedia":
+            return self._write_wikipedia(df, metadata)
+        else:
+            self.logger.error(f"Unknown entity type: {entity_type}")
             return False
     
-    def _write_entities(self, data: Dict[str, DataFrame], metadata: Dict[str, Any]) -> bool:
+    def _write_nodes(self, df: DataFrame, label: str, key_field: str) -> bool:
         """
-        Write entities in proper dependency order.
+        Generic node writer with common logic.
         
         Args:
-            data: Dictionary with entity DataFrames
-            metadata: Metadata about the data
+            df: DataFrame to write
+            label: Node label
+            key_field: Primary key field
             
         Returns:
-            True if all writes successful
+            True if successful
+        """
+        try:
+            record_count = df.count()
+            self.logger.info(f"Writing {record_count} {label} nodes to Neo4j")
+            
+            # Connection config comes from SparkSession
+            writer = df.write.format(self.format_string).mode("append")
+            
+            # Only set data-specific options
+            writer = writer.option("labels", f":{label}")
+            writer = writer.option("node.keys", key_field)
+            
+            writer.save()
+            
+            self.logger.info(f"Successfully wrote {record_count} {label} nodes")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to write {label} nodes: {e}")
+            return False
+    
+    def _write_properties(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+        """
+        Write property nodes to Neo4j.
+        
+        Args:
+            df: Property DataFrame
+            metadata: Write metadata
+            
+        Returns:
+            True if successful
+        """
+        if self.config.clear_before_write:
+            self._clear_entity("Property")
+        
+        return self._write_nodes(df, "Property", "listing_id")
+    
+    def _write_neighborhoods(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+        """
+        Write neighborhood nodes to Neo4j.
+        
+        Args:
+            df: Neighborhood DataFrame
+            metadata: Write metadata
+            
+        Returns:
+            True if successful
+        """
+        if self.config.clear_before_write:
+            self._clear_entity("Neighborhood")
+        
+        return self._write_nodes(df, "Neighborhood", "neighborhood_id")
+    
+    def _write_wikipedia(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+        """
+        Write Wikipedia article nodes to Neo4j.
+        
+        Args:
+            df: Wikipedia DataFrame
+            metadata: Write metadata
+            
+        Returns:
+            True if successful
+        """
+        if self.config.clear_before_write:
+            self._clear_entity("WikipediaArticle")
+        
+        return self._write_nodes(df, "WikipediaArticle", "page_id")
+    
+    def write_relationships(self, relationships_df: DataFrame, relationship_type: str) -> bool:
+        """
+        Write relationship DataFrame to Neo4j.
+        
+        Args:
+            relationships_df: DataFrame containing relationship data
+            relationship_type: Type of relationship (LOCATED_IN, DESCRIBES, etc.)
+            
+        Returns:
+            True if successful
+        """
+        try:
+            if relationships_df is None or relationships_df.count() == 0:
+                self.logger.warning(f"No {relationship_type} relationships to write")
+                return True
+            
+            record_count = relationships_df.count()
+            self.logger.info(f"Writing {record_count} {relationship_type} relationships to Neo4j")
+            
+            # Get relationship configuration
+            relationship_config = self._get_relationship_config(relationship_type)
+            
+            if not relationship_config:
+                self.logger.error(f"Unknown relationship type: {relationship_type}")
+                return False
+            
+            # Connection config comes from SparkSession
+            writer = relationships_df.write.format(self.format_string).mode("append")
+            
+            # Only set relationship-specific options
+            writer = (writer
+                .option("relationship", relationship_type)
+                .option("relationship.save.strategy", "keys")
+                .option("relationship.source.labels", relationship_config["source_labels"])
+                .option("relationship.source.save.mode", "Match")
+                .option("relationship.source.node.keys", relationship_config["source_keys"])
+                .option("relationship.target.labels", relationship_config["target_labels"])
+                .option("relationship.target.save.mode", "Match")
+                .option("relationship.target.node.keys", relationship_config["target_keys"]))
+            
+            writer.save()
+            
+            self.logger.info(f"Successfully wrote {record_count} {relationship_type} relationships")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to write {relationship_type} relationships: {e}")
+            return False
+    
+    def _get_relationship_config(self, relationship_type: str) -> Dict[str, str]:
+        """
+        Get configuration for different relationship types.
+        
+        Args:
+            relationship_type: Type of relationship
+            
+        Returns:
+            Configuration dictionary with labels and keys
+        """
+        configs = {
+            "LOCATED_IN": {
+                "source_labels": ":Property",
+                "source_keys": "from_id:listing_id",
+                "target_labels": ":Neighborhood",
+                "target_keys": "to_id:neighborhood_id"
+            },
+            "PART_OF": {
+                "source_labels": "",  # Can be Neighborhood, City, or County
+                "source_keys": "from_id",
+                "target_labels": "",  # Can be City, County, or State
+                "target_keys": "to_id"
+            },
+            "DESCRIBES": {
+                "source_labels": ":WikipediaArticle",
+                "source_keys": "from_id:page_id",
+                "target_labels": "",  # Can be Neighborhood or City
+                "target_keys": "to_id"
+            },
+            "SIMILAR_TO": {
+                "source_labels": "",  # Can be Property or Neighborhood
+                "source_keys": "from_id",
+                "target_labels": "",  # Same as source
+                "target_keys": "to_id"
+            },
+            "NEAR": {
+                "source_labels": ":Property",
+                "source_keys": "from_id:listing_id",
+                "target_labels": ":Amenity",
+                "target_keys": "to_id:amenity_id"
+            }
+        }
+        
+        return configs.get(relationship_type)
+    
+    def write_all_relationships(self, relationships: Dict[str, DataFrame]) -> bool:
+        """
+        Write all relationship DataFrames to Neo4j.
+        
+        Args:
+            relationships: Dictionary of relationship DataFrames by type
+            
+        Returns:
+            True if all writes were successful
         """
         success = True
         
-        # Write neighborhoods first (creates City and State nodes)
-        if "neighborhoods" in data:
-            self.logger.info("Writing neighborhoods to Neo4j...")
-            if not self.neighborhood_writer.write(data["neighborhoods"], metadata):
-                self.logger.error("Failed to write neighborhoods")
+        for rel_name, rel_df in relationships.items():
+            if rel_df is None or rel_df.count() == 0:
+                self.logger.info(f"Skipping {rel_name} - no relationships to write")
+                continue
+            
+            # Extract relationship type from DataFrame if present
+            if "relationship_type" in rel_df.columns:
+                # Get the first relationship type (should be consistent)
+                rel_type = rel_df.select("relationship_type").first()[0]
+            else:
+                # Infer from name
+                rel_type = rel_name.upper().replace("_", " ")
+                if "LOCATED" in rel_type:
+                    rel_type = "LOCATED_IN"
+                elif "SIMILAR" in rel_type:
+                    rel_type = "SIMILAR_TO"
+                elif "DESCRIBE" in rel_type:
+                    rel_type = "DESCRIBES"
+                elif "PART" in rel_type:
+                    rel_type = "PART_OF"
+            
+            if not self.write_relationships(rel_df, rel_type):
                 success = False
+                self.logger.error(f"Failed to write {rel_name} relationships")
         
-        # Write properties (depends on neighborhoods for relationships)
-        if "properties" in data:
-            self.logger.info("Writing properties to Neo4j...")
-            if not self.property_writer.write(data["properties"], metadata):
-                self.logger.error("Failed to write properties")
-                success = False
-        
-        # Write Wikipedia articles (can reference cities created by neighborhoods)
-        if "wikipedia" in data:
-            self.logger.info("Writing Wikipedia articles to Neo4j...")
-            if not self.wikipedia_writer.write(data["wikipedia"], metadata):
-                self.logger.error("Failed to write Wikipedia articles")
-                success = False
-        
-        if success:
-            self.logger.info("Neo4j graph write completed successfully")
         return success
     
-    def _clear_database(self) -> None:
+    def _clear_entity(self, label: str) -> None:
         """
-        Clear all nodes and relationships from the database.
+        Clear all nodes of a specific type.
         
-        This is for demo purposes to ensure a clean state.
+        Args:
+            label: Node label to clear
         """
         try:
-            self.logger.info("Clearing Neo4j database...")
+            query_df = self.spark.createDataFrame([{"query": f"MATCH (n:{label}) DETACH DELETE n"}])
             
-            # Use a dummy DataFrame to execute the delete query
-            dummy_df = self.spark.createDataFrame([(1,)], ["dummy"])
-            
-            (dummy_df.write
+            # Connection config comes from SparkSession
+            (query_df.write
              .format(self.format_string)
-             .mode("overwrite")
-             .option("url", self.config.uri)
-             .option("authentication.basic.username", self.config.username)
-             .option("authentication.basic.password", self.config.get_password() or "")
-             .option("database", self.config.database)
-             .option("query", "MATCH (n) DETACH DELETE n")
+             .mode("append")
+             .option("query", f"MATCH (n:{label}) DETACH DELETE n")
              .save())
             
-            self.logger.info("Neo4j database cleared")
+            self.logger.info(f"Cleared all {label} nodes")
             
         except Exception as e:
-            self.logger.warning(f"Failed to clear database (may be empty): {e}")
+            self.logger.warning(f"Failed to clear {label} nodes: {e}")
     
     def get_writer_name(self) -> str:
         """
@@ -167,4 +335,25 @@ class Neo4jOrchestrator(DataWriter):
         Returns:
             String identifier for this writer
         """
-        return "neo4j_orchestrator"
+        return "neo4j"
+    
+    def supports_relationships(self) -> bool:
+        """
+        Neo4j supports relationship storage.
+        
+        Returns:
+            True, as Neo4j is a graph database
+        """
+        return True
+    
+    def write_relationships(self, relationships: Dict[str, DataFrame]) -> bool:
+        """
+        Write relationship DataFrames to Neo4j.
+        
+        Args:
+            relationships: Dictionary of relationship name to DataFrame
+            
+        Returns:
+            True if all writes were successful, False otherwise
+        """
+        return self.write_all_relationships(relationships)

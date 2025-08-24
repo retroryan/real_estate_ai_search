@@ -101,6 +101,14 @@ data_sources:
 
 # Data enrichment configuration
 enrichment:
+  # Location data integration
+  location_enhancement:
+    enabled: true
+    hierarchy_resolution: true
+    name_standardization: true
+    neighborhood_linking: true
+    min_confidence_threshold: 0.6
+  
   # Location normalization
   city_abbreviations:
     SF: "San Francisco"
@@ -117,6 +125,23 @@ enrichment:
     TX: "Texas"
     NV: "Nevada"
     CO: "Colorado"
+  
+  # Entity-specific enrichment options
+  property_enrichment:
+    enable_location_enhancement: true
+    enable_neighborhood_linking: true
+    min_quality_score: 0.4
+  
+  neighborhood_enrichment:
+    enable_location_hierarchy: true
+    establish_parent_relationships: true
+    min_quality_score: 0.3
+  
+  wikipedia_enrichment:
+    enable_location_matching: true
+    enable_geographic_context: true
+    enable_location_organization: true
+    min_quality_score: 0.5
   
   # Feature processing
   normalize_features: true
@@ -244,9 +269,7 @@ output_destinations:
   # Parquet writer configuration
   parquet:
     enabled: true
-    path: "data/processed/entity_datasets"
-    partitioning_columns:
-      - "entity_type"
+    path: "data/processed"
     compression: "snappy"
     mode: "overwrite"
   

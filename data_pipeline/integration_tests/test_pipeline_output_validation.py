@@ -16,7 +16,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import ArrayType, StructType
 
 from data_pipeline.core.pipeline_runner import DataPipelineRunner
-from data_pipeline.config.settings import Settings
+from data_pipeline.config.settings import ConfigurationManager
 
 
 class TestPipelineOutputValidation:

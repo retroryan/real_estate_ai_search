@@ -90,3 +90,30 @@ class DataWriter(ABC):
             True if writer is enabled
         """
         return self.config.enabled
+    
+    def write_relationships(self, relationships: Dict[str, DataFrame]) -> bool:
+        """
+        Write relationship DataFrames to the destination.
+        
+        This is an optional method that writers can override if they support
+        relationship storage (e.g., graph databases). Writers that don't support
+        relationships can ignore this method.
+        
+        Args:
+            relationships: Dictionary of relationship name to DataFrame
+            
+        Returns:
+            True if all writes were successful, False otherwise
+        """
+        # Default implementation: no-op for writers that don't support relationships
+        return True
+    
+    def supports_relationships(self) -> bool:
+        """
+        Check if this writer supports relationship storage.
+        
+        Returns:
+            True if writer supports relationships, False otherwise
+        """
+        # Default: most writers don't support relationships
+        return False

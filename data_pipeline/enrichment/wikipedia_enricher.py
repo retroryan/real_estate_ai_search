@@ -7,11 +7,12 @@ including location extraction, relevance scoring, and confidence metrics.
 
 import logging
 import uuid
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
+    broadcast,
     coalesce,
     col,
     current_timestamp,
@@ -68,6 +69,21 @@ class WikipediaEnrichmentConfig(BaseModel):
         le=1.0,
         description="Minimum confidence threshold for location extraction"
     )
+    
+    enable_location_matching: bool = Field(
+        default=True,
+        description="Enable location matching against canonical reference data"
+    )
+    
+    enable_geographic_context: bool = Field(
+        default=True,
+        description="Add geographic context using location hierarchy"
+    )
+    
+    enable_location_organization: bool = Field(
+        default=True,
+        description="Enable location-specific content organization"
+    )
 
 
 class WikipediaEnricher:
@@ -76,19 +92,51 @@ class WikipediaEnricher:
     and confidence metrics specific to geographic content.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[WikipediaEnrichmentConfig] = None):
+    def __init__(self, spark: SparkSession, config: Optional[WikipediaEnrichmentConfig] = None,
+                 location_broadcast: Optional[Any] = None):
         """
         Initialize the Wikipedia enricher.
         
         Args:
             spark: Active SparkSession
             config: Wikipedia enrichment configuration
+            location_broadcast: Broadcast variable containing location reference data
         """
         self.spark = spark
         self.config = config or WikipediaEnrichmentConfig()
+        self.location_broadcast = location_broadcast
         
         # Register UDF for UUID generation
         self._register_udfs()
+        
+        # Create LocationEnricher if location data is available
+        if self.location_broadcast and self.config.enable_location_matching:
+            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
+            location_config = LocationEnrichmentConfig(
+                enable_hierarchy_resolution=True,
+                enable_name_standardization=self.config.enable_geographic_context
+            )
+            self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
+        else:
+            self.location_enricher = None
+    
+    def set_location_data(self, location_broadcast: Any):
+        """
+        Set location broadcast data and create LocationEnricher after initialization.
+        
+        Args:
+            location_broadcast: Broadcast variable containing location reference data
+        """
+        self.location_broadcast = location_broadcast
+        
+        if self.location_broadcast and self.config.enable_location_matching:
+            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
+            location_config = LocationEnrichmentConfig(
+                enable_hierarchy_resolution=True,
+                enable_name_standardization=self.config.enable_geographic_context
+            )
+            self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
+            logger.info("LocationEnricher initialized for Wikipedia articles with broadcast data")
     
     def _register_udfs(self):
         """Register necessary UDFs."""
@@ -125,6 +173,16 @@ class WikipediaEnricher:
         if self.config.enable_location_extraction:
             enriched_df = self._validate_locations(enriched_df)
             logger.info("Validated location references")
+        
+        # Enhance with canonical location matching and geographic context
+        if self.location_enricher and self.config.enable_location_matching:
+            enriched_df = self._enhance_with_location_data(enriched_df)
+            logger.info("Enhanced articles with canonical location data")
+        
+        # Add location-specific organization
+        if self.config.enable_location_organization:
+            enriched_df = self._organize_by_location(enriched_df)
+            logger.info("Added location-specific organization")
         
         # Calculate relevance scores
         if self.config.enable_relevance_scoring:
@@ -308,6 +366,143 @@ class WikipediaEnricher:
         )
         
         return df_with_overall
+    
+    def _enhance_with_location_data(self, df: DataFrame) -> DataFrame:
+        """
+        Enhance Wikipedia articles with canonical location data and geographic context.
+        
+        Args:
+            df: Wikipedia DataFrame to enhance
+            
+        Returns:
+            DataFrame with location enhancements
+        """
+        try:
+            # Use already extracted location fields (best_city, best_state)
+            # Enhance with hierarchy (adds county information)
+            enhanced_df = self.location_enricher.enhance_with_hierarchy(df, "best_city", "best_state")
+            
+            # Rename county_resolved to county for consistency with graph model
+            if "county_resolved" in enhanced_df.columns:
+                enhanced_df = enhanced_df.withColumnRenamed("county_resolved", "county")
+            
+            # Standardize location names using canonical reference data
+            enhanced_df = self.location_enricher.standardize_location_names(
+                enhanced_df, "best_city", "best_state", "title"
+            )
+            
+            # Normalize state names from abbreviations to full names
+            enhanced_df = self.location_enricher.normalize_state_names(enhanced_df, "best_state")
+            
+            # Add geographic context fields
+            if self.config.enable_geographic_context:
+                enhanced_df = self._add_geographic_context(enhanced_df)
+            
+            return enhanced_df
+            
+        except Exception as e:
+            logger.error(f"Failed to enhance articles with location data: {e}")
+            # Return original DataFrame if enhancement fails
+            return df
+    
+    def _add_geographic_context(self, df: DataFrame) -> DataFrame:
+        """
+        Add geographic context fields to Wikipedia articles.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with geographic context fields
+        """
+        # Add location hierarchy context
+        df_with_context = df.withColumn(
+            "geographic_scope",
+            when(
+                col("best_city").isNotNull() & col("best_state").isNotNull(),
+                lit("city")
+            ).when(
+                col("best_state").isNotNull(),
+                lit("state")
+            ).otherwise(lit("unspecified"))
+        )
+        
+        # Add administrative level
+        df_with_admin = df_with_context.withColumn(
+            "administrative_level",
+            when(col("best_city").isNotNull(), lit("municipal"))
+            .when(col("best_state").isNotNull(), lit("state"))
+            .otherwise(lit("unknown"))
+        )
+        
+        # Create location context summary
+        df_with_summary = df_with_admin.withColumn(
+            "location_context",
+            when(
+                col("best_city").isNotNull() & col("best_state").isNotNull(),
+                expr("concat(best_city, ', ', best_state)")
+            ).when(
+                col("best_state").isNotNull(),
+                col("best_state")
+            ).otherwise(lit("General"))
+        )
+        
+        return df_with_summary
+    
+    def _organize_by_location(self, df: DataFrame) -> DataFrame:
+        """
+        Add location-specific content organization fields.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with organization fields
+        """
+        # First, ensure geographic_scope column exists
+        df_with_scope = df.withColumn(
+            "geographic_scope",
+            when(
+                col("best_city").isNotNull() & col("best_state").isNotNull(),
+                lit("city")
+            ).when(
+                col("best_state").isNotNull(),
+                lit("state")
+            ).otherwise(lit("general"))
+        )
+        
+        # Create location-based content categories
+        df_with_category = df_with_scope.withColumn(
+            "content_category",
+            when(
+                col("geographic_scope") == "city",
+                lit("local_content")
+            ).when(
+                col("geographic_scope") == "state",
+                lit("regional_content")
+            ).otherwise(lit("general_content"))
+        )
+        
+        # Add content organization key for grouping
+        df_with_key = df_with_category.withColumn(
+            "organization_key",
+            when(
+                col("best_state").isNotNull(),
+                expr("concat('state_', best_state)")
+            ).otherwise(lit("general"))
+        )
+        
+        # Add searchability score for location-based queries
+        df_with_searchability = df_with_key.withColumn(
+            "location_searchability",
+            (
+                when(col("best_city").isNotNull(), 0.4).otherwise(0.0) +
+                when(col("best_state").isNotNull(), 0.3).otherwise(0.0) +
+                when(col("confidence_score") >= self.config.min_confidence_threshold, 0.1).otherwise(0.0)
+            ).cast("decimal(3,2)")
+        )
+        
+        return df_with_searchability
     
     def _calculate_quality_scores(self, df: DataFrame) -> DataFrame:
         """
