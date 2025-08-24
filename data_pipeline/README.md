@@ -1,153 +1,335 @@
 # Data Pipeline
 
-A comprehensive Spark-based data pipeline for processing real estate, neighborhood, and Wikipedia data with embedding generation and multi-destination output support.
+A comprehensive Apache Spark data pipeline for processing real estate and Wikipedia data with embeddings generation and multi-destination output support.
 
-## Overview
+## Project Structure
 
-The data pipeline provides:
+This is a standalone Python module that can be run independently. All configuration and dependencies are self-contained within this directory.
 
-- **Multi-source data loading**: Properties, neighborhoods, Wikipedia articles, and location reference data
-- **Location data integration**: Geographic hierarchy resolution and property-neighborhood linking
-- **Entity-specific enrichment**: Data normalization, quality scoring, and correlation ID generation
-- **Embedding generation**: Support for multiple providers (Voyage, OpenAI, Gemini, Ollama)
-- **Multi-destination output**: Parquet files, Neo4j graph database, Elasticsearch, and ChromaDB
-- **Data validation**: Schema validation, completeness checks, and quality metrics
-- **Configurable environments**: Development, test, and production configurations
+```
+data_pipeline/
+├── config.yaml          # Main configuration file
+├── pyproject.toml       # Project dependencies and metadata
+├── README.md            # This file
+├── __main__.py          # CLI entry point
+├── core/                # Core pipeline components
+├── loaders/             # Data loading modules
+├── enrichment/          # Data enrichment engines
+├── processing/          # Text and embedding processing
+├── writers/             # Multi-destination output writers
+├── integration_tests/   # Integration test suite
+└── tests/               # Unit tests
+```
 
 ## Quick Start
 
-### Prerequisites
-
-- Python 3.8+ (3.10+ recommended)
-- Apache Spark 3.4+
-- 4GB+ RAM recommended
-
 ### Installation
 
-```bash
-# Install from the root directory
-pip install -e .
+From the parent directory (real_estate_ai_search):
 
-# Or install with development dependencies
-pip install -e ".[dev]"
+```bash
+pip install -e data_pipeline/
+```
+
+Or from within this directory:
+
+```bash
+pip install -e .
+```
+
+### Quick Neo4j Data Load
+
+```bash
+# 1. Ensure Neo4j is running (Docker)
+docker run -d --name neo4j \
+    -p 7474:7474 -p 7687:7687 \
+    -e NEO4J_AUTH=neo4j/scott_tiger \
+    neo4j:latest
+
+# 2. Load sample data to Neo4j (fast test)
+python -m data_pipeline --sample-size 50 --output-destination parquet
+
+# 3. Load full dataset to Neo4j (requires Spark connector - see setup below)
+python -m data_pipeline --output-destination neo4j
+
+# 4. Verify in Neo4j Browser at http://localhost:7474
+# Login: neo4j/scott_tiger
+# Run: MATCH (n) RETURN labels(n)[0] as type, COUNT(n) as count
 ```
 
 ### Basic Usage
 
+Run from the parent directory:
+
 ```bash
-# Run the full pipeline with embeddings
+# Full pipeline run
 python -m data_pipeline
 
-# Run with specific environment
-PIPELINE_ENV=test python -m data_pipeline
-
-# Run with data subsetting for testing
-DATA_SUBSET_SAMPLE_SIZE=50 python -m data_pipeline
+# Run with limited sample size (50 records)
+python -m data_pipeline --sample-size 50
 
 # Run with specific output destinations
-OUTPUT_DESTINATIONS=parquet,neo4j python -m data_pipeline
+python -m data_pipeline --output-destination neo4j
+python -m data_pipeline --output-destination elasticsearch
+python -m data_pipeline --output-destination parquet,neo4j
 ```
 
-### Python API
+### Quick Testing
 
-```python
-from data_pipeline.core.pipeline_runner import DataPipelineRunner
+```bash
+# Test mode (10 records, mock embeddings)
+python -m data_pipeline --test-mode
 
-# Initialize and run pipeline
-runner = DataPipelineRunner()
-entity_dataframes = runner.run_full_pipeline_with_embeddings()
-runner.write_entity_outputs(entity_dataframes)
+# Quick test with real embeddings (20 records)
+python -m data_pipeline --sample-size 20
+
+# Test specific output destination
+python -m data_pipeline --sample-size 10 --output-destination neo4j
+```
+
+## Integration Testing
+
+### Parquet Testing
+
+```bash
+# Run quick smoke test
+pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
+
+# Run all parquet tests
+pytest data_pipeline/integration_tests/test_parquet_validation.py -v
+```
+
+### Neo4j Setup and Data Loading
+
+#### 1. Start Neo4j Database
+
+```bash
+# Using Docker (recommended)
+docker run \
+    --name neo4j \
+    -p 7474:7474 -p 7687:7687 \
+    -e NEO4J_AUTH=neo4j/scott_tiger \
+    -e NEO4J_PLUGINS='["apoc"]' \
+    -v $HOME/neo4j/data:/data \
+    -v $HOME/neo4j/logs:/logs \
+    neo4j:latest
+
+# Or if you have docker-compose in graph-real-estate/
+cd ../graph-real-estate
+docker-compose up -d neo4j
+
+# Verify Neo4j is running
+curl http://localhost:7474
+# Access Neo4j Browser at http://localhost:7474
+# Default credentials: neo4j/scott_tiger
+```
+
+#### 2. Install Neo4j Spark Connector (Required for Spark Integration)
+
+```bash
+# Download the Neo4j Spark Connector JAR
+wget https://github.com/neo4j/neo4j-spark-connector/releases/download/5.2.0/neo4j-connector-apache-spark_2.12-5.2.0_for_spark_3.jar
+
+# Create jars directory in data_pipeline
+mkdir -p data_pipeline/jars
+
+# Move the JAR file
+mv neo4j-connector-apache-spark_2.12-5.2.0_for_spark_3.jar data_pipeline/jars/
+
+# Alternative: Install via pip (if available)
+pip install pyspark-neo4j
+```
+
+#### 3. Load Full Dataset to Neo4j
+
+```bash
+# Load complete dataset (all properties, neighborhoods, and Wikipedia articles)
+python -m data_pipeline --output-destination neo4j
+
+# Load with sample data for testing (faster)
+python -m data_pipeline --sample-size 100 --output-destination neo4j
+
+# Load specific entity types only
+python -m data_pipeline --output-destination neo4j --entities properties,neighborhoods
+
+# Load to both Neo4j and Parquet
+python -m data_pipeline --output-destination neo4j,parquet
+```
+
+#### 4. Verify Data in Neo4j
+
+```cypher
+-- Count all nodes
+MATCH (n) RETURN labels(n)[0] as NodeType, COUNT(n) as Count;
+
+-- Sample properties
+MATCH (p:Property) RETURN p LIMIT 5;
+
+-- Properties with neighborhoods
+MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+RETURN p.address, n.name, p.price LIMIT 10;
+
+-- Wikipedia articles describing locations
+MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
+RETURN w.title, n.name LIMIT 10;
+
+-- Property similarity relationships
+MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
+WHERE s.similarity_score > 0.8
+RETURN p1.address, p2.address, s.similarity_score LIMIT 10;
+```
+
+#### 5. Alternative: Direct Neo4j Loading (Without Spark Connector)
+
+If the Spark connector is not available, use the direct Python driver approach:
+
+```bash
+# Use the direct Neo4j writer (bypasses Spark connector requirement)
+python -m data_pipeline.writers.neo4j.direct_writer
+
+# Or load from existing Parquet files
+python -m data_pipeline.tools.parquet_to_neo4j \
+    --parquet-path data/entities/ \
+    --neo4j-uri bolt://localhost:7687 \
+    --neo4j-user neo4j \
+    --neo4j-password scott_tiger
+```
+
+### Neo4j Testing
+
+```bash
+# Test Neo4j connection
+python -c "from neo4j import GraphDatabase; \
+driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'scott_tiger')); \
+with driver.session() as session: \
+    result = session.run('RETURN 1 as test'); \
+    print('Neo4j connection successful:', result.single()['test']); \
+driver.close()"
+
+# Run pipeline with Neo4j output
+python -m data_pipeline --sample-size 50 --output-destination neo4j
+
+# Verify in Neo4j Browser (http://localhost:7474)
+MATCH (p:Property) RETURN count(p);
+```
+
+### Elasticsearch Testing
+
+```bash
+# Run pipeline with Elasticsearch output
+python -m data_pipeline --sample-size 50 --output-destination elasticsearch
+
+# Verify data in Elasticsearch
+curl -X GET "localhost:9200/_cat/indices?v"
+curl -X GET "localhost:9200/properties/_count"
 ```
 
 ## Configuration
 
-### Environment Variables
+### Configuration File
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PIPELINE_ENV` | Environment (dev/test/prod) | `dev` |
-| `DATA_SUBSET_SAMPLE_SIZE` | Sample size for testing | Disabled |
-| `OUTPUT_DESTINATIONS` | Comma-separated destinations | `parquet` |
-| `OUTPUT_PATH` | Output directory path | `data/processed` |
-| `NEO4J_URI` | Neo4j database URI | `bolt://localhost:7687` |
-| `ES_HOSTS` | Elasticsearch hosts | `localhost:9200` |
-| `LOG_LEVEL` | Logging level | `INFO` |
+The pipeline uses `config.yaml` in this directory for all settings:
 
-### Configuration Files
+- **data_subset**: Control data sampling
+- **embedding**: Provider and model settings (Voyage, Ollama, OpenAI)
+- **spark**: Session and resource settings
+- **output_destinations**: Configure Neo4j, Elasticsearch, Parquet outputs
 
-- **`config.yaml`**: Main pipeline configuration
-- **`config/pipeline_config.yaml`**: Environment-specific overrides
-- **`elasticsearch_config.yaml`**: Elasticsearch-specific settings
+### Environment Setup
 
-### Location Data Integration
-
-Configure location enhancement in `config.yaml`:
-
+#### Neo4j Configuration
+The pipeline is pre-configured for Neo4j. Current settings in `config.yaml`:
 ```yaml
-enrichment:
-  location_enhancement:
-    enabled: true
-    hierarchy_resolution: true
-    name_standardization: true
-    neighborhood_linking: true
+neo4j:
+  enabled: false  # Change to true to enable
+  uri: "bolt://localhost:7687"
+  username: "neo4j"
+  password: "scott_tiger"  # Default password
+  database: "neo4j"
 ```
 
-- **hierarchy_resolution**: Enable geographic hierarchy (neighborhood → city → county → state)
-- **name_standardization**: Use canonical location names
-- **neighborhood_linking**: Link properties to neighborhoods via neighborhood_id
+To enable Neo4j output:
+1. Edit `data_pipeline/config.yaml`
+2. Set `neo4j.enabled: true`
+3. Or add "neo4j" to `enabled_destinations` list
 
-## Data Sources
+Alternative: Use command line (overrides config):
+```bash
+python -m data_pipeline --output-destination neo4j
+```
 
-### Input Data
-- **Properties**: `real_estate_data/properties_*.json`
-- **Neighborhoods**: `real_estate_data/neighborhoods_*.json`
-- **Wikipedia**: `data/wikipedia/wikipedia.db`
-- **Locations**: `real_estate_data/locations.json`
-
-### Output Destinations
-
-#### Parquet Files
-- Path: `data/processed/entity_datasets/`
-- Files: `properties.parquet`, `neighborhoods.parquet`, `wikipedia.parquet`
-- Features: Snappy compression, optimized partitioning
-
-#### Neo4j Graph Database
-- Nodes: Properties, Neighborhoods, Wikipedia articles, Locations
-- Relationships: Geographic and semantic connections
-- Indexes: Automatic creation for performance
+Parent `.env` file (`/Users/ryanknight/projects/temporal/.env`):
+```bash
+NEO4J_PASSWORD=scott_tiger
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_DATABASE=neo4j
+```
 
 #### Elasticsearch
-- Indices: Separate indices per entity type
-- Features: Full-text search, embedding vector search
-- Mappings: Optimized for search and analytics
+Default connection (no auth required for local) - Elasticsearch should be running on `localhost:9200`
 
-#### ChromaDB Vector Database
-- Collections: Separate collections per entity type
-- Features: Similarity search, metadata filtering
-- Embeddings: Multi-provider support
-
-## Pipeline Architecture
-
-### Core Components
-
-1. **Data Loaders**: Entity-specific loaders with validation
-2. **Enrichers**: Data normalization and quality scoring
-3. **Text Processors**: Content preparation for embeddings
-4. **Embedding Generators**: Multi-provider embedding creation
-5. **Writers**: Multi-destination output orchestration
-
-### Processing Flow
-
+#### API Keys
+Add to `.env` for embeddings:
+```bash
+VOYAGE_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Loading  │───▶│   Enrichment    │───▶│ Text Processing │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                        │
-┌─────────────────┐    ┌─────────────────┐              │
-│ Multi-Output    │◀───│ Embedding Gen   │◀─────────────┘
-│ Writing         │    │                 │
-└─────────────────┘    └─────────────────┘
+
+## Command Line Options
+
+### Core Options
+
+```bash
+# Sample size control
+python -m data_pipeline --sample-size 100
+
+# Test mode (10 records, mock embeddings)
+python -m data_pipeline --test-mode
+
+# Output destinations
+python -m data_pipeline --output-destination neo4j
+python -m data_pipeline --output-destination elasticsearch
+python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
+
+# Custom output path
+python -m data_pipeline --output /path/to/results
 ```
+
+### Operational Options
+
+```bash
+# Show current configuration
+python -m data_pipeline --show-config
+
+# Validate configuration without running
+python -m data_pipeline --validate-only
+
+# Set logging level
+python -m data_pipeline --log-level DEBUG
+
+# Spark cores
+python -m data_pipeline --cores 4
+```
+
+## Overview
+
+### Architecture
+
+The pipeline processes data through these stages:
+1. **Data Loading**: Read properties and Wikipedia articles
+2. **Embeddings Generation**: Create vector representations using configured provider
+3. **Data Writing**: Output to configured destinations (Parquet, Neo4j, Elasticsearch)
+
+### Supported Data Entities
+- **Properties**: Real estate listings with location and features
+- **Wikipedia Articles**: Location-based content with summaries
+- **Neighborhoods**: Geographic areas with demographic data
+
+### Output Destinations
+- **Parquet**: Default file-based storage for analytics
+- **Neo4j**: Graph database for relationship queries
+- **Elasticsearch**: Search engine for full-text and vector search
 
 ## Testing
 
@@ -159,222 +341,116 @@ pytest data_pipeline/tests/
 
 # Run with coverage
 pytest data_pipeline/tests/ --cov=data_pipeline
-
-# Run specific test file
-pytest data_pipeline/tests/test_writer_config.py
 ```
 
 ### Integration Tests
 
-The integration test suite provides comprehensive validation of the entity-specific Parquet writer architecture.
-
-#### Quick Start
 ```bash
-# Run all Parquet validation tests (~75 seconds)
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py -v
+# Quick validation test
+pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
 
-# Run quick smoke test (~18 seconds)
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
-
-# Run with coverage
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py --cov=data_pipeline
+# Full integration test suite
+pytest data_pipeline/integration_tests/ -v
 ```
 
-#### Test Suite Components
-
-**test_parquet_validation.py** - Comprehensive Parquet validation (7 tests)
-1. `test_parquet_files_structure` - Validates entity-specific directory structure with partitioning
-2. `test_parquet_schema_compliance` - Ensures correct schemas for each entity type
-3. `test_parquet_data_completeness` - Verifies all records have embeddings and required fields
-4. `test_wikipedia_array_fields_populated` - Validates Wikipedia summary fields
-5. `test_embedding_dimensions_consistency` - Ensures consistent 1024-D embeddings
-6. `test_parquet_compression_and_size` - Validates file compression and sizes
-7. `test_quick_parquet_smoke` - Quick smoke test for basic functionality
-
-#### Key Features
-
-**Entity-Specific Architecture**:
-- Separate Parquet files for properties, neighborhoods, and Wikipedia entities
-- Partitioning by state for properties and neighborhoods
-- Type-safe Pydantic models for all configurations
-- No unified dataset approach - clean separation of concerns
-
-**Test Configuration**:
-- Uses temporary directories for isolation
-- Configuration override support via `config_override` parameter
-- No environment variable dependency for output paths
-- Automatic cleanup after test completion
-
-**Validation Capabilities**:
-- Schema validation against entity-specific schemas
-- Partitioned file structure validation (e.g., `state=California/part-*.parquet`)
-- Embedding dimension consistency checks
-- Data completeness verification
-- File size and compression validation
-
-#### Running Specific Tests
-
-```bash
-# Test file structure with partitioning
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py::TestParquetValidation::test_parquet_files_structure -v
-
-# Test schema compliance
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py::TestParquetValidation::test_parquet_schema_compliance -v
-
-# Test data completeness
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py::TestParquetValidation::test_parquet_data_completeness -v
-```
-
-#### Test Output Example
-
-```
-============================= test session starts ==============================
-collecting ... collected 7 items
-
-test_parquet_validation.py::TestParquetValidation::test_parquet_files_structure PASSED [ 14%]
-test_parquet_validation.py::TestParquetValidation::test_parquet_schema_compliance PASSED [ 28%]
-test_parquet_validation.py::TestParquetValidation::test_parquet_data_completeness PASSED [ 42%]
-test_parquet_validation.py::TestParquetValidation::test_wikipedia_array_fields_populated PASSED [ 57%]
-test_parquet_validation.py::TestParquetValidation::test_embedding_dimensions_consistency PASSED [ 71%]
-test_parquet_validation.py::TestParquetValidation::test_parquet_compression_and_size PASSED [ 85%]
-test_parquet_validation.py::test_quick_parquet_smoke PASSED [100%]
-
-================== 7 passed in 73.28s ==================
-```
-
-#### Integration with CI/CD
-
-```bash
-# For CI pipelines - quick validation
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke
-
-# For release validation - full suite
-PYTHONPATH=$PWD:$PYTHONPATH python -m pytest data_pipeline/integration_tests/test_parquet_validation.py -v --tb=short
-```
-
-## Performance and Scaling
-
-### Optimization Tips
-
-- **Data Subsetting**: Use `DATA_SUBSET_SAMPLE_SIZE` for development
-- **Spark Configuration**: Adjust memory and cores in `config.yaml`
-- **Embedding Batch Size**: Tune based on API rate limits
-- **Partitioning**: Enable Parquet partitioning for large datasets
-
-### Resource Requirements
-
-| Dataset Size | Memory | Cores | Time |
-|--------------|--------|-------|------|
-| Small (1K records) | 4GB | 2 | 2-5 min |
-| Medium (10K records) | 8GB | 4 | 10-15 min |
-| Large (100K+ records) | 16GB+ | 8+ | 30+ min |
-
-## Monitoring and Debugging
-
-### Logging
-
-The pipeline provides structured logging at multiple levels:
-
-```bash
-# Enable debug logging
-LOG_LEVEL=DEBUG python -m data_pipeline
-
-# Log to file
-LOG_LEVEL=INFO python -m data_pipeline > pipeline.log 2>&1
-```
-
-### Health Checks
-
-```bash
-# Validate configuration
-python data_pipeline/examples/test_configuration.py
-
-# Test database connections
-python -c "from data_pipeline.core.pipeline_runner import DataPipelineRunner; runner = DataPipelineRunner(); print('✓ Configuration valid')"
-```
+## Troubleshooting
 
 ### Common Issues
 
-**Spark Memory Errors**
+**Out of Memory**
 ```bash
-# Increase driver memory
-export SPARK_DRIVER_MEMORY=8g
-python -m data_pipeline
+python -m data_pipeline --cores 2 --sample-size 10
 ```
 
 **API Rate Limits**
-```yaml
-# Reduce batch size in config.yaml
-embedding:
-  batch_size: 10
-  retry_delay: 2.0
+```bash
+# Use mock provider for testing
+python -m data_pipeline --test-mode
 ```
 
-**Column Ambiguity Warnings**
-- These are non-fatal Spark SQL warnings
-- Pipeline continues to execute successfully
-- Can be ignored for current functionality
+**Neo4j Connection Issues**
+```bash
+# Test connection
+python -m data_pipeline.tests.test_neo4j_basic
 
-## Development
+# Check Neo4j is running
+curl http://localhost:7474
+```
 
-## Architecture
+**Elasticsearch Connection Issues**
+```bash
+# Check Elasticsearch is running
+curl http://localhost:9200
 
-### Entity-Specific Design Philosophy
+# Test with small dataset
+python -m data_pipeline --sample-size 5 --output-destination elasticsearch
+```
 
-The data pipeline follows a **strict entity-specific architecture** with these core principles:
+### Debug Commands
 
-1. **No Unified Datasets**: Each entity type (properties, neighborhoods, Wikipedia) maintains its own separate processing pipeline and output structure
-2. **Type Safety First**: Pydantic models provide compile-time type checking and runtime validation
-3. **Modular Writers**: Each destination (Parquet, Neo4j, Elasticsearch) has dedicated orchestrators with entity-aware logic
-4. **Clean Separation**: Entity-specific processors, enrichers, and schemas ensure no cross-contamination of logic
+```bash
+# Maximum debugging
+python -m data_pipeline --log-level DEBUG --test-mode
 
-### Key Architectural Benefits
+# Check logs
+tail -f logs/pipeline.log
+```
 
-- **Maintainability**: Changes to one entity type don't affect others
-- **Scalability**: Each entity can be scaled independently
-- **Testing**: Entity-specific tests are simpler and more focused
-- **Type Safety**: Strong typing prevents runtime errors
-- **Flexibility**: Easy to add new entity types or destinations
+## Output Validation
 
-### Project Structure
+### Parquet Files
+```bash
+# Check output files
+ls -la data/processed/entity_datasets/*.parquet
+
+# Validate with pandas
+python -c "import pandas as pd; df = pd.read_parquet('data/processed/entity_datasets/properties.parquet'); print(df.info())"
+```
+
+### Neo4j Data
+```cypher
+-- Count nodes by type
+MATCH (n) RETURN labels(n), count(n);
+
+-- Sample property data
+MATCH (p:Property) RETURN p LIMIT 5;
+```
+
+### Elasticsearch Data
+```bash
+# Check indices
+curl -X GET "localhost:9200/_cat/indices?v"
+
+# Sample search
+curl -X GET "localhost:9200/properties/_search?q=city:Seattle&size=5"
+```
+
+## Performance Tips
+
+1. **Development**: Use `--sample-size 20-50` for quick iterations
+2. **Testing**: Use `--test-mode` for fastest feedback
+3. **Production**: Run without sample-size limit
+4. **Debugging**: Always add `--log-level DEBUG`
+5. **Multiple Destinations**: Test each destination separately first
+
+## Project Structure
 
 ```
 data_pipeline/
-├── config/          # Configuration management
-├── core/           # Core pipeline components  
-├── loaders/        # Data loading modules
-├── enrichment/     # Data enrichment engines
-├── processing/     # Text and embedding processing
-├── writers/        # Multi-destination output writers
-├── integration_tests/  # Integration test suite
-├── tests/          # Unit tests
-└── examples/       # Usage examples
+├── config/              # Configuration management
+├── core/                # Core pipeline components  
+├── loaders/             # Data loading modules
+├── enrichment/          # Data enrichment engines
+├── processing/          # Text and embedding processing
+├── writers/             # Multi-destination output writers
+├── integration_tests/   # Integration test suite
+├── tests/               # Unit tests
+└── examples/            # Usage examples
 ```
 
-### Adding New Features
+## Next Steps
 
-1. **New Data Sources**: Extend `loaders/`
-2. **New Enrichments**: Add to `enrichment/`
-3. **New Output Destinations**: Implement in `writers/`
-4. **New Tests**: Add to `integration_tests/` or `tests/`
-
-### Configuration Schema
-
-The pipeline uses Pydantic models for configuration validation. See `config/models.py` for the complete schema.
-
-## Contributing
-
-1. Follow existing code patterns and naming conventions
-2. Add tests for new functionality
-3. Update documentation for new features
-4. Ensure integration tests pass before submitting changes
-
-```bash
-# Run full test suite before contributing
-python data_pipeline/integration_tests/run_tests.py full
-pytest data_pipeline/tests/ --cov=data_pipeline
-```
-
-## License
-
-This project is part of the Property Finder real estate data analysis suite.
+- Review configuration: `config.yaml`
+- Check logs: `logs/pipeline.log`
+- Monitor output: `data/processed/entity_datasets/`
+- Explore data in target systems (Neo4j Browser, Elasticsearch, Parquet files)

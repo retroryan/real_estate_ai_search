@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 # Import the models from the original data_validation.py
-from data_pipeline.ingestion.data_validation import (
+from data_pipeline.validation.data_validation import (
     PropertyModel,
     NeighborhoodModel, 
     WikipediaArticleModel,

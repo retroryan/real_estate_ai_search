@@ -34,7 +34,7 @@ else:
 class ConfigurationManager:
     """Configuration manager with data subsetting and model selection."""
     
-    def __init__(self, config_path: Optional[str] = None, environment: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, environment: Optional[str] = None, sample_size: Optional[int] = None):
         """
         Initialize configuration manager.
         
@@ -42,9 +42,11 @@ class ConfigurationManager:
             config_path: Path to configuration YAML file.
                         If None, uses default or environment variable.
             environment: Environment name (development, staging, production)
+            sample_size: Override sample size for data subsetting
         """
         self.config_path = self._resolve_config_path(config_path)
         self.environment = environment or os.getenv("PIPELINE_ENV", "development")
+        self.sample_size_override = sample_size
         self._config: Optional[PipelineConfig] = None
         self._raw_config: Optional[Dict[str, Any]] = None
     
@@ -127,6 +129,11 @@ class ConfigurationManager:
                     self._config.apply_environment_overrides(self.environment)
                     logger.info(f"Applied {self.environment} environment overrides")
                 
+                # Re-apply sample_size override if it was provided (takes precedence over environment)
+                if self.sample_size_override is not None:
+                    self._config.data_subset.enabled = True
+                    self._config.data_subset.sample_size = self.sample_size_override
+                
                 logger.info(f"Configuration loaded successfully: {self._config.metadata.name} v{self._config.metadata.version}")
                 logger.info(f"Environment: {self.environment}")
                 
@@ -179,13 +186,10 @@ class ConfigurationManager:
         if "EMBEDDING_MODEL" in os.environ:
             self._raw_config.setdefault("embedding", {})["model"] = os.environ["EMBEDDING_MODEL"]
         
-        # Data subsetting from environment
+        # Data subsetting from environment (only enabled flag, not sample size)
         if "DATA_SUBSET_ENABLED" in os.environ:
             enabled = os.environ["DATA_SUBSET_ENABLED"].lower() in ("true", "1", "yes")
             self._raw_config.setdefault("data_subset", {})["enabled"] = enabled
-        
-        if "DATA_SUBSET_SAMPLE_SIZE" in os.environ:
-            self._raw_config.setdefault("data_subset", {})["sample_size"] = int(os.environ["DATA_SUBSET_SAMPLE_SIZE"])
         
         # Output configuration from environment
         if "OUTPUT_PATH" in os.environ:
@@ -265,7 +269,15 @@ class ConfigurationManager:
         if not self._raw_config:
             return
         
-        # Auto-enable subsetting in development/test modes
+        # Priority 1: Command-line sample_size override
+        if self.sample_size_override is not None:
+            if "data_subset" not in self._raw_config:
+                self._raw_config["data_subset"] = {}
+            self._raw_config["data_subset"]["enabled"] = True
+            self._raw_config["data_subset"]["sample_size"] = self.sample_size_override
+            return
+        
+        # Priority 2: Auto-enable subsetting in development/test modes
         if self.environment in ("development", "test"):
             if "data_subset" not in self._raw_config:
                 self._raw_config["data_subset"] = {}
@@ -277,7 +289,7 @@ class ConfigurationManager:
             if "sample_size" not in self._raw_config["data_subset"]:
                 self._raw_config["data_subset"]["sample_size"] = 20
         
-        # Check for test mode flag
+        # Priority 3: Check for test mode flag
         if self._raw_config.get("development", {}).get("test_mode", False):
             if "data_subset" not in self._raw_config:
                 self._raw_config["data_subset"] = {}

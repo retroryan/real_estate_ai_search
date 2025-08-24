@@ -6,29 +6,27 @@ including location extraction, relevance scoring, and confidence metrics.
 """
 
 import logging
-import uuid
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     broadcast,
     coalesce,
     col,
-    current_timestamp,
     expr,
     length,
     lit,
     trim,
-    udf,
     when,
 )
-from pyspark.sql.types import StringType
+
+from .base_enricher import BaseEnricher, BaseEnrichmentConfig
 
 logger = logging.getLogger(__name__)
 
 
-class WikipediaEnrichmentConfig(BaseModel):
+class WikipediaEnrichmentConfig(BaseEnrichmentConfig):
     """Configuration for Wikipedia enrichment operations."""
     
     enable_location_extraction: bool = Field(
@@ -49,11 +47,6 @@ class WikipediaEnrichmentConfig(BaseModel):
     enable_quality_scoring: bool = Field(
         default=True,
         description="Calculate article data quality scores"
-    )
-    
-    enable_correlation_ids: bool = Field(
-        default=True,
-        description="Generate correlation IDs for tracking"
     )
     
     min_quality_score: float = Field(
@@ -86,7 +79,7 @@ class WikipediaEnrichmentConfig(BaseModel):
     )
 
 
-class WikipediaEnricher:
+class WikipediaEnricher(BaseEnricher):
     """
     Enriches Wikipedia article data with location references, relevance scores,
     and confidence metrics specific to geographic content.
@@ -102,14 +95,9 @@ class WikipediaEnricher:
             config: Wikipedia enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.spark = spark
-        self.config = config or WikipediaEnrichmentConfig()
-        self.location_broadcast = location_broadcast
+        super().__init__(spark, config, location_broadcast)
         
-        # Register UDF for UUID generation
-        self._register_udfs()
-        
-        # Create LocationEnricher if location data is available
+        # Override location enricher initialization with Wikipedia-specific config
         if self.location_broadcast and self.config.enable_location_matching:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
@@ -117,8 +105,10 @@ class WikipediaEnricher:
                 enable_name_standardization=self.config.enable_geographic_context
             )
             self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
-        else:
-            self.location_enricher = None
+    
+    def _get_default_config(self) -> WikipediaEnrichmentConfig:
+        """Get the default configuration for Wikipedia enricher."""
+        return WikipediaEnrichmentConfig()
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -127,7 +117,7 @@ class WikipediaEnricher:
         Args:
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.location_broadcast = location_broadcast
+        super().set_location_data(location_broadcast)
         
         if self.location_broadcast and self.config.enable_location_matching:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
@@ -137,13 +127,6 @@ class WikipediaEnricher:
             )
             self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
             logger.info("LocationEnricher initialized for Wikipedia articles with broadcast data")
-    
-    def _register_udfs(self):
-        """Register necessary UDFs."""
-        def generate_uuid() -> str:
-            return str(uuid.uuid4())
-        
-        self.generate_uuid_udf = udf(generate_uuid, StringType())
     
     def enrich(self, df: DataFrame) -> DataFrame:
         """
@@ -166,7 +149,7 @@ class WikipediaEnricher:
         
         # Add correlation IDs if configured
         if self.config.enable_correlation_ids:
-            enriched_df = self._add_correlation_ids(enriched_df)
+            enriched_df = self.add_correlation_ids(enriched_df, "article_correlation_id")
             logger.info("Added correlation IDs to articles")
         
         # Validate and enrich location data
@@ -200,28 +183,11 @@ class WikipediaEnricher:
             logger.info("Calculated article quality scores")
         
         # Add processing timestamp
-        enriched_df = enriched_df.withColumn("processed_at", current_timestamp())
+        enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        final_count = enriched_df.count()
-        if final_count != initial_count:
-            logger.warning(f"Article count changed: {initial_count} -> {final_count}")
-        
-        logger.info(f"Wikipedia enrichment completed for {final_count} articles")
-        return enriched_df
+        return self.validate_enrichment(enriched_df, initial_count, "Wikipedia article")
     
-    def _add_correlation_ids(self, df: DataFrame) -> DataFrame:
-        """Add correlation IDs for article tracking."""
-        # Check if column already exists
-        if "article_correlation_id" in df.columns:
-            return df.withColumn(
-                "article_correlation_id",
-                when(col("article_correlation_id").isNull(), self.generate_uuid_udf())
-                .otherwise(col("article_correlation_id"))
-            )
-        else:
-            # Create new column
-            return df.withColumn("article_correlation_id", self.generate_uuid_udf())
     
     def _validate_locations(self, df: DataFrame) -> DataFrame:
         """
@@ -561,7 +527,7 @@ class WikipediaEnricher:
         
         return df_with_validation
     
-    def get_enrichment_statistics(self, df: DataFrame) -> Dict:
+    def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
         Calculate statistics about the enrichment process.
         

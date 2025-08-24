@@ -6,30 +6,28 @@ including location normalization, demographic validation, and boundary processin
 """
 
 import logging
-import uuid
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     broadcast,
     coalesce,
     col,
-    current_timestamp,
     expr,
     least,
     lit,
     trim,
-    udf,
     upper,
     when,
 )
-from pyspark.sql.types import StringType
+
+from .base_enricher import BaseEnricher, BaseEnrichmentConfig
 
 logger = logging.getLogger(__name__)
 
 
-class NeighborhoodEnrichmentConfig(BaseModel):
+class NeighborhoodEnrichmentConfig(BaseEnrichmentConfig):
     """Configuration for neighborhood enrichment operations."""
     
     enable_location_normalization: bool = Field(
@@ -50,11 +48,6 @@ class NeighborhoodEnrichmentConfig(BaseModel):
     enable_quality_scoring: bool = Field(
         default=True,
         description="Calculate neighborhood data quality scores"
-    )
-    
-    enable_correlation_ids: bool = Field(
-        default=True,
-        description="Generate correlation IDs for tracking"
     )
     
     min_quality_score: float = Field(
@@ -96,7 +89,7 @@ class NeighborhoodEnrichmentConfig(BaseModel):
     )
 
 
-class NeighborhoodEnricher:
+class NeighborhoodEnricher(BaseEnricher):
     """
     Enriches neighborhood data with normalized fields, demographic validation,
     and quality metrics specific to neighborhood information.
@@ -112,18 +105,13 @@ class NeighborhoodEnricher:
             config: Neighborhood enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.spark = spark
-        self.config = config or NeighborhoodEnrichmentConfig()
-        self.location_broadcast = location_broadcast
-        
-        # Register UDF for UUID generation
-        self._register_udfs()
+        super().__init__(spark, config, location_broadcast)
         
         # Create broadcast variables for location lookups
         if self.config.enable_location_normalization:
             self._create_location_broadcasts()
         
-        # Create LocationEnricher if location data is available
+        # Override location enricher initialization with neighborhood-specific config
         if self.location_broadcast and self.config.enable_location_hierarchy:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
@@ -131,8 +119,10 @@ class NeighborhoodEnricher:
                 enable_parent_relationships=self.config.establish_parent_relationships
             )
             self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
-        else:
-            self.location_enricher = None
+    
+    def _get_default_config(self) -> NeighborhoodEnrichmentConfig:
+        """Get the default configuration for neighborhood enricher."""
+        return NeighborhoodEnrichmentConfig()
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -141,7 +131,7 @@ class NeighborhoodEnricher:
         Args:
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.location_broadcast = location_broadcast
+        super().set_location_data(location_broadcast)
         
         if self.location_broadcast and self.config.enable_location_hierarchy:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
@@ -151,13 +141,6 @@ class NeighborhoodEnricher:
             )
             self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
             logger.info("LocationEnricher initialized for neighborhoods with broadcast data")
-    
-    def _register_udfs(self):
-        """Register necessary UDFs."""
-        def generate_uuid() -> str:
-            return str(uuid.uuid4())
-        
-        self.generate_uuid_udf = udf(generate_uuid, StringType())
     
     def _create_location_broadcasts(self):
         """Create broadcast variables for location normalization."""
@@ -190,7 +173,7 @@ class NeighborhoodEnricher:
         
         # Add correlation IDs if configured
         if self.config.enable_correlation_ids:
-            enriched_df = self._add_correlation_ids(enriched_df)
+            enriched_df = self.add_correlation_ids(enriched_df, "neighborhood_correlation_id")
             logger.info("Added correlation IDs to neighborhoods")
         
         # Normalize location names
@@ -219,28 +202,11 @@ class NeighborhoodEnricher:
             logger.info("Calculated neighborhood quality scores")
         
         # Add processing timestamp
-        enriched_df = enriched_df.withColumn("processed_at", current_timestamp())
+        enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        final_count = enriched_df.count()
-        if final_count != initial_count:
-            logger.warning(f"Neighborhood count changed: {initial_count} -> {final_count}")
-        
-        logger.info(f"Neighborhood enrichment completed for {final_count} records")
-        return enriched_df
+        return self.validate_enrichment(enriched_df, initial_count, "Neighborhood")
     
-    def _add_correlation_ids(self, df: DataFrame) -> DataFrame:
-        """Add correlation IDs for neighborhood tracking."""
-        # Check if column already exists
-        if "neighborhood_correlation_id" in df.columns:
-            return df.withColumn(
-                "neighborhood_correlation_id",
-                when(col("neighborhood_correlation_id").isNull(), self.generate_uuid_udf())
-                .otherwise(col("neighborhood_correlation_id"))
-            )
-        else:
-            # Create new column
-            return df.withColumn("neighborhood_correlation_id", self.generate_uuid_udf())
     
     def _normalize_locations(self, df: DataFrame) -> DataFrame:
         """
@@ -459,7 +425,7 @@ class NeighborhoodEnricher:
             # Return original DataFrame if enhancement fails
             return df
     
-    def get_enrichment_statistics(self, df: DataFrame) -> Dict:
+    def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
         Calculate statistics about the enrichment process.
         

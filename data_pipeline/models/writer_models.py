@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pyspark.sql import DataFrame
 
 
@@ -67,11 +67,12 @@ class WriteMetadata(BaseModel):
         description="Entity-specific metadata"
     )
     
-    class Config:
-        use_enum_values = True
-        json_encoders = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_serializers={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class WriteRequest(BaseModel):
@@ -96,8 +97,9 @@ class WriteRequest(BaseModel):
         # Could add more validation here if needed
         return v
     
-    class Config:
-        arbitrary_types_allowed = True  # Allow DataFrame type
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True  # Allow DataFrame type
+    )
 
 
 class EntityWriteRequests(BaseModel):
@@ -165,8 +167,9 @@ class WriteResult(BaseModel):
         description="Error message if write failed"
     )
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
 
 
 class WriteSessionResult(BaseModel):
@@ -230,10 +233,11 @@ class WriteSessionResult(BaseModel):
         """Check if all writes were successful."""
         return self.failed_writes == 0
     
-    class Config:
-        json_encoders = {
+    model_config = ConfigDict(
+        json_serializers={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 class WriterConfiguration(BaseModel):
@@ -258,8 +262,9 @@ class WriterConfiguration(BaseModel):
         """Check if this writer supports the given entity type."""
         return entity_type in self.supported_entities
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
 
 
 class OrchestratorConfiguration(BaseModel):

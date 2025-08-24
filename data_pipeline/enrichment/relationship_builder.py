@@ -6,11 +6,12 @@ using the defined Pydantic models from graph_models.py.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
+    abs,
     array_intersect,
     broadcast,
     coalesce,
@@ -18,6 +19,7 @@ from pyspark.sql.functions import (
     concat,
     count,
     expr,
+    least,
     lit,
     lower,
     size,
@@ -25,7 +27,7 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import StringType, StructField, StructType
 
-from data_pipeline.graph_models import (
+from data_pipeline.models.graph_models import (
     DescribesRelationship,
     LocatedInRelationship,
     NearRelationship,
@@ -96,7 +98,6 @@ class RelationshipBuilder:
         """
         self.spark = spark
         self.config = config or RelationshipBuilderConfig()
-        self.logger = logging.getLogger(__name__)
     
     def build_all_relationships(
         self,
@@ -181,24 +182,26 @@ class RelationshipBuilder:
         )
         
         # Join with neighborhoods to validate relationships
-        valid_relationships = props_with_neighborhood.join(
-            neighborhoods_df.select(
-                col("neighborhood_id"),
-                col("city").alias("n_city"),
-                col("state").alias("n_state")
-            ),
-            props_with_neighborhood["to_neighborhood_id"] == neighborhoods_df["neighborhood_id"],
+        neighborhoods_for_join = neighborhoods_df.select(
+            col("neighborhood_id"),
+            col("city").alias("n_city"),
+            col("state").alias("n_state")
+        ).alias("n")  # Alias the DataFrame to avoid ambiguity
+        
+        valid_relationships = props_with_neighborhood.alias("p").join(
+            neighborhoods_for_join,
+            col("p.to_neighborhood_id") == col("n.neighborhood_id"),
             "inner"
         )
         
         # Create relationship records
         located_in_df = valid_relationships.select(
-            col("from_id"),
-            col("neighborhood_id").alias("to_id"),
+            col("p.from_id"),
+            col("n.neighborhood_id").alias("to_id"),
             lit(RelationshipType.LOCATED_IN.value).alias("relationship_type"),
             # Calculate confidence based on city/state match
             when(
-                (col("city") == col("n_city")) & (col("state") == col("n_state")),
+                (col("p.city") == col("n.n_city")) & (col("p.state") == col("n.n_state")),
                 lit(1.0)
             ).otherwise(lit(0.8)).alias("confidence"),
             lit(None).cast("float").alias("distance_meters")
@@ -290,13 +293,12 @@ class RelationshipBuilder:
         # Prepare Wikipedia articles with location data
         wiki_with_location = wikipedia_df.filter(
             col("page_id").isNotNull() &
-            (col("best_city").isNotNull() | col("best_county").isNotNull())
+            col("best_city").isNotNull()
         ).select(
             col("page_id").cast("string").alias("from_id"),
             col("best_city"),
-            col("best_county"),
             col("best_state"),
-            coalesce(col("overall_confidence"), lit(0.5)).alias("confidence")
+            coalesce(col("confidence_score"), col("overall_confidence"), lit(0.5)).alias("confidence")
         )
         
         # Match to neighborhoods by city/state
@@ -343,19 +345,25 @@ class RelationshipBuilder:
         Returns:
             DataFrame of SimilarToRelationship records
         """
-        # Prepare properties for comparison
-        props = properties_df.filter(
+        # Prepare properties for comparison and alias immediately
+        p1 = properties_df.filter(
             col("listing_id").isNotNull() & 
             col("price").isNotNull() &
             col("city").isNotNull()
         ).select(
             "listing_id", "price", "bedrooms", "bathrooms",
             "square_feet", "features", "city", "state"
-        )
+        ).alias("p1")
         
-        # Self-join for pairwise comparison (avoiding duplicates)
-        p1 = props.alias("p1")
-        p2 = props.alias("p2")
+        # Create second alias for self-join
+        p2 = properties_df.filter(
+            col("listing_id").isNotNull() & 
+            col("price").isNotNull() &
+            col("city").isNotNull()
+        ).select(
+            "listing_id", "price", "bedrooms", "bathrooms",
+            "square_feet", "features", "city", "state"
+        ).alias("p2")
         
         pairs = p1.join(
             p2,
@@ -365,41 +373,47 @@ class RelationshipBuilder:
             "inner"
         )
         
-        # Calculate similarity using SQL expression for efficiency
+        # Calculate similarity using column references to avoid ambiguity
         similarity_df = pairs.select(
             p1["listing_id"].alias("from_id"),
             p2["listing_id"].alias("to_id"),
             lit(RelationshipType.SIMILAR_TO.value).alias("relationship_type"),
             
-            # Combined similarity calculation
-            expr("""
-                -- Price similarity (40% weight)
-                CASE 
-                    WHEN abs(p1.price - p2.price) / p1.price < 0.2 THEN 0.4
-                    WHEN abs(p1.price - p2.price) / p1.price < 0.4 THEN 0.2
-                    ELSE 0.0
-                END +
-                -- Bedroom/bathroom similarity (30% weight)
-                CASE
-                    WHEN p1.bedrooms = p2.bedrooms AND abs(p1.bathrooms - p2.bathrooms) <= 0.5 THEN 0.3
-                    WHEN abs(p1.bedrooms - p2.bedrooms) <= 1 THEN 0.15
-                    ELSE 0.0
-                END +
-                -- Square footage similarity (30% weight)
-                CASE
-                    WHEN p1.square_feet IS NOT NULL AND p2.square_feet IS NOT NULL THEN
-                        CASE
-                            WHEN abs(p1.square_feet - p2.square_feet) / p1.square_feet < 0.15 THEN 0.3
-                            WHEN abs(p1.square_feet - p2.square_feet) / p1.square_feet < 0.3 THEN 0.15
-                            ELSE 0.0
-                        END
-                    ELSE 0.15
-                END
-            """).alias("similarity_score"),
+            # Combined similarity calculation using proper column references
+            (
+                # Price similarity (40% weight)
+                when(
+                    abs(p1["price"] - p2["price"]) / p1["price"] < 0.2, lit(0.4)
+                ).when(
+                    abs(p1["price"] - p2["price"]) / p1["price"] < 0.4, lit(0.2)
+                ).otherwise(lit(0.0)) +
+                
+                # Bedroom/bathroom similarity (30% weight)
+                when(
+                    (p1["bedrooms"] == p2["bedrooms"]) & (abs(p1["bathrooms"] - p2["bathrooms"]) <= 0.5), lit(0.3)
+                ).when(
+                    abs(p1["bedrooms"] - p2["bedrooms"]) <= 1, lit(0.15)
+                ).otherwise(lit(0.0)) +
+                
+                # Square footage similarity (30% weight)
+                when(
+                    p1["square_feet"].isNotNull() & p2["square_feet"].isNotNull(),
+                    when(
+                        abs(p1["square_feet"] - p2["square_feet"]) / p1["square_feet"] < 0.15, lit(0.3)
+                    ).when(
+                        abs(p1["square_feet"] - p2["square_feet"]) / p1["square_feet"] < 0.3, lit(0.15)
+                    ).otherwise(lit(0.0))
+                ).otherwise(lit(0.15))
+            ).alias("similarity_score"),
             
             # Keep component scores for transparency
-            expr("CASE WHEN abs(p1.price - p2.price) / p1.price < 0.2 THEN 1.0 ELSE 0.5 END").alias("price_similarity"),
-            expr("CASE WHEN p1.square_feet IS NOT NULL THEN abs(p1.square_feet - p2.square_feet) / p1.square_feet ELSE NULL END").alias("size_similarity"),
+            when(
+                abs(p1["price"] - p2["price"]) / p1["price"] < 0.2, lit(1.0)
+            ).otherwise(lit(0.5)).alias("price_similarity"),
+            when(
+                p1["square_feet"].isNotNull(),
+                abs(p1["square_feet"] - p2["square_feet"]) / p1["square_feet"]
+            ).otherwise(lit(None)).alias("size_similarity"),
             lit(None).cast("float").alias("feature_similarity")
         )
         
@@ -420,17 +434,21 @@ class RelationshipBuilder:
         Returns:
             DataFrame of SimilarToRelationship records
         """
-        # Prepare neighborhoods for comparison
-        neighborhoods = neighborhoods_df.filter(
+        # Prepare neighborhoods for comparison and alias immediately
+        n1 = neighborhoods_df.filter(
             col("neighborhood_id").isNotNull()
         ).select(
             "neighborhood_id", "median_home_price", "walkability_score",
             "transit_score", "lifestyle_tags", "state"
-        )
+        ).alias("n1")
         
-        # Self-join for pairwise comparison
-        n1 = neighborhoods.alias("n1")
-        n2 = neighborhoods.alias("n2")
+        # Create second alias for self-join
+        n2 = neighborhoods_df.filter(
+            col("neighborhood_id").isNotNull()
+        ).select(
+            "neighborhood_id", "median_home_price", "walkability_score",
+            "transit_score", "lifestyle_tags", "state"
+        ).alias("n2")
         
         pairs = n1.join(
             n2,
@@ -439,46 +457,42 @@ class RelationshipBuilder:
             "inner"
         )
         
-        # Calculate similarity efficiently using SQL
+        # Calculate similarity using column references to avoid ambiguity
         similarity_df = pairs.select(
             n1["neighborhood_id"].alias("from_id"),
             n2["neighborhood_id"].alias("to_id"),
             lit(RelationshipType.SIMILAR_TO.value).alias("relationship_type"),
             
-            # Combined similarity score
-            expr("""
-                -- Price similarity (50% weight)
-                CASE
-                    WHEN n1.median_home_price IS NOT NULL AND n2.median_home_price IS NOT NULL THEN
-                        CASE
-                            WHEN abs(n1.median_home_price - n2.median_home_price) / n1.median_home_price < 0.2 THEN 0.5
-                            WHEN abs(n1.median_home_price - n2.median_home_price) / n1.median_home_price < 0.4 THEN 0.25
-                            ELSE 0.0
-                        END
-                    ELSE 0.25
-                END +
-                -- Walkability similarity (25% weight)
-                CASE
-                    WHEN n1.walkability_score IS NOT NULL AND n2.walkability_score IS NOT NULL THEN
-                        0.25 * (1.0 - least(abs(n1.walkability_score - n2.walkability_score) / 10.0, 1.0))
-                    ELSE 0.125
-                END +
-                -- Transit similarity (25% weight)
-                CASE
-                    WHEN n1.transit_score IS NOT NULL AND n2.transit_score IS NOT NULL THEN
-                        0.25 * (1.0 - least(abs(n1.transit_score - n2.transit_score) / 10.0, 1.0))
-                    ELSE 0.125
-                END
-            """).alias("similarity_score"),
+            # Combined similarity score using proper column references
+            (
+                # Price similarity (50% weight)
+                when(
+                    n1["median_home_price"].isNotNull() & n2["median_home_price"].isNotNull(),
+                    when(
+                        abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"] < 0.2, lit(0.5)
+                    ).when(
+                        abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"] < 0.4, lit(0.25)
+                    ).otherwise(lit(0.0))
+                ).otherwise(lit(0.25)) +
+                
+                # Walkability similarity (25% weight)
+                when(
+                    n1["walkability_score"].isNotNull() & n2["walkability_score"].isNotNull(),
+                    lit(0.25) * (lit(1.0) - least(abs(n1["walkability_score"] - n2["walkability_score"]) / lit(10.0), lit(1.0)))
+                ).otherwise(lit(0.125)) +
+                
+                # Transit similarity (25% weight)
+                when(
+                    n1["transit_score"].isNotNull() & n2["transit_score"].isNotNull(),
+                    lit(0.25) * (lit(1.0) - least(abs(n1["transit_score"] - n2["transit_score"]) / lit(10.0), lit(1.0)))
+                ).otherwise(lit(0.125))
+            ).alias("similarity_score"),
             
             # Component scores
-            expr("""
-                CASE
-                    WHEN n1.median_home_price IS NOT NULL AND n2.median_home_price IS NOT NULL 
-                    THEN 1.0 - least(abs(n1.median_home_price - n2.median_home_price) / n1.median_home_price, 1.0)
-                    ELSE 0.5
-                END
-            """).alias("price_similarity"),
+            when(
+                n1["median_home_price"].isNotNull() & n2["median_home_price"].isNotNull(),
+                lit(1.0) - least(abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"], lit(1.0))
+            ).otherwise(lit(0.5)).alias("price_similarity"),
             lit(None).cast("float").alias("feature_similarity"),
             lit(None).cast("float").alias("size_similarity")
         )

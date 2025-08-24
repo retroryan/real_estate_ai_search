@@ -7,36 +7,31 @@ the content is already optimized.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
-from pyspark.sql import DataFrame, SparkSession
+from pydantic import Field
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import (
     coalesce,
     col,
     concat_ws,
     expr,
-    length,
     lit,
-    regexp_replace,
-    trim,
     when,
 )
+
+from .base_processor import BaseTextConfig, BaseTextProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class WikipediaTextConfig(BaseModel):
+class WikipediaTextConfig(BaseTextConfig):
     """Configuration for Wikipedia text processing."""
     
+    # Override defaults for Wikipedia
     enable_cleaning: bool = Field(
         default=False,  # Wikipedia summaries are pre-cleaned
         description="Enable text cleaning (usually not needed for Wikipedia)"
-    )
-    
-    normalize_whitespace: bool = Field(
-        default=True,
-        description="Normalize whitespace characters"
     )
     
     include_metadata: bool = Field(
@@ -46,7 +41,7 @@ class WikipediaTextConfig(BaseModel):
     
 
 
-class WikipediaTextProcessor:
+class WikipediaTextProcessor(BaseTextProcessor):
     """
     Processes Wikipedia text content for embedding generation.
     
@@ -54,16 +49,9 @@ class WikipediaTextProcessor:
     well-structured, clean content. Minimal processing is needed.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[WikipediaTextConfig] = None):
-        """
-        Initialize the Wikipedia text processor.
-        
-        Args:
-            spark: Active SparkSession
-            config: Wikipedia text processing configuration
-        """
-        self.spark = spark
-        self.config = config or WikipediaTextConfig()
+    def _get_default_config(self) -> WikipediaTextConfig:
+        """Get the default configuration for Wikipedia text processor."""
+        return WikipediaTextConfig()
     
     def process(self, df: DataFrame) -> DataFrame:
         """
@@ -78,29 +66,12 @@ class WikipediaTextProcessor:
         Returns:
             DataFrame with embedding_text column added
         """
-        logger.info("Processing Wikipedia text for embeddings")
+        # Use base class process method
+        processed_df = super().process(df)
         
-        processed_df = df
-        
-        # Light cleaning if enabled (usually not needed)
-        if self.config.enable_cleaning:
-            processed_df = self._clean_text_fields(processed_df)
-        
-        # Build Wikipedia-specific embedding text
-        processed_df = self._build_embedding_text(processed_df)
-        
-        # Add text length for monitoring
-        processed_df = processed_df.withColumn(
-            "embedding_text_length",
-            when(col("embedding_text").isNotNull(), length(col("embedding_text")))
-            .otherwise(lit(0))
-        )
-        
-        # Log statistics
-        count = processed_df.count()
-        avg_length = processed_df.select(expr("avg(embedding_text_length)")).collect()[0][0]
-        logger.info(f"Processed text for {count} Wikipedia articles")
-        logger.info(f"Average embedding text length: {avg_length:.0f} characters")
+        # Log additional Wikipedia-specific statistics
+        stats = self.get_text_statistics(processed_df)
+        logger.info(f"Average embedding text length: {stats['avg_length']:.0f} characters")
         
         return processed_df
     
@@ -118,18 +89,12 @@ class WikipediaTextProcessor:
         """
         cleaned_df = df
         
-        # Only normalize whitespace if requested
-        if self.config.normalize_whitespace:
-            # long_summary and title are guaranteed to exist in Wikipedia data
-            cleaned_df = cleaned_df.withColumn(
-                "long_summary_cleaned",
-                trim(regexp_replace(col("long_summary"), r"\s+", " "))
-            )
-            
-            cleaned_df = cleaned_df.withColumn(
-                "title_cleaned",
-                trim(col("title"))
-            )
+        # Clean long_summary and title if needed
+        if "long_summary" in df.columns:
+            cleaned_df = self._clean_text_column(cleaned_df, "long_summary", "long_summary_cleaned")
+        
+        if "title" in df.columns:
+            cleaned_df = self._clean_text_column(cleaned_df, "title", "title_cleaned")
         
         return cleaned_df
     
@@ -187,7 +152,7 @@ class WikipediaTextProcessor:
             .otherwise(col("embedding_text"))
         )
     
-    def get_statistics(self, df: DataFrame) -> Dict:
+    def get_statistics(self, df: DataFrame) -> dict:
         """
         Get statistics about text processing.
         

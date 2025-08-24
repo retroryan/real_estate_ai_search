@@ -3,6 +3,10 @@ Main entry point for the data pipeline CLI with enhanced configuration support.
 
 This module provides command-line interface for running the Spark data pipeline
 with data subsetting and flexible embedding model selection.
+
+Can be run from within the module or from the parent directory:
+    python -m data_pipeline (from parent directory)
+    python __main__.py (from within data_pipeline directory)
 """
 
 import argparse
@@ -13,8 +17,15 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from data_pipeline.core.pipeline_runner import DataPipelineRunner
-from data_pipeline.config.settings import ConfigurationManager
+# Ensure project root is in Python path for imports when running as module
+if __name__ == "__main__":
+    # When running as python -m data_pipeline from parent directory
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+from .core.pipeline_runner import DataPipelineRunner
+from .config.settings import ConfigurationManager
 
 
 def setup_logging(level: str) -> None:
@@ -59,32 +70,25 @@ def main():
     
     # Data subsetting options
     parser.add_argument(
-        "--subset",
-        action="store_true",
-        help="Enable data subsetting for quick testing"
-    )
-    
-    parser.add_argument(
         "--sample-size",
         type=int,
         default=None,
-        help="Number of records to sample from each source (requires --subset)"
+        help="Number of records to sample from each source"
+    )
+    
+    # Output options
+    parser.add_argument(
+        "--output-destination",
+        type=str,
+        default=None,
+        help="Output destinations (comma-separated): parquet,neo4j,elasticsearch"
     )
     
     parser.add_argument(
-        "--sample-method",
-        type=str,
-        choices=["head", "random", "stratified"],
-        default=None,
-        help="Sampling method (requires --subset)"
-    )
-    
-    
-    parser.add_argument(
-        "--embedding-model",
+        "--output",
         type=str,
         default=None,
-        help="Override embedding model from config"
+        help="Custom output directory path"
     )
     
     # Spark options
@@ -133,34 +137,34 @@ def main():
         
         # Handle test mode first (highest priority)
         if args.test_mode:
-            os.environ["DATA_SUBSET_ENABLED"] = "true"
-            os.environ["DATA_SUBSET_SAMPLE_SIZE"] = "10"
-            os.environ["DEVELOPMENT_MODE"] = "true"
-            logger.info("Test mode enabled: using 10 records per source")
+            os.environ["EMBEDDING_PROVIDER"] = "mock"
+            sample_size = 10
+            logger.info("Test mode enabled: using 10 records per source with mock embeddings")
+        else:
+            sample_size = args.sample_size
+            if sample_size:
+                logger.info(f"Data subsetting enabled: {sample_size} records per source")
         
-        # Handle data subsetting
-        elif args.subset:  # Use elif to avoid conflict with test_mode
-            os.environ["DATA_SUBSET_ENABLED"] = "true"
-            if args.sample_size:
-                os.environ["DATA_SUBSET_SAMPLE_SIZE"] = str(args.sample_size)
-                logger.info(f"Data subsetting enabled: {args.sample_size} records per source")
-            else:
-                logger.info("Data subsetting enabled with default sample size")
+        # Set output destinations if specified
+        if args.output_destination:
+            os.environ["OUTPUT_DESTINATIONS"] = args.output_destination
+            logger.info(f"Output destinations: {args.output_destination}")
+        
+        # Set custom output path if specified
+        if args.output:
+            os.environ["OUTPUT_PATH"] = args.output
+            logger.info(f"Custom output path: {args.output}")
         
         # Set Spark configuration
         if args.cores:
             os.environ["SPARK_MASTER"] = f"local[{args.cores}]"
             logger.info(f"Configured Spark to use {args.cores} cores")
         
-        
-        if args.embedding_model:
-            os.environ["EMBEDDING_MODEL"] = args.embedding_model
-            logger.info(f"Using embedding model: {args.embedding_model}")
-        
-        # Initialize configuration manager
+        # Initialize configuration manager with sample_size override
         config_manager = ConfigurationManager(
             config_path=args.config,
-            environment=None
+            environment=None,
+            sample_size=sample_size
         )
         config = config_manager.load_config()
         

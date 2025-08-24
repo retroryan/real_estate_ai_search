@@ -19,6 +19,7 @@ from data_pipeline.schemas.entity_schemas import (
     WikipediaArticleSchema,
 )
 from data_pipeline.writers.base import DataWriter
+from data_pipeline.models.writer_models import WriteMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -74,18 +75,18 @@ class ParquetWriter(DataWriter):
             self.logger.error(f"Failed to validate output paths: {e}")
             return False
     
-    def write(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Route DataFrame to appropriate entity-specific writer.
         
         Args:
             df: DataFrame to write
-            metadata: Metadata about the data (must include entity_type)
+            metadata: WriteMetadata with entity type and other information
             
         Returns:
             True if write was successful, False otherwise
         """
-        entity_type = metadata.get("entity_type", "").lower()
+        entity_type = metadata.entity_type.value.lower()
         
         if entity_type == "property":
             return self.write_properties(df)

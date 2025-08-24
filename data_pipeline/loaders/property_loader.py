@@ -7,11 +7,9 @@ using common property_finder_models for validation.
 """
 
 import logging
-from pathlib import Path
-from typing import Optional
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import array, col, current_timestamp, lit, struct, to_json
+from pyspark.sql.functions import col
 from pyspark.sql.types import (
     ArrayType,
     DecimalType,
@@ -22,27 +20,15 @@ from pyspark.sql.types import (
     StructType,
 )
 
-# Import shared models from common package
-from common.property_finder_models.entities import EnrichedProperty
-from common.property_finder_models.geographic import EnrichedAddress
+from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
 
 
-class PropertyLoader:
+class PropertyLoader(BaseLoader):
     """Loads property data from JSON files into Spark DataFrames."""
     
-    def __init__(self, spark: SparkSession):
-        """
-        Initialize the property loader.
-        
-        Args:
-            spark: Active SparkSession
-        """
-        self.spark = spark
-        self.schema = self._define_property_schema()
-    
-    def _define_property_schema(self) -> StructType:
+    def _define_schema(self) -> StructType:
         """
         Define the expected schema for property JSON files.
         
@@ -51,6 +37,7 @@ class PropertyLoader:
         """
         return StructType([
             StructField("listing_id", StringType(), False),
+            StructField("neighborhood_id", StringType(), True),  # Add neighborhood_id to schema
             StructField("property_type", StringType(), True),
             StructField("price", DecimalType(12, 2), True),
             StructField("bedrooms", IntegerType(), True),
@@ -68,45 +55,8 @@ class PropertyLoader:
             ]), True),
         ])
     
-    def load(self, path: str) -> DataFrame:
-        """
-        Load property data from JSON file(s).
-        
-        Args:
-            path: Path to JSON file(s), supports wildcards
-            
-        Returns:
-            DataFrame with property-specific schema
-        """
-        logger.info(f"Loading property data from: {path}")
-        
-        # Verify path exists
-        if not Path(path).exists() and "*" not in path:
-            raise FileNotFoundError(f"Property data file not found: {path}")
-        
-        # Load JSON with native Spark reader
-        raw_df = self.spark.read \
-            .schema(self.schema) \
-            .option("multiLine", True) \
-            .option("mode", "PERMISSIVE") \
-            .option("columnNameOfCorruptRecord", "_corrupt_record") \
-            .json(path)
-        
-        # Check for corrupt records
-        if "_corrupt_record" in raw_df.columns:
-            corrupt_count = raw_df.filter(col("_corrupt_record").isNotNull()).count()
-            if corrupt_count > 0:
-                logger.warning(f"Found {corrupt_count} corrupt records in property data")
-        
-        # Transform to property-specific schema
-        property_df = self._transform_to_property_schema(raw_df, path)
-        
-        record_count = property_df.count()
-        logger.info(f"Successfully loaded {record_count} property records")
-        
-        return property_df
     
-    def _transform_to_property_schema(self, df: DataFrame, source_path: str) -> DataFrame:
+    def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
         Transform raw property data to property-specific schema.
         
@@ -120,6 +70,7 @@ class PropertyLoader:
         return df.select(
             # Core property fields
             col("listing_id"),
+            col("neighborhood_id"),  # Include neighborhood_id for relationship building
             col("property_type"),
             col("price"),
             col("bedrooms"),
@@ -129,13 +80,7 @@ class PropertyLoader:
             col("lot_size"),
             col("features"),
             col("description"),
-            col("address"),
-            
-            # Timestamps
-            current_timestamp().alias("ingested_at"),
-            
-            # Source tracking
-            lit(source_path).alias("source_file")
+            col("address")
         )
     
     def validate(self, df: DataFrame) -> bool:

@@ -68,32 +68,10 @@ class DataLoaderOrchestrator:
             logger.info("Created broadcast variable for location reference data")
         
         # Load properties
-        property_dfs = self._load_properties()
-        if property_dfs:
-            # If multiple property sources, union them
-            if len(property_dfs) == 1:
-                result['properties'] = property_dfs[0]
-            else:
-                result['properties'] = property_dfs[0]
-                for df in property_dfs[1:]:
-                    result['properties'] = result['properties'].unionByName(df, allowMissingColumns=False)
-            logger.info(f"Loaded {result['properties'].count()} property records")
-        else:
-            result['properties'] = None
+        result['properties'] = self._load_and_union_entity('properties', self._load_properties())
         
         # Load neighborhoods
-        neighborhood_dfs = self._load_neighborhoods()
-        if neighborhood_dfs:
-            # If multiple neighborhood sources, union them
-            if len(neighborhood_dfs) == 1:
-                result['neighborhoods'] = neighborhood_dfs[0]
-            else:
-                result['neighborhoods'] = neighborhood_dfs[0]
-                for df in neighborhood_dfs[1:]:
-                    result['neighborhoods'] = result['neighborhoods'].unionByName(df, allowMissingColumns=False)
-            logger.info(f"Loaded {result['neighborhoods'].count()} neighborhood records")
-        else:
-            result['neighborhoods'] = None
+        result['neighborhoods'] = self._load_and_union_entity('neighborhoods', self._load_neighborhoods())
         
         # Load Wikipedia
         wikipedia_df = self._load_wikipedia()
@@ -106,6 +84,30 @@ class DataLoaderOrchestrator:
         # Log summary statistics
         self._log_summary(result)
         
+        return result
+    
+    def _load_and_union_entity(self, entity_name: str, dataframes: List[DataFrame]) -> Optional[DataFrame]:
+        """
+        Union multiple DataFrames for an entity type.
+        
+        Args:
+            entity_name: Name of the entity type for logging
+            dataframes: List of DataFrames to union
+            
+        Returns:
+            Unioned DataFrame or None if no data
+        """
+        if not dataframes:
+            return None
+            
+        if len(dataframes) == 1:
+            result = dataframes[0]
+        else:
+            result = dataframes[0]
+            for df in dataframes[1:]:
+                result = result.unionByName(df, allowMissingColumns=False)
+        
+        logger.info(f"Loaded {result.count()} {entity_name} records")
         return result
     
     def _load_properties(self) -> List[DataFrame]:

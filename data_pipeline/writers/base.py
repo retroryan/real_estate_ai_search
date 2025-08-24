@@ -6,10 +6,13 @@ configuration model using Pydantic for type safety and validation.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame
+
+if TYPE_CHECKING:
+    from data_pipeline.models.writer_models import WriteMetadata
 
 
 class WriterConfig(BaseModel):
@@ -59,13 +62,13 @@ class DataWriter(ABC):
         pass
     
     @abstractmethod
-    def write(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def write(self, df: DataFrame, metadata: 'WriteMetadata') -> bool:
         """
         Write a DataFrame to the destination.
         
         Args:
             df: DataFrame to write
-            metadata: Additional metadata about the data being written
+            metadata: WriteMetadata model with information about the data being written
             
         Returns:
             True if write was successful, False otherwise

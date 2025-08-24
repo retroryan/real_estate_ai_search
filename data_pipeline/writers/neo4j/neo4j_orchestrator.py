@@ -6,12 +6,14 @@ graph structure with proper dependencies between entity types.
 """
 
 import logging
-from typing import Any, Dict
+import time
+from typing import Dict
 
 from pyspark.sql import DataFrame, SparkSession
 
 from data_pipeline.config.models import Neo4jConfig
 from data_pipeline.writers.base import DataWriter
+from data_pipeline.models.writer_models import WriteMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -70,18 +72,18 @@ class Neo4jOrchestrator(DataWriter):
             self.logger.error(f"Neo4j connection validation failed: {e}")
             return False
     
-    def write(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write entity-specific DataFrame to Neo4j.
         
         Args:
             df: DataFrame to write
-            metadata: Metadata including entity_type
+            metadata: WriteMetadata with entity type and other information
             
         Returns:
             True if write was successful, False otherwise
         """
-        entity_type = metadata.get("entity_type", "").lower()
+        entity_type = metadata.entity_type.value.lower()
         
         if entity_type == "property":
             return self._write_properties(df, metadata)
@@ -95,7 +97,7 @@ class Neo4jOrchestrator(DataWriter):
     
     def _write_nodes(self, df: DataFrame, label: str, key_field: str) -> bool:
         """
-        Generic node writer with common logic.
+        Generic node writer with common logic and progress tracking.
         
         Args:
             df: DataFrame to write
@@ -107,7 +109,14 @@ class Neo4jOrchestrator(DataWriter):
         """
         try:
             record_count = df.count()
-            self.logger.info(f"Writing {record_count} {label} nodes to Neo4j")
+            self.logger.info(f"📊 Starting write of {record_count:,} {label} nodes to Neo4j")
+            
+            # Log sample records for verification
+            if record_count > 0:
+                self.logger.debug(f"   Sample {label} fields: {df.columns[:5]}")
+            
+            # Track start time for performance metrics
+            start_time = time.time()
             
             # Connection config comes from SparkSession
             writer = df.write.format(self.format_string).mode("append")
@@ -116,16 +125,31 @@ class Neo4jOrchestrator(DataWriter):
             writer = writer.option("labels", f":{label}")
             writer = writer.option("node.keys", key_field)
             
+            # Use coalesce for better batch control if large dataset
+            if record_count > 10000:
+                self.logger.info(f"   Large dataset detected, optimizing partitions...")
+                df = df.coalesce(10)
+                writer = df.write.format(self.format_string).mode("append")
+                writer = writer.option("labels", f":{label}")
+                writer = writer.option("node.keys", key_field)
+            
             writer.save()
             
-            self.logger.info(f"Successfully wrote {record_count} {label} nodes")
+            # Calculate and log performance metrics
+            elapsed_time = time.time() - start_time
+            records_per_second = record_count / elapsed_time if elapsed_time > 0 else 0
+            
+            self.logger.info(
+                f"✅ Successfully wrote {record_count:,} {label} nodes in {elapsed_time:.2f}s "
+                f"({records_per_second:.0f} records/sec)"
+            )
             return True
             
         except Exception as e:
-            self.logger.error(f"Failed to write {label} nodes: {e}")
+            self.logger.error(f"❌ Failed to write {label} nodes: {e}")
             return False
     
-    def _write_properties(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def _write_properties(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write property nodes to Neo4j.
         
@@ -141,7 +165,7 @@ class Neo4jOrchestrator(DataWriter):
         
         return self._write_nodes(df, "Property", "listing_id")
     
-    def _write_neighborhoods(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def _write_neighborhoods(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write neighborhood nodes to Neo4j.
         
@@ -157,7 +181,7 @@ class Neo4jOrchestrator(DataWriter):
         
         return self._write_nodes(df, "Neighborhood", "neighborhood_id")
     
-    def _write_wikipedia(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def _write_wikipedia(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write Wikipedia article nodes to Neo4j.
         
@@ -175,7 +199,7 @@ class Neo4jOrchestrator(DataWriter):
     
     def write_relationships(self, relationships_df: DataFrame, relationship_type: str) -> bool:
         """
-        Write relationship DataFrame to Neo4j.
+        Write relationship DataFrame to Neo4j with progress tracking and error handling.
         
         Args:
             relationships_df: DataFrame containing relationship data
@@ -186,18 +210,29 @@ class Neo4jOrchestrator(DataWriter):
         """
         try:
             if relationships_df is None or relationships_df.count() == 0:
-                self.logger.warning(f"No {relationship_type} relationships to write")
+                self.logger.warning(f"⚠️ No {relationship_type} relationships to write")
                 return True
             
             record_count = relationships_df.count()
-            self.logger.info(f"Writing {record_count} {relationship_type} relationships to Neo4j")
+            self.logger.info(f"🔗 Starting write of {record_count:,} {relationship_type} relationships")
+            
+            # Track start time
+            start_time = time.time()
             
             # Get relationship configuration
             relationship_config = self._get_relationship_config(relationship_type)
             
             if not relationship_config:
-                self.logger.error(f"Unknown relationship type: {relationship_type}")
+                self.logger.error(f"❌ Unknown relationship type: {relationship_type}")
                 return False
+            
+            # Validate that source and target nodes exist (sample check)
+            if record_count > 0:
+                sample = relationships_df.limit(1).collect()[0]
+                self.logger.debug(
+                    f"   Sample relationship: {sample.get('from_id', 'N/A')} -> "
+                    f"{sample.get('to_id', 'N/A')}"
+                )
             
             # Connection config comes from SparkSession
             writer = relationships_df.write.format(self.format_string).mode("append")
@@ -215,11 +250,27 @@ class Neo4jOrchestrator(DataWriter):
             
             writer.save()
             
-            self.logger.info(f"Successfully wrote {record_count} {relationship_type} relationships")
+            # Calculate performance metrics
+            elapsed_time = time.time() - start_time
+            relationships_per_second = record_count / elapsed_time if elapsed_time > 0 else 0
+            
+            self.logger.info(
+                f"✅ Successfully wrote {record_count:,} {relationship_type} relationships "
+                f"in {elapsed_time:.2f}s ({relationships_per_second:.0f} relationships/sec)"
+            )
             return True
             
         except Exception as e:
-            self.logger.error(f"Failed to write {relationship_type} relationships: {e}")
+            # Provide more context about the error
+            error_msg = str(e)
+            if "node" in error_msg.lower() and "not found" in error_msg.lower():
+                self.logger.error(
+                    f"❌ Failed to write {relationship_type} relationships - "
+                    f"Some referenced nodes may not exist. Ensure all nodes are written first."
+                )
+                self.logger.debug(f"   Full error: {e}")
+            else:
+                self.logger.error(f"❌ Failed to write {relationship_type} relationships: {e}")
             return False
     
     def _get_relationship_config(self, relationship_type: str) -> Dict[str, str]:

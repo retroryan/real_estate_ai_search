@@ -8,7 +8,7 @@ with full type safety and validation.
 import logging
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pyspark.sql import DataFrame
 
@@ -21,7 +21,6 @@ from data_pipeline.models.writer_models import (
     WriteSessionResult,
 )
 from data_pipeline.writers.base import DataWriter
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +112,7 @@ class WriterOrchestrator:
             self.logger.info(f"Writing {entity_type} to {writer_name}...")
             
             try:
-                # Convert metadata to dict for backward compatibility
-                metadata_dict = metadata.dict()
-                success = writer.write(df, metadata_dict)
+                success = writer.write(df, metadata)
                 
                 if not success:
                     raise RuntimeError(f"Write operation returned False")

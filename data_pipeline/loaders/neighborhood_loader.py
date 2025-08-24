@@ -7,11 +7,9 @@ using common property_finder_models for validation.
 """
 
 import logging
-from pathlib import Path
-from typing import Optional
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import array, col, current_timestamp, lit, struct, to_json
+from pyspark.sql.functions import col
 from pyspark.sql.types import (
     ArrayType,
     DecimalType,
@@ -22,27 +20,15 @@ from pyspark.sql.types import (
     StructType,
 )
 
-# Import shared models from common package
-from common.property_finder_models.entities import EnrichedNeighborhood
-from common.property_finder_models.geographic import GeoPolygon
+from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
 
 
-class NeighborhoodLoader:
+class NeighborhoodLoader(BaseLoader):
     """Loads neighborhood data from JSON files into Spark DataFrames."""
     
-    def __init__(self, spark: SparkSession):
-        """
-        Initialize the neighborhood loader.
-        
-        Args:
-            spark: Active SparkSession
-        """
-        self.spark = spark
-        self.schema = self._define_neighborhood_schema()
-    
-    def _define_neighborhood_schema(self) -> StructType:
+    def _define_schema(self) -> StructType:
         """
         Define the expected schema for neighborhood JSON files.
         
@@ -63,45 +49,8 @@ class NeighborhoodLoader:
             ]), True),
         ])
     
-    def load(self, path: str) -> DataFrame:
-        """
-        Load neighborhood data from JSON file(s).
-        
-        Args:
-            path: Path to JSON file(s), supports wildcards
-            
-        Returns:
-            DataFrame with neighborhood-specific schema
-        """
-        logger.info(f"Loading neighborhood data from: {path}")
-        
-        # Verify path exists
-        if not Path(path).exists() and "*" not in path:
-            raise FileNotFoundError(f"Neighborhood data file not found: {path}")
-        
-        # Load JSON with native Spark reader
-        raw_df = self.spark.read \
-            .schema(self.schema) \
-            .option("multiLine", True) \
-            .option("mode", "PERMISSIVE") \
-            .option("columnNameOfCorruptRecord", "_corrupt_record") \
-            .json(path)
-        
-        # Check for corrupt records
-        if "_corrupt_record" in raw_df.columns:
-            corrupt_count = raw_df.filter(col("_corrupt_record").isNotNull()).count()
-            if corrupt_count > 0:
-                logger.warning(f"Found {corrupt_count} corrupt records in neighborhood data")
-        
-        # Transform to neighborhood-specific schema
-        neighborhood_df = self._transform_to_neighborhood_schema(raw_df, path)
-        
-        record_count = neighborhood_df.count()
-        logger.info(f"Successfully loaded {record_count} neighborhood records")
-        
-        return neighborhood_df
     
-    def _transform_to_neighborhood_schema(self, df: DataFrame, source_path: str) -> DataFrame:
+    def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
         Transform raw neighborhood data to neighborhood-specific schema.
         
@@ -124,13 +73,7 @@ class NeighborhoodLoader:
             # Extract demographics from nested structure
             col("demographics.population").alias("population"),
             col("demographics.median_income").alias("median_income"), 
-            col("demographics.median_age").alias("median_age"),
-            
-            # Timestamps
-            current_timestamp().alias("ingested_at"),
-            
-            # Source tracking
-            lit(source_path).alias("source_file")
+            col("demographics.median_age").alias("median_age")
         )
     
     def validate(self, df: DataFrame) -> bool:

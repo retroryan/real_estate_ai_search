@@ -6,10 +6,10 @@ preparing content for embedding generation with property-specific logic.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
-from pyspark.sql import DataFrame, SparkSession
+from pydantic import Field
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import (
     array_join,
     coalesce,
@@ -19,31 +19,17 @@ from pyspark.sql.functions import (
     length,
     lit,
     lower,
-    regexp_replace,
     trim,
     when,
 )
 
+from .base_processor import BaseTextConfig, BaseTextProcessor
+
 logger = logging.getLogger(__name__)
 
 
-class PropertyTextConfig(BaseModel):
+class PropertyTextConfig(BaseTextConfig):
     """Configuration for property text processing."""
-    
-    enable_cleaning: bool = Field(
-        default=True,
-        description="Enable text cleaning and normalization"
-    )
-    
-    normalize_whitespace: bool = Field(
-        default=True,
-        description="Normalize whitespace characters"
-    )
-    
-    remove_html_tags: bool = Field(
-        default=True,
-        description="Remove HTML tags from content"
-    )
     
     max_description_length: int = Field(
         default=2000,
@@ -62,7 +48,7 @@ class PropertyTextConfig(BaseModel):
     )
 
 
-class PropertyTextProcessor:
+class PropertyTextProcessor(BaseTextProcessor):
     """
     Processes property text content for embedding generation.
     
@@ -70,47 +56,10 @@ class PropertyTextProcessor:
     focusing on key searchable attributes.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[PropertyTextConfig] = None):
-        """
-        Initialize the property text processor.
-        
-        Args:
-            spark: Active SparkSession
-            config: Property text processing configuration
-        """
-        self.spark = spark
-        self.config = config or PropertyTextConfig()
+    def _get_default_config(self) -> PropertyTextConfig:
+        """Get the default configuration for property text processor."""
+        return PropertyTextConfig()
     
-    def process(self, df: DataFrame) -> DataFrame:
-        """
-        Process property text content for embeddings.
-        
-        Args:
-            df: Property DataFrame
-            
-        Returns:
-            DataFrame with embedding_text column added
-        """
-        logger.info("Processing property text for embeddings")
-        
-        processed_df = df
-        
-        # Clean text fields if enabled
-        if self.config.enable_cleaning:
-            processed_df = self._clean_text_fields(processed_df)
-        
-        # Build property-specific embedding text
-        processed_df = self._build_embedding_text(processed_df)
-        
-        # Add text length for monitoring
-        processed_df = processed_df.withColumn(
-            "embedding_text_length",
-            when(col("embedding_text").isNotNull(), length(col("embedding_text")))
-            .otherwise(lit(0))
-        )
-        
-        logger.info(f"Processed text for {processed_df.count()} properties")
-        return processed_df
     
     def _clean_text_fields(self, df: DataFrame) -> DataFrame:
         """
@@ -124,23 +73,12 @@ class PropertyTextProcessor:
         """
         cleaned_df = df
         
-        # Clean description field
+        # Use base class method for description
+        cleaned_df = super()._clean_text_fields(df)
+        
+        # Clean additional property-specific fields
         if "description" in df.columns:
-            if self.config.remove_html_tags:
-                cleaned_df = cleaned_df.withColumn(
-                    "description_cleaned",
-                    regexp_replace(col("description"), "<[^>]+>", " ")
-                )
-            else:
-                cleaned_df = cleaned_df.withColumn(
-                    "description_cleaned", col("description")
-                )
-            
-            if self.config.normalize_whitespace:
-                cleaned_df = cleaned_df.withColumn(
-                    "description_cleaned",
-                    trim(regexp_replace(col("description_cleaned"), r"\s+", " "))
-                )
+            cleaned_df = self._clean_text_column(cleaned_df, "description", "description_cleaned")
         
         # Clean property_type field
         if "property_type" in df.columns:
@@ -267,7 +205,7 @@ class PropertyTextProcessor:
         
         return df.withColumn("embedding_text", embedding_text_expr)
     
-    def get_statistics(self, df: DataFrame) -> Dict:
+    def get_statistics(self, df: DataFrame) -> dict:
         """
         Get statistics about text processing.
         

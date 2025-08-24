@@ -72,6 +72,9 @@ class SparkSessionManager:
             # Set log level
             self._spark_session.sparkContext.setLogLevel("WARN")
             
+            # Disable ambiguous self-join check for relationship building
+            self._spark_session.conf.set("spark.sql.analyzer.failAmbiguousSelfJoin", "false")
+            
             # Log session info
             self._log_session_info()
             
@@ -178,6 +181,8 @@ class SparkSessionManager:
         
         self._spark_session.conf.set("spark.sql.adaptive.enabled", "true")
         self._spark_session.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
+        # Disable ambiguous self-join check for relationship building
+        self._spark_session.conf.set("spark.sql.analyzer.failAmbiguousSelfJoin", "false")
         logger.info("Adaptive query execution enabled")
     
     def set_shuffle_partitions(self, num_partitions: int) -> None:
@@ -224,6 +229,57 @@ def _add_neo4j_config_if_enabled(spark_config: SparkConfig, pipeline_config: Any
     return spark_config
 
 
+def _add_elasticsearch_config_if_enabled(spark_config: SparkConfig, pipeline_config: Any) -> SparkConfig:
+    """
+    Add Elasticsearch configuration to Spark config if Elasticsearch writer is enabled.
+    
+    Args:
+        spark_config: Base Spark configuration
+        pipeline_config: Pipeline configuration to check for Elasticsearch settings
+        
+    Returns:
+        Updated SparkConfig with Elasticsearch settings if enabled
+    """
+    # Check if Elasticsearch writer is enabled in the pipeline configuration
+    if (hasattr(pipeline_config, 'output_destinations') and 
+        hasattr(pipeline_config.output_destinations, 'elasticsearch') and
+        pipeline_config.output_destinations.elasticsearch.enabled):
+        
+        es_cfg = pipeline_config.output_destinations.elasticsearch
+        logger.info("Elasticsearch writer enabled - adding connection configuration to SparkSession")
+        
+        # Add Elasticsearch connection settings using official es.* namespace
+        spark_config.config["es.nodes"] = ",".join(es_cfg.hosts)
+        
+        # Add authentication if provided
+        if es_cfg.username:
+            spark_config.config["es.net.http.auth.user"] = es_cfg.username
+        if es_cfg.password:
+            spark_config.config["es.net.http.auth.pass"] = es_cfg.get_password() or ""
+            
+        # Add batch and write settings
+        spark_config.config["es.batch.size.entries"] = str(es_cfg.bulk_size)
+        spark_config.config["es.write.operation"] = "upsert"
+        spark_config.config["es.mapping.id"] = "id"  # Default ID field
+        
+        # Add retry settings for resilience
+        spark_config.config["es.batch.write.retry.count"] = "3"
+        spark_config.config["es.batch.write.retry.wait"] = "10s"
+        
+        # Add timeout settings for demo environment
+        spark_config.config["es.http.timeout"] = "2m"
+        spark_config.config["es.http.retries"] = "3"
+        spark_config.config["es.scroll.keepalive"] = "10m"
+        
+        # Enable error logging
+        spark_config.config["es.error.handler.log.error.message"] = "true"
+        spark_config.config["es.error.handler.log.error.reason"] = "true"
+        
+        logger.debug(f"Added Elasticsearch config for nodes: {es_cfg.hosts}")
+    
+    return spark_config
+
+
 @contextmanager
 def spark_session_context(config: SparkConfig) -> Generator[SparkSession, None, None]:
     """
@@ -260,7 +316,7 @@ def get_or_create_spark_session(config: SparkConfig, pipeline_config: Optional[A
     
     Args:
         config: Spark configuration
-        pipeline_config: Optional pipeline configuration to check for Neo4j settings
+        pipeline_config: Optional pipeline configuration to check for Neo4j and Elasticsearch settings
         
     Returns:
         SparkSession instance
@@ -271,9 +327,10 @@ def get_or_create_spark_session(config: SparkConfig, pipeline_config: Optional[A
     if existing is not None:
         return existing
     
-    # Check if Neo4j should be configured at session level
+    # Check if Neo4j or Elasticsearch should be configured at session level
     if pipeline_config is not None:
         config = _add_neo4j_config_if_enabled(config, pipeline_config)
+        config = _add_elasticsearch_config_if_enabled(config, pipeline_config)
     
     return manager.create_session(config)
 

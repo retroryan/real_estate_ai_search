@@ -1,0 +1,340 @@
+# Neo4j Configuration for Data Pipeline
+# This configuration handles Neo4j connection and writer settings for the data pipeline
+
+# Neo4j Connection Settings
+connection:
+  uri: ${NEO4J_URI:-bolt://localhost:7687}
+  username: ${NEO4J_USERNAME:-neo4j}
+  password: ${NEO4J_PASSWORD:-password}
+  database: ${NEO4J_DATABASE:-neo4j}
+  
+  # Connection pool settings
+  max_connection_lifetime: 3600
+  max_connection_pool_size: 50
+  connection_acquisition_timeout: 60
+  connection_timeout: 30
+  
+  # Encryption settings
+  encrypted: false
+  trust: "TRUST_ALL_CERTIFICATES"  # Options: TRUST_ALL_CERTIFICATES, TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
+
+# Spark Neo4j Connector Settings
+spark_connector:
+  # Format string for Spark DataSource
+  format: "org.neo4j.spark.DataSource"
+  
+  # Spark-specific Neo4j options
+  options:
+    # These will be set at SparkSession level for connection pooling
+    neo4j.url: ${NEO4J_URI:-bolt://localhost:7687}
+    neo4j.authentication.type: "basic"
+    neo4j.authentication.basic.username: ${NEO4J_USERNAME:-neo4j}
+    neo4j.authentication.basic.password: ${NEO4J_PASSWORD:-password}
+    neo4j.database: ${NEO4J_DATABASE:-neo4j}
+    
+    # Connection pool configuration for Spark
+    neo4j.connection.max.lifetime.msecs: "3600000"
+    neo4j.connection.liveness.check.timeout.msecs: "60000"
+    neo4j.connection.acquisition.timeout.msecs: "60000"
+    
+    # Performance settings
+    neo4j.batch.size: "5000"
+    neo4j.query.retries: "3"
+
+# Writer Configuration
+writer:
+  enabled: true
+  
+  # Transaction settings
+  transaction_size: 1000
+  batch_size: 5000
+  parallel_writers: 4
+  
+  # Clear settings
+  clear_before_write: true  # Clear database before writing (useful for demo/test)
+  clear_strategy: "entity"  # Options: entity, all, none
+  
+  # Write modes
+  node_write_mode: "overwrite"  # Options: overwrite, append, errorIfExists
+  relationship_write_mode: "overwrite"  # Options: overwrite, append, errorIfExists
+  
+  # Performance optimization
+  use_apoc: false  # Use APOC procedures if available
+  create_indexes: true  # Create indexes for better query performance
+  create_constraints: true  # Create uniqueness constraints
+  
+  # Error handling
+  continue_on_error: true
+  max_retries: 3
+  retry_delay_ms: 1000
+
+# Entity Configuration
+entities:
+  # Property nodes
+  property:
+    label: "Property"
+    key_field: "listing_id"
+    indexes:
+      - "listing_id"
+      - "city"
+      - "state"
+      - "price"
+    constraints:
+      - field: "listing_id"
+        type: "unique"
+    batch_size: 1000
+    
+  # Neighborhood nodes
+  neighborhood:
+    label: "Neighborhood" 
+    key_field: "neighborhood_id"
+    indexes:
+      - "neighborhood_id"
+      - "name"
+      - "city"
+      - "state"
+    constraints:
+      - field: "neighborhood_id"
+        type: "unique"
+    batch_size: 500
+    
+  # Wikipedia article nodes
+  wikipedia:
+    label: "WikipediaArticle"
+    key_field: "page_id"
+    indexes:
+      - "page_id"
+      - "title"
+      - "best_city"
+      - "best_state"
+    constraints:
+      - field: "page_id"
+        type: "unique"
+    batch_size: 1000
+    
+  # Feature nodes
+  feature:
+    label: "Feature"
+    key_field: "feature_id"
+    indexes:
+      - "feature_id"
+      - "name"
+      - "category"
+    constraints:
+      - field: "feature_id"
+        type: "unique"
+    batch_size: 500
+    
+  # Location hierarchy nodes
+  state:
+    label: "State"
+    key_field: "state_code"
+    indexes:
+      - "state_code"
+      - "name"
+    constraints:
+      - field: "state_code"
+        type: "unique"
+    batch_size: 100
+    
+  county:
+    label: "County"
+    key_field: "county_id"
+    indexes:
+      - "county_id"
+      - "name"
+      - "state_code"
+    batch_size: 500
+    
+  city:
+    label: "City"
+    key_field: "city_id"
+    indexes:
+      - "city_id"
+      - "name"
+      - "state_code"
+    batch_size: 1000
+
+# Relationship Configuration
+relationships:
+  # Property relationships
+  property_located_in:
+    type: "LOCATED_IN"
+    source_label: "Property"
+    target_label: "Neighborhood"
+    source_key: "listing_id"
+    target_key: "neighborhood_id"
+    batch_size: 5000
+    
+  property_has_feature:
+    type: "HAS_FEATURE"
+    source_label: "Property"
+    target_label: "Feature"
+    source_key: "listing_id"
+    target_key: "feature_id"
+    batch_size: 10000
+    
+  property_similar_to:
+    type: "SIMILAR_TO"
+    source_label: "Property"
+    target_label: "Property"
+    source_key: "listing_id"
+    target_key: "listing_id"
+    properties:
+      - "similarity_score"
+      - "price_similarity"
+      - "size_similarity"
+      - "feature_similarity"
+    batch_size: 10000
+    
+  # Neighborhood relationships
+  neighborhood_part_of:
+    type: "PART_OF"
+    source_label: "Neighborhood"
+    target_label: "City"
+    source_key: "neighborhood_id"
+    target_key: "city_id"
+    batch_size: 1000
+    
+  # Wikipedia relationships
+  wikipedia_describes:
+    type: "DESCRIBES"
+    source_label: "WikipediaArticle"
+    target_label: "Neighborhood"
+    source_key: "page_id"
+    target_key: "neighborhood_id"
+    batch_size: 5000
+    
+  wikipedia_mentions:
+    type: "MENTIONS"
+    source_label: "WikipediaArticle"
+    target_label: "City"
+    source_key: "page_id"
+    target_key: "city_id"
+    batch_size: 5000
+    
+  # Location hierarchy relationships
+  city_in_county:
+    type: "IN_COUNTY"
+    source_label: "City"
+    target_label: "County"
+    source_key: "city_id"
+    target_key: "county_id"
+    batch_size: 5000
+    
+  county_in_state:
+    type: "IN_STATE"
+    source_label: "County"
+    target_label: "State"
+    source_key: "county_id"
+    target_key: "state_code"
+    batch_size: 1000
+    
+  city_in_state:
+    type: "IN_STATE"
+    source_label: "City"
+    target_label: "State"
+    source_key: "city_id"
+    target_key: "state_code"
+    batch_size: 5000
+
+# Index Configuration
+indexes:
+  # Vector index for embeddings
+  vector_index:
+    name: "property_embeddings"
+    label: "Property"
+    property: "descriptionEmbedding"
+    dimensions: 768
+    similarity_function: "cosine"  # Options: cosine, euclidean
+    
+  # Text indexes for search
+  text_indexes:
+    - label: "Property"
+      property: "description"
+      analyzer: "standard"
+    - label: "WikipediaArticle"
+      property: "summary"
+      analyzer: "standard"
+    - label: "Neighborhood"
+      property: "description"
+      analyzer: "standard"
+
+# Data Quality Settings
+data_quality:
+  # Validation settings
+  validate_nodes: true
+  validate_relationships: true
+  validate_schema: true
+  
+  # Quality thresholds
+  min_node_properties: 3
+  max_null_percentage: 50
+  
+  # Logging
+  log_validation_errors: true
+  validation_sample_size: 100
+
+# Monitoring and Metrics
+monitoring:
+  enabled: true
+  metrics_interval: 10  # seconds
+  
+  # Track these metrics
+  track_metrics:
+    - "nodes_created"
+    - "relationships_created"
+    - "write_duration"
+    - "error_count"
+    - "transaction_count"
+  
+  # Alert thresholds
+  alert_thresholds:
+    max_error_rate: 0.1  # 10%
+    max_write_duration_seconds: 300
+    min_write_throughput_per_second: 100
+
+# Development and Testing
+development:
+  # Test mode settings
+  test_mode: false
+  test_record_limit: 100
+  
+  # Debugging
+  debug_queries: false
+  log_cypher_queries: false
+  
+  # Dry run mode - generate Cypher but don't execute
+  dry_run: false
+  dry_run_output_path: "logs/neo4j_dry_run.cypher"
+
+# Environment-specific overrides
+environments:
+  development:
+    connection:
+      uri: "bolt://localhost:7687"
+    writer:
+      clear_before_write: true
+      transaction_size: 100
+    development:
+      test_mode: true
+      debug_queries: true
+      
+  staging:
+    connection:
+      uri: ${NEO4J_STAGING_URI:-bolt://staging-neo4j:7687}
+    writer:
+      clear_before_write: false
+      transaction_size: 500
+      
+  production:
+    connection:
+      uri: ${NEO4J_PROD_URI:-bolt://prod-neo4j:7687}
+      encrypted: true
+    writer:
+      clear_before_write: false
+      transaction_size: 5000
+      batch_size: 10000
+    monitoring:
+      enabled: true
+      track_metrics: ["nodes_created", "relationships_created", "write_duration", "error_count"]

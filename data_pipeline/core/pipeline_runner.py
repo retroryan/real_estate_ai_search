@@ -574,6 +574,76 @@ class DataPipelineRunner:
             
             logger.info("="*60)
     
+    def _log_write_summary(
+        self, 
+        entity_dataframes: Dict[str, DataFrame], 
+        relationships: Dict[str, DataFrame],
+        write_result: Any
+    ) -> None:
+        """
+        Log comprehensive summary statistics after writing.
+        
+        Args:
+            entity_dataframes: Dictionary of entity DataFrames
+            relationships: Dictionary of relationship DataFrames
+            write_result: Result from write operations
+        """
+        logger.info("")
+        logger.info("="*60)
+        logger.info("📊 WRITE SUMMARY STATISTICS")
+        logger.info("="*60)
+        
+        # Entity statistics
+        logger.info("\n📦 Entities Written:")
+        total_entities = 0
+        for entity_type, df in entity_dataframes.items():
+            if df is not None:
+                count = df.count()
+                total_entities += count
+                logger.info(f"   • {entity_type.capitalize()}: {count:,} records")
+        
+        # Relationship statistics
+        if relationships:
+            logger.info("\n🔗 Relationships Created:")
+            total_relationships = 0
+            for rel_type, rel_df in relationships.items():
+                if rel_df is not None:
+                    count = rel_df.count()
+                    total_relationships += count
+                    logger.info(f"   • {rel_type}: {count:,} relationships")
+        else:
+            total_relationships = 0
+            logger.info("\n🔗 No relationships created")
+        
+        # Performance metrics
+        if hasattr(write_result, 'total_duration_seconds'):
+            logger.info(f"\n⏱️ Performance Metrics:")
+            logger.info(f"   • Total write time: {write_result.total_duration_seconds:.2f} seconds")
+            if write_result.total_duration_seconds > 0:
+                entities_per_sec = total_entities / write_result.total_duration_seconds
+                logger.info(f"   • Throughput: {entities_per_sec:.0f} entities/second")
+        
+        # Writer statistics
+        if hasattr(write_result, 'results'):
+            writers_used = set(r.writer_name for r in write_result.results)
+            logger.info(f"\n📝 Writers Used: {', '.join(writers_used)}")
+        
+        # Grand totals
+        logger.info(f"\n📈 Grand Totals:")
+        logger.info(f"   • Total entities: {total_entities:,}")
+        logger.info(f"   • Total relationships: {total_relationships:,}")
+        logger.info(f"   • Total records: {total_entities + total_relationships:,}")
+        
+        # Data quality indicators
+        if total_entities > 0:
+            logger.info(f"\n✨ Data Quality Indicators:")
+            avg_relationships_per_entity = total_relationships / total_entities if total_entities > 0 else 0
+            logger.info(f"   • Average relationships per entity: {avg_relationships_per_entity:.2f}")
+            
+            # Check for orphaned entities (entities without relationships)
+            if avg_relationships_per_entity < 0.5:
+                logger.warning(f"   ⚠️ Low relationship ratio - some entities may be orphaned")
+    
     def _build_relationships(self, entity_dataframes: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Build all relationships between entities.
@@ -687,6 +757,9 @@ class DataPipelineRunner:
                     logger.info("✅ All relationships written successfully")
                 else:
                     logger.warning("⚠️ Some relationships failed to write")
+            
+            # Step 3: Generate and log summary statistics
+            self._log_write_summary(output_dataframes, relationships, result)
             
             logger.info("="*60)
             logger.info("✅ Pipeline write completed")

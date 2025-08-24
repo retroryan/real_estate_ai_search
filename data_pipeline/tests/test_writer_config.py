@@ -93,7 +93,7 @@ class MockWriter(DataWriter):
         self.validated = True
         return not self.should_fail
     
-    def write(self, df, metadata) -> bool:
+    def write(self, df, metadata: WriteMetadata) -> bool:
         self.write_called = True
         if self.should_fail:
             return False

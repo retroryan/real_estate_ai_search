@@ -5,89 +5,25 @@ Each entity type has its own embedding logic without mixing concerns.
 """
 
 import logging
-import time
-from typing import List, Optional, Tuple
-from uuid import uuid4
 
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     array_join,
     coalesce,
     col,
     concat_ws,
-    current_timestamp,
     length,
-    lit,
-    pandas_udf,
-    udf,
     when,
 )
-from pyspark.sql.types import ArrayType, DoubleType, IntegerType, StringType
 
 from data_pipeline.config.models import EmbeddingConfig
+from .base_embedding import BaseEmbeddingGenerator
 
 logger = logging.getLogger(__name__)
 
 
-class WikipediaEmbeddingGenerator:
+class WikipediaEmbeddingGenerator(BaseEmbeddingGenerator):
     """Generate embeddings specifically for Wikipedia articles."""
-    
-    def __init__(self, spark, config: EmbeddingConfig):
-        """
-        Initialize Wikipedia embedding generator.
-        
-        Args:
-            spark: SparkSession
-            config: Embedding configuration
-        """
-        self.spark = spark
-        self.config = config
-        self.model_identifier = self._get_model_identifier()
-        
-        # Register UDFs
-        self._register_udfs()
-    
-    def _get_model_identifier(self) -> str:
-        """Get the model identifier string."""
-        from data_pipeline.config.models import ProviderType
-        
-        provider = self.config.provider
-        
-        if provider == ProviderType.OPENAI:
-            return "text-embedding-3-small"
-        elif provider == ProviderType.GEMINI:
-            return "models/embedding-001"
-        elif provider == ProviderType.OLLAMA:
-            return "nomic-embed-text"
-        elif provider == ProviderType.VOYAGE:
-            return "voyage-2"
-        else:
-            return f"{provider.value}-embedding"
-    
-    def _register_udfs(self):
-        """Register UDFs for embedding generation."""
-        # Mock embedding function for testing
-        def generate_mock_embedding(text: str) -> List[float]:
-            """Generate a mock embedding for testing."""
-            if not text:
-                return None
-            # Generate deterministic mock embedding based on text length
-            dim = 384  # Common embedding dimension
-            return [float(i % 10) / 10.0 for i in range(dim)]
-        
-        # Register as Spark UDF
-        self.embedding_udf = udf(generate_mock_embedding, ArrayType(DoubleType()))
-        
-        # For production, you would use pandas_udf for batch processing
-        @pandas_udf(returnType=ArrayType(DoubleType()))
-        def batch_generate_embeddings(texts):
-            """Batch generate embeddings using the configured provider."""
-            # This would call the actual embedding API
-            # For now, return mock embeddings
-            import pandas as pd
-            return pd.Series([[float(i % 10) / 10.0 for i in range(384)] for _ in texts])
-        
-        self.batch_embedding_udf = batch_generate_embeddings
     
     def prepare_embedding_text(self, df: DataFrame) -> DataFrame:
         """
@@ -123,126 +59,10 @@ class WikipediaEmbeddingGenerator:
         
         return result_df
     
-    def generate_embeddings(self, df: DataFrame) -> DataFrame:
-        """
-        Generate embeddings for Wikipedia articles.
-        
-        No chunking is applied since long_summary is already optimized.
-        
-        Args:
-            df: DataFrame with embedding_text column
-            
-        Returns:
-            DataFrame with embeddings added
-        """
-        start_time = time.time()
-        logger.info(f"Generating Wikipedia embeddings using {self.model_identifier}")
-        
-        total_articles = df.count()
-        logger.info(f"Processing {total_articles} Wikipedia articles")
-        
-        # Generate embeddings (using mock for testing, batch UDF for production)
-        from data_pipeline.config.models import ProviderType
-        if self.config.provider == ProviderType.OLLAMA:
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        else:
-            # Use batch processing for production
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.batch_embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        
-        # Add embedding metadata
-        result_df = result_df.withColumn(
-            "embedding_model",
-            when(col("embedding").isNotNull(), lit(self.model_identifier))
-        ).withColumn(
-            "embedding_dimension",
-            when(col("embedding").isNotNull(), lit(384))  # Would be dynamic in production
-        ).withColumn(
-            "embedded_at",
-            when(col("embedding").isNotNull(), current_timestamp())
-        )
-        
-        # Count successful embeddings
-        embedded_count = result_df.filter(col("embedding").isNotNull()).count()
-        elapsed_time = time.time() - start_time
-        
-        logger.info(f"Generated {embedded_count}/{total_articles} embeddings in {elapsed_time:.2f} seconds")
-        if embedded_count > 0:
-            logger.info(f"Average time per embedding: {elapsed_time / embedded_count:.3f} seconds")
-        
-        return result_df
 
 
-class PropertyEmbeddingGenerator:
+class PropertyEmbeddingGenerator(BaseEmbeddingGenerator):
     """Generate embeddings specifically for property listings."""
-    
-    def __init__(self, spark, config: EmbeddingConfig):
-        """
-        Initialize property embedding generator.
-        
-        Args:
-            spark: SparkSession
-            config: Embedding configuration
-        """
-        self.spark = spark
-        self.config = config
-        self.model_identifier = self._get_model_identifier()
-        
-        # Register UDFs
-        self._register_udfs()
-    
-    def _get_model_identifier(self) -> str:
-        """Get the model identifier string."""
-        from data_pipeline.config.models import ProviderType
-        
-        provider = self.config.provider
-        
-        if provider == ProviderType.OPENAI:
-            return "text-embedding-3-small"
-        elif provider == ProviderType.GEMINI:
-            return "models/embedding-001"
-        elif provider == ProviderType.OLLAMA:
-            return "nomic-embed-text"
-        elif provider == ProviderType.VOYAGE:
-            return "voyage-2"
-        else:
-            return f"{provider.value}-embedding"
-    
-    def _register_udfs(self):
-        """Register UDFs for embedding generation."""
-        # Mock embedding function for testing
-        def generate_mock_embedding(text: str) -> List[float]:
-            """Generate a mock embedding for testing."""
-            if not text:
-                return None
-            # Generate deterministic mock embedding based on text length
-            dim = 384  # Common embedding dimension
-            return [float(i % 10) / 10.0 for i in range(dim)]
-        
-        # Register as Spark UDF
-        self.embedding_udf = udf(generate_mock_embedding, ArrayType(DoubleType()))
-        
-        # For production, you would use pandas_udf for batch processing
-        @pandas_udf(returnType=ArrayType(DoubleType()))
-        def batch_generate_embeddings(texts):
-            """Batch generate embeddings using the configured provider."""
-            # This would call the actual embedding API
-            # For now, return mock embeddings
-            import pandas as pd
-            return pd.Series([[float(i % 10) / 10.0 for i in range(384)] for _ in texts])
-        
-        self.batch_embedding_udf = batch_generate_embeddings
     
     def prepare_embedding_text(self, df: DataFrame) -> DataFrame:
         """
@@ -308,126 +128,10 @@ class PropertyEmbeddingGenerator:
         
         return result_df
     
-    def generate_embeddings(self, df: DataFrame) -> DataFrame:
-        """
-        Generate embeddings for property listings.
-        
-        Properties typically have short descriptions that don't need chunking.
-        
-        Args:
-            df: DataFrame with embedding_text column
-            
-        Returns:
-            DataFrame with embeddings added
-        """
-        start_time = time.time()
-        logger.info(f"Generating property embeddings using {self.model_identifier}")
-        
-        total_properties = df.count()
-        logger.info(f"Processing {total_properties} property listings")
-        
-        # Generate embeddings (using mock for testing, batch UDF for production)
-        from data_pipeline.config.models import ProviderType
-        if self.config.provider == ProviderType.OLLAMA:
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        else:
-            # Use batch processing for production
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.batch_embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        
-        # Add embedding metadata
-        result_df = result_df.withColumn(
-            "embedding_model",
-            when(col("embedding").isNotNull(), lit(self.model_identifier))
-        ).withColumn(
-            "embedding_dimension",
-            when(col("embedding").isNotNull(), lit(384))  # Would be dynamic in production
-        ).withColumn(
-            "embedded_at",
-            when(col("embedding").isNotNull(), current_timestamp())
-        )
-        
-        # Count successful embeddings
-        embedded_count = result_df.filter(col("embedding").isNotNull()).count()
-        elapsed_time = time.time() - start_time
-        
-        logger.info(f"Generated {embedded_count}/{total_properties} embeddings in {elapsed_time:.2f} seconds")
-        if embedded_count > 0:
-            logger.info(f"Average time per embedding: {elapsed_time / embedded_count:.3f} seconds")
-        
-        return result_df
 
 
-class NeighborhoodEmbeddingGenerator:
+class NeighborhoodEmbeddingGenerator(BaseEmbeddingGenerator):
     """Generate embeddings specifically for neighborhoods."""
-    
-    def __init__(self, spark, config: EmbeddingConfig):
-        """
-        Initialize neighborhood embedding generator.
-        
-        Args:
-            spark: SparkSession
-            config: Embedding configuration
-        """
-        self.spark = spark
-        self.config = config
-        self.model_identifier = self._get_model_identifier()
-        
-        # Register UDFs
-        self._register_udfs()
-    
-    def _get_model_identifier(self) -> str:
-        """Get the model identifier string."""
-        from data_pipeline.config.models import ProviderType
-        
-        provider = self.config.provider
-        
-        if provider == ProviderType.OPENAI:
-            return "text-embedding-3-small"
-        elif provider == ProviderType.GEMINI:
-            return "models/embedding-001"
-        elif provider == ProviderType.OLLAMA:
-            return "nomic-embed-text"
-        elif provider == ProviderType.VOYAGE:
-            return "voyage-2"
-        else:
-            return f"{provider.value}-embedding"
-    
-    def _register_udfs(self):
-        """Register UDFs for embedding generation."""
-        # Mock embedding function for testing
-        def generate_mock_embedding(text: str) -> List[float]:
-            """Generate a mock embedding for testing."""
-            if not text:
-                return None
-            # Generate deterministic mock embedding based on text length
-            dim = 384  # Common embedding dimension
-            return [float(i % 10) / 10.0 for i in range(dim)]
-        
-        # Register as Spark UDF
-        self.embedding_udf = udf(generate_mock_embedding, ArrayType(DoubleType()))
-        
-        # For production, you would use pandas_udf for batch processing
-        @pandas_udf(returnType=ArrayType(DoubleType()))
-        def batch_generate_embeddings(texts):
-            """Batch generate embeddings using the configured provider."""
-            # This would call the actual embedding API
-            # For now, return mock embeddings
-            import pandas as pd
-            return pd.Series([[float(i % 10) / 10.0 for i in range(384)] for _ in texts])
-        
-        self.batch_embedding_udf = batch_generate_embeddings
     
     def prepare_embedding_text(self, df: DataFrame) -> DataFrame:
         """
@@ -487,62 +191,5 @@ class NeighborhoodEmbeddingGenerator:
         
         return result_df
     
-    def generate_embeddings(self, df: DataFrame) -> DataFrame:
-        """
-        Generate embeddings for neighborhoods.
-        
-        Neighborhoods typically have moderate-length descriptions that don't need chunking.
-        
-        Args:
-            df: DataFrame with embedding_text column
-            
-        Returns:
-            DataFrame with embeddings added
-        """
-        start_time = time.time()
-        logger.info(f"Generating neighborhood embeddings using {self.model_identifier}")
-        
-        total_neighborhoods = df.count()
-        logger.info(f"Processing {total_neighborhoods} neighborhoods")
-        
-        # Generate embeddings (using mock for testing, batch UDF for production)
-        from data_pipeline.config.models import ProviderType
-        if self.config.provider == ProviderType.OLLAMA:
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        else:
-            # Use batch processing for production
-            result_df = df.withColumn(
-                "embedding",
-                when(
-                    col("embedding_text").isNotNull() & (length(col("embedding_text")) > 0),
-                    self.batch_embedding_udf(col("embedding_text"))
-                ).otherwise(lit(None))
-            )
-        
-        # Add embedding metadata
-        result_df = result_df.withColumn(
-            "embedding_model",
-            when(col("embedding").isNotNull(), lit(self.model_identifier))
-        ).withColumn(
-            "embedding_dimension",
-            when(col("embedding").isNotNull(), lit(384))  # Would be dynamic in production
-        ).withColumn(
-            "embedded_at",
-            when(col("embedding").isNotNull(), current_timestamp())
-        )
-        
-        # Count successful embeddings
-        embedded_count = result_df.filter(col("embedding").isNotNull()).count()
-        elapsed_time = time.time() - start_time
-        
-        logger.info(f"Generated {embedded_count}/{total_neighborhoods} embeddings in {elapsed_time:.2f} seconds")
-        if embedded_count > 0:
-            logger.info(f"Average time per embedding: {elapsed_time / embedded_count:.3f} seconds")
-        
-        return result_df
+    # Use inherited generate_embeddings method from BaseEmbeddingGenerator
+    # which already uses Pandas UDFs properly

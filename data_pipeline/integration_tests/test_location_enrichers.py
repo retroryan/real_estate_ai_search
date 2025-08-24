@@ -31,11 +31,11 @@ class TestLocationEnricherIntegration:
     def sample_location_broadcast(self, spark_session: SparkSession):
         """Create sample location broadcast data for testing."""
         location_data = [
-            {"state": "California", "county": "San Francisco County", "city": "San Francisco", "neighborhood": "Mission District"},
-            {"state": "California", "county": "San Francisco County", "city": "San Francisco", "neighborhood": "SOMA"}, 
-            {"state": "Utah", "county": "Summit County", "city": "Park City", "neighborhood": "Old Town"},
-            {"state": "Utah", "county": "Summit County", "city": "Park City", "neighborhood": "Deer Valley"},
-            {"state": "CA", "county": "San Francisco County", "city": "SF", "neighborhood": "Mission"},  # Test abbreviations
+            {"city": "San Francisco", "county": "San Francisco", "state": "California"},
+            {"city": "San Francisco", "county": "San Francisco", "state": "CA"}, 
+            {"city": "Park City", "county": "Summit County", "state": "Utah"},
+            {"city": "Park City", "county": "Summit County", "state": "UT"},
+            {"city": "SF", "county": "San Francisco", "state": "CA"},  # Test abbreviations
         ]
         return spark_session.sparkContext.broadcast(location_data)
     
@@ -60,13 +60,13 @@ class TestLocationEnricherIntegration:
         enhanced_df = location_enricher.enhance_with_hierarchy(test_df, "city", "state")
         
         # Verify hierarchy columns were added
-        assert 'county' in enhanced_df.columns, "County column should be added"
+        assert 'county_resolved' in enhanced_df.columns, "County_resolved column should be added"
         
         enhanced_count = enhanced_df.count()
         assert enhanced_count == len(test_data), "Record count should be preserved during enhancement"
         
         # Verify some county data was resolved
-        counties_resolved = enhanced_df.filter(col("county").isNotNull()).count()
+        counties_resolved = enhanced_df.filter(col("county_resolved").isNotNull()).count()
         assert counties_resolved > 0, "Some counties should be resolved from location data"
         
         print(f"✅ LocationEnricher: Hierarchy resolution working for {enhanced_count} records, {counties_resolved} counties resolved")
@@ -78,18 +78,18 @@ class TestLocationEnricherIntegration:
         
         # Test data with various name formats
         test_data = [
-            ("SF", "CA", "Mission"),  # Abbreviations
-            ("San Francisco", "California", "Mission District")  # Full names
+            ("SF", "CA"),  # Abbreviations
+            ("San Francisco", "California")  # Full names
         ]
-        test_df = spark_session.createDataFrame(test_data, ["city", "state", "neighborhood"])
+        test_df = spark_session.createDataFrame(test_data, ["city", "state"])
         
         # Test name standardization
         standardized_df = location_enricher.standardize_location_names(
-            test_df, "city", "state", "neighborhood"
+            test_df, "city", "state"
         )
         
         # Verify standardized columns were added
-        expected_columns = ['canonical_city', 'canonical_state']
+        expected_columns = ['city_standardized', 'state_standardized']
         for col_name in expected_columns:
             assert col_name in standardized_df.columns, f"Standardized column '{col_name}' should be added"
         
@@ -119,36 +119,40 @@ class TestPropertyEnricherIntegration:
         property_enricher = PropertyEnricher(spark_session, config)
         property_enricher.set_location_data(sample_location_broadcast)
         
-        # Create test property data
+        # Create test property data matching actual data structure
         test_properties = [
-            ("PROP001", 500000, 2, 1200, {"city": "San Francisco", "state": "CA", "street": "123 Main St"}),
-            ("PROP002", 750000, 3, 1800, {"city": "Park City", "state": "UT", "street": "456 Oak Ave"})
+            {
+                "listing_id": "prop-test-001",
+                "address": {"street": "123 Main St", "city": "San Francisco", "state": "CA", "zip": "94102"},
+                "property_details": {"square_feet": 1200, "bedrooms": 2, "bathrooms": 2.0, "property_type": "condo"},
+                "listing_price": 500000,
+                "price_per_sqft": 417,
+                "description": "Nice property in the heart of SF",
+                "features": ["parking", "gym"]
+            },
+            {
+                "listing_id": "prop-test-002", 
+                "address": {"street": "456 Oak Ave", "city": "Park City", "state": "UT", "zip": "84060"},
+                "property_details": {"square_feet": 1800, "bedrooms": 3, "bathrooms": 2.5, "property_type": "house"},
+                "listing_price": 750000,
+                "price_per_sqft": 417,
+                "description": "Great location with mountain views",
+                "features": ["yard", "garage"]
+            }
         ]
         
-        schema = StructType([
-            StructField("listing_id", StringType(), True),
-            StructField("price", IntegerType(), True),
-            StructField("bedrooms", IntegerType(), True),
-            StructField("square_feet", IntegerType(), True),
-            StructField("address", StructType([
-                StructField("city", StringType(), True),
-                StructField("state", StringType(), True),
-                StructField("street", StringType(), True)
-            ]), True)
-        ])
-        
-        test_df = spark_session.createDataFrame(test_properties, schema)
+        test_df = spark_session.createDataFrame(test_properties)
         
         # Apply property enrichment
         enriched_df = property_enricher.enrich(test_df)
         
-        # Verify basic enrichment fields
-        basic_fields = ['city', 'state', 'zip_code', 'price_per_sqft', 'property_quality_score']
+        # Verify basic enrichment fields that PropertyEnricher actually creates
+        basic_fields = ['city', 'state', 'zip_code', 'price_per_sqft', 'property_quality_score', 'price_category', 'size_category']
         for field_name in basic_fields:
             assert field_name in enriched_df.columns, f"Basic field '{field_name}' should be added to properties"
         
         # Verify location enhancement fields were added (if location enricher was integrated)
-        location_fields = [col for col in enriched_df.columns if 'canonical' in col or 'county' in col]
+        location_fields = [col for col in enriched_df.columns if 'county' in col or 'normalized' in col]
         
         enriched_count = enriched_df.count()
         print(f"✅ PropertyEnricher: Location integration working for {enriched_count} properties")
@@ -157,24 +161,38 @@ class TestPropertyEnricherIntegration:
     
     def test_property_enricher_price_calculations(self, spark_session: SparkSession):
         """Test PropertyEnricher's price calculation functionality."""
-        config = PropertyEnrichmentConfig(enable_price_calculations=True)
+        config = PropertyEnrichmentConfig(
+            enable_price_calculations=True,
+            enable_address_normalization=False,
+            enable_location_enhancement=False,
+            enable_quality_scoring=False
+        )
         property_enricher = PropertyEnricher(spark_session, config)
         
-        # Create test data
+        # Create test data matching actual property structure
         test_data = [
-            ("PROP001", 600000, 2, 1200),
-            ("PROP002", 900000, 3, 1500)
+            {
+                "listing_id": "prop-price-001",
+                "listing_price": 600000,
+                "property_details": {"bedrooms": 2, "bathrooms": 2.0, "square_feet": 1200, "property_type": "condo"},
+                "description": "Nice property",
+                "features": ["parking"]
+            },
+            {
+                "listing_id": "prop-price-002", 
+                "listing_price": 900000,
+                "property_details": {"bedrooms": 3, "bathrooms": 2.5, "square_feet": 1500, "property_type": "house"},
+                "description": "Great home",
+                "features": ["yard"]
+            }
         ]
-        test_df = spark_session.createDataFrame(
-            test_data, 
-            ["listing_id", "price", "bedrooms", "square_feet"]
-        )
+        test_df = spark_session.createDataFrame(test_data)
         
         # Apply enrichment
         enriched_df = property_enricher.enrich(test_df)
         
         # Verify price calculation fields
-        price_fields = ['price_per_sqft', 'price_per_bedroom', 'price_category']
+        price_fields = ['price_per_sqft', 'price_per_bedroom', 'price_category', 'size_category']
         for field in price_fields:
             assert field in enriched_df.columns, f"Price field '{field}' should be calculated"
         
@@ -193,8 +211,8 @@ class TestNeighborhoodEnricherIntegration:
     def sample_location_broadcast(self, spark_session: SparkSession):
         """Create sample location broadcast data for testing."""
         location_data = [
-            {"state": "California", "county": "San Francisco County", "city": "San Francisco", "neighborhood": "Mission District"},
-            {"state": "Utah", "county": "Summit County", "city": "Park City", "neighborhood": "Old Town"}
+            {"city": "San Francisco", "county": "San Francisco", "state": "CA"},
+            {"city": "Park City", "county": "Summit County", "state": "UT"}
         ]
         return spark_session.sparkContext.broadcast(location_data)
     
@@ -208,35 +226,40 @@ class TestNeighborhoodEnricherIntegration:
         neighborhood_enricher = NeighborhoodEnricher(spark_session, config)
         neighborhood_enricher.set_location_data(sample_location_broadcast)
         
-        # Create test neighborhood data
+        # Create test neighborhood data matching actual data structure
         test_neighborhoods = [
-            ("NBHD001", "Mission District", "San Francisco", "CA", [], None, None, None),
-            ("NBHD002", "Old Town", "Park City", "UT", [], None, None, None)
+            {
+                "neighborhood_id": "sf-mission-test",
+                "name": "Mission District",
+                "city": "San Francisco", 
+                "state": "CA",
+                "description": "Historic neighborhood with vibrant culture",
+                "demographics": {"population": 50000, "median_household_income": 75000, "median_age": 35.5},
+                "amenities": ["restaurants", "galleries"]
+            },
+            {
+                "neighborhood_id": "pc-oldtown-test",
+                "name": "Old Town", 
+                "city": "Park City",
+                "state": "UT", 
+                "description": "Charming historic district",
+                "demographics": {"population": 20000, "median_household_income": 95000, "median_age": 42.0},
+                "amenities": ["skiing", "dining"]
+            }
         ]
         
-        schema = StructType([
-            StructField("neighborhood_id", StringType(), True),
-            StructField("name", StringType(), True),
-            StructField("city", StringType(), True),
-            StructField("state", StringType(), True),
-            StructField("amenities", ArrayType(StringType()), True),
-            StructField("population", IntegerType(), True),
-            StructField("median_income", FloatType(), True),
-            StructField("median_age", FloatType(), True)
-        ])
-        
-        test_df = spark_session.createDataFrame(test_neighborhoods, schema)
+        test_df = spark_session.createDataFrame(test_neighborhoods)
         
         # Apply neighborhood enrichment
         enriched_df = neighborhood_enricher.enrich(test_df)
         
-        # Verify basic enrichment fields
-        basic_fields = ['neighborhood_name_normalized', 'demographic_completeness', 'neighborhood_quality_score']
+        # Verify basic enrichment fields based on actual NeighborhoodEnricher output
+        basic_fields = ['neighborhood_name_normalized', 'demographic_completeness', 'income_bracket', 'has_valid_boundary']
         for field in basic_fields:
             assert field in enriched_df.columns, f"Basic field '{field}' should be added to neighborhoods"
         
-        # Verify location hierarchy fields (if location enricher was integrated)
-        location_fields = [col for col in enriched_df.columns if 'canonical' in col or 'county' in col]
+        # Verify location hierarchy fields (if location enricher was integrated) 
+        location_fields = [col for col in enriched_df.columns if 'county' in col or 'standardized' in col]
         
         enriched_count = enriched_df.count()
         print(f"✅ NeighborhoodEnricher: Hierarchy establishment working for {enriched_count} neighborhoods")

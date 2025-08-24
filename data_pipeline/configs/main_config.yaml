@@ -263,7 +263,7 @@ output_destinations:
   # List of enabled destinations (parquet, neo4j, elasticsearch)
   enabled_destinations:
     - "parquet"
-    # - "neo4j"  # Uncomment to enable
+    - "neo4j"  # Uncomment to enable
     # - "elasticsearch"  # Uncomment to enable
   
   # Parquet writer configuration
@@ -275,10 +275,10 @@ output_destinations:
   
   # Neo4j writer configuration
   neo4j:
-    enabled: false  # Set to true to enable
+    enabled: true  # Set to true to enable
     uri: "bolt://localhost:7687"
     username: "neo4j"
-    password: "scott_tiger"  # Using password from parent .env
+    password: "${NEO4J_PASSWORD}"  # Set via environment variable
     database: "neo4j"
     transaction_size: 1000
     clear_before_write: true  # Clear database before writing (demo mode)

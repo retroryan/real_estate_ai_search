@@ -12,7 +12,7 @@ import sys
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from data_pipeline.graph_models import (
+from data_pipeline.models.graph_models import (
     PropertyNode,
     NeighborhoodNode,
     CityNode,

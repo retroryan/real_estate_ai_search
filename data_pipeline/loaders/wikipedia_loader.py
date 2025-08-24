@@ -9,26 +9,22 @@ import json
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, lit
 
+from .base_loader import BaseLoader
+
 logger = logging.getLogger(__name__)
 
 
-class WikipediaLoader:
+class WikipediaLoader(BaseLoader):
     """Loads Wikipedia data into strongly-typed DataFrames."""
     
-    def __init__(self, spark: SparkSession):
-        """
-        Initialize the Wikipedia loader.
-        
-        Args:
-            spark: Active SparkSession
-        """
-        self.spark = spark
+    def _define_schema(self):
+        """Wikipedia loads from SQLite, not JSON, so schema is handled differently."""
+        return None  # Schema is inferred from pandas DataFrame
     
     def load(self, db_path: str) -> DataFrame:
         """
@@ -58,19 +54,37 @@ class WikipediaLoader:
         # Convert to Spark DataFrame
         spark_df = self.spark.createDataFrame(pandas_df)
         
-        # Create clean Wikipedia DataFrame with proper columns
-        result_df = spark_df.select(
+        # Transform to entity-specific schema
+        result_df = self._transform_to_entity_schema(spark_df, db_path)
+        
+        record_count = result_df.count()
+        logger.info(f"Successfully loaded {record_count} Wikipedia articles")
+        
+        return result_df
+    
+    def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
+        """
+        Transform raw Wikipedia data to entity-specific schema.
+        
+        Args:
+            df: Raw Wikipedia DataFrame from SQLite
+            source_path: Source database path for tracking
+            
+        Returns:
+            DataFrame conforming to Wikipedia entity schema
+        """
+        return df.select(
             col("page_id").cast("long"),
             col("title"),
             col("url"),
-            col("categories"),  # Now included as array<string>
+            col("categories"),  # Already parsed as array
             col("best_city"),
             col("best_state"),
             col("latitude").cast("double"),
             col("longitude").cast("double"),
             col("short_summary"),
             col("long_summary"),
-            col("key_topics"),  # Now loaded as array<string>
+            col("key_topics"),  # Already parsed as array
             col("relevance_score").cast("double"),
             col("overall_confidence").cast("double").alias("confidence_score"),
             # Embedding fields will be populated by embedding generator
@@ -80,13 +94,10 @@ class WikipediaLoader:
             lit(None).cast("int").alias("embedding_dimension"),
             # Timestamps
             current_timestamp().alias("ingested_at"),
-            lit(None).cast("timestamp").alias("embedded_at")
+            lit(None).cast("timestamp").alias("embedded_at"),
+            # Source tracking
+            lit(source_path).alias("source_file")
         )
-        
-        record_count = result_df.count()
-        logger.info(f"Successfully loaded {record_count} Wikipedia articles")
-        
-        return result_df
     
     def _load_from_database(self, db_path: str) -> pd.DataFrame:
         """

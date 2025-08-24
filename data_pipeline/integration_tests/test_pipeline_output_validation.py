@@ -31,19 +31,17 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class") 
     def pipeline_settings(self, temp_output_dir):
         """Create test settings with temporary output directory."""
-        settings = Settings.load()
+        # Create configuration manager with test settings
+        config_manager = ConfigurationManager(environment="test", sample_size=10)
+        config = config_manager.load_config()
+        
         # Override output path to use temporary directory
-        settings.destinations = {
-            "parquet": {
-                "enabled": True,
-                "output_path": temp_output_dir,
-                "entity_types": ["properties", "neighborhoods", "wikipedia"]
-            }
-        }
-        # Use test mode for smaller dataset
-        settings.environment = "test"
-        settings.data_subset = {"enabled": True, "sample_size": 10}
-        return settings
+        config.output.path = temp_output_dir
+        config.output_destinations.enabled_destinations = ["parquet"]
+        config.output_destinations.parquet.path = temp_output_dir
+        config.output_destinations.parquet.enabled = True
+        
+        return config
     
     @pytest.fixture(scope="class")
     def spark_session(self):
@@ -310,16 +308,14 @@ def test_pipeline_integration_smoke():
     """Smoke test that can be run independently to verify basic pipeline functionality."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create minimal settings for smoke test
-        settings = Settings.load()
-        settings.destinations = {
-            "parquet": {
-                "enabled": True,
-                "output_path": temp_dir,
-                "entity_types": ["properties"]  # Test just properties for speed
-            }
-        }
-        settings.environment = "test"
-        settings.data_subset = {"enabled": True, "sample_size": 5}
+        config_manager = ConfigurationManager(environment="test", sample_size=5)
+        config = config_manager.load_config()
+        
+        # Override output path to use temporary directory
+        config.output.path = temp_dir
+        config.output_destinations.enabled_destinations = ["parquet"]
+        config.output_destinations.parquet.path = temp_dir
+        config.output_destinations.parquet.enabled = True
         
         # Create Spark session
         spark = SparkSession.builder \

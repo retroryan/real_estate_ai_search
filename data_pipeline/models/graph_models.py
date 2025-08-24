@@ -7,7 +7,7 @@ These models define the structure of nodes and relationships in Neo4j.
 
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime, date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.functional_validators import field_validator
 from enum import Enum
 
@@ -91,8 +91,9 @@ class PropertyNode(BaseModel):
     # References
     neighborhood_id: Optional[str] = Field(None, description="Associated neighborhood ID")
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
 
 
 class NeighborhoodNode(BaseModel):
@@ -227,8 +228,9 @@ class AmenityNode(BaseModel):
     source_article_id: Optional[str] = Field(None, description="Source Wikipedia article ID")
     extraction_confidence: float = Field(0.5, ge=0.0, le=1.0, description="Extraction confidence")
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
 
 
 # ============================================================================
@@ -242,8 +244,9 @@ class BaseRelationship(BaseModel):
     to_id: str = Field(..., description="Target node ID")
     relationship_type: RelationshipType = Field(..., description="Type of relationship")
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
 
 
 class LocatedInRelationship(BaseRelationship):

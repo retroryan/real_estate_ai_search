@@ -7,45 +7,30 @@ using Pydantic for type safety.
 """
 
 import logging
-from pathlib import Path
-from typing import Optional
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
-    col, 
-    current_timestamp, 
-    lit,
-    when,
+    col,
     concat_ws,
+    lit,
     trim,
-    upper
+    when
 )
 from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
-    TimestampType,
 )
 
-from data_pipeline.schemas.location_schema import get_location_spark_schema
+from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
 
 
-class LocationLoader:
+class LocationLoader(BaseLoader):
     """Loads location reference data from JSON files into Spark DataFrames."""
     
-    def __init__(self, spark: SparkSession):
-        """
-        Initialize the location loader.
-        
-        Args:
-            spark: Active SparkSession
-        """
-        self.spark = spark
-        self.schema = self._define_location_input_schema()
-    
-    def _define_location_input_schema(self) -> StructType:
+    def _define_schema(self) -> StructType:
         """
         Define the expected input schema for location JSON files.
         
@@ -59,45 +44,8 @@ class LocationLoader:
             StructField("neighborhood", StringType(), True),
         ])
     
-    def load(self, path: str) -> DataFrame:
-        """
-        Load location data from JSON file.
-        
-        Args:
-            path: Path to JSON file containing location data
-            
-        Returns:
-            DataFrame with location-specific schema
-        """
-        logger.info(f"Loading location data from: {path}")
-        
-        # Verify path exists
-        if not Path(path).exists():
-            raise FileNotFoundError(f"Location data file not found: {path}")
-        
-        # Load JSON with native Spark reader
-        raw_df = self.spark.read \
-            .schema(self.schema) \
-            .option("multiLine", True) \
-            .option("mode", "PERMISSIVE") \
-            .option("columnNameOfCorruptRecord", "_corrupt_record") \
-            .json(path)
-        
-        # Check for corrupt records
-        if "_corrupt_record" in raw_df.columns:
-            corrupt_count = raw_df.filter(col("_corrupt_record").isNotNull()).count()
-            if corrupt_count > 0:
-                logger.warning(f"Found {corrupt_count} corrupt records in location data")
-        
-        # Transform to location-specific schema
-        location_df = self._transform_to_location_schema(raw_df, path)
-        
-        record_count = location_df.count()
-        logger.info(f"Successfully loaded {record_count} location records")
-        
-        return location_df
     
-    def _transform_to_location_schema(self, df: DataFrame, source_path: str) -> DataFrame:
+    def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
         Transform raw location data to location-specific schema with derived fields.
         
@@ -109,7 +57,7 @@ class LocationLoader:
             DataFrame conforming to location-specific schema
         """
         return df.select(
-            # Core location fields - normalize to title case and trim
+            # Core location fields - normalize and trim
             trim(col("state")).alias("state"),
             trim(col("county")).alias("county"), 
             trim(col("city")).alias("city"),
@@ -128,11 +76,7 @@ class LocationLoader:
                 trim(col("city")),
                 trim(col("county")),
                 trim(col("state"))
-            ).alias("full_hierarchy"),
-            
-            # Metadata
-            lit(source_path).alias("source_file"),
-            current_timestamp().alias("ingested_at")
+            ).alias("full_hierarchy")
         )
     
     def validate(self, df: DataFrame) -> bool:

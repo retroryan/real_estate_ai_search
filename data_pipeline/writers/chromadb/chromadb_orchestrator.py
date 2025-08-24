@@ -13,6 +13,7 @@ from chromadb.config import Settings
 from pyspark.sql import DataFrame, SparkSession
 
 from data_pipeline.writers.base import DataWriter
+from data_pipeline.models.writer_models import WriteMetadata
 from .chromadb_config import ChromaDBWriterConfig
 
 logger = logging.getLogger(__name__)
@@ -65,18 +66,18 @@ class ChromadbOrchestrator(DataWriter):
             self.logger.error(f"ChromaDB connection validation failed: {e}")
             return False
     
-    def write(self, df: DataFrame, metadata: Dict[str, Any]) -> bool:
+    def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write entity-specific DataFrame with embeddings to ChromaDB.
         
         Args:
             df: DataFrame with embeddings to write
-            metadata: Metadata including entity_type
+            metadata: WriteMetadata with entity type and other information
             
         Returns:
             True if write was successful, False otherwise
         """
-        entity_type = metadata.get("entity_type", "").lower()
+        entity_type = metadata.entity_type.value.lower()
         
         if entity_type == "property":
             return self._write_properties(df, metadata)

@@ -172,13 +172,16 @@ class LocationEnricher:
         
         try:
             # Join with city lookup to add county information
-            enhanced_df = df.join(
-                broadcast(self.city_lookup_df),
-                (col(city_col) == col("city")) & (col(state_col) == col("state")),
+            # Alias the lookup DataFrame to avoid column name conflicts
+            city_lookup_aliased = self.city_lookup_df.alias("lookup")
+            enhanced_df = df.alias("main").join(
+                broadcast(city_lookup_aliased),
+                (col(f"main.{city_col}") == col("lookup.city")) & 
+                (col(f"main.{state_col}") == col("lookup.state")),
                 "left"
             ).select(
-                df["*"],
-                coalesce(col("county"), lit(None)).alias("county_resolved")
+                col("main.*"),
+                coalesce(col("lookup.county"), lit(None)).alias("county_resolved")
             )
             
             logger.info("Enhanced DataFrame with location hierarchy")
@@ -219,15 +222,17 @@ class LocationEnricher:
             )
             
             # Join with neighborhood lookup
-            enhanced_df = df.join(
-                broadcast(neighborhood_enhanced),
-                (trim(col(neighborhood_col)) == trim(col("neighborhood"))) &
-                (trim(col(city_col)) == trim(col("city"))) &
-                (trim(col(state_col)) == trim(col("state"))),
+            # Alias DataFrames to avoid column name conflicts  
+            neighborhood_aliased = neighborhood_enhanced.alias("nbh")
+            enhanced_df = df.alias("main").join(
+                broadcast(neighborhood_aliased),
+                (trim(col(f"main.{neighborhood_col}")) == trim(col("nbh.neighborhood"))) &
+                (trim(col(f"main.{city_col}")) == trim(col("nbh.city"))) &
+                (trim(col(f"main.{state_col}")) == trim(col("nbh.state"))),
                 "left"
             ).select(
-                df["*"],
-                col("neighborhood_id")
+                col("main.*"),
+                col("nbh.neighborhood_id")
             )
             
             logger.info("Linked DataFrame records to neighborhoods")
@@ -359,24 +364,52 @@ class LocationEnricher:
         
         try:
             # Add hierarchy path and parent information
-            enhanced_df = df.withColumn(
-                "location_hierarchy",
-                concat_ws(" > ",
-                    when(col("neighborhood").isNotNull(), col("neighborhood")).otherwise(lit("")),
-                    when(col("city").isNotNull(), col("city")).otherwise(lit("")), 
-                    when(col("county_resolved").isNotNull(), col("county_resolved")).otherwise(lit("")),
-                    when(col("state").isNotNull(), col("state")).otherwise(lit(""))
+            # Check which columns exist to avoid ambiguity
+            df_columns = df.columns
+            
+            # Build location hierarchy with available columns
+            hierarchy_parts = []
+            if "neighborhood" in df_columns:
+                hierarchy_parts.append(when(df["neighborhood"].isNotNull(), df["neighborhood"]).otherwise(lit("")))
+            if "city" in df_columns:
+                hierarchy_parts.append(when(df["city"].isNotNull(), df["city"]).otherwise(lit("")))
+            if "county_resolved" in df_columns:
+                hierarchy_parts.append(when(df["county_resolved"].isNotNull(), df["county_resolved"]).otherwise(lit("")))
+            if "state" in df_columns:
+                hierarchy_parts.append(when(df["state"].isNotNull(), df["state"]).otherwise(lit("")))
+            
+            enhanced_df = df
+            
+            if hierarchy_parts:
+                enhanced_df = enhanced_df.withColumn(
+                    "location_hierarchy",
+                    concat_ws(" > ", *hierarchy_parts)
                 )
-            ).withColumn(
-                "parent_city",
-                when(col("neighborhood").isNotNull(), col("city")).otherwise(lit(None))
-            ).withColumn(
-                "parent_county", 
-                when(col("city").isNotNull(), col("county_resolved")).otherwise(lit(None))
-            ).withColumn(
-                "parent_state",
-                when(col("county_resolved").isNotNull() | col("city").isNotNull(), col("state")).otherwise(lit(None))
-            )
+            
+            # Add parent relationship columns if source columns exist
+            if "neighborhood" in df_columns and "city" in df_columns:
+                enhanced_df = enhanced_df.withColumn(
+                    "parent_city",
+                    when(df["neighborhood"].isNotNull(), df["city"]).otherwise(lit(None))
+                )
+            
+            if "city" in df_columns and "county_resolved" in df_columns:
+                enhanced_df = enhanced_df.withColumn(
+                    "parent_county", 
+                    when(df["city"].isNotNull(), df["county_resolved"]).otherwise(lit(None))
+                )
+            
+            if "state" in df_columns and ("county_resolved" in df_columns or "city" in df_columns):
+                state_condition = lit(False)
+                if "county_resolved" in df_columns:
+                    state_condition = state_condition | df["county_resolved"].isNotNull()
+                if "city" in df_columns:
+                    state_condition = state_condition | df["city"].isNotNull()
+                    
+                enhanced_df = enhanced_df.withColumn(
+                    "parent_state",
+                    when(state_condition, df["state"]).otherwise(lit(None))
+                )
             
             logger.info("Established parent location relationships")
             return enhanced_df
