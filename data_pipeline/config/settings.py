@@ -12,41 +12,37 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import yaml
-from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from data_pipeline.config.models import PipelineConfig
-
-# Load environment variables from parent directory's .env file
-# This allows sharing credentials across all projects in temporal/
-parent_env_path = Path(__file__).parent.parent.parent.parent / ".env"
-if parent_env_path.exists():
-    load_dotenv(parent_env_path)
-    logger = logging.getLogger(__name__)
-    logger.debug(f"Loaded environment variables from {parent_env_path}")
-else:
-    # Fall back to local .env if parent doesn't exist
-    load_dotenv()
-    logger = logging.getLogger(__name__)
-    logger.debug("Using local .env file or environment variables")
 
 
 class ConfigurationManager:
     """Configuration manager with data subsetting and model selection."""
     
-    def __init__(self, config_path: Optional[str] = None, environment: Optional[str] = None, sample_size: Optional[int] = None):
+    def __init__(self, config_path: Optional[str] = None, environment: Optional[str] = None, 
+                 sample_size: Optional[int] = None, output_destinations: Optional[str] = None,
+                 output_path: Optional[str] = None, cores: Optional[int] = None,
+                 embedding_provider: Optional[str] = None):
         """
         Initialize configuration manager.
         
         Args:
             config_path: Path to configuration YAML file.
-                        If None, uses default or environment variable.
             environment: Environment name (development, staging, production)
             sample_size: Override sample size for data subsetting
+            output_destinations: Comma-separated list of output destinations
+            output_path: Custom output directory path
+            cores: Number of cores to use
+            embedding_provider: Embedding provider override
         """
         self.config_path = self._resolve_config_path(config_path)
-        self.environment = environment or os.getenv("PIPELINE_ENV", "development")
+        self.environment = environment or "development"
         self.sample_size_override = sample_size
+        self.output_destinations_override = output_destinations
+        self.output_path_override = output_path
+        self.cores_override = cores
+        self.embedding_provider_override = embedding_provider
         self._config: Optional[PipelineConfig] = None
         self._raw_config: Optional[Dict[str, Any]] = None
     
@@ -66,25 +62,19 @@ class ConfigurationManager:
         if config_path:
             path = Path(config_path)
         else:
-            # Check environment variable
-            env_path = os.getenv("PIPELINE_CONFIG_PATH")
-            if env_path:
-                path = Path(env_path)
-            else:
-                # Try multiple default locations
-                possible_paths = [
-                    Path("data_pipeline/config.yaml"),  # New comprehensive config
-                    Path("data_pipeline/config/pipeline_config.yaml"),  # Legacy location
+            # Try default locations
+            possible_paths = [
+                    Path("data_pipeline/config.yaml"),
                     Path("config.yaml"),  # Current directory
                 ]
-                
-                for possible_path in possible_paths:
-                    if possible_path.exists():
-                        path = possible_path
-                        break
-                else:
-                    # Use first default if none exist
-                    path = possible_paths[0]
+            
+            for possible_path in possible_paths:
+                if possible_path.exists():
+                    path = possible_path
+                    break
+            else:
+                # Use first default if none exist
+                path = possible_paths[0]
         
         if not path.exists():
             logger.warning(f"Configuration file not found: {path}, will use defaults")
@@ -112,8 +102,8 @@ class ConfigurationManager:
                 with open(self.config_path, "r") as f:
                     self._raw_config = yaml.safe_load(f)
                 
-                # Merge with environment variables
-                self._merge_env_variables()
+                # Apply direct argument overrides
+                self._apply_argument_overrides()
                 
                 # Handle embedding model configuration
                 self._configure_embedding_models()
@@ -162,102 +152,49 @@ class ConfigurationManager:
             self._config = PipelineConfig()
             return self._config
     
-    def _merge_env_variables(self) -> None:
+    def _apply_argument_overrides(self) -> None:
         """
-        Merge environment variables into configuration.
+        Apply direct argument overrides to configuration.
         
-        Environment variables override config file values.
-        Naming convention: PIPELINE_<SECTION>_<KEY>
+        Direct arguments take precedence over config file values.
         """
         if not self._raw_config:
             self._raw_config = {}
         
-        # Spark configuration from environment
-        if "SPARK_MASTER" in os.environ:
-            self._raw_config.setdefault("spark", {})["master"] = os.environ["SPARK_MASTER"]
+        # Spark configuration from arguments
+        if self.cores_override:
+            self._raw_config.setdefault("spark", {})["master"] = f"local[{self.cores_override}]"
         
-        if "SPARK_APP_NAME" in os.environ:
-            self._raw_config.setdefault("spark", {})["app_name"] = os.environ["SPARK_APP_NAME"]
+        # Embedding configuration from arguments
+        if self.embedding_provider_override:
+            self._raw_config.setdefault("embedding", {})["provider"] = self.embedding_provider_override
         
-        # Embedding configuration from environment
-        if "EMBEDDING_PROVIDER" in os.environ:
-            self._raw_config.setdefault("embedding", {})["provider"] = os.environ["EMBEDDING_PROVIDER"]
+        # Output configuration from arguments
+        if self.output_path_override:
+            self._raw_config.setdefault("output", {})["path"] = self.output_path_override
         
-        if "EMBEDDING_MODEL" in os.environ:
-            self._raw_config.setdefault("embedding", {})["model"] = os.environ["EMBEDDING_MODEL"]
-        
-        # Data subsetting from environment (only enabled flag, not sample size)
-        if "DATA_SUBSET_ENABLED" in os.environ:
-            enabled = os.environ["DATA_SUBSET_ENABLED"].lower() in ("true", "1", "yes")
-            self._raw_config.setdefault("data_subset", {})["enabled"] = enabled
-        
-        # Output configuration from environment
-        if "OUTPUT_PATH" in os.environ:
-            self._raw_config.setdefault("output", {})["path"] = os.environ["OUTPUT_PATH"]
-        
-        if "OUTPUT_FORMAT" in os.environ:
-            self._raw_config.setdefault("output", {})["format"] = os.environ["OUTPUT_FORMAT"]
-        
-        # Output destinations configuration from environment
-        if "OUTPUT_DESTINATIONS" in os.environ:
-            destinations = os.environ["OUTPUT_DESTINATIONS"].split(",")
+        # Output destinations configuration from arguments
+        if self.output_destinations_override:
+            destinations = self.output_destinations_override.split(",")
             self._raw_config.setdefault("output_destinations", {})["enabled_destinations"] = destinations
         
-        # Neo4j configuration from environment
-        if "NEO4J_URI" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("neo4j", {})["uri"] = os.environ["NEO4J_URI"]
-        if "NEO4J_USERNAME" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("neo4j", {})["username"] = os.environ["NEO4J_USERNAME"]
-        if "NEO4J_PASSWORD" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("neo4j", {})["password"] = os.environ["NEO4J_PASSWORD"]
-        if "NEO4J_DATABASE" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("neo4j", {})["database"] = os.environ["NEO4J_DATABASE"]
-        
-        # Elasticsearch configuration from environment
-        if "ES_HOSTS" in os.environ:
-            hosts = os.environ["ES_HOSTS"].split(",")
-            self._raw_config.setdefault("output_destinations", {}).setdefault("elasticsearch", {})["hosts"] = hosts
-        if "ES_USERNAME" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("elasticsearch", {})["username"] = os.environ["ES_USERNAME"]
-        if "ES_PASSWORD" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("elasticsearch", {})["password"] = os.environ["ES_PASSWORD"]
-        if "ES_INDEX_PREFIX" in os.environ:
-            self._raw_config.setdefault("output_destinations", {}).setdefault("elasticsearch", {})["index_prefix"] = os.environ["ES_INDEX_PREFIX"]
-        
-        # Logging level from environment
-        if "LOG_LEVEL" in os.environ:
-            self._raw_config.setdefault("logging", {})["level"] = os.environ["LOG_LEVEL"]
-        
-        # Development mode from environment
-        if "DEVELOPMENT_MODE" in os.environ:
-            dev_mode = os.environ["DEVELOPMENT_MODE"].lower() in ("true", "1", "yes")
-            self._raw_config.setdefault("development", {})["debug_mode"] = dev_mode
-            self._raw_config.setdefault("development", {})["verbose_logging"] = dev_mode
+    
     
     def _configure_embedding_models(self) -> None:
         """
-        Configure embedding models with API key resolution.
+        Configure embedding models.
         """
         if not self._raw_config:
             return
         
         embedding_config = self._raw_config.get("embedding", {})
         
-        # Handle new models configuration
+        # Handle models configuration
         if "models" in embedding_config:
             models = embedding_config["models"]
             
-            # Resolve API keys from environment for each provider
-            for provider in ["voyage", "openai", "gemini"]:
-                if provider in models and "api_key" in models[provider]:
-                    api_key = models[provider]["api_key"]
-                    if api_key and api_key.startswith("${") and api_key.endswith("}"):
-                        env_var = api_key[2:-1]
-                        actual_key = os.getenv(env_var)
-                        if actual_key:
-                            models[provider]["api_key"] = actual_key
-                        else:
-                            logger.warning(f"Environment variable {env_var} not found")
+            # API keys should be provided directly in config or passed as arguments
+            # No environment variable resolution needed
         
     
     def _configure_data_subsetting(self) -> None:

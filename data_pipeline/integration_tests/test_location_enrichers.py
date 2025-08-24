@@ -192,7 +192,7 @@ class TestPropertyEnricherIntegration:
         enriched_df = property_enricher.enrich(test_df)
         
         # Verify price calculation fields
-        price_fields = ['price_per_sqft', 'price_per_bedroom', 'price_category', 'size_category']
+        price_fields = ['price_per_sqft', 'price_category', 'size_category']
         for field in price_fields:
             assert field in enriched_df.columns, f"Price field '{field}' should be calculated"
         

@@ -281,6 +281,7 @@ class DataPipelineRunner:
         if location_broadcast:
             self.property_enricher.set_location_data(location_broadcast)
         
+
         # Apply property-specific enrichment
         enriched_df = self.property_enricher.enrich(df)
         

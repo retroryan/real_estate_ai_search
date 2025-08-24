@@ -40,14 +40,8 @@ pip install -e .
 ### Quick Neo4j Data Load
 
 ```bash
-# 1. Ensure Neo4j is running (Docker)
-docker run -d --name neo4j \
-    -p 7474:7474 -p 7687:7687 \
-    -e NEO4J_AUTH=neo4j/scott_tiger \
-    neo4j:latest
-
 # 2. Load sample data to Neo4j (fast test)
-python -m data_pipeline --sample-size 50 --output-destination parquet
+python -m data_pipeline --sample-size 50 --output-destination parquet, neo4j
 
 # 3. Load full dataset to Neo4j (requires Spark connector - see setup below)
 python -m data_pipeline --output-destination neo4j

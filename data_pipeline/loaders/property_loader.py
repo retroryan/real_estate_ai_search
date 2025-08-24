@@ -86,6 +86,7 @@ class PropertyLoader(BaseLoader):
         Returns:
             DataFrame conforming to property-specific schema
         """
+
         # Return all the nested structures - the enricher will handle flattening
         return df.select(
             # Core property fields

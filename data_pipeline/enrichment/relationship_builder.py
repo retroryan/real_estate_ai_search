@@ -345,24 +345,41 @@ class RelationshipBuilder:
         Returns:
             DataFrame of SimilarToRelationship records
         """
+        # Use listing_price if price doesn't exist, handle nested property_details
+        price_col = "listing_price" if "listing_price" in properties_df.columns else "price"
+        
+        # Extract fields from nested structures if needed
+        prep_df = properties_df
+        if "property_details.bedrooms" in prep_df.columns:
+            prep_df = prep_df.withColumn("bedrooms", col("property_details.bedrooms"))
+            prep_df = prep_df.withColumn("bathrooms", col("property_details.bathrooms"))
+            prep_df = prep_df.withColumn("square_feet", col("property_details.square_feet"))
+        if "address.city" in prep_df.columns:
+            prep_df = prep_df.withColumn("city", col("address.city"))
+            prep_df = prep_df.withColumn("state", col("address.state"))
+        
         # Prepare properties for comparison and alias immediately
-        p1 = properties_df.filter(
+        p1 = prep_df.filter(
             col("listing_id").isNotNull() & 
-            col("price").isNotNull() &
+            col(price_col).isNotNull() &
             col("city").isNotNull()
         ).select(
-            "listing_id", "price", "bedrooms", "bathrooms",
-            "square_feet", "features", "city", "state"
+            col("listing_id"),
+            col(price_col).alias("price"),
+            col("bedrooms"), col("bathrooms"),
+            col("square_feet"), col("features"), col("city"), col("state")
         ).alias("p1")
         
         # Create second alias for self-join
-        p2 = properties_df.filter(
+        p2 = prep_df.filter(
             col("listing_id").isNotNull() & 
-            col("price").isNotNull() &
+            col(price_col).isNotNull() &
             col("city").isNotNull()
         ).select(
-            "listing_id", "price", "bedrooms", "bathrooms",
-            "square_feet", "features", "city", "state"
+            col("listing_id"),
+            col(price_col).alias("price"),
+            col("bedrooms"), col("bathrooms"),
+            col("square_feet"), col("features"), col("city"), col("state")
         ).alias("p2")
         
         pairs = p1.join(

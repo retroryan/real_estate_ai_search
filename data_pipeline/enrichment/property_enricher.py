@@ -11,6 +11,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
+
+from .base_enricher import BaseEnricher, BaseEnrichmentConfig
 from pyspark.sql.functions import (
     broadcast,
     coalesce,
@@ -30,7 +32,7 @@ from pyspark.sql.types import StringType
 logger = logging.getLogger(__name__)
 
 
-class PropertyEnrichmentConfig(BaseModel):
+class PropertyEnrichmentConfig(BaseEnrichmentConfig):
     """Configuration for property enrichment operations."""
     
     enable_price_calculations: bool = Field(
@@ -92,7 +94,7 @@ class PropertyEnrichmentConfig(BaseModel):
     )
 
 
-class PropertyEnricher:
+class PropertyEnricher(BaseEnricher):
     """
     Enriches property data with calculated fields, normalized values,
     and quality metrics specific to real estate listings.
@@ -108,18 +110,13 @@ class PropertyEnricher:
             config: Property enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.spark = spark
-        self.config = config or PropertyEnrichmentConfig()
-        self.location_broadcast = location_broadcast
-        
-        # Register UDF for UUID generation
-        self._register_udfs()
+        super().__init__(spark, config, location_broadcast)
         
         # Create broadcast variables for location lookups
         if self.config.enable_address_normalization:
             self._create_location_broadcasts()
         
-        # Create LocationEnricher if location data is available
+        # Override location enricher initialization with property-specific config
         if self.location_broadcast and self.config.enable_location_enhancement:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
@@ -127,8 +124,10 @@ class PropertyEnricher:
                 enable_neighborhood_linking=self.config.enable_neighborhood_linking
             )
             self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
-        else:
-            self.location_enricher = None
+    
+    def _get_default_config(self) -> PropertyEnrichmentConfig:
+        """Get the default configuration for property enricher."""
+        return PropertyEnrichmentConfig()
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -137,7 +136,7 @@ class PropertyEnricher:
         Args:
             location_broadcast: Broadcast variable containing location reference data
         """
-        self.location_broadcast = location_broadcast
+        super().set_location_data(location_broadcast)
         
         if self.location_broadcast and self.config.enable_location_enhancement:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
@@ -148,12 +147,6 @@ class PropertyEnricher:
             self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
             logger.info("LocationEnricher initialized with broadcast data")
     
-    def _register_udfs(self):
-        """Register necessary UDFs."""
-        def generate_uuid() -> str:
-            return str(uuid.uuid4())
-        
-        self.generate_uuid_udf = udf(generate_uuid, StringType())
     
     def _create_location_broadcasts(self):
         """Create broadcast variables for location normalization."""
@@ -186,7 +179,7 @@ class PropertyEnricher:
         
         # Add correlation IDs if configured
         if self.config.enable_correlation_ids:
-            enriched_df = self._add_correlation_ids(enriched_df)
+            enriched_df = self.add_correlation_ids(enriched_df, "property_correlation_id")
             logger.info("Added correlation IDs to properties")
         
         # Normalize addresses and locations
@@ -198,7 +191,22 @@ class PropertyEnricher:
         if self.location_enricher and self.config.enable_location_enhancement:
             enriched_df = self._enhance_with_location_data(enriched_df)
             logger.info("Enhanced properties with location hierarchy")
-        
+
+        # Extract property details if nested
+        if "property_details.square_feet" in enriched_df.columns:
+            enriched_df = enriched_df.withColumn("square_feet", col("property_details.square_feet"))
+            enriched_df = enriched_df.withColumn("bedrooms", col("property_details.bedrooms"))
+            enriched_df = enriched_df.withColumn("bathrooms", col("property_details.bathrooms"))
+            enriched_df = enriched_df.withColumn("year_built", col("property_details.year_built"))
+            enriched_df = enriched_df.withColumn("lot_size", col("property_details.lot_size"))
+            enriched_df = enriched_df.withColumn("stories", col("property_details.stories"))
+            enriched_df = enriched_df.withColumn("garage_spaces", col("property_details.garage_spaces"))
+            logger.info("Extracted property details from nested structure")
+        else:
+            logger.warning(f"Property details not found in nested structure: {col('property_details.listing_id')}")
+
+        enriched_df.show(10, truncate=False)
+
         # Calculate price-related fields
         if self.config.enable_price_calculations:
             enriched_df = self._calculate_price_fields(enriched_df)
@@ -214,15 +222,7 @@ class PropertyEnricher:
             enriched_df = enriched_df.withColumn("latitude", col("coordinates.latitude"))
             enriched_df = enriched_df.withColumn("longitude", col("coordinates.longitude"))
         
-        # Extract property details if nested
-        if "property_details.square_feet" in enriched_df.columns:
-            enriched_df = enriched_df.withColumn("square_feet", col("property_details.square_feet"))
-            enriched_df = enriched_df.withColumn("bedrooms", col("property_details.bedrooms"))
-            enriched_df = enriched_df.withColumn("bathrooms", col("property_details.bathrooms"))
-            enriched_df = enriched_df.withColumn("year_built", col("property_details.year_built"))
-            enriched_df = enriched_df.withColumn("lot_size", col("property_details.lot_size"))
-            enriched_df = enriched_df.withColumn("stories", col("property_details.stories"))
-            enriched_df = enriched_df.withColumn("garage_spaces", col("property_details.garage_spaces"))
+
         
         # Categorize price ranges
         enriched_df = self.categorize_price_range(enriched_df)
@@ -237,28 +237,11 @@ class PropertyEnricher:
         logger.info("Normalized property types")
         
         # Add processing timestamp
-        enriched_df = enriched_df.withColumn("processed_at", current_timestamp())
+        enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        final_count = enriched_df.count()
-        if final_count != initial_count:
-            logger.warning(f"Property count changed: {initial_count} -> {final_count}")
-        
-        logger.info(f"Property enrichment completed for {final_count} records")
-        return enriched_df
+        return self.validate_enrichment(enriched_df, initial_count, "Property")
     
-    def _add_correlation_ids(self, df: DataFrame) -> DataFrame:
-        """Add correlation IDs for property tracking."""
-        # Check if column already exists
-        if "property_correlation_id" in df.columns:
-            return df.withColumn(
-                "property_correlation_id",
-                when(col("property_correlation_id").isNull(), self.generate_uuid_udf())
-                .otherwise(col("property_correlation_id"))
-            )
-        else:
-            # Create new column
-            return df.withColumn("property_correlation_id", self.generate_uuid_udf())
     
     def _normalize_addresses(self, df: DataFrame) -> DataFrame:
         """
@@ -337,36 +320,7 @@ class PropertyEnricher:
         else:
             df_with_price_sqft = df
         
-        # Price per bedroom
-        df_with_price_bedroom = df_with_price_sqft.withColumn(
-            "price_per_bedroom",
-            when(
-                (col("bedrooms") > 0) & col(price_col).isNotNull(),
-                (col(price_col) / col("bedrooms")).cast("decimal(10,2)")
-            ).otherwise(lit(None))
-        )
-        
-        # Price category
-        df_with_price_category = df_with_price_bedroom.withColumn(
-            "price_category",
-            when(col(price_col) < 200000, lit("budget"))
-            .when(col(price_col) < 500000, lit("mid-range"))
-            .when(col(price_col) < 1000000, lit("high-end"))
-            .when(col(price_col) >= 1000000, lit("luxury"))
-            .otherwise(lit("unknown"))
-        )
-        
-        # Property size category
-        df_with_size_category = df_with_price_category.withColumn(
-            "size_category",
-            when(col("square_feet") < 1000, lit("small"))
-            .when(col("square_feet") < 2000, lit("medium"))
-            .when(col("square_feet") < 3500, lit("large"))
-            .when(col("square_feet") >= 3500, lit("extra-large"))
-            .otherwise(lit("unknown"))
-        )
-        
-        return df_with_size_category
+        return df_with_price_sqft
     
     def _calculate_quality_scores(self, df: DataFrame) -> DataFrame:
         """
@@ -378,6 +332,7 @@ class PropertyEnricher:
         Returns:
             DataFrame with quality scores
         """
+
         # Extract property details if nested
         if "property_details.square_feet" in df.columns:
             df = df.withColumn("square_feet", col("property_details.square_feet"))

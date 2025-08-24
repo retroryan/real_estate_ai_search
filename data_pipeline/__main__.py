@@ -11,11 +11,8 @@ Can be run from within the module or from the parent directory:
 
 import argparse
 import logging
-import os
 import sys
 from pathlib import Path
-
-from dotenv import load_dotenv
 
 # Ensure project root is in Python path for imports when running as module
 if __name__ == "__main__":
@@ -50,10 +47,6 @@ def setup_logging(level: str) -> None:
 
 def main():
     """Main CLI entry point with enhanced configuration options."""
-    # Load environment variables from parent .env file
-    parent_env = Path(__file__).parent.parent / ".env"
-    if parent_env.exists():
-        load_dotenv(parent_env)
     
     parser = argparse.ArgumentParser(
         description="Run the multi-entity Spark data pipeline for real estate and Wikipedia data"
@@ -137,34 +130,24 @@ def main():
         
         # Handle test mode first (highest priority)
         if args.test_mode:
-            os.environ["EMBEDDING_PROVIDER"] = "mock"
             sample_size = 10
+            embedding_provider = "mock"
             logger.info("Test mode enabled: using 10 records per source with mock embeddings")
         else:
             sample_size = args.sample_size
+            embedding_provider = None
             if sample_size:
                 logger.info(f"Data subsetting enabled: {sample_size} records per source")
         
-        # Set output destinations if specified
-        if args.output_destination:
-            os.environ["OUTPUT_DESTINATIONS"] = args.output_destination
-            logger.info(f"Output destinations: {args.output_destination}")
-        
-        # Set custom output path if specified
-        if args.output:
-            os.environ["OUTPUT_PATH"] = args.output
-            logger.info(f"Custom output path: {args.output}")
-        
-        # Set Spark configuration
-        if args.cores:
-            os.environ["SPARK_MASTER"] = f"local[{args.cores}]"
-            logger.info(f"Configured Spark to use {args.cores} cores")
-        
-        # Initialize configuration manager with sample_size override
+        # Initialize configuration manager with direct arguments
         config_manager = ConfigurationManager(
             config_path=args.config,
             environment=None,
-            sample_size=sample_size
+            sample_size=sample_size,
+            output_destinations=args.output_destination,
+            output_path=args.output,
+            cores=args.cores,
+            embedding_provider=embedding_provider
         )
         config = config_manager.load_config()
         
