@@ -8,7 +8,7 @@ from data loading through enrichment to final output.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import avg, col, count, desc
@@ -24,6 +24,9 @@ from data_pipeline.processing.embedding_generator import (
 )
 from data_pipeline.processing.enrichment_engine import DataEnrichmentEngine, EnrichmentConfig, LocationMapping
 from data_pipeline.processing.text_processor import ChunkingConfig, TextProcessor, TextProcessingConfig
+from data_pipeline.writers.orchestrator import WriterOrchestrator
+from data_pipeline.writers.neo4j_writer import Neo4jWriter
+from data_pipeline.writers.parquet_writer import ParquetWriter
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,9 @@ class DataPipelineRunner:
         self.enrichment_engine = self._init_enrichment_engine()
         self.text_processor = self._init_text_processor()
         self.embedding_generator = self._init_embedding_generator()
+        
+        # Initialize writer orchestrator if configured
+        self.writer_orchestrator = self._init_writer_orchestrator()
         
         # Track pipeline state
         self._pipeline_start_time: Optional[datetime] = None
@@ -141,26 +147,43 @@ class DataPipelineRunner:
             "timeout": getattr(self.config.embedding, "timeout", 30)
         }
         
+        # Get model config from new structure
+        model_config = self.config.embedding.get_model_config()
+        
         # Add provider-specific settings
         if provider == EmbeddingProvider.OLLAMA:
-            config_dict["ollama_model"] = getattr(self.config.embedding, "model", "nomic-embed-text")
-            config_dict["ollama_base_url"] = getattr(self.config.embedding, "api_url", "http://localhost:11434")
+            if model_config:
+                config_dict["ollama_model"] = model_config.model
+                config_dict["ollama_base_url"] = model_config.base_url or "http://localhost:11434"
+            else:
+                config_dict["ollama_model"] = "nomic-embed-text"
+                config_dict["ollama_base_url"] = "http://localhost:11434"
         elif provider == EmbeddingProvider.OPENAI:
-            config_dict["openai_model"] = getattr(self.config.embedding, "model", "text-embedding-3-small")
+            if model_config:
+                config_dict["openai_model"] = model_config.model
+            else:
+                config_dict["openai_model"] = "text-embedding-3-small"
         elif provider == EmbeddingProvider.VOYAGE:
-            config_dict["voyage_model"] = getattr(self.config.embedding, "model", "voyage-3")
-            config_dict["embedding_dimension"] = 1024  # voyage-3 dimension
+            if model_config:
+                config_dict["voyage_model"] = model_config.model
+                config_dict["embedding_dimension"] = model_config.dimension
+            else:
+                config_dict["voyage_model"] = "voyage-3"
+                config_dict["embedding_dimension"] = 1024
         elif provider == EmbeddingProvider.GEMINI:
-            config_dict["gemini_model"] = getattr(self.config.embedding, "model", "models/embedding-001")
+            if model_config:
+                config_dict["gemini_model"] = model_config.model
+            else:
+                config_dict["gemini_model"] = "models/embedding-001"
         
         provider_config = ProviderConfig(**config_dict)
         
-        # Build chunking config - enable chunking for embeddings
+        # Build chunking config - respect the config setting
         embed_chunking_config = EmbedChunkingConfig(
             method=ChunkingMethod(self.config.chunking.method),
             chunk_size=self.config.chunking.chunk_size,
             chunk_overlap=self.config.chunking.chunk_overlap,
-            enable_chunking=True  # Enable chunking for better embedding coverage
+            enable_chunking=self.config.chunking.enabled  # Use config setting
         )
         
         embedding_config = EmbeddingGeneratorConfig(
@@ -171,6 +194,52 @@ class DataPipelineRunner:
         )
         
         return DistributedEmbeddingGenerator(self.spark, embedding_config)
+    
+    def _init_writer_orchestrator(self) -> Optional[WriterOrchestrator]:
+        """Initialize the writer orchestrator with configured destinations."""
+        writers = []
+        
+        # Check if output_destinations is configured
+        if hasattr(self.config, 'output_destinations'):
+            dest_config = self.config.output_destinations
+            
+            # Add Parquet writer if enabled
+            if "parquet" in dest_config.enabled_destinations and dest_config.parquet.enabled:
+                logger.info("Initializing Parquet writer from output_destinations")
+                writers.append(ParquetWriter(dest_config.parquet, self.spark))
+            
+            # Add Neo4j writer if enabled
+            if "neo4j" in dest_config.enabled_destinations and dest_config.neo4j.enabled:
+                logger.info("Initializing Neo4j writer")
+                writers.append(Neo4jWriter(dest_config.neo4j, self.spark))
+            
+            # Future: Add Elasticsearch writer here
+            # if "elasticsearch" in dest_config.enabled_destinations and dest_config.elasticsearch.enabled:
+            #     logger.info("Initializing Elasticsearch writer")
+            #     writers.append(ElasticsearchWriter(dest_config.elasticsearch, self.spark))
+        
+        # If no writers configured via output_destinations but we have legacy output config,
+        # create a default Parquet writer to maintain backward compatibility
+        if not writers and hasattr(self.config, 'output'):
+            if self.config.output.format == "parquet":
+                logger.info("Creating default Parquet writer from legacy output config")
+                # Create a ParquetWriterConfig from legacy output settings
+                from data_pipeline.config.models import ParquetWriterConfig
+                parquet_config = ParquetWriterConfig(
+                    enabled=True,
+                    path=self.config.output.path,
+                    partitioning_columns=self.config.output.partitioning.columns if self.config.output.partitioning.enabled else [],
+                    compression=self.config.output.compression,
+                    mode="overwrite" if self.config.output.overwrite else "append"
+                )
+                writers.append(ParquetWriter(parquet_config, self.spark))
+        
+        if writers:
+            logger.info(f"Initialized {len(writers)} writer(s): {[w.get_writer_name() for w in writers]}")
+            return WriterOrchestrator(writers)
+        
+        logger.info("No writers configured")
+        return None
     
     def run_full_pipeline(self) -> DataFrame:
         """
@@ -405,46 +474,70 @@ class DataPipelineRunner:
         """
         return self._cached_dataframe
     
-    def save_results(self, output_path: Optional[str] = None) -> None:
+    def write_output(self, df: Optional[DataFrame] = None) -> None:
         """
-        Save pipeline results to specified format.
+        Write DataFrame to all configured output destinations.
         
         Args:
-            output_path: Optional output path override
+            df: DataFrame to write. If None, uses cached DataFrame.
         """
-        if self._cached_dataframe is None:
-            logger.error("No results to save. Run pipeline first.")
+        output_df = df or self._cached_dataframe
+        
+        if output_df is None:
+            logger.error("No data to write. Run pipeline first.")
             return
         
-        output_config = self.config.output
-        path = output_path or output_config.path
+        # Prepare metadata for writers
+        metadata = {
+            "pipeline_name": self.config.metadata.name,
+            "pipeline_version": self.config.metadata.version,
+            "timestamp": datetime.now().isoformat(),
+            "record_count": output_df.count(),
+            "environment": self.config_manager.environment
+        }
         
-        logger.info(f"💾 Saving results to {path} as {output_config.format}")
-        
-        # Prepare writer
-        writer = self._cached_dataframe.write
-        
-        if output_config.overwrite:
-            writer = writer.mode("overwrite")
+        if self.writer_orchestrator:
+            # Use multi-destination writer
+            logger.info("="*60)
+            logger.info("📤 Writing to configured destinations...")
+            logger.info("="*60)
+            
+            # Validate connections first
+            logger.info("Validating destination connections...")
+            self.writer_orchestrator.validate_all_connections()
+            
+            # Write to all destinations
+            self.writer_orchestrator.write_to_all(output_df, metadata)
+            
+            logger.info("="*60)
+            logger.info("✅ Successfully wrote to all destinations")
+            logger.info("="*60)
         else:
-            writer = writer.mode("append")
-        
-        # Apply partitioning if specified
-        if output_config.partitioning:
-            writer = writer.partitionBy(*output_config.partitioning)
-        
-        # Save based on format
-        if output_config.format == "parquet":
-            writer.option("compression", output_config.compression).parquet(path)
-        elif output_config.format == "json":
-            writer.json(path)
-        elif output_config.format == "csv":
-            writer.option("header", "true").csv(path)
-        else:
-            logger.error(f"Unsupported output format: {output_config.format}")
-            return
-        
-        logger.info(f"✅ Results saved successfully to {path}")
+            # Use direct Parquet output when no orchestrator configured
+            output_config = self.config.output
+            path = output_config.path
+            
+            logger.info(f"💾 Writing results to {path} as {output_config.format}")
+            
+            writer = output_df.write.mode("overwrite" if output_config.overwrite else "append")
+            
+            # Apply partitioning if specified
+            if output_config.partitioning and output_config.partitioning.enabled:
+                if output_config.partitioning.columns:
+                    writer = writer.partitionBy(*output_config.partitioning.columns)
+            
+            # Write based on format
+            if output_config.format == "parquet":
+                writer.option("compression", output_config.compression).parquet(path)
+            elif output_config.format == "json":
+                writer.json(path)
+            elif output_config.format == "csv":
+                writer.option("header", "true").csv(path)
+            else:
+                logger.error(f"Unsupported output format: {output_config.format}")
+                return
+            
+            logger.info(f"✅ Results written successfully to {path}")
     
     def validate_pipeline(self) -> Dict[str, Any]:
         """

@@ -93,7 +93,7 @@ class WikipediaLoader:
                 a.pageid as page_id,
                 a.title,
                 a.url,
-                a.extract as full_text,
+                a.extract,
                 a.relevance_score,
                 a.latitude,
                 a.longitude,
@@ -173,7 +173,7 @@ class WikipediaLoader:
                  split(col("key_topics"), ","))
                 .otherwise(array()).alias("features"),
             array().cast(ArrayType(StringType())).alias("features_normalized"),
-            col("full_text").alias("content"),
+            col("extract").alias("content"),
             col("summary"),
             col("key_topics"),
             
