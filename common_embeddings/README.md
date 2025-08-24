@@ -82,29 +82,50 @@ mypy common_embeddings/
 
 **Important**: Always use `python -m common_embeddings` to run the pipeline. Direct execution with `python common_embeddings/main.py` is not supported.
 
-## Evaluation Mode
+## Evaluation System
 
-The evaluation mode allows you to test and compare different embedding models on standardized datasets.
+The evaluation system provides tools to benchmark and compare different embedding models on standardized datasets.
+
+### Overview
+
+The evaluation workflow consists of three steps:
+1. **Create embeddings** - Generate embeddings for evaluation datasets using different models
+2. **Run queries** - Test retrieval accuracy with predefined query sets
+3. **Compare results** - Analyze metrics and determine the best performing model
 
 ### Running Evaluations
+
+First, create your own `eval_configs` directory by copying the samples:
+
+```bash
+# Copy sample configs to create your own eval_configs
+cp -r common_embeddings/sample_eval_configs common_embeddings/eval_configs
+
+# Edit the configs as needed for your models and datasets
+```
+
+Then run evaluations:
 
 ```bash
 # Run evaluation with a specific config
 python -m common_embeddings --data-type eval --config common_embeddings/eval_configs/nomic.yaml
 
 # Compare multiple models (run all configs in a directory)
-python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/
 
 # Compare specific models
-python common_embeddings/run_eval_comparison.py \
+python -m common_embeddings.evaluate compare \
   common_embeddings/eval_configs/nomic.yaml \
   common_embeddings/eval_configs/mxbai.yaml
 
 # Force recreate embeddings
-python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/ --force-recreate
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/ --force-recreate
 
 # Skip comparison step (just create embeddings)
-python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/ --skip-comparison
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/ --skip-comparison
+
+# Run comparison on existing collections
+python -m common_embeddings.evaluate run
 ```
 
 ### Evaluation Datasets
@@ -114,10 +135,10 @@ python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/ 
 
 ### Creating Evaluation Configs
 
-Each model needs its own eval config in `eval_configs/`. Example:
+Each model needs its own eval config. See `sample_eval_configs/` for examples:
 
 ```yaml
-# eval_configs/nomic.yaml
+# Example: eval_configs/nomic.yaml
 embedding:
   provider: ollama
   ollama_model: nomic-embed-text
@@ -132,12 +153,23 @@ evaluation_data:
   dataset_type: bronze
 ```
 
+Available sample configs in `sample_eval_configs/`:
+- `nomic.yaml` - Nomic embeddings via Ollama
+- `mxbai.yaml` - MxBai embeddings via Ollama  
+- `voyage.yaml` - Voyage AI cloud embeddings
+- `eval.config.yaml` - Base configuration template
+- `test.config.yaml` - Model comparison configuration
+
 ### Model Comparison
 
 After creating embeddings for multiple models, run comparison:
 
 ```bash
-python -m common_embeddings.evaluate.run_comparison
+# Run comparison on existing collections
+python -m common_embeddings.evaluate run
+
+# Or run the full pipeline: create embeddings and compare
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/
 ```
 
 This will:
@@ -203,11 +235,14 @@ processing:
 #### Running with Voyage
 
 ```bash
+# Copy sample config for Voyage
+cp common_embeddings/sample_eval_configs/voyage.yaml common_embeddings/eval_configs/
+
 # Create embeddings with Voyage (API key loaded from .env automatically)
 python -m common_embeddings --data-type eval --config common_embeddings/eval_configs/voyage.yaml
 
 # Compare Voyage with other models
-python common_embeddings/run_eval_comparison.py common_embeddings/eval_configs/
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/
 
 # Use Voyage for production data
 python -m common_embeddings --data-type wikipedia --force-recreate

@@ -30,7 +30,6 @@ else:
 
 from .models import Config, EntityType, SourceType
 from .models.config import load_config_from_yaml
-from .models.eval_config import load_eval_config
 from .pipeline import EmbeddingPipeline
 from .utils import setup_logging, get_logger
 from .utils.progress import create_progress_indicator
@@ -197,170 +196,6 @@ def process_wikipedia_data(config: Config, force_recreate: bool = False, max_art
     return stats
 
 
-def process_json_articles(config: Config, json_path: Path, force_recreate: bool = False, collection_name: str = None):
-    """
-    Process Wikipedia articles from evaluation JSON file.
-    
-    Args:
-        config: Configuration object
-        json_path: Path to JSON file with articles
-        force_recreate: Whether to recreate collections
-        collection_name: Optional collection name to use
-        
-    Returns:
-        Pipeline statistics
-    """
-    logger = get_logger(__name__)
-    logger.info(f"Processing articles from JSON: {json_path}")
-    
-    # Load articles from JSON
-    with open(json_path) as f:
-        data = json.load(f)
-    
-    articles = data.get("articles", [])
-    logger.info(f"Loaded {len(articles)} articles from JSON")
-    
-    # Create Document objects from JSON data
-    from llama_index.core import Document
-    documents = []
-    
-    for article in articles:
-        # Combine short and long summaries for more content
-        text_content = f"{article['title']}\n\n"
-        text_content += f"{article['summary']}\n\n"
-        if article.get('long_summary'):
-            text_content += f"{article['long_summary']}\n\n"
-        if article.get('key_topics'):
-            text_content += f"Topics: {article['key_topics']}"
-        
-        doc = Document(
-            text=text_content,
-            metadata={
-                "page_id": str(article["page_id"]),
-                "title": article["title"],
-                "city": article.get("city", ""),
-                "county": article.get("county", ""),
-                "state": article.get("state", ""),
-                "categories": ", ".join(article.get("categories", [])),
-                "source": "evaluation_set",
-                "source_file": article.get("html_file", "")
-            }
-        )
-        documents.append(doc)
-    
-    if not documents:
-        logger.warning("No documents created from JSON")
-        return None
-    
-    # Create pipeline
-    pipeline = EmbeddingPipeline(config)
-    
-    # Process documents with progress indicator
-    logger.info(f"Processing {len(documents)} evaluation articles...")
-    progress = create_progress_indicator(
-        total=len(documents),
-        operation="Processing evaluation articles",
-        show_console=True
-    )
-    
-    # Store in collection first
-    logger.info("Setting up ChromaDB collection for evaluation...")
-    collection_manager = CollectionManager(config)
-    
-    # Get collection name from config
-    if hasattr(config.chromadb, 'collection_name'):
-        eval_collection = config.chromadb.collection_name
-    else:
-        # Fallback to using model identifier if not specified
-        eval_collection = f"eval_{pipeline.model_identifier}"
-    
-    logger.info(f"Using collection name: {eval_collection}")
-    
-    # Create the collection
-    collection_manager.store.create_collection(
-        name=eval_collection,
-        metadata={
-            "source": "evaluation_set",
-            "json_path": str(json_path),
-            "article_count": len(articles),
-            "model_identifier": pipeline.model_identifier
-        },
-        force_recreate=force_recreate
-    )
-    
-    
-    # Get the ChromaDB store - it will use the collection we just created
-    from .storage import ChromaDBStore
-    chroma_store = ChromaDBStore(config.chromadb)
-    chroma_store.collection = chroma_store.client.get_collection(eval_collection)
-    
-    doc_count = 0
-    embeddings_to_add = []
-    
-    for result in pipeline.process_documents(
-        documents,
-        EntityType.WIKIPEDIA_ARTICLE,
-        SourceType.EVALUATION_JSON,
-        str(json_path)
-    ):
-        # Collect embeddings to batch add
-        # Convert Pydantic model to dict for ChromaDB
-        metadata_dict = result.metadata.model_dump()
-        
-        doc_id = metadata_dict.get("page_id", f"doc_{doc_count}")
-        
-        embeddings_to_add.append({
-            "embedding": result.embedding,
-            "metadata": metadata_dict,
-            "document_id": f"{doc_id}_{doc_count}"
-        })
-        
-        doc_count += 1
-        progress.update(current=doc_count)
-        
-        # Batch add every 10 embeddings
-        if len(embeddings_to_add) >= 10:
-            ids = [e["document_id"] for e in embeddings_to_add]
-            embeddings = [e["embedding"] for e in embeddings_to_add]
-            metadatas = [e["metadata"] for e in embeddings_to_add]
-            texts = [str(e["metadata"].get("title", "") if isinstance(e["metadata"], dict) else getattr(e["metadata"], "title", "")) for e in embeddings_to_add]
-            
-            chroma_store.add_embeddings(
-                embeddings=embeddings,
-                texts=texts,
-                metadatas=metadatas,
-                ids=ids
-            )
-            embeddings_to_add = []
-    
-    # Add remaining embeddings
-    if embeddings_to_add:
-        ids = [e["document_id"] for e in embeddings_to_add]
-        embeddings = [e["embedding"] for e in embeddings_to_add]
-        metadatas = [e["metadata"] for e in embeddings_to_add]
-        texts = [str(e["metadata"].get("title", "")) for e in embeddings_to_add]
-        
-        chroma_store.add_embeddings(
-            embeddings=embeddings,
-            texts=texts,
-            metadatas=metadatas,
-            ids=ids
-        )
-    
-    progress.complete()
-    logger.info(f"Completed processing and storing {doc_count} evaluation embeddings")
-    logger.info(f"Created evaluation collection: {eval_collection}")
-    
-    # Get statistics
-    stats = pipeline.get_statistics()
-    logger.info("Pipeline Statistics:")
-    stats_dict = stats.model_dump()
-    for key, value in stats_dict.items():
-        logger.info(f"  {key}: {value}")
-    
-    return stats
-
-
 def main():
     """Main entry point for processing real data.
     
@@ -372,9 +207,9 @@ def main():
     )
     parser.add_argument(
         "--data-type",
-        choices=["real_estate", "wikipedia", "all", "evaluation", "eval"],
+        choices=["real_estate", "wikipedia", "all"],
         default="all",
-        help="Type of data to process (eval uses eval.config.yaml)"
+        help="Type of data to process"
     )
     parser.add_argument(
         "--force-recreate",
@@ -386,12 +221,6 @@ def main():
         type=int,
         default=None,
         help="Maximum number of Wikipedia articles to process (for testing)"
-    )
-    parser.add_argument(
-        "--evaluation-json",
-        type=str,
-        default="common_embeddings/evaluate_data/evaluate_articles.json",
-        help="Path to evaluation JSON file (for --data-type=evaluation)"
     )
     parser.add_argument(
         "--config",
@@ -415,17 +244,10 @@ def main():
     logger.info("Common Embeddings - Real Data Processing")
     logger.info("=" * 60)
     
-    # Load configuration - use specified config file or default
-    if args.data_type == "eval":
-        # Use specified config for eval mode, defaulting to eval.config.yaml
-        config_path = args.config if args.config != "common_embeddings/config.yaml" else "common_embeddings/eval.config.yaml"
-        logger.info(f"Using eval mode configuration from {config_path}")
-        config = load_eval_config(config_path)
-        logger.info(f"Loaded eval config: provider={config.embedding.provider}, collection={config.chromadb.collection_name}")
-    else:
-        config_path = args.config
-        config = load_config_from_yaml(config_path)
-        logger.info(f"Loaded configuration from {config_path}: provider={config.embedding.provider}")
+    # Load configuration
+    config_path = args.config
+    config = load_config_from_yaml(config_path)
+    logger.info(f"Loaded configuration from {config_path}: provider={config.embedding.provider}")
     
     # Process based on data type and collect statistics
     all_stats = {}
@@ -442,33 +264,6 @@ def main():
         if wikipedia_stats:
             all_stats['wikipedia'] = wikipedia_stats
     
-    if args.data_type in ["evaluation", "eval"]:
-        logger.info("\n--- Processing Evaluation Data ---")
-        
-        # For eval mode, use articles path from config
-        if args.data_type == "eval":
-            # Check if eval config specifies articles path, otherwise default to gold
-            if hasattr(config, 'evaluation_data') and hasattr(config.evaluation_data, 'articles_path'):
-                json_path = Path(config.evaluation_data.articles_path)
-            else:
-                json_path = Path("common_embeddings/evaluate_data/gold_articles.json")
-        else:
-            # For evaluation mode, use the provided path
-            json_path = Path(args.evaluation_json)
-        
-        if not json_path.exists():
-            logger.error(f"Evaluation JSON file not found: {json_path}")
-            sys.exit(1)
-            
-        # In eval mode, collection name comes from config
-        collection_name = None
-        if args.data_type == "eval" and hasattr(config.chromadb, 'collection_prefix'):
-            # Collection name will be auto-generated from prefix and model
-            collection_name = None  # Let process_json_articles generate it
-        
-        eval_stats = process_json_articles(config, json_path, args.force_recreate, collection_name)
-        if eval_stats:
-            all_stats['evaluation'] = eval_stats
     
     # Show collection summary
     logger.info("\n--- Collection Summary ---")
@@ -521,7 +316,7 @@ def main():
             'exists': neighborhood_info.exists
         }
     
-    if args.data_type in ["wikipedia", "all", "evaluation"]:
+    if args.data_type in ["wikipedia", "all"]:
         wiki_info = collection_manager.get_entity_collection_info(EntityType.WIKIPEDIA_ARTICLE, model_id)
         final_summary['collections']['wikipedia'] = {
             'name': wiki_info.collection_name,

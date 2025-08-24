@@ -7,8 +7,8 @@ Runs evaluation with multiple config files and compares results.
 
 import os
 import argparse
-import subprocess
 import sys
+import subprocess
 from pathlib import Path
 import logging
 
@@ -39,26 +39,20 @@ def run_eval_with_config(config_path: str, force_recreate: bool = True) -> bool:
     logger.info(f"Running eval with config: {config_path}")
     logger.info(f"{'='*60}")
     
-    cmd = [
-        sys.executable, "-m", "common_embeddings",
-        "--data-type", "eval",
-        "--config", config_path
-    ]
-    
-    if force_recreate:
-        cmd.append("--force-recreate")
-    
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Import and use the data processor directly
+        from .data_processor import process_eval_config
         
-        if result.returncode != 0:
-            logger.error(f"Failed to run eval: {result.stderr}")
+        result = process_eval_config(config_path, force_recreate)
+        
+        if result is None:
+            logger.error("Failed to process evaluation data")
             return False
             
-        # Log key output lines
-        for line in result.stdout.split('\n'):
-            if any(keyword in line for keyword in ['Created evaluation collection', 'Total Embeddings Generated', 'Processing complete']):
-                logger.info(f"  {line.strip()}")
+        # Log key results
+        logger.info(f"  Created evaluation collection: {result['collection_name']}")
+        logger.info(f"  Total Embeddings Generated: {result['embeddings_created']}")
+        logger.info(f"  Processing complete!")
                 
         return True
         

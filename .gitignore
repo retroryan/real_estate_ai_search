@@ -146,8 +146,9 @@ chroma_db/
 
 data/
 
-# Evaluation results
+# Evaluation results and user configs
 common_embeddings/evaluate_results/
+common_embeddings/eval_configs/
 
 .DS_Store
 neo4j_auth.txt

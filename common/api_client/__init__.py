@@ -23,6 +23,23 @@ from .wikipedia_models import (
     WikipediaSummaryListResponse,
     WikipediaSummaryResponse
 )
+from .stats_client import StatsAPIClient
+from .stats_models import (
+    DataSummaryStats,
+    PropertyStats,
+    NeighborhoodStats,
+    WikipediaStats,
+    CoverageStats,
+    EnrichmentStats,
+    StatsSummaryResponse,
+    PropertyStatsResponse,
+    NeighborhoodStatsResponse,
+    WikipediaStatsResponse,
+    CoverageStatsResponse,
+    EnrichmentStatsResponse
+)
+from .system_client import SystemAPIClient, HealthStatus, RootInfo
+from .client_factory import APIClientFactory
 
 __all__ = [
     'BaseAPIClient',
@@ -51,5 +68,22 @@ __all__ = [
     'WikipediaArticleResponse',
     'WikipediaSummaryListRequest',
     'WikipediaSummaryListResponse',
-    'WikipediaSummaryResponse'
+    'WikipediaSummaryResponse',
+    'StatsAPIClient',
+    'DataSummaryStats',
+    'PropertyStats',
+    'NeighborhoodStats',
+    'WikipediaStats',
+    'CoverageStats',
+    'EnrichmentStats',
+    'StatsSummaryResponse',
+    'PropertyStatsResponse',
+    'NeighborhoodStatsResponse',
+    'WikipediaStatsResponse',
+    'CoverageStatsResponse',
+    'EnrichmentStatsResponse',
+    'SystemAPIClient',
+    'HealthStatus',
+    'RootInfo',
+    'APIClientFactory'
 ]
