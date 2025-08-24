@@ -1,32 +1,36 @@
 """Wikipedia data source implementation"""
 
-import sqlite3
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 import json
 
+from api_client import APIClientFactory, WikipediaAPIClient
 from src.core.interfaces import IWikipediaDataSource
 
 
 class WikipediaFileDataSource(IWikipediaDataSource):
-    """File and SQLite-based Wikipedia data source"""
+    """API-based Wikipedia data source"""
     
-    def __init__(self, data_path: Path):
+    def __init__(self, api_factory: APIClientFactory):
         """
         Initialize Wikipedia data source
         
         Args:
-            data_path: Path to Wikipedia data directory
+            api_factory: Factory for creating API clients
         """
-        self.data_path = data_path
-        self.pages_path = data_path / "pages"
-        self.db_path = data_path / "wikipedia.db"
+        self.api_factory = api_factory
+        self.wikipedia_client = api_factory.create_wikipedia_client()
+        self.system_client = api_factory.create_system_client()
         self.logger = logging.getLogger(self.__class__.__name__)
     
     def exists(self) -> bool:
         """Check if data source exists"""
-        return self.db_path.exists() and self.pages_path.exists()
+        try:
+            health_status = self.system_client.check_readiness()
+            return health_status.get('status') == 'ready'
+        except Exception as e:
+            self.logger.warning(f"API health check failed: {e}")
+            return False
     
     def load(self) -> Dict[str, Any]:
         """Load all Wikipedia data"""
@@ -37,136 +41,162 @@ class WikipediaFileDataSource(IWikipediaDataSource):
     
     def load_articles(self) -> List[Dict[str, Any]]:
         """
-        Load Wikipedia articles from database
+        Load Wikipedia articles from API
         
         Returns:
             List of article dictionaries
         """
-        if not self.db_path.exists():
-            self.logger.warning(f"Wikipedia database not found: {self.db_path}")
-            return []
-        
-        articles = []
-        
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            all_articles = []
+            page = 1
+            page_size = 100
+            
+            while True:
+                api_response = self.wikipedia_client.get_all_articles(
+                    page=page,
+                    page_size=page_size
+                )
                 
-                # Query all articles
-                query = """
-                SELECT 
-                    page_id,
-                    title,
-                    url,
-                    full_text,
-                    depth,
-                    relevance_score,
-                    latitude,
-                    longitude,
-                    created_at
-                FROM articles
-                ORDER BY page_id
-                """
+                if not api_response.articles:
+                    break
+                    
+                # Transform API response (Pydantic models) to dictionary format
+                for article_model in api_response.articles:
+                    article_dict = article_model.model_dump()
+                    
+                    # Map API fields to expected database column equivalents
+                    if hasattr(article_model, 'enrichment_metadata'):
+                        metadata = article_model.enrichment_metadata
+                        if metadata:
+                            article_dict['latitude'] = metadata.location_info.latitude if metadata.location_info else None
+                            article_dict['longitude'] = metadata.location_info.longitude if metadata.location_info else None
+                            article_dict['relevance_score'] = getattr(metadata, 'confidence_score', 0.0)
+                    
+                    # Ensure compatibility with expected fields
+                    article_dict.setdefault('page_id', article_model.page_id)
+                    article_dict.setdefault('title', article_model.title)
+                    article_dict.setdefault('url', article_model.url)
+                    article_dict.setdefault('full_text', article_model.content)
+                    article_dict.setdefault('depth', 0)
+                    article_dict.setdefault('relevance_score', 0.0)
+                    article_dict.setdefault('latitude', None)
+                    article_dict.setdefault('longitude', None)
+                    article_dict.setdefault('created_at', article_model.created_at)
+                    
+                    all_articles.append(article_dict)
                 
-                cursor.execute(query)
+                self.logger.info(f"Loaded {len(api_response.articles)} Wikipedia articles from page {page}")
                 
-                for row in cursor:
-                    articles.append(dict(row))
-                
-                self.logger.info(f"Loaded {len(articles)} Wikipedia articles")
-                
-        except sqlite3.Error as e:
-            self.logger.error(f"Database error loading articles: {e}")
+                # Check if we have more pages
+                if len(api_response.articles) < page_size:
+                    break
+                page += 1
+            
+            self.logger.info(f"Total Wikipedia articles loaded: {len(all_articles)}")
+            return all_articles
+            
         except Exception as e:
-            self.logger.error(f"Failed to load articles: {e}")
-        
-        return articles
+            self.logger.error(f"Failed to load articles from API: {e}")
+            return []
     
     def load_summaries(self) -> List[Dict[str, Any]]:
         """
-        Load Wikipedia summaries from database
+        Load Wikipedia summaries from API
         
         Returns:
             List of summary dictionaries
         """
-        if not self.db_path.exists():
-            self.logger.warning(f"Wikipedia database not found: {self.db_path}")
-            return []
-        
-        summaries = []
-        
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            all_summaries = []
+            page = 1
+            page_size = 100
+            
+            while True:
+                api_response = self.wikipedia_client.get_all_summaries(
+                    page=page,
+                    page_size=page_size
+                )
                 
-                # Query all summaries with article info
-                query = """
-                SELECT 
-                    ps.page_id,
-                    ps.article_id,
-                    ps.summary,
-                    ps.key_topics,
-                    ps.best_city,
-                    ps.best_state,
-                    ps.overall_confidence,
-                    ps.created_at,
-                    a.title as article_title,
-                    a.url as article_url
-                FROM page_summaries ps
-                JOIN articles a ON ps.article_id = a.id
-                ORDER BY ps.page_id
-                """
-                
-                cursor.execute(query)
-                
-                for row in cursor:
-                    summary_dict = dict(row)
+                if not api_response.summaries:
+                    break
                     
-                    # Parse key_topics if it's a JSON string
-                    if summary_dict.get("key_topics"):
-                        try:
-                            summary_dict["key_topics"] = json.loads(summary_dict["key_topics"])
-                        except (json.JSONDecodeError, TypeError):
-                            # Keep as string if not valid JSON
-                            pass
+                # Transform API response (Pydantic models) to dictionary format
+                for summary_model in api_response.summaries:
+                    summary_dict = summary_model.model_dump()
                     
-                    summaries.append(summary_dict)
+                    # Map API confidence scores to expected database column equivalents
+                    summary_dict['overall_confidence'] = getattr(summary_model, 'confidence_score', 0.0)
+                    
+                    # Handle topic extraction and key topics formatting
+                    if hasattr(summary_model, 'key_topics') and summary_model.key_topics:
+                        # Ensure key_topics is serializable
+                        if isinstance(summary_model.key_topics, list):
+                            summary_dict['key_topics'] = summary_model.key_topics
+                        else:
+                            summary_dict['key_topics'] = [summary_model.key_topics]
+                    else:
+                        summary_dict['key_topics'] = []
+                    
+                    # Ensure compatibility with expected fields
+                    summary_dict.setdefault('page_id', summary_model.page_id)
+                    summary_dict.setdefault('article_id', getattr(summary_model, 'article_id', summary_model.page_id))
+                    summary_dict.setdefault('summary', summary_model.summary_text)
+                    summary_dict.setdefault('best_city', getattr(summary_model, 'best_city', ''))
+                    summary_dict.setdefault('best_state', getattr(summary_model, 'best_state', ''))
+                    summary_dict.setdefault('created_at', summary_model.created_at)
+                    
+                    # Add article metadata for compatibility
+                    summary_dict.setdefault('article_title', getattr(summary_model, 'article_title', ''))
+                    summary_dict.setdefault('article_url', getattr(summary_model, 'article_url', ''))
+                    
+                    all_summaries.append(summary_dict)
                 
-                self.logger.info(f"Loaded {len(summaries)} Wikipedia summaries")
+                self.logger.info(f"Loaded {len(api_response.summaries)} Wikipedia summaries from page {page}")
                 
-        except sqlite3.Error as e:
-            self.logger.error(f"Database error loading summaries: {e}")
+                # Check if we have more pages
+                if len(api_response.summaries) < page_size:
+                    break
+                page += 1
+            
+            self.logger.info(f"Total Wikipedia summaries loaded: {len(all_summaries)}")
+            return all_summaries
+            
         except Exception as e:
-            self.logger.error(f"Failed to load summaries: {e}")
-        
-        return summaries
+            self.logger.error(f"Failed to load summaries from API: {e}")
+            return []
     
-    def get_html_file(self, page_id: int) -> Optional[Path]:
+    def get_html_file(self, page_id: int) -> Optional[str]:
         """
-        Get path to HTML file for a Wikipedia page
+        Get API endpoint for Wikipedia page content (legacy method for compatibility)
         
         Args:
             page_id: Wikipedia page ID
             
         Returns:
-            Path to HTML file if it exists, None otherwise
+            API endpoint URL if page exists, None otherwise
         """
-        html_file = self.pages_path / f"{page_id}.html"
-        return html_file if html_file.exists() else None
+        try:
+            article = self.get_article_by_page_id(page_id)
+            if article:
+                base_url = self.api_factory.config.base_url
+                return f"{base_url}/wikipedia/articles/{page_id}"
+            return None
+        except Exception:
+            return None
     
-    def list_html_files(self) -> List[Path]:
+    def list_html_files(self) -> List[str]:
         """
-        List all HTML files in pages directory
+        List all Wikipedia article API endpoints (legacy method for compatibility)
         
         Returns:
-            List of HTML file paths
+            List of API endpoint URLs
         """
-        if not self.pages_path.exists():
+        try:
+            articles = self.load_articles()
+            base_url = self.api_factory.config.base_url
+            return [f"{base_url}/wikipedia/articles/{article['page_id']}" for article in articles]
+        except Exception:
             return []
-        
-        return list(self.pages_path.glob("*.html"))
     
     def get_article_by_page_id(self, page_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -178,25 +208,27 @@ class WikipediaFileDataSource(IWikipediaDataSource):
         Returns:
             Article dictionary if found, None otherwise
         """
-        if not self.db_path.exists():
-            return None
-        
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            article_model = self.wikipedia_client.get_article(page_id)
+            if article_model:
+                article_dict = article_model.model_dump()
                 
-                query = """
-                SELECT * FROM articles WHERE page_id = ?
-                """
+                # Ensure compatibility with expected fields
+                article_dict.setdefault('page_id', article_model.page_id)
+                article_dict.setdefault('title', article_model.title)
+                article_dict.setdefault('url', article_model.url)
+                article_dict.setdefault('full_text', article_model.content)
+                article_dict.setdefault('depth', 0)
+                article_dict.setdefault('relevance_score', 0.0)
+                article_dict.setdefault('latitude', None)
+                article_dict.setdefault('longitude', None)
+                article_dict.setdefault('created_at', article_model.created_at)
                 
-                cursor.execute(query, (page_id,))
-                row = cursor.fetchone()
-                
-                return dict(row) if row else None
-                
-        except sqlite3.Error as e:
-            self.logger.error(f"Database error getting article {page_id}: {e}")
+                return article_dict
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"API error getting article {page_id}: {e}")
             return None
     
     def get_summary_by_page_id(self, page_id: int) -> Optional[Dict[str, Any]]:
@@ -209,41 +241,38 @@ class WikipediaFileDataSource(IWikipediaDataSource):
         Returns:
             Summary dictionary if found, None otherwise
         """
-        if not self.db_path.exists():
-            return None
-        
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            summary_model = self.wikipedia_client.get_summary(page_id)
+            if summary_model:
+                summary_dict = summary_model.model_dump()
                 
-                query = """
-                SELECT 
-                    ps.*,
-                    a.title as article_title,
-                    a.url as article_url
-                FROM page_summaries ps
-                JOIN articles a ON ps.article_id = a.id
-                WHERE ps.page_id = ?
-                """
+                # Map API confidence scores to expected database column equivalents
+                summary_dict['overall_confidence'] = getattr(summary_model, 'confidence_score', 0.0)
                 
-                cursor.execute(query, (page_id,))
-                row = cursor.fetchone()
+                # Handle topic extraction and key topics formatting
+                if hasattr(summary_model, 'key_topics') and summary_model.key_topics:
+                    if isinstance(summary_model.key_topics, list):
+                        summary_dict['key_topics'] = summary_model.key_topics
+                    else:
+                        summary_dict['key_topics'] = [summary_model.key_topics]
+                else:
+                    summary_dict['key_topics'] = []
                 
-                if row:
-                    summary_dict = dict(row)
-                    
-                    # Parse key_topics if it's a JSON string
-                    if summary_dict.get("key_topics"):
-                        try:
-                            summary_dict["key_topics"] = json.loads(summary_dict["key_topics"])
-                        except (json.JSONDecodeError, TypeError):
-                            pass
-                    
-                    return summary_dict
+                # Ensure compatibility with expected fields
+                summary_dict.setdefault('page_id', summary_model.page_id)
+                summary_dict.setdefault('article_id', getattr(summary_model, 'article_id', summary_model.page_id))
+                summary_dict.setdefault('summary', summary_model.summary_text)
+                summary_dict.setdefault('best_city', getattr(summary_model, 'best_city', ''))
+                summary_dict.setdefault('best_state', getattr(summary_model, 'best_state', ''))
+                summary_dict.setdefault('created_at', summary_model.created_at)
                 
-                return None
+                # Add article metadata for compatibility
+                summary_dict.setdefault('article_title', getattr(summary_model, 'article_title', ''))
+                summary_dict.setdefault('article_url', getattr(summary_model, 'article_url', ''))
                 
-        except sqlite3.Error as e:
-            self.logger.error(f"Database error getting summary {page_id}: {e}")
+                return summary_dict
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"API error getting summary {page_id}: {e}")
             return None

@@ -1,96 +1,84 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = ["data_pipeline"]
+
 [project]
-name = "property-finder-rag"
-version = "0.1.0"
-description = "Real Estate RAG System with Semantic Chunking Evaluation"
-authors = [{name = "Property Finder Team", email = "team@propertyfinder.com"}]
-license = {text = "MIT"}
-readme = "README.md"
+name = "data-pipeline"
+version = "1.0.0"
+description = "Unified Apache Spark data pipeline for real estate and Wikipedia data processing"
 requires-python = ">=3.9"
-keywords = ["rag", "real-estate", "semantic-chunking", "llama-index", "ollama"]
-
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-
 dependencies = [
-    "llama-index==0.10.11",
-    "llama-index-embeddings-ollama==0.1.2",
-    "llama-index-vector-stores-chroma==0.1.6",
-    "pydantic==2.5.3",
-    "pydantic-settings==2.1.0",
-    "chromadb==0.4.22",
-    "numpy==1.26.2",
-    "pandas==2.1.4",
-    "scipy==1.11.4",
-    "python-dotenv==1.0.0",
-    "loguru==0.7.2",
-    "rich==13.7.0",
+    # Shared models package (local) - use relative path
+    "common @ file:///Users/ryanknight/projects/temporal/real_estate_ai_search/common",
+    
+    # Core dependencies
+    "pyspark>=3.5.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    
+    # Data processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "pyarrow>=14.0.0",  # For Parquet support
+    
+    # Utilities
+    "pyyaml>=6.0.1",
+    "requests>=2.31.0",
+    
+    # Embedding providers (llama-index)
+    "llama-index-core>=0.10.0",
+    "llama-index-embeddings-ollama>=0.1.0",
+    "llama-index-embeddings-openai>=0.1.0",
+    "llama-index-embeddings-voyageai>=0.1.0",
+    "llama-index-embeddings-google>=0.1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest==7.4.3",
-    "pytest-asyncio==0.23.2",
-    "pytest-cov==4.1.0",
-    "mypy==1.8.0",
-    "typing-extensions==4.9.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "mypy>=1.7.0",
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+    "isort>=5.12.0",
+    "types-pyyaml>=6.0.12",
+    "types-requests>=2.31.0",
 ]
+
 viz = [
-    "matplotlib==3.8.2",
-    "plotly==5.18.0",
-    "jupyter==1.0.0",
-    "ipykernel==6.29.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "plotly>=5.17.0",
 ]
 
-[project.scripts]
-property-finder-eval = "src.main:main"
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+[tool.isort]
+profile = "black"
+line_length = 100
 
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
+disallow_any_unimported = false
 no_implicit_optional = true
-warn_redundant_casts = true
+check_untyped_defs = true
+show_error_codes = true
 warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q --strict-markers --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-asyncio_mode = "auto"
-
-[tool.coverage.run]
-source = ["src"]
-omit = ["tests/*", "src/__init__.py"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=data_pipeline --cov-report=term-missing --cov-report=html"

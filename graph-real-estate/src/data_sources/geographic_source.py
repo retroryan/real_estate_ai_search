@@ -1,39 +1,35 @@
 """Geographic data source implementation"""
 
-import json
-from pathlib import Path
 from typing import List, Dict, Any
 import logging
 
+from api_client import APIClientFactory, StatsAPIClient, SystemAPIClient
 from src.core.interfaces import IGeographicDataSource
 
 
 class GeographicFileDataSource(IGeographicDataSource):
-    """File-based geographic data source"""
+    """API-based geographic data source"""
     
-    def __init__(self, data_path: Path):
+    def __init__(self, api_factory: APIClientFactory):
         """
         Initialize geographic data source
         
         Args:
-            data_path: Path to geographic data directory
+            api_factory: Factory for creating API clients
         """
-        self.data_path = data_path
+        self.api_factory = api_factory
+        self.stats_client = api_factory.create_stats_client()
+        self.system_client = api_factory.create_system_client()
         self.logger = logging.getLogger(self.__class__.__name__)
-        
-        # Define file paths
-        self.states_file = data_path / "states.json"
-        self.counties_file = data_path / "counties.json"
-        self.cities_file = data_path / "cities.json"
     
     def exists(self) -> bool:
         """Check if data source exists"""
-        # At least one geographic file should exist
-        return (
-            self.states_file.exists() or 
-            self.counties_file.exists() or 
-            self.cities_file.exists()
-        )
+        try:
+            health_status = self.system_client.check_readiness()
+            return health_status.get('status') == 'ready'
+        except Exception as e:
+            self.logger.warning(f"API health check failed: {e}")
+            return False
     
     def load(self) -> Dict[str, Any]:
         """Load all geographic data"""
@@ -50,21 +46,25 @@ class GeographicFileDataSource(IGeographicDataSource):
         Returns:
             List of state dictionaries
         """
-        if not self.states_file.exists():
-            # Return default states if file doesn't exist
-            self.logger.info("States file not found, using default states")
-            return self._get_default_states()
-        
         try:
-            with open(self.states_file, "r") as f:
-                states = json.load(f)
-                self.logger.info(f"Loaded {len(states)} states from file")
-                return states
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse {self.states_file}: {e}")
+            # Try to get geographic data via API statistics
+            # For demo purposes, fall back to default states if API doesn't have geographic endpoints yet
+            stats = self.stats_client.get_all_stats()
+            
+            # Check if geographic data is available in stats
+            if hasattr(stats, 'geographic') and stats.geographic:
+                geographic_data = stats.geographic.model_dump() if hasattr(stats.geographic, 'model_dump') else stats.geographic
+                if isinstance(geographic_data, dict) and 'states' in geographic_data:
+                    states = geographic_data['states']
+                    self.logger.info(f"Loaded {len(states)} states from API")
+                    return states
+            
+            # Fall back to default states for demo
+            self.logger.info("API geographic data not available, using default states for demo")
             return self._get_default_states()
+            
         except Exception as e:
-            self.logger.error(f"Failed to load {self.states_file}: {e}")
+            self.logger.warning(f"Failed to load states from API: {e}, using default states")
             return self._get_default_states()
     
     def load_counties(self) -> List[Dict[str, Any]]:
@@ -74,21 +74,24 @@ class GeographicFileDataSource(IGeographicDataSource):
         Returns:
             List of county dictionaries
         """
-        if not self.counties_file.exists():
-            # Return default counties if file doesn't exist
-            self.logger.info("Counties file not found, using default counties")
-            return self._get_default_counties()
-        
         try:
-            with open(self.counties_file, "r") as f:
-                counties = json.load(f)
-                self.logger.info(f"Loaded {len(counties)} counties from file")
-                return counties
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse {self.counties_file}: {e}")
+            # Try to get geographic data via API statistics
+            stats = self.stats_client.get_all_stats()
+            
+            # Check if geographic data is available in stats
+            if hasattr(stats, 'geographic') and stats.geographic:
+                geographic_data = stats.geographic.model_dump() if hasattr(stats.geographic, 'model_dump') else stats.geographic
+                if isinstance(geographic_data, dict) and 'counties' in geographic_data:
+                    counties = geographic_data['counties']
+                    self.logger.info(f"Loaded {len(counties)} counties from API")
+                    return counties
+            
+            # Fall back to default counties for demo
+            self.logger.info("API geographic data not available, using default counties for demo")
             return self._get_default_counties()
+            
         except Exception as e:
-            self.logger.error(f"Failed to load {self.counties_file}: {e}")
+            self.logger.warning(f"Failed to load counties from API: {e}, using default counties")
             return self._get_default_counties()
     
     def load_cities(self) -> List[Dict[str, Any]]:
@@ -98,21 +101,24 @@ class GeographicFileDataSource(IGeographicDataSource):
         Returns:
             List of city dictionaries
         """
-        if not self.cities_file.exists():
-            # Return default cities if file doesn't exist
-            self.logger.info("Cities file not found, using default cities")
-            return self._get_default_cities()
-        
         try:
-            with open(self.cities_file, "r") as f:
-                cities = json.load(f)
-                self.logger.info(f"Loaded {len(cities)} cities from file")
-                return cities
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse {self.cities_file}: {e}")
+            # Try to get geographic data via API statistics
+            stats = self.stats_client.get_all_stats()
+            
+            # Check if geographic data is available in stats
+            if hasattr(stats, 'geographic') and stats.geographic:
+                geographic_data = stats.geographic.model_dump() if hasattr(stats.geographic, 'model_dump') else stats.geographic
+                if isinstance(geographic_data, dict) and 'cities' in geographic_data:
+                    cities = geographic_data['cities']
+                    self.logger.info(f"Loaded {len(cities)} cities from API")
+                    return cities
+            
+            # Fall back to default cities for demo
+            self.logger.info("API geographic data not available, using default cities for demo")
             return self._get_default_cities()
+            
         except Exception as e:
-            self.logger.error(f"Failed to load {self.cities_file}: {e}")
+            self.logger.warning(f"Failed to load cities from API: {e}, using default cities")
             return self._get_default_cities()
     
     def _get_default_states(self) -> List[Dict[str, Any]]:

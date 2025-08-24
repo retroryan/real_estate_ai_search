@@ -2,10 +2,64 @@
 
 from typing import Optional, Dict, Any
 from pathlib import Path
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, HttpUrl
 import yaml
 import os
 from dotenv import load_dotenv
+
+
+class APIConfig(BaseModel):
+    """API client configuration"""
+    base_url: str = Field(default="http://localhost:8000")
+    timeout: float = Field(default=30.0, ge=1.0, le=300.0)
+    api_key: Optional[str] = Field(default=None)
+    max_retries: int = Field(default=3, ge=0, le=10)
+    retry_delay: float = Field(default=1.0, ge=0.1, le=10.0)
+    
+    @validator("base_url", pre=True)
+    def resolve_base_url(cls, v):
+        """Resolve base URL from environment variable if needed"""
+        if v.startswith("${") and v.endswith("}"):
+            env_var = v[2:-1]
+            return os.getenv(env_var, v)
+        return v
+    
+    @validator("api_key", pre=True)
+    def resolve_api_key(cls, v):
+        """Resolve API key from environment variable if needed"""
+        if v and v.startswith("${") and v.endswith("}"):
+            env_var = v[2:-1]
+            return os.getenv(env_var, None)
+        return v
+    
+    @validator("base_url")
+    def validate_base_url(cls, v):
+        """Ensure base URL is properly formatted"""
+        if not (v.startswith("http://") or v.startswith("https://")):
+            raise ValueError(f"Invalid API base URL scheme: {v}")
+        # Remove trailing slash for consistency
+        return v.rstrip("/")
+    
+    def to_api_client_config_dict(self):
+        """Convert to configuration dictionary for APIClientFactory"""
+        config_dict = {
+            "base_url": self.base_url,
+            "timeout": self.timeout
+        }
+        
+        # Add headers with API key if available
+        if self.api_key:
+            config_dict["default_headers"] = {"Authorization": f"Bearer {self.api_key}"}
+        
+        return config_dict
+    
+    def create_api_client_factory(self):
+        """Create APIClientFactory instance from this configuration"""
+        from api_client import APIClientFactory
+        return APIClientFactory(config_dict=self.to_api_client_config_dict())
+    
+    class Config:
+        validate_assignment = True
 
 
 class DatabaseConfig(BaseModel):
@@ -47,42 +101,35 @@ class LoaderConfig(BaseModel):
 
 class GeographicConfig(BaseModel):
     """Geographic loader configuration"""
-    data_path: Path = Field(default=Path("./data/geographic"))
     load_states: bool = Field(default=True)
     load_counties: bool = Field(default=True)
     load_cities: bool = Field(default=True)
+    fallback_to_default: bool = Field(default=True)
     
-    @validator("data_path", pre=True)
-    def resolve_path(cls, v):
-        """Convert string to Path"""
-        return Path(v) if isinstance(v, str) else v
+    class Config:
+        validate_assignment = True
 
 
 class PropertyConfig(BaseModel):
     """Property loader configuration"""
-    data_path: Path = Field(default=Path("./real_estate_data"))
-    sf_properties_file: str = Field(default="properties_sf.json")
-    pc_properties_file: str = Field(default="properties_pc.json")
-    sf_neighborhoods_file: str = Field(default="neighborhoods_sf.json")
-    pc_neighborhoods_file: str = Field(default="neighborhoods_pc.json")
+    page_size: int = Field(default=100, ge=1, le=1000)
+    max_parallel_requests: int = Field(default=3, ge=1, le=10)
+    city_filter_enabled: bool = Field(default=True)
+    supported_cities: list[str] = Field(default=["San Francisco", "Park City"])
     
-    @validator("data_path", pre=True)
-    def resolve_path(cls, v):
-        """Convert string to Path"""
-        return Path(v) if isinstance(v, str) else v
+    class Config:
+        validate_assignment = True
 
 
 class WikipediaConfig(BaseModel):
     """Wikipedia loader configuration"""
-    data_path: Path = Field(default=Path("./data/wikipedia"))
-    pages_subdir: str = Field(default="pages")
-    database_file: str = Field(default="wikipedia.db")
+    page_size: int = Field(default=100, ge=1, le=1000)
+    max_parallel_requests: int = Field(default=3, ge=1, le=10)
     max_articles: Optional[int] = Field(default=None, ge=1)
+    include_summaries: bool = Field(default=True)
     
-    @validator("data_path", pre=True)
-    def resolve_path(cls, v):
-        """Convert string to Path"""
-        return Path(v) if isinstance(v, str) else v
+    class Config:
+        validate_assignment = True
 
 
 class SimilarityConfig(BaseModel):
@@ -123,6 +170,7 @@ class SearchConfig(BaseModel):
 
 class AppConfig(BaseModel):
     """Main application configuration"""
+    api: APIConfig = Field(default_factory=APIConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     loaders: LoaderConfig = Field(default_factory=LoaderConfig)
     geographic: GeographicConfig = Field(default_factory=GeographicConfig)

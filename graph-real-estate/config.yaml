@@ -1,5 +1,12 @@
-# Configuration for property vector embeddings
-# Adapted from wiki_embed patterns for consistency
+# Configuration for graph-real-estate with API integration
+
+# API configuration for common-ingest integration
+api:
+  base_url: ${API_BASE_URL:-http://localhost:8000}
+  timeout: ${API_TIMEOUT:-30}
+  api_key: ${API_KEY}
+  max_retries: 3
+  retry_delay: 1.0
 
 # Database configuration
 database:
@@ -8,17 +15,26 @@ database:
   password: ${NEO4J_PASSWORD:-password}
   database: ${NEO4J_DATABASE:-neo4j}
 
-# Data paths
+# API-based data source configurations
 property:
-  data_path: ../real_estate_data
+  page_size: 100
+  max_parallel_requests: 3
+  city_filter_enabled: true
+  supported_cities:
+    - "San Francisco"
+    - "Park City"
 
 geographic:
-  data_path: ../real_estate_data
+  load_states: true
+  load_counties: true
+  load_cities: true
+  fallback_to_default: true
 
 wikipedia:
-  data_path: ../data/wikipedia
-  pages_subdir: pages
-  database_file: wikipedia.db
+  page_size: 100
+  max_parallel_requests: 3
+  max_articles: null
+  include_summaries: true
 
 embedding:
   provider: ollama  # Options: ollama, openai, gemini

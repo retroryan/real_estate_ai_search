@@ -1,35 +1,35 @@
 """Property data source implementation"""
 
-import json
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 
+from api_client import APIClientFactory, PropertyAPIClient
 from src.core.interfaces import IPropertyDataSource
 
 
 class PropertyFileDataSource(IPropertyDataSource):
-    """File-based property data source"""
+    """API-based property data source"""
     
-    def __init__(self, data_path: Path):
+    def __init__(self, api_factory: APIClientFactory):
         """
         Initialize property data source
         
         Args:
-            data_path: Path to property data directory
+            api_factory: Factory for creating API clients
         """
-        self.data_path = data_path
+        self.api_factory = api_factory
+        self.property_client = api_factory.create_property_client()
+        self.system_client = api_factory.create_system_client()
         self.logger = logging.getLogger(self.__class__.__name__)
-        
-        # Define file paths
-        self.sf_properties = data_path / "properties_sf.json"
-        self.pc_properties = data_path / "properties_pc.json"
-        self.sf_neighborhoods = data_path / "neighborhoods_sf.json"
-        self.pc_neighborhoods = data_path / "neighborhoods_pc.json"
     
     def exists(self) -> bool:
         """Check if data source exists"""
-        return self.data_path.exists() and self.data_path.is_dir()
+        try:
+            health_status = self.system_client.check_readiness()
+            return health_status.get('status') == 'ready'
+        except Exception as e:
+            self.logger.warning(f"API health check failed: {e}")
+            return False
     
     def load(self) -> Dict[str, Any]:
         """Load all property and neighborhood data"""
@@ -48,48 +48,57 @@ class PropertyFileDataSource(IPropertyDataSource):
         Returns:
             List of property dictionaries
         """
-        properties = []
-        
-        # Determine which files to load
-        files_to_load = []
-        if city is None:
-            files_to_load = [
-                ("San Francisco", self.sf_properties),
-                ("Park City", self.pc_properties)
-            ]
-        elif city.lower() in ["san francisco", "sf"]:
-            files_to_load = [("San Francisco", self.sf_properties)]
-        elif city.lower() in ["park city", "pc"]:
-            files_to_load = [("Park City", self.pc_properties)]
-        else:
-            self.logger.warning(f"Unknown city: {city}")
-            return properties
-        
-        # Load data from files
-        for city_name, file_path in files_to_load:
-            if not file_path.exists():
-                self.logger.warning(f"Property file not found: {file_path}")
-                continue
+        try:
+            # Determine city filter for API call
+            city_filter = None
+            if city is not None:
+                if city.lower() in ["san francisco", "sf"]:
+                    city_filter = "San Francisco"
+                elif city.lower() in ["park city", "pc"]:
+                    city_filter = "Park City"
+                else:
+                    self.logger.warning(f"Unknown city: {city}")
+                    return []
             
-            try:
-                with open(file_path, "r") as f:
-                    data = json.load(f)
-                    
-                # Ensure each property has city information
-                for item in data:
-                    if "address" not in item:
-                        item["address"] = {}
-                    item["address"]["city"] = city_name
-                    
-                properties.extend(data)
-                self.logger.info(f"Loaded {len(data)} properties from {city_name}")
+            # Load all properties from API with optional city filter
+            all_properties = []
+            page = 1
+            page_size = 100
+            
+            while True:
+                api_response = self.property_client.get_all_properties(
+                    page=page, 
+                    page_size=page_size,
+                    city=city_filter
+                )
                 
-            except json.JSONDecodeError as e:
-                self.logger.error(f"Failed to parse {file_path}: {e}")
-            except Exception as e:
-                self.logger.error(f"Failed to load {file_path}: {e}")
-        
-        return properties
+                if not api_response.properties:
+                    break
+                    
+                # Transform API response (Pydantic models) to dictionary format
+                for property_model in api_response.properties:
+                    property_dict = property_model.model_dump()
+                    # Ensure address.city is set for compatibility
+                    if "address" not in property_dict:
+                        property_dict["address"] = {}
+                    if not property_dict["address"].get("city"):
+                        property_dict["address"]["city"] = property_model.address.city if property_model.address else "Unknown"
+                    
+                    all_properties.append(property_dict)
+                
+                self.logger.info(f"Loaded {len(api_response.properties)} properties from page {page}")
+                
+                # Check if we have more pages
+                if len(api_response.properties) < page_size:
+                    break
+                page += 1
+            
+            self.logger.info(f"Total properties loaded: {len(all_properties)}")
+            return all_properties
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load properties from API: {e}")
+            return []
     
     def load_neighborhoods(self, city: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -101,67 +110,78 @@ class PropertyFileDataSource(IPropertyDataSource):
         Returns:
             List of neighborhood dictionaries
         """
-        neighborhoods = []
-        
-        # Determine which files to load
-        files_to_load = []
-        if city is None:
-            files_to_load = [
-                ("San Francisco", self.sf_neighborhoods),
-                ("Park City", self.pc_neighborhoods)
-            ]
-        elif city.lower() in ["san francisco", "sf"]:
-            files_to_load = [("San Francisco", self.sf_neighborhoods)]
-        elif city.lower() in ["park city", "pc"]:
-            files_to_load = [("Park City", self.pc_neighborhoods)]
-        else:
-            self.logger.warning(f"Unknown city: {city}")
-            return neighborhoods
-        
-        # Load data from files
-        for city_name, file_path in files_to_load:
-            if not file_path.exists():
-                self.logger.warning(f"Neighborhood file not found: {file_path}")
-                continue
+        try:
+            # Determine city filter for API call
+            city_filter = None
+            if city is not None:
+                if city.lower() in ["san francisco", "sf"]:
+                    city_filter = "San Francisco"
+                elif city.lower() in ["park city", "pc"]:
+                    city_filter = "Park City"
+                else:
+                    self.logger.warning(f"Unknown city: {city}")
+                    return []
             
-            try:
-                with open(file_path, "r") as f:
-                    data = json.load(f)
-                    
-                # Ensure each neighborhood has city information
-                for item in data:
-                    item["city"] = city_name
-                    
-                neighborhoods.extend(data)
-                self.logger.info(f"Loaded {len(data)} neighborhoods from {city_name}")
+            # Load all neighborhoods from API with optional city filter
+            all_neighborhoods = []
+            page = 1
+            page_size = 100
+            
+            while True:
+                api_response = self.property_client.get_all_neighborhoods(
+                    page=page, 
+                    page_size=page_size,
+                    city=city_filter
+                )
                 
-            except json.JSONDecodeError as e:
-                self.logger.error(f"Failed to parse {file_path}: {e}")
-            except Exception as e:
-                self.logger.error(f"Failed to load {file_path}: {e}")
-        
-        return neighborhoods
+                if not api_response.neighborhoods:
+                    break
+                    
+                # Transform API response (Pydantic models) to dictionary format
+                for neighborhood_model in api_response.neighborhoods:
+                    neighborhood_dict = neighborhood_model.model_dump()
+                    # Ensure city is set for compatibility
+                    if not neighborhood_dict.get("city"):
+                        neighborhood_dict["city"] = neighborhood_model.city if hasattr(neighborhood_model, 'city') else "Unknown"
+                    
+                    all_neighborhoods.append(neighborhood_dict)
+                
+                self.logger.info(f"Loaded {len(api_response.neighborhoods)} neighborhoods from page {page}")
+                
+                # Check if we have more pages
+                if len(api_response.neighborhoods) < page_size:
+                    break
+                page += 1
+            
+            self.logger.info(f"Total neighborhoods loaded: {len(all_neighborhoods)}")
+            return all_neighborhoods
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load neighborhoods from API: {e}")
+            return []
     
-    def get_property_files(self) -> Dict[str, Path]:
+    def get_property_files(self) -> Dict[str, str]:
         """
-        Get paths to property files
+        Get API endpoints for property data (legacy method for compatibility)
         
         Returns:
-            Dictionary mapping city names to file paths
+            Dictionary mapping city names to API endpoints
         """
+        base_url = self.api_factory.config.base_url
         return {
-            "San Francisco": self.sf_properties,
-            "Park City": self.pc_properties
+            "San Francisco": f"{base_url}/properties?city=San+Francisco",
+            "Park City": f"{base_url}/properties?city=Park+City"
         }
     
-    def get_neighborhood_files(self) -> Dict[str, Path]:
+    def get_neighborhood_files(self) -> Dict[str, str]:
         """
-        Get paths to neighborhood files
+        Get API endpoints for neighborhood data (legacy method for compatibility)
         
         Returns:
-            Dictionary mapping city names to file paths
+            Dictionary mapping city names to API endpoints
         """
+        base_url = self.api_factory.config.base_url
         return {
-            "San Francisco": self.sf_neighborhoods,
-            "Park City": self.pc_neighborhoods
+            "San Francisco": f"{base_url}/neighborhoods?city=San+Francisco",
+            "Park City": f"{base_url}/neighborhoods?city=Park+City"
         }

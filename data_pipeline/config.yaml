@@ -1,0 +1,339 @@
+# Data Pipeline Configuration
+# This file configures the unified Spark data pipeline with advanced options
+# for testing, data subsetting, and embedding model selection
+
+# Pipeline metadata
+metadata:
+  name: "unified_real_estate_pipeline"
+  version: "1.0.0"
+  description: "Apache Spark-based data pipeline for real estate and Wikipedia data processing"
+
+# Spark configuration
+spark:
+  app_name: "RealEstateDataPipeline"
+  master: "local[*]"  # Use "spark://cluster-url:7077" for cluster mode
+  memory: "4g"
+  executor_memory: "2g"
+  config:
+    spark.sql.adaptive.enabled: true
+    spark.sql.adaptive.coalescePartitions.enabled: true
+    spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+    spark.sql.shuffle.partitions: 200
+
+# Data subsetting for testing - CRITICAL FOR DEVELOPMENT
+data_subset:
+  enabled: true  # Set to true to enable data subsetting
+  sample_size: 50  # Number of records to sample from each source
+  sample_method: "head"  # Options: head, random, stratified
+  random_seed: 42  # Seed for reproducible random sampling
+  
+  # Source-specific limits
+  properties_limit: 20  # Max properties per city
+  neighborhoods_limit: 10  # Max neighborhoods per city  
+  wikipedia_limit: 30  # Max Wikipedia articles
+  
+  # Filter by location (if specified)
+  location_filters:
+    cities: []  # e.g., ["San Francisco", "Park City"] - empty means all
+    states: []  # e.g., ["CA", "UT"] - empty means all
+
+# Data sources configuration
+data_sources:
+  properties_sf:
+    path: "real_estate_data/properties_sf.json"
+    format: "json"
+    enabled: true
+    options:
+      multiLine: true
+    subset_config:
+      max_records: 50  # Override global limit for this source
+      filter_expression: null  # SQL WHERE clause for filtering
+  
+  properties_pc:
+    path: "real_estate_data/properties_pc.json"
+    format: "json"
+    enabled: true
+    options:
+      multiLine: true
+    subset_config:
+      max_records: 50
+      filter_expression: null
+  
+  neighborhoods_sf:
+    path: "real_estate_data/neighborhoods_sf.json"
+    format: "json"
+    enabled: true
+    options:
+      multiLine: true
+    subset_config:
+      max_records: 20
+      filter_expression: null
+  
+  neighborhoods_pc:
+    path: "real_estate_data/neighborhoods_pc.json"
+    format: "json"
+    enabled: true
+    options:
+      multiLine: true
+    subset_config:
+      max_records: 20
+      filter_expression: null
+  
+  wikipedia:
+    path: "data/wikipedia/wikipedia.db"
+    format: "sqlite"
+    enabled: true
+    options:
+      use_pandas: true
+    subset_config:
+      max_records: 30
+      filter_expression: "relevance_score > 0.5"  # Only high-relevance articles
+
+# Data enrichment configuration
+enrichment:
+  # Location normalization
+  city_abbreviations:
+    SF: "San Francisco"
+    PC: "Park City"
+    NYC: "New York City"
+    LA: "Los Angeles"
+    SLC: "Salt Lake City"
+    LV: "Las Vegas"
+  
+  state_abbreviations:
+    CA: "California"
+    UT: "Utah"
+    NY: "New York"
+    TX: "Texas"
+    NV: "Nevada"
+    CO: "Colorado"
+  
+  # Feature processing
+  normalize_features: true
+  deduplicate_features: true
+  sort_features: true
+  
+  # Derived fields
+  add_derived_fields: true
+  calculate_price_per_sqft: true
+  calculate_days_on_market: true
+  
+  # Quality control
+  quality_threshold: 0.7
+  min_required_fields: 5
+  validate_addresses: true
+
+# Embedding configuration - FLEXIBLE MODEL SELECTION
+embedding:
+  # Primary provider selection
+  provider: "voyage"  # Options: voyage | ollama | openai | gemini | mock
+  
+  # Model configurations by provider
+  models:
+    voyage:
+      model: "voyage-3"  # Options: voyage-3, voyage-large-2, voyage-code-2
+      api_key: "${VOYAGE_API_KEY}"  # Will be loaded from environment
+      dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
+      
+    ollama:
+      model: "nomic-embed-text"  # Options: nomic-embed-text, mxbai-embed-large
+      base_url: "http://localhost:11434"
+      dimension: 768  # nomic: 768, mxbai: 1024
+      
+    openai:
+      model: "text-embedding-3-small"  # Options: text-embedding-3-small, text-embedding-3-large
+      api_key: "${OPENAI_API_KEY}"
+      dimension: 1536  # small: 1536, large: 3072
+      
+    gemini:
+      model: "models/embedding-001"
+      api_key: "${GEMINI_API_KEY}"
+      dimension: 768
+  
+  # Batch processing settings
+  batch_size: 100
+  max_retries: 3
+  timeout: 30
+  rate_limit_delay: 0.1  # Delay between API calls in seconds
+  
+  # Embedding generation options
+  skip_existing: false  # Skip if embeddings already exist
+  force_regenerate: false  # Force regeneration even if exists
+  process_empty_text: false  # Process records with empty text
+
+# Text chunking configuration
+chunking:
+  enabled: true
+  method: "simple"  # Options: simple | semantic | sentence | none
+  
+  # Chunking parameters
+  chunk_size: 512  # Characters for simple, tokens for semantic
+  chunk_overlap: 50
+  
+  # Advanced chunking options
+  respect_sentence_boundaries: true
+  min_chunk_size: 100
+  max_chunk_size: 1000
+  
+  # Semantic chunking (when method=semantic)
+  semantic:
+    breakpoint_percentile: 90
+    buffer_size: 2
+
+# Processing configuration
+processing:
+  # Quality checks
+  enable_quality_checks: true
+  min_quality_score: 0.7
+  drop_low_quality: false  # Drop records below threshold
+  
+  # Performance optimization
+  cache_intermediate_results: true
+  checkpoint_interval: 1000
+  parallel_tasks: 4
+  
+  # Memory management
+  broadcast_join_threshold: 10485760  # 10MB
+  adaptive_execution: true
+  
+  # Error handling
+  continue_on_error: true
+  max_error_percentage: 10  # Stop if error rate exceeds this
+
+# Output configuration
+output:
+  format: "parquet"  # Options: parquet | json | csv | delta
+  path: "data/processed/unified_dataset"
+  
+  # Partitioning strategy
+  partitioning:
+    enabled: true
+    columns:
+      - "entity_type"
+      - "state"
+    max_partitions: 100
+  
+  # File options
+  compression: "snappy"  # Options: snappy | gzip | lz4 | none
+  overwrite: true
+  coalesce_files: true
+  target_file_size_mb: 128
+  
+  # Schema evolution
+  merge_schema: true
+  enforce_schema: false
+
+# Logging configuration
+logging:
+  level: "INFO"  # Options: DEBUG | INFO | WARNING | ERROR | CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Output destinations
+  console: true
+  file: "logs/pipeline.log"
+  
+  # Log rotation
+  max_file_size_mb: 100
+  backup_count: 5
+  
+  # Performance logging
+  log_execution_time: true
+  log_memory_usage: true
+  log_record_counts: true
+
+# Monitoring and metrics
+monitoring:
+  enabled: true
+  metrics_interval_seconds: 10
+  
+  # Metrics to track
+  track_metrics:
+    - "records_processed"
+    - "embeddings_generated"
+    - "processing_time"
+    - "memory_usage"
+    - "error_rate"
+  
+  # Alerting thresholds
+  alerts:
+    max_memory_usage_gb: 8
+    max_processing_time_minutes: 30
+    max_error_rate_percentage: 5
+
+# Development and testing options
+development:
+  # Testing mode - uses minimal data
+  test_mode: false
+  test_record_limit: 10
+  
+  # Debugging options
+  debug_mode: false
+  verbose_logging: false
+  save_intermediate_results: false
+  
+  # Profiling
+  enable_profiling: false
+  profile_output_path: "profiles/"
+  
+  # Data validation
+  validate_inputs: true
+  validate_outputs: true
+  schema_inference_sample_size: 1000
+
+# Environment-specific overrides
+environments:
+  development:
+    spark:
+      master: "local[2]"
+      memory: "2g"
+    data_subset:
+      enabled: true
+      sample_size: 20
+    logging:
+      level: "DEBUG"
+      
+  staging:
+    spark:
+      master: "local[4]"
+      memory: "4g"
+    data_subset:
+      enabled: true
+      sample_size: 100
+    embedding:
+      provider: "ollama"  # Use local model for staging
+      
+  production:
+    spark:
+      master: "spark://cluster:7077"
+      memory: "16g"
+    data_subset:
+      enabled: false
+    embedding:
+      provider: "voyage"
+      batch_size: 500
+    output:
+      format: "delta"
+      compression: "gzip"
+
+# Feature flags for experimental features
+feature_flags:
+  enable_smart_chunking: false
+  enable_adaptive_batching: false
+  enable_incremental_processing: false
+  enable_data_lineage_tracking: false
+  enable_cost_optimization: true
+
+# Model comparison configuration (for A/B testing)
+model_comparison:
+  enabled: false
+  models_to_compare:
+    - provider: "voyage"
+      model: "voyage-3"
+    - provider: "ollama"
+      model: "nomic-embed-text"
+  comparison_metrics:
+    - "embedding_quality"
+    - "processing_speed"
+    - "cost_per_embedding"
+  output_comparison_report: true
+  report_path: "reports/model_comparison.json"

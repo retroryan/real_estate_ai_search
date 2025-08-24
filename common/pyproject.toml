@@ -3,13 +3,14 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "property-finder-models"
+name = "common"
 version = "1.0.0"
-description = "Shared Pydantic models for Property Finder ecosystem"
+description = "Common models and API client framework for Property Finder ecosystem"
 requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.0",
     "python-dotenv>=1.0",
+    "httpx>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +23,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["property_finder_models*"]
+include = ["property_finder_models*", "api_client*"]
 
 [tool.mypy]
 python_version = "3.9"
