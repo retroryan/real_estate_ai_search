@@ -233,8 +233,6 @@ class ConfigurationManager:
     def _configure_embedding_models(self) -> None:
         """
         Configure embedding models with API key resolution.
-        
-        Handles both new models configuration and legacy model configuration.
         """
         if not self._raw_config:
             return
@@ -257,41 +255,6 @@ class ConfigurationManager:
                         else:
                             logger.warning(f"Environment variable {env_var} not found")
         
-        # Handle legacy single model configuration
-        elif "model" in embedding_config:
-            # For backward compatibility, create models config from legacy format
-            provider = embedding_config.get("provider", "ollama")
-            model = embedding_config.get("model")
-            
-            if model:
-                models_config = {}
-                
-                if provider == "voyage":
-                    models_config["voyage"] = {
-                        "model": model,
-                        "api_key": os.getenv("VOYAGE_API_KEY"),
-                        "dimension": 1024 if "voyage-3" in model else 1536
-                    }
-                elif provider == "ollama":
-                    models_config["ollama"] = {
-                        "model": model,
-                        "base_url": embedding_config.get("api_url", "http://localhost:11434"),
-                        "dimension": 768 if "nomic" in model else 1024
-                    }
-                elif provider == "openai":
-                    models_config["openai"] = {
-                        "model": model,
-                        "api_key": os.getenv("OPENAI_API_KEY"),
-                        "dimension": 1536 if "small" in model else 3072
-                    }
-                elif provider == "gemini":
-                    models_config["gemini"] = {
-                        "model": model,
-                        "api_key": os.getenv("GEMINI_API_KEY"),
-                        "dimension": 768
-                    }
-                
-                embedding_config["models"] = models_config
     
     def _configure_data_subsetting(self) -> None:
         """
@@ -463,8 +426,8 @@ class ConfigurationManager:
             if model_config:
                 return model_config.model
         
-        # Fall back to legacy model field
-        return self._config.embedding.model or "default"
+        # Default fallback
+        return "default"
 
 
 def load_configuration(

@@ -1,5 +1,5 @@
 """
-Common Embeddings Module - Unified embedding generation and storage system.
+Common Embeddings Module - Comprehensive embedding generation and storage system.
 
 This module provides a centralized system for generating, storing, and managing
 embeddings from multiple data sources with comprehensive metadata tracking for

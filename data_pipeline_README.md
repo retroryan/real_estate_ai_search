@@ -1,6 +1,6 @@
 # Data Pipeline - Apache Spark Processing
 
-A unified data pipeline for processing real estate and Wikipedia data with embeddings generation.
+A multi-entity data pipeline for processing real estate and Wikipedia data with embeddings generation.
 
 ## Installation
 
@@ -9,6 +9,25 @@ From the project root directory:
 ```bash
 pip install -e .
 ```
+
+### Neo4j Setup
+
+1. **Ensure Neo4j is running locally**:
+   - Neo4j should be accessible at `bolt://localhost:7687`
+   - Web interface available at `http://localhost:7474`
+
+2. **Configure credentials**:
+   - Add Neo4j credentials to `/Users/ryanknight/projects/temporal/.env`:
+   ```
+   NEO4J_PASSWORD=your_password_here
+   NEO4J_URI=bolt://localhost:7687
+   NEO4J_USERNAME=neo4j
+   NEO4J_DATABASE=neo4j
+   ```
+
+3. **Neo4j Spark Connector**:
+   - The connector JAR is already included in `lib/`
+   - Using: `neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar`
 
 ## Quick Start
 
@@ -76,6 +95,12 @@ python -m data_pipeline --output /path/to/results
 
 # Override output format via environment
 OUTPUT_FORMAT=json python -m data_pipeline
+
+# Write to Neo4j (when configured)
+python -m data_pipeline --output-destination neo4j
+
+# Write to multiple destinations
+python -m data_pipeline --output-destination parquet,neo4j
 ```
 
 ### Operational Commands
@@ -144,6 +169,7 @@ The pipeline uses a comprehensive configuration system:
 - **spark**: Spark session settings
 - **processing**: Quality checks and performance options
 - **output**: Format and destination settings
+- **output_destinations**: Configure multiple output destinations (Neo4j, Elasticsearch, Parquet)
 
 ## Environment Variables
 
@@ -157,6 +183,11 @@ export DATA_SUBSET_SAMPLE_SIZE=50
 # Embedding provider
 export EMBEDDING_PROVIDER=voyage
 export VOYAGE_API_KEY=your-key-here
+
+# Neo4j settings (loaded from parent .env)
+export NEO4J_PASSWORD=your-password
+export NEO4J_URI=bolt://localhost:7687
+export NEO4J_USERNAME=neo4j
 
 # Spark settings
 export SPARK_MASTER=local[4]
@@ -199,6 +230,22 @@ python -m data_pipeline --embedding-provider mock
 python -m data_pipeline --subset --sample-size 20
 ```
 
+**Neo4j Connection Issues**: Verify Neo4j is running and credentials are correct
+```bash
+# Test Neo4j connection
+python -m data_pipeline.tests.test_neo4j_basic
+
+# Check Neo4j is accessible
+curl http://localhost:7474
+
+# Verify credentials in .env file
+cat /Users/ryanknight/projects/temporal/.env | grep NEO4J
+```
+
+**Spark/Scala Version Mismatch**: Ensure using correct Neo4j connector JAR
+- Spark 4.0 requires Scala 2.13 version
+- JAR should be: `neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar`
+
 ## Performance Tips
 
 1. **For Testing**: Always use `--test-mode` or `--subset`
@@ -206,6 +253,46 @@ python -m data_pipeline --subset --sample-size 20
 3. **For Full Data**: Disable subsetting in config.yaml
 4. **For Debugging**: Add `--log-level DEBUG`
 5. **For Speed**: Use `--embedding-provider mock` during development
+
+## Neo4j Testing
+
+### Run Basic Neo4j Test
+Test the Neo4j connection and write sample properties:
+
+```bash
+# Run the basic Neo4j test (writes 5 sample properties)
+python -m data_pipeline.tests.test_neo4j_basic
+
+# Expected output:
+# ✅ Neo4j connection successful
+# ✅ Successfully wrote 5 property nodes
+# ✅ Read 5 property nodes from Neo4j
+```
+
+### Verify in Neo4j Browser
+1. Open http://localhost:7474
+2. Login with your configured credentials
+3. Run Cypher queries:
+   ```cypher
+   // Count all Property nodes
+   MATCH (p:Property) RETURN count(p);
+   
+   // View sample properties
+   MATCH (p:Property) RETURN p LIMIT 10;
+   
+   // See property details
+   MATCH (p:Property) 
+   RETURN p.id, p.address, p.city, p.price 
+   ORDER BY p.price DESC;
+   ```
+
+### Clear Neo4j Database
+For testing, you may want to clear the database:
+
+```bash
+# Using Cypher in Neo4j Browser
+MATCH (n) DETACH DELETE n;
+```
 
 ## Examples
 
@@ -224,6 +311,19 @@ python -m data_pipeline --subset --sample-size 30
 python -m data_pipeline --cores 8
 ```
 
+### Neo4j Pipeline Run
+```bash
+# Write to Neo4j with subset of data
+python -m data_pipeline \
+  --subset --sample-size 50 \
+  --output-destination neo4j
+
+# Write to both Parquet and Neo4j
+python -m data_pipeline \
+  --subset --sample-size 100 \
+  --output-destination parquet,neo4j
+```
+
 ### Custom Configuration
 ```bash
 python -m data_pipeline \
@@ -238,5 +338,5 @@ python -m data_pipeline \
 
 - Review configuration: `data_pipeline/config.yaml`
 - Check logs: `logs/pipeline.log`
-- Monitor output: `data/processed/unified_dataset/`
+- Monitor output: `data/processed/entity_datasets/`
 - Validate results: Use `--validate-only` before production runs

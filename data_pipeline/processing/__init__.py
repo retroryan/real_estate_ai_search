@@ -1,41 +1,44 @@
 """
-Data processing module for enrichment, text preparation, and embedding generation.
+Entity-specific data processing module.
 
-This module provides distributed data processing capabilities using
-Apache Spark for data enrichment, text processing, and embedding generation.
+This module provides entity-specific processors for properties, neighborhoods,
+and Wikipedia articles using entity-specific processing logic.
 """
 
-from data_pipeline.processing.embedding_generator import (
-    ChunkingConfig,
-    ChunkingMethod,
-    DistributedEmbeddingGenerator,
-    EmbeddingGeneratorConfig,
-    EmbeddingProvider,
-    ProviderConfig,
+# Entity-specific text processors
+from data_pipeline.processing.property_text_processor import (
+    PropertyTextProcessor,
+    PropertyTextConfig,
 )
-from data_pipeline.processing.enrichment_engine import (
-    DataEnrichmentEngine,
-    EnrichmentConfig,
-    LocationMapping,
+from data_pipeline.processing.neighborhood_text_processor import (
+    NeighborhoodTextProcessor,
+    NeighborhoodTextConfig,
 )
-from data_pipeline.processing.text_processor import (
-    TextProcessor,
-    TextProcessingConfig,
+from data_pipeline.processing.wikipedia_text_processor import (
+    WikipediaTextProcessor,
+    WikipediaTextConfig,
+)
+
+# Entity-specific embedding generators
+from data_pipeline.processing.entity_embeddings import (
+    PropertyEmbeddingGenerator,
+    NeighborhoodEmbeddingGenerator,
+    WikipediaEmbeddingGenerator,
 )
 
 __all__ = [
-    # Enrichment
-    "DataEnrichmentEngine",
-    "EnrichmentConfig",
-    "LocationMapping",
-    # Text Processing
-    "TextProcessor",
-    "TextProcessingConfig",
-    # Embedding Generation
-    "DistributedEmbeddingGenerator",
-    "EmbeddingGeneratorConfig",
-    "ProviderConfig",
-    "EmbeddingProvider",
-    "ChunkingConfig",
-    "ChunkingMethod",
+    # Property Processing
+    "PropertyTextProcessor",
+    "PropertyTextConfig",
+    "PropertyEmbeddingGenerator",
+    
+    # Neighborhood Processing
+    "NeighborhoodTextProcessor", 
+    "NeighborhoodTextConfig",
+    "NeighborhoodEmbeddingGenerator",
+    
+    # Wikipedia Processing
+    "WikipediaTextProcessor",
+    "WikipediaTextConfig", 
+    "WikipediaEmbeddingGenerator",
 ]

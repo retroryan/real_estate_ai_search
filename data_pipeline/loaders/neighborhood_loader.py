@@ -71,7 +71,7 @@ class NeighborhoodLoader:
             path: Path to JSON file(s), supports wildcards
             
         Returns:
-            DataFrame with neighborhood data in unified schema
+            DataFrame with neighborhood-specific schema
         """
         logger.info(f"Loading neighborhood data from: {path}")
         
@@ -93,81 +93,44 @@ class NeighborhoodLoader:
             if corrupt_count > 0:
                 logger.warning(f"Found {corrupt_count} corrupt records in neighborhood data")
         
-        # Transform to unified schema
-        unified_df = self._transform_to_unified(raw_df, path)
+        # Transform to neighborhood-specific schema
+        neighborhood_df = self._transform_to_neighborhood_schema(raw_df, path)
         
-        record_count = unified_df.count()
+        record_count = neighborhood_df.count()
         logger.info(f"Successfully loaded {record_count} neighborhood records")
         
-        return unified_df
+        return neighborhood_df
     
-    def _transform_to_unified(self, df: DataFrame, source_path: str) -> DataFrame:
+    def _transform_to_neighborhood_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
-        Transform raw neighborhood data to unified schema.
+        Transform raw neighborhood data to neighborhood-specific schema.
         
         Args:
             df: Raw neighborhood DataFrame
             source_path: Source file path for tracking
             
         Returns:
-            DataFrame conforming to unified schema
+            DataFrame conforming to neighborhood-specific schema
         """
         return df.select(
-            # Core entity fields
-            col("neighborhood_id").alias("entity_id"),
-            lit("NEIGHBORHOOD").alias("entity_type"),
-            lit(None).cast("string").alias("correlation_uuid"),
-            
-            # Location fields
+            # Core neighborhood fields
+            col("neighborhood_id"),
+            col("name"),
             col("city"),
             col("state"),
-            lit(None).cast("string").alias("city_normalized"),
-            lit(None).cast("string").alias("state_normalized"),
-            lit(None).cast("double").alias("latitude"),
-            lit(None).cast("double").alias("longitude"),
-            
-            # Property fields (not applicable for neighborhoods)
-            lit(None).cast("string").alias("property_type"),
-            lit(None).cast("decimal(12,2)").alias("price"),
-            lit(None).cast("int").alias("bedrooms"),
-            lit(None).cast("double").alias("bathrooms"),
-            lit(None).cast("int").alias("square_feet"),
-            lit(None).cast("decimal(10,4)").alias("price_per_sqft"),
-            lit(None).cast("int").alias("year_built"),
-            lit(None).cast("int").alias("lot_size"),
-            
-            # Content and features
-            col("name").alias("title"),
             col("description"),
-            col("amenities").alias("features"),
-            array().cast(ArrayType(StringType())).alias("features_normalized"),
-            lit(None).cast("string").alias("content"),
-            lit(None).cast("string").alias("summary"),
-            lit(None).cast("string").alias("key_topics"),
+            col("amenities"),
             
-            # Embedding fields (populated later in pipeline)
-            lit(None).cast("string").alias("embedding_text"),
-            array().cast(ArrayType(DoubleType())).alias("embedding"),
-            lit(None).cast("string").alias("embedding_model"),
-            lit(None).cast("int").alias("embedding_dimension"),
-            lit(None).cast("long").alias("chunk_index"),
+            # Extract demographics from nested structure
+            col("demographics.population").alias("population"),
+            col("demographics.median_income").alias("median_income"), 
+            col("demographics.median_age").alias("median_age"),
             
-            # Quality and metadata
-            lit(None).cast("string").alias("content_hash"),
-            lit(None).cast("double").alias("data_quality_score"),
-            lit("pending").alias("validation_status"),
-            lit(None).cast("double").alias("confidence_score"),
+            # Timestamps
+            current_timestamp().alias("ingested_at"),
             
             # Source tracking
-            to_json(struct("*")).alias("raw_data"),
-            lit(source_path).alias("source_file"),
-            lit("JSON").alias("source_type"),
-            lit(None).cast("string").alias("url"),
-            
-            # Processing timestamps
-            current_timestamp().alias("ingested_at"),
-            lit(None).cast("timestamp").alias("processed_at"),
-            lit(None).cast("timestamp").alias("embedding_generated_at"),
+            lit(source_path).alias("source_file")
         )
     
     def validate(self, df: DataFrame) -> bool:
@@ -181,7 +144,7 @@ class NeighborhoodLoader:
             True if data is valid
         """
         # Check for required fields
-        null_ids = df.filter(col("entity_id").isNull()).count()
+        null_ids = df.filter(col("neighborhood_id").isNull()).count()
         if null_ids > 0:
             logger.error(f"Found {null_ids} neighborhoods with null neighborhood_id")
             return False

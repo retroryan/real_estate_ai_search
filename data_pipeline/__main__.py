@@ -45,7 +45,7 @@ def main():
         load_dotenv(parent_env)
     
     parser = argparse.ArgumentParser(
-        description="Run the unified Spark data pipeline for real estate and Wikipedia data"
+        description="Run the multi-entity Spark data pipeline for real estate and Wikipedia data"
     )
     
     # Configuration options
@@ -79,14 +79,6 @@ def main():
         help="Sampling method (requires --subset)"
     )
     
-    # Embedding options
-    parser.add_argument(
-        "--embedding-provider",
-        type=str,
-        choices=["voyage", "ollama", "openai", "gemini", "mock"],
-        default=None,
-        help="Override embedding provider from config"
-    )
     
     parser.add_argument(
         "--embedding-model",
@@ -103,13 +95,6 @@ def main():
         help="Number of cores to use (default: all available)"
     )
     
-    # Output options
-    parser.add_argument(
-        "--output",
-        type=str,
-        default=None,
-        help="Output path for results (overrides config)"
-    )
     
     # Operational options
     parser.add_argument(
@@ -145,8 +130,6 @@ def main():
     logger = logging.getLogger(__name__)
     
     try:
-        # Set ALL environment variables BEFORE loading configuration
-        # This ensures they are picked up by the configuration manager
         
         # Handle test mode first (highest priority)
         if args.test_mode:
@@ -169,21 +152,12 @@ def main():
             os.environ["SPARK_MASTER"] = f"local[{args.cores}]"
             logger.info(f"Configured Spark to use {args.cores} cores")
         
-        # Handle embedding provider override
-        if args.embedding_provider:
-            os.environ["EMBEDDING_PROVIDER"] = args.embedding_provider
-            logger.info(f"Using embedding provider: {args.embedding_provider}")
         
         if args.embedding_model:
             os.environ["EMBEDDING_MODEL"] = args.embedding_model
             logger.info(f"Using embedding model: {args.embedding_model}")
         
-        # Handle output path override
-        if args.output:
-            os.environ["OUTPUT_PATH"] = args.output
-            logger.info(f"Output path set to: {args.output}")
-        
-        # NOW initialize configuration manager AFTER all env vars are set
+        # Initialize configuration manager
         config_manager = ConfigurationManager(
             config_path=args.config,
             environment=None
@@ -265,10 +239,10 @@ def main():
             return 0
         
         # Run the full pipeline with embeddings (always included for simplicity)
-        result_df = runner.run_full_pipeline_with_embeddings()
+        result_dataframes = runner.run_full_pipeline_with_embeddings()
         
-        # Write results to all configured destinations
-        runner.write_output(result_df)
+        # Write results to all configured destinations using entity-specific method
+        runner.write_entity_outputs(result_dataframes)
         
         # Clean up
         runner.stop()

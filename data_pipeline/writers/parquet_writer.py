@@ -1,8 +1,7 @@
 """
 Parquet writer implementation.
 
-This module provides a writer for outputting DataFrames to Parquet files,
-maintaining backward compatibility with the existing pipeline.
+This module provides a writer for outputting DataFrames to Parquet files.
 """
 
 import logging
@@ -23,7 +22,6 @@ class ParquetWriter(DataWriter):
     Parquet file writer.
     
     Writes DataFrames to Parquet files with optional partitioning.
-    This maintains backward compatibility with the existing pipeline output.
     """
     
     def __init__(self, config: ParquetWriterConfig, spark: SparkSession):

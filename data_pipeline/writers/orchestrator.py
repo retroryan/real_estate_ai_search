@@ -6,7 +6,7 @@ and executes them sequentially with fail-fast error handling.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pyspark.sql import DataFrame
 
@@ -95,6 +95,70 @@ class WriterOrchestrator:
                 raise RuntimeError(f"Failed to write to {writer_name}: {e}")
         
         self.logger.info(f"Successfully wrote to all {total_writers} destination(s)")
+    
+    def write_entity_dataframes(self, entity_dataframes: Dict[str, DataFrame], metadata: Dict[str, Any]) -> None:
+        """
+        Write entity-specific DataFrames to configured destinations.
+        
+        Args:
+            entity_dataframes: Dictionary of entity type to DataFrame
+            metadata: Metadata about the data being written
+            
+        Raises:
+            RuntimeError: If any write operation fails
+        """
+        if not self.writers:
+            self.logger.warning("No writers configured")
+            return
+        
+        if not entity_dataframes:
+            self.logger.warning("No DataFrames to write")
+            return
+        
+        # Count total operations
+        total_operations = 0
+        for entity_type, df in entity_dataframes.items():
+            if df is not None:
+                enabled_writers = [w for w in self.writers if w.is_enabled() and entity_type in w.get_writer_name()]
+                total_operations += len(enabled_writers)
+        
+        self.logger.info(f"Writing {len(entity_dataframes)} entity types to destination(s)...")
+        
+        # Process each entity type
+        for entity_type, df in entity_dataframes.items():
+            if df is None:
+                self.logger.debug(f"Skipping {entity_type} - no data")
+                continue
+            
+            # Find writers for this entity type
+            entity_writers = [w for w in self.writers if w.is_enabled() and entity_type in w.get_writer_name()]
+            
+            if not entity_writers:
+                self.logger.debug(f"No writers found for entity type: {entity_type}")
+                continue
+            
+            self.logger.info(f"Writing {entity_type} to {len(entity_writers)} destination(s)...")
+            
+            # Write to each destination for this entity
+            for writer in entity_writers:
+                writer_name = writer.get_writer_name()
+                self.logger.info(f"Writing {entity_type} to {writer_name}...")
+                
+                try:
+                    entity_metadata = metadata.copy()
+                    entity_metadata["entity_type"] = entity_type
+                    
+                    success = writer.write(df, entity_metadata)
+                    if not success:
+                        raise RuntimeError(f"Write operation returned False for {writer_name}")
+                    
+                    self.logger.info(f"Successfully wrote {entity_type} to {writer_name}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to write {entity_type} to {writer_name}: {e}")
+                    raise RuntimeError(f"Failed to write {entity_type} to {writer_name}: {e}")
+        
+        self.logger.info(f"Successfully completed all write operations")
     
     def get_enabled_writers(self) -> List[str]:
         """

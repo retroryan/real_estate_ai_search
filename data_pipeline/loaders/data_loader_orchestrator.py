@@ -1,21 +1,20 @@
 """
-Simple orchestrator for coordinating all data loaders.
+Orchestrator for coordinating entity-specific data loaders.
 
 This module provides a clean interface to load data from all sources
-and combine them into a single unified DataFrame.
+and returns them as separate DataFrames for each entity type.
 """
 
 import logging
 from typing import Dict, List, Optional
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col
 
 from data_pipeline.config.models import PipelineConfig
+from data_pipeline.loaders.location_loader import LocationLoader
 from data_pipeline.loaders.neighborhood_loader import NeighborhoodLoader
 from data_pipeline.loaders.property_loader import PropertyLoader
 from data_pipeline.loaders.wikipedia_loader import WikipediaLoader
-from data_pipeline.schemas.unified_schema import UnifiedDataSchema
 
 logger = logging.getLogger(__name__)
 
@@ -35,50 +34,79 @@ class DataLoaderOrchestrator:
         self.config = config
         
         # Initialize individual loaders
+        self.location_loader = LocationLoader(spark)
         self.property_loader = PropertyLoader(spark)
         self.neighborhood_loader = NeighborhoodLoader(spark)
         self.wikipedia_loader = WikipediaLoader(spark)
         
-        # Track loaded DataFrames
+        # Track loaded DataFrames and broadcast variables
         self._loaded_dataframes: Dict[str, DataFrame] = {}
+        self._location_broadcast = None
     
-    def load_all_sources(self) -> DataFrame:
+    def load_all_sources(self) -> Dict[str, DataFrame]:
         """
-        Load data from all configured sources and combine into unified DataFrame.
+        Load data from all configured sources and return as separate DataFrames.
         
         Returns:
-            Unified DataFrame containing all data
+            Dictionary with keys 'locations', 'properties', 'neighborhoods', 'wikipedia' 
+            and their corresponding DataFrames (or None if not loaded)
         """
         logger.info("=" * 60)
         logger.info("Starting data loading from all sources")
         logger.info("=" * 60)
         
-        dataframes = []
+        result = {}
+        
+        # Load locations first as reference data
+        locations_df = self._load_locations()
+        if locations_df is not None:
+            result["locations"] = locations_df
+            # Create broadcast variable for efficient lookups
+            self._location_broadcast = self.spark.sparkContext.broadcast(
+                locations_df.collect()
+            )
+            logger.info("Created broadcast variable for location reference data")
         
         # Load properties
         property_dfs = self._load_properties()
-        dataframes.extend(property_dfs)
+        if property_dfs:
+            # If multiple property sources, union them
+            if len(property_dfs) == 1:
+                result['properties'] = property_dfs[0]
+            else:
+                result['properties'] = property_dfs[0]
+                for df in property_dfs[1:]:
+                    result['properties'] = result['properties'].unionByName(df, allowMissingColumns=False)
+            logger.info(f"Loaded {result['properties'].count()} property records")
+        else:
+            result['properties'] = None
         
         # Load neighborhoods
         neighborhood_dfs = self._load_neighborhoods()
-        dataframes.extend(neighborhood_dfs)
+        if neighborhood_dfs:
+            # If multiple neighborhood sources, union them
+            if len(neighborhood_dfs) == 1:
+                result['neighborhoods'] = neighborhood_dfs[0]
+            else:
+                result['neighborhoods'] = neighborhood_dfs[0]
+                for df in neighborhood_dfs[1:]:
+                    result['neighborhoods'] = result['neighborhoods'].unionByName(df, allowMissingColumns=False)
+            logger.info(f"Loaded {result['neighborhoods'].count()} neighborhood records")
+        else:
+            result['neighborhoods'] = None
         
         # Load Wikipedia
         wikipedia_df = self._load_wikipedia()
         if wikipedia_df is not None:
-            dataframes.append(wikipedia_df)
-        
-        # Combine all DataFrames
-        if not dataframes:
-            logger.warning("No data loaded from any source")
-            return self._create_empty_dataframe()
-        
-        unified_df = self._union_dataframes(dataframes)
+            result['wikipedia'] = wikipedia_df
+            logger.info(f"Loaded {result['wikipedia'].count()} Wikipedia articles")
+        else:
+            result['wikipedia'] = None
         
         # Log summary statistics
-        self._log_summary(unified_df)
+        self._log_summary(result)
         
-        return unified_df
+        return result
     
     def _load_properties(self) -> List[DataFrame]:
         """
@@ -165,57 +193,67 @@ class DataLoaderOrchestrator:
         
         return None
     
-    def _union_dataframes(self, dataframes: List[DataFrame]) -> DataFrame:
+    def _load_locations(self) -> Optional[DataFrame]:
         """
-        Union multiple DataFrames into one.
-        
-        Args:
-            dataframes: List of DataFrames to union
-            
-        Returns:
-            Combined DataFrame
-        """
-        if len(dataframes) == 1:
-            return dataframes[0]
-        
-        logger.info(f"Combining {len(dataframes)} DataFrames")
-        
-        # Start with first DataFrame
-        result = dataframes[0]
-        
-        # Union remaining DataFrames
-        for df in dataframes[1:]:
-            result = result.unionByName(df, allowMissingColumns=True)
-        
-        return result
-    
-    def _create_empty_dataframe(self) -> DataFrame:
-        """
-        Create an empty DataFrame with unified schema.
+        Load location reference data if configured.
         
         Returns:
-            Empty DataFrame with correct schema
+            Location DataFrame or None
         """
-        schema = UnifiedDataSchema.get_schema()
-        return self.spark.createDataFrame([], schema)
+        for source_name, source_config in self.config.data_sources.items():
+            if "locations" in source_name.lower() and source_config.enabled:
+                try:
+                    logger.info(f"Loading location reference data: {source_name}")
+                    df = self.location_loader.load(source_config.path)
+                    
+                    if self.location_loader.validate(df):
+                        self._loaded_dataframes[source_name] = df
+                        logger.info(f"✓ Successfully loaded {source_name}")
+                        return df
+                    else:
+                        logger.warning(f"✗ Validation failed for {source_name}")
+                        
+                except Exception as e:
+                    logger.error(f"✗ Failed to load {source_name}: {e}")
+                    if self.config.processing.enable_quality_checks:
+                        raise
+        
+        return None
     
-    def _log_summary(self, df: DataFrame) -> None:
+    def get_location_broadcast(self):
+        """
+        Get the broadcast variable containing location reference data.
+        
+        Returns:
+            Broadcast variable with location data or None
+        """
+        return self._location_broadcast
+    
+    def _log_summary(self, entity_dataframes: Dict[str, DataFrame]) -> None:
         """
         Log summary statistics for loaded data.
         
         Args:
-            df: Combined DataFrame
+            entity_dataframes: Dictionary of entity type to DataFrame
         """
-        total = df.count()
+        total = 0
+        entity_counts = {}
+        
+        # Count records per entity type
+        for entity_type, df in entity_dataframes.items():
+            if df is not None:
+                count = df.count()
+                entity_counts[entity_type] = count
+                total += count
+        
         logger.info("")
         logger.info("=" * 60)
         logger.info(f"Data Loading Complete: {total:,} total records")
         logger.info("=" * 60)
         
-        # Count by entity type
-        entity_counts = df.groupBy("entity_type").count().collect()
-        for row in entity_counts:
-            logger.info(f"  {row['entity_type']}: {row['count']:,} records")
+        # Log counts by entity type
+        for entity_type, count in entity_counts.items():
+            logger.info(f"  {entity_type}: {count:,} records")
         
         # Sources loaded
         logger.info("")

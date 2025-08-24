@@ -46,8 +46,8 @@ def test_imports():
         print("✓ llama_index.core.node_parser imported")
         
         # Test local imports
-        from real_estate_search.ingestion import UnifiedIngestionPipeline
-        print("✓ UnifiedIngestionPipeline imported")
+        from real_estate_search.ingestion import IngestionOrchestrator
+        print("✓ IngestionOrchestrator imported")
         
         print("\n✅ All imports successful!")
         return True

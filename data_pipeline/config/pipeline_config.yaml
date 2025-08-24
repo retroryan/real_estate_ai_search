@@ -1,8 +1,8 @@
 # Pipeline Configuration
-# This file configures the unified Spark data pipeline
+# This file configures the multi-entity Spark data pipeline
 
 pipeline:
-  name: "unified_real_estate_pipeline"
+  name: "real_estate_data_pipeline"
   version: "1.0.0"
 
 spark:
@@ -90,9 +90,9 @@ processing:
 
 output:
   format: "parquet"
-  path: "data/processed/unified_dataset"
+  path: "data/processed/entity_datasets"
   partitioning:
-    - "entity_type"
+    - "source_entity"
     - "state"
   compression: "snappy"
   overwrite: true

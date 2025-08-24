@@ -76,7 +76,7 @@ class PropertyLoader:
             path: Path to JSON file(s), supports wildcards
             
         Returns:
-            DataFrame with property data in unified schema
+            DataFrame with property-specific schema
         """
         logger.info(f"Loading property data from: {path}")
         
@@ -98,81 +98,44 @@ class PropertyLoader:
             if corrupt_count > 0:
                 logger.warning(f"Found {corrupt_count} corrupt records in property data")
         
-        # Transform to unified schema
-        unified_df = self._transform_to_unified(raw_df, path)
+        # Transform to property-specific schema
+        property_df = self._transform_to_property_schema(raw_df, path)
         
-        record_count = unified_df.count()
+        record_count = property_df.count()
         logger.info(f"Successfully loaded {record_count} property records")
         
-        return unified_df
+        return property_df
     
-    def _transform_to_unified(self, df: DataFrame, source_path: str) -> DataFrame:
+    def _transform_to_property_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
-        Transform raw property data to unified schema.
+        Transform raw property data to property-specific schema.
         
         Args:
             df: Raw property DataFrame
             source_path: Source file path for tracking
             
         Returns:
-            DataFrame conforming to unified schema
+            DataFrame conforming to property-specific schema
         """
         return df.select(
-            # Core entity fields
-            col("listing_id").alias("entity_id"),
-            lit("PROPERTY").alias("entity_type"),
-            lit(None).cast("string").alias("correlation_uuid"),
-            
-            # Location fields
-            col("address.city").alias("city"),
-            col("address.state").alias("state"),
-            lit(None).cast("string").alias("city_normalized"),
-            lit(None).cast("string").alias("state_normalized"),
-            lit(None).cast("double").alias("latitude"),
-            lit(None).cast("double").alias("longitude"),
-            
-            # Property-specific fields
+            # Core property fields
+            col("listing_id"),
             col("property_type"),
             col("price"),
             col("bedrooms"),
             col("bathrooms"),
             col("square_feet"),
-            lit(None).cast("decimal(10,4)").alias("price_per_sqft"),
             col("year_built"),
             col("lot_size"),
-            
-            # Content and features
-            lit(None).cast("string").alias("title"),
-            col("description"),
             col("features"),
-            array().cast(ArrayType(StringType())).alias("features_normalized"),
-            lit(None).cast("string").alias("content"),
-            lit(None).cast("string").alias("summary"),
-            lit(None).cast("string").alias("key_topics"),
+            col("description"),
+            col("address"),
             
-            # Embedding fields (populated later in pipeline)
-            lit(None).cast("string").alias("embedding_text"),
-            lit(None).alias("embedding"),
-            lit(None).cast("string").alias("embedding_model"),
-            lit(None).cast("int").alias("embedding_dimension"),
-            lit(None).cast("long").alias("chunk_index"),
-            
-            # Quality and metadata
-            lit(None).cast("string").alias("content_hash"),
-            lit(None).cast("double").alias("data_quality_score"),
-            lit("pending").alias("validation_status"),
-            lit(None).cast("double").alias("confidence_score"),
+            # Timestamps
+            current_timestamp().alias("ingested_at"),
             
             # Source tracking
-            to_json(struct("*")).alias("raw_data"),
-            lit(source_path).alias("source_file"),
-            lit("JSON").alias("source_type"),
-            lit(None).cast("string").alias("url"),
-            
-            # Processing timestamps
-            current_timestamp().alias("ingested_at"),
-            lit(None).cast("timestamp").alias("processed_at"),
-            lit(None).cast("timestamp").alias("embedding_generated_at"),
+            lit(source_path).alias("source_file")
         )
     
     def validate(self, df: DataFrame) -> bool:
@@ -186,14 +149,14 @@ class PropertyLoader:
             True if data is valid
         """
         # Check for required fields
-        null_ids = df.filter(col("entity_id").isNull()).count()
+        null_ids = df.filter(col("listing_id").isNull()).count()
         if null_ids > 0:
             logger.error(f"Found {null_ids} properties with null listing_id")
             return False
         
         # Check for duplicate IDs
         total = df.count()
-        unique = df.select("entity_id").distinct().count()
+        unique = df.select("listing_id").distinct().count()
         if total != unique:
             logger.warning(f"Found duplicate listing IDs: {total - unique} duplicates")
         

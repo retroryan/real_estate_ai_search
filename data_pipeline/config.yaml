@@ -1,10 +1,10 @@
 # Data Pipeline Configuration
-# This file configures the unified Spark data pipeline with advanced options
+# This file configures the multi-entity Spark data pipeline with advanced options
 # for testing, data subsetting, and embedding model selection
 
 # Pipeline metadata
 metadata:
-  name: "unified_real_estate_pipeline"
+  name: "real_estate_data_pipeline"
   version: "1.0.0"
   description: "Apache Spark-based data pipeline for real estate and Wikipedia data processing"
 
@@ -88,6 +88,16 @@ data_sources:
     subset_config:
       max_records: 30
       filter_expression: "relevance_score > 0.5"  # Only high-relevance articles
+  
+  locations:
+    path: "real_estate_data/locations.json"
+    format: "json"
+    enabled: true
+    options:
+      multiLine: true
+    subset_config:
+      max_records: null  # Load all location reference data
+      filter_expression: null
 
 # Data enrichment configuration
 enrichment:
@@ -203,7 +213,7 @@ processing:
 # Output configuration
 output:
   format: "parquet"  # Options: parquet | json | csv | delta
-  path: "data/processed/unified_dataset"
+  path: "data/processed/entity_datasets"
   
   # Partitioning strategy
   partitioning:
@@ -234,7 +244,7 @@ output_destinations:
   # Parquet writer configuration
   parquet:
     enabled: true
-    path: "data/processed/unified_dataset"
+    path: "data/processed/entity_datasets"
     partitioning_columns:
       - "entity_type"
     compression: "snappy"

@@ -12,7 +12,7 @@ from src.vectors.vector_manager import PropertyVectorManager
 
 @dataclass
 class SearchResult:
-    """Unified search result combining vector and graph data"""
+    """Hybrid search result combining vector and graph data"""
     listing_id: str
     address: Optional[str]
     price: float

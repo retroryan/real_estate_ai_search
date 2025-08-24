@@ -1,4 +1,4 @@
-# Single unified YAML configuration for real estate search system
+# Single YAML configuration for real estate search system
 # This replaces dual configuration and provides single source of truth
 
 elasticsearch:

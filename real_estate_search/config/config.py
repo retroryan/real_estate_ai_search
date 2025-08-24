@@ -1,5 +1,5 @@
 """
-Unified configuration for the entire real estate search system using Pydantic.
+Comprehensive configuration for the entire real estate search system using Pydantic.
 Single source of truth with clean constructor injection patterns.
 """
 
@@ -83,7 +83,7 @@ class ChunkingConfig(BaseModel):
 
 class AppConfig(BaseModel):
     """
-    Single unified configuration for entire system.
+    Single comprehensive configuration for entire system.
     All components receive this through constructor injection.
     """
     elasticsearch: ElasticsearchConfig = Field(default_factory=ElasticsearchConfig)

@@ -2,7 +2,7 @@
 """
 Wikipedia Data Acquisition Tool
 
-A unified interface for crawling and attributing Wikipedia content.
+A comprehensive interface for crawling and attributing Wikipedia content.
 """
 
 import sys

@@ -275,10 +275,6 @@ class EmbeddingConfig(BaseModel):
         default=None,
         description="Model configurations by provider"
     )
-    model: Optional[str] = Field(
-        default=None,
-        description="Legacy model identifier (for backward compatibility)"
-    )
     batch_size: int = Field(
         default=100,
         gt=0,
@@ -296,7 +292,7 @@ class EmbeddingConfig(BaseModel):
     )
     api_url: Optional[str] = Field(
         default=None,
-        description="API endpoint URL (legacy)"
+        description="API endpoint URL"
     )
     rate_limit_delay: float = Field(
         default=0.0,
@@ -438,7 +434,7 @@ class PartitioningConfig(BaseModel):
         description="Enable output partitioning"
     )
     columns: List[str] = Field(
-        default_factory=lambda: ["entity_type", "state"],
+        default_factory=lambda: ["source_entity", "state"],
         description="Partitioning columns"
     )
     max_partitions: int = Field(
@@ -456,7 +452,7 @@ class OutputConfig(BaseModel):
         description="Output format"
     )
     path: str = Field(
-        default="data/processed/unified_dataset",
+        default="data/processed/entity_datasets",
         description="Output path"
     )
     partitioning: PartitioningConfig = Field(
@@ -631,7 +627,7 @@ class MetadataConfig(BaseModel):
     """Pipeline metadata configuration."""
     
     name: str = Field(
-        default="unified_real_estate_pipeline",
+        default="real_estate_data_pipeline",
         description="Pipeline name"
     )
     version: str = Field(
@@ -788,11 +784,11 @@ class ParquetWriterConfig(BaseModel):
         description="Whether Parquet writer is enabled"
     )
     path: str = Field(
-        default="data/processed/unified_dataset",
+        default="data/processed/entity_datasets",
         description="Output path for Parquet files"
     )
     partitioning_columns: List[str] = Field(
-        default_factory=lambda: ["entity_type"],
+        default_factory=lambda: ["source_entity"],
         description="Columns to use for partitioning"
     )
     compression: str = Field(
@@ -926,14 +922,6 @@ class PipelineConfig(BaseModel):
         description="Environment-specific overrides"
     )
     
-    # For backward compatibility
-    @property
-    def name(self) -> str:
-        return self.metadata.name
-    
-    @property
-    def version(self) -> str:
-        return self.metadata.version
     
     def apply_environment_overrides(self, environment: str) -> None:
         """Apply environment-specific configuration overrides."""

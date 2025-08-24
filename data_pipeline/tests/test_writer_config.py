@@ -43,8 +43,8 @@ class TestWriterConfiguration:
         """Test Parquet writer configuration with defaults."""
         config = ParquetWriterConfig()
         assert config.enabled is True
-        assert config.path == "data/processed/unified_dataset"
-        assert config.partitioning_columns == ["entity_type"]
+        assert config.path == "data/processed/entity_datasets"
+        assert config.partitioning_columns == ["source_entity"]
         assert config.compression == "snappy"
         assert config.mode == "overwrite"
     

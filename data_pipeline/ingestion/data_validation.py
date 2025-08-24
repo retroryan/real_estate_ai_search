@@ -276,40 +276,6 @@ class DataValidator:
             logger.error(f"Failed to validate Wikipedia article: {e}")
             return None
     
-    def validate_batch(
-        self, 
-        data_list: List[Dict[str, Any]], 
-        entity_type: str
-    ) -> List[BaseModel]:
-        """
-        Validate a batch of data.
-        
-        Args:
-            data_list: List of raw data dictionaries
-            entity_type: Type of entity (PROPERTY, NEIGHBORHOOD, WIKIPEDIA_ARTICLE)
-            
-        Returns:
-            List of validated models
-        """
-        self.metrics.total_records = len(data_list)
-        validated = []
-        
-        for data in data_list:
-            if entity_type == "PROPERTY":
-                model = self.validate_property(data)
-            elif entity_type == "NEIGHBORHOOD":
-                model = self.validate_neighborhood(data)
-            elif entity_type == "WIKIPEDIA_ARTICLE":
-                model = self.validate_wikipedia(data)
-            else:
-                logger.error(f"Unknown entity type: {entity_type}")
-                continue
-            
-            if model:
-                validated.append(model)
-        
-        self.metrics.calculate_quality_score()
-        return validated
     
     def get_metrics(self) -> DataQualityMetrics:
         """Get current validation metrics."""

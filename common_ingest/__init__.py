@@ -1,7 +1,7 @@
 """
 Common Ingestion Module
 
-A unified data loading and enrichment module for real estate and Wikipedia data.
+A comprehensive data loading and enrichment module for real estate and Wikipedia data.
 Provides clean APIs for loading enriched data with optional embedding support.
 """
 
