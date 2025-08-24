@@ -9,9 +9,11 @@ from typing import List, Tuple, Dict, Any, Generator, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
-from ..models.config import ChunkingConfig as ProcessingConfig
-from ..models.exceptions import EmbeddingGenerationError
-from ..models.statistics import BatchProcessorStatistics
+from ..models import (
+    ProcessingConfig,
+    EmbeddingGenerationError,
+    BatchProcessorStatistics,
+)
 from ..utils.logging import get_logger, PerformanceLogger
 
 

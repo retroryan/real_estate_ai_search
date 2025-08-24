@@ -9,9 +9,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 
-from ..models.config import Config
-from ..models.enums import EntityType
-from ..models.statistics import CollectionInfo
+from ..models import Config, EntityType, CollectionInfo
 from ..storage.chromadb_store import ChromaDBStore
 from ..utils.logging import get_logger
 

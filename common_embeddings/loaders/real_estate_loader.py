@@ -10,8 +10,7 @@ from typing import List, Tuple
 from llama_index.core import Document
 
 from ..utils.logging import get_logger
-from ..models.interfaces import IDataLoader
-from ..models.enums import EntityType
+from ..models import EntityType, IDataLoader
 
 
 logger = get_logger(__name__)

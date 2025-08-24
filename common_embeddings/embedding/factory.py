@@ -17,10 +17,7 @@ try:
 except ImportError:
     COHERE_AVAILABLE = False
 
-from ..models.config import Config
-from ..models.enums import EmbeddingProvider
-from ..models.interfaces import IEmbeddingProvider
-from ..models.exceptions import ProviderError, ConfigurationError
+from ..models import Config, EmbeddingProvider, ConfigurationError, IEmbeddingProvider, ProviderError
 from ..utils.logging import get_logger
 
 

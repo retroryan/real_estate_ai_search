@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 
-from .enums import EntityType, SourceType
+from property_finder_models import EntityType, SourceType
 from .metadata import BaseMetadata
 
 

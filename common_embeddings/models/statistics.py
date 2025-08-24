@@ -8,7 +8,8 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from .enums import EntityType, EmbeddingProvider, ChunkingMethod
+from property_finder_models import EntityType, EmbeddingProvider
+from .enums import ChunkingMethod
 
 
 class CollectionInfo(BaseModel):

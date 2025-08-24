@@ -12,25 +12,22 @@ import hashlib
 
 from llama_index.core import Document
 
-from .models.config import Config
-from .models.metadata import (
+from .models import (
+    Config,
     BaseMetadata,
-    PropertyMetadata,
-    NeighborhoodMetadata,
-    WikipediaMetadata,
-    ProcessingMetadata,
-)
-from .models.enums import EntityType, SourceType
-from .models.processing import (
-    ChunkMetadata as ProcessingChunkMetadata,  # Rename to avoid conflict
+    EntityType,
+    SourceType,
     ProcessingResult,
-    DocumentBatch
+    DocumentBatch,
+    PipelineStatistics,
+    EmbeddingGenerationError,
 )
-from .models.statistics import PipelineStatistics
+from .models.processing import ProcessingChunkMetadata  # Has from_combined_dict method
 from .embedding.factory import EmbeddingFactory
 from .processing.chunking import TextChunker
 from .processing.batch_processor import BatchProcessor
-from .models.exceptions import EmbeddingGenerationError
+from .storage.chromadb_store import ChromaDBStore
+from .services import MetadataFactory, BatchStorageManager, BatchStorageStats
 from .utils.logging import get_logger, PerformanceLogger
 from .utils.hashing import hash_text
 
@@ -46,29 +43,41 @@ class EmbeddingPipeline:
     to stored embeddings with comprehensive metadata.
     """
     
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, store_embeddings: bool = True):
         """
         Initialize embedding pipeline.
         
         Args:
             config: Pipeline configuration
+            store_embeddings: Whether to store embeddings to ChromaDB
         """
         self.config = config
         self.embed_model = None
         self.model_identifier = None
         self.chunker = None
         self.processor = None
+        self.store_embeddings = store_embeddings
+        self.store = None
+        
+        # Modular services
+        self.metadata_factory = None
+        self.batch_storage = None
         
         # Statistics
         self.stats = {
             "documents_processed": 0,
             "chunks_created": 0,
             "embeddings_generated": 0,
+            "embeddings_stored": 0,
             "errors": 0
         }
         
         # Initialize components
         self._initialize_components()
+        
+        # Initialize storage services if storing embeddings
+        if self.store_embeddings:
+            self._initialize_storage_services()
     
     def _initialize_components(self):
         """Initialize pipeline components."""
@@ -97,6 +106,17 @@ class EmbeddingPipeline:
         )
         logger.info("Initialized batch processor")
     
+    def _initialize_storage_services(self):
+        """Initialize storage-related services."""
+        self.store = ChromaDBStore(self.config.chromadb)
+        self.metadata_factory = MetadataFactory(self.config, self.model_identifier)
+        self.batch_storage = BatchStorageManager(
+            store=self.store,
+            batch_size=self.config.processing.batch_size,
+            auto_flush=True
+        )
+        logger.info("Initialized ChromaDB store and modular services for embedding storage")
+    
     def _progress_callback(self, current: int, total: int):
         """Progress callback for batch processor."""
         if self.config.processing.show_progress:
@@ -108,7 +128,9 @@ class EmbeddingPipeline:
         documents: List[Document],
         entity_type: EntityType,
         source_type: SourceType,
-        source_file: str
+        source_file: str,
+        collection_name: Optional[str] = None,
+        force_recreate: bool = False
     ) -> Generator[ProcessingResult, None, None]:
         """
         Process documents to generate embeddings with structured metadata.
@@ -118,6 +140,8 @@ class EmbeddingPipeline:
             entity_type: Type of entity being processed
             source_type: Type of data source
             source_file: Path to source file
+            collection_name: Optional ChromaDB collection name for storage
+            force_recreate: Whether to recreate the collection
             
         Yields:
             ProcessingResult objects with embeddings and structured metadata
@@ -182,6 +206,17 @@ class EmbeddingPipeline:
             self.stats["chunks_created"] = len(all_chunks)
             logger.info(f"Created {len(all_chunks)} chunks from {len(documents)} documents")
             
+            # Setup ChromaDB collection if storing
+            if self.store_embeddings and collection_name and self.batch_storage:
+                self.batch_storage.prepare_collection(
+                    collection_name=collection_name,
+                    entity_type=entity_type,
+                    source_type=source_type,
+                    model_identifier=self.model_identifier,
+                    force_recreate=force_recreate
+                )
+                logger.info(f"Using collection: {collection_name}")
+            
             # Process chunks in batches
             logger.info("Generating embeddings...")
             embedding_count = 0
@@ -192,14 +227,40 @@ class EmbeddingPipeline:
                     continue
                 
                 # chunk_metadata is now a ProcessingChunkMetadata object
-                # Create appropriate BaseMetadata object for storage
-                storage_metadata = self._create_metadata(
-                    chunk_metadata.to_dict(),  # Convert to dict for compatibility
-                    entity_type,
-                    source_type,
-                    source_file,
-                    embedding
-                )
+                # Create appropriate BaseMetadata object using metadata factory
+                if self.metadata_factory:
+                    storage_metadata = self.metadata_factory.create_metadata(
+                        chunk_metadata.to_dict(),  # Convert to dict for compatibility
+                        entity_type,
+                        source_type,
+                        source_file,
+                        embedding
+                    )
+                else:
+                    # Fallback for when not storing embeddings
+                    storage_metadata = BaseMetadata(
+                        entity_type=entity_type,
+                        source_type=source_type,
+                        source_file=source_file,
+                        embedding_model=self.model_identifier,
+                        embedding_provider=self.config.embedding.provider,
+                        embedding_dimension=len(embedding),
+                        text_hash=chunk_metadata.text_hash
+                    )
+                
+                # Store using batch storage manager if enabled
+                if self.store_embeddings and collection_name and self.batch_storage:
+                    # Get chunk text from the original chunks
+                    chunk_text = next((text for text, meta in all_chunks 
+                                     if meta.text_hash == chunk_metadata.text_hash), "")
+                    
+                    self.batch_storage.add_embedding(
+                        embedding=embedding,
+                        text=chunk_text,
+                        metadata=storage_metadata,
+                        text_hash=chunk_metadata.text_hash,
+                        chunk_index=chunk_metadata.chunk_index
+                    )
                 
                 # Create ProcessingResult with structured data
                 result = ProcessingResult(
@@ -215,87 +276,17 @@ class EmbeddingPipeline:
                 embedding_count += 1
                 self.stats["embeddings_generated"] = embedding_count
             
+            # Finalize batch storage
+            if self.store_embeddings and collection_name and self.batch_storage:
+                storage_stats = self.batch_storage.finalize()
+                self.stats["embeddings_stored"] = storage_stats.embeddings_stored
+                if storage_stats.errors > 0:
+                    logger.warning(f"Storage completed with {storage_stats.errors} batch errors")
+            
             perf.add_metric("chunks_created", self.stats["chunks_created"])
             perf.add_metric("embeddings_generated", embedding_count)
             perf.add_metric("errors", self.stats["errors"])
     
-    def _create_metadata(
-        self,
-        chunk_metadata: Dict[str, Any],
-        entity_type: EntityType,
-        source_type: SourceType,
-        source_file: str,
-        embedding: List[float]
-    ) -> BaseMetadata:
-        """
-        Create appropriate metadata object for the entity type.
-        
-        Args:
-            chunk_metadata: Chunk-level metadata
-            entity_type: Type of entity
-            source_type: Source data type
-            source_file: Path to source file
-            embedding: Generated embedding vector
-            
-        Returns:
-            Appropriate metadata object
-        """
-        # Common metadata fields
-        base_fields = {
-            "source_type": source_type,
-            "source_file": source_file,
-            "source_collection": f"{entity_type.value}_{self.model_identifier}_v{self.config.metadata_version.replace('.', '')}",
-            "source_timestamp": datetime.utcnow(),
-            "embedding_model": self.model_identifier,
-            "embedding_provider": self.config.embedding.provider,
-            "embedding_dimension": len(embedding),
-            "embedding_version": self.config.metadata_version,
-            "text_hash": chunk_metadata.get('text_hash', ''),
-        }
-        
-        # Create entity-specific metadata
-        if entity_type == EntityType.PROPERTY:
-            metadata = PropertyMetadata(
-                listing_id=chunk_metadata.get('listing_id', ''),
-                source_file_index=chunk_metadata.get('source_file_index'),
-                **base_fields
-            )
-        
-        elif entity_type == EntityType.NEIGHBORHOOD:
-            metadata = NeighborhoodMetadata(
-                neighborhood_id=chunk_metadata.get('neighborhood_id', ''),
-                neighborhood_name=chunk_metadata.get('neighborhood_name', ''),
-                source_file_index=chunk_metadata.get('source_file_index'),
-                **base_fields
-            )
-        
-        elif entity_type in [EntityType.WIKIPEDIA_ARTICLE, EntityType.WIKIPEDIA_SUMMARY]:
-            # Handle chunking metadata if present
-            chunk_meta = None
-            if chunk_metadata.get('chunk_total', 1) > 1:
-                from .models.metadata import ChunkMetadata
-                chunk_meta = ChunkMetadata(
-                    chunk_index=chunk_metadata.get('chunk_index', 0),
-                    chunk_total=chunk_metadata.get('chunk_total', 1),
-                    parent_id=str(chunk_metadata.get('page_id', '')),
-                )
-            
-            metadata = WikipediaMetadata(
-                page_id=chunk_metadata.get('page_id', 0),
-                article_id=chunk_metadata.get('article_id'),
-                has_summary=chunk_metadata.get('has_summary', False),
-                chunk_metadata=chunk_meta,
-                **base_fields
-            )
-        
-        else:
-            # Fallback to base metadata
-            metadata = BaseMetadata(
-                entity_type=entity_type,
-                **base_fields
-            )
-        
-        return metadata
     
     def process_texts(
         self,
@@ -333,6 +324,7 @@ class EmbeddingPipeline:
             results.append((embedding, metadata))
         
         return results
+    
     
     def get_statistics(self) -> PipelineStatistics:
         """

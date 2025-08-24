@@ -62,8 +62,10 @@ python -m common_ingest
 
 #### Using Convenience Scripts (Recommended)
 
+The scripts can be run from any directory - they will automatically change to the correct working directory:
+
 ```bash
-# Start the API server in background
+# From project root (or any directory)
 ./common_ingest/start_api.sh
 
 # Stop the API server
@@ -71,6 +73,14 @@ python -m common_ingest
 
 # View server logs
 tail -f /tmp/common_ingest_api.log
+```
+
+Or from within the common_ingest directory:
+
+```bash
+cd common_ingest
+./start_api.sh
+./stop_api.sh
 ```
 
 The start script will:
@@ -196,8 +206,32 @@ All API responses follow a consistent structure:
 
 ### Running Tests
 
-#### Unit Tests (Using pytest)
+#### Using the Test Runner Script (Recommended)
 ```bash
+# The run_tests.sh script automatically sets PYTHONPATH and runs verbose by default
+
+# Run all unit AND integration tests (no arguments)
+./run_tests.sh
+
+# Run all unit tests only
+./run_tests.sh tests/
+
+# Run specific test modules
+./run_tests.sh tests/test_models.py
+./run_tests.sh tests/test_loaders.py
+
+# Run integration tests only
+./run_tests.sh integration_tests/
+
+# Run with coverage
+./run_tests.sh tests/ --cov=common_ingest --cov-report=term-missing
+```
+
+#### Manual Testing (with PYTHONPATH)
+```bash
+# Set PYTHONPATH to parent directory for editable package resolution
+export PYTHONPATH=/Users/ryanknight/projects/temporal/real_estate_ai_search:$PYTHONPATH
+
 # Run all unit tests
 python -m pytest common_ingest/tests/ -v
 
@@ -206,23 +240,8 @@ python -m pytest common_ingest/tests/test_models.py -v
 python -m pytest common_ingest/tests/test_loaders.py -v
 python -m pytest common_ingest/tests/test_enrichers.py -v
 
-# Run unit tests with coverage
-python -m pytest common_ingest/tests/ --cov=common_ingest --cov-report=term-missing
-```
-
-#### Integration Tests
-```bash
-# Run all integration tests
+# Run integration tests
 python -m pytest common_ingest/integration_tests/ -v
-
-# Run specific integration test suites
-python -m pytest common_ingest/integration_tests/test_health_endpoints.py -v
-python -m pytest common_ingest/integration_tests/test_property_endpoints.py -v
-python -m pytest common_ingest/integration_tests/test_neighborhood_endpoints.py -v
-python -m pytest common_ingest/integration_tests/test_api_comprehensive.py -v
-
-# Run integration tests with coverage
-python -m pytest common_ingest/integration_tests/ --cov=common_ingest.api
 ```
 
 The integration tests cover:

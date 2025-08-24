@@ -10,7 +10,7 @@ from typing import List, Optional
 from llama_index.core import Document
 
 from ..utils.logging import get_logger
-from ..models.interfaces import IDataLoader
+from ..models import IDataLoader
 
 
 logger = get_logger(__name__)

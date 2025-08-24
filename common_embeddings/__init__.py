@@ -8,24 +8,32 @@ correlation with source data.
 
 __version__ = "0.1.0"
 
-from .models import (
+from property_finder_models import (
     # Enums
     EntityType,
     SourceType,
     EmbeddingProvider,
-    ChunkingMethod,
     
     # Metadata Models
     BaseMetadata,
-    PropertyMetadata,
-    NeighborhoodMetadata,
-    WikipediaMetadata,
     
     # Configuration Models
     EmbeddingConfig,
     ChromaDBConfig,
-    ChunkingConfig,
     Config,
+)
+
+from .models import (
+    # Enums specific to embeddings
+    ChunkingMethod,
+    
+    # Configuration specific to embeddings
+    ChunkingConfig,
+    
+    # Metadata Models
+    PropertyMetadata,
+    NeighborhoodMetadata,
+    WikipediaMetadata,
     
     # Correlation Models
     ChunkGroup,

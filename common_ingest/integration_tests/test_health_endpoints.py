@@ -59,7 +59,7 @@ class TestHealthEndpoints:
         assert "status" in data
         assert "version" in data
         assert "timestamp" in data
-        assert "data_sources" in data
+        assert "components" in data  # Updated from data_sources
         
         # Verify expected values
         assert data["status"] == "healthy"
@@ -67,12 +67,22 @@ class TestHealthEndpoints:
         assert isinstance(data["timestamp"], (int, float))
         assert data["timestamp"] > 0
         
-        # Verify data sources structure
-        data_sources = data["data_sources"]
-        assert "property_data" in data_sources
-        assert "wikipedia_db" in data_sources
-        assert isinstance(data_sources["property_data"], str)
-        assert isinstance(data_sources["wikipedia_db"], str)
+        # Verify components structure
+        components = data["components"]
+        assert "property_data_directory" in components
+        assert "wikipedia_database" in components
+        
+        # Verify property data component
+        prop_component = components["property_data_directory"]
+        assert prop_component["status"] == "healthy"
+        assert "path" in prop_component
+        assert "json_files_count" in prop_component
+        
+        # Verify wikipedia component
+        wiki_component = components["wikipedia_database"]
+        assert wiki_component["status"] == "healthy"
+        assert "path" in wiki_component
+        assert "size_mb" in wiki_component
     
     def test_health_endpoint_has_correlation_id(self, test_client: TestClient):
         """

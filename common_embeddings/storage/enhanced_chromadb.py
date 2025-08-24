@@ -11,19 +11,20 @@ from pathlib import Path
 from collections import defaultdict
 
 from .chromadb_store import ChromaDBStore
-from ..models.config import ChromaDBConfig
-from ..models.correlation import (
+from ..models import (
+    ChromaDBConfig,
     ValidationResult,
     ChunkGroup,
     CollectionHealth,
     StorageOperation,
-    CorrelationMapping
+    CorrelationMapping,
+    EntityType,
+    SourceType,
+    CollectionInfo,
 )
-from ..models.enums import EntityType, SourceType
-from ..models.statistics import CollectionInfo
 from ..utils.correlation import CorrelationValidator, ChunkReconstructor, create_correlation_mappings
 from ..utils.logging import get_logger, PerformanceLogger
-from ..models.exceptions import StorageError
+from ..models import StorageError
 
 
 logger = get_logger(__name__)

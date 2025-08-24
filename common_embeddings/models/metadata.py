@@ -1,53 +1,38 @@
 """
-Metadata models for correlation and tracking.
+Metadata models for embeddings tracking.
 
-These models follow the minimalist design philosophy where embeddings store
-only essential identifiers needed to locate source data, preventing data
-duplication and synchronization issues.
+These models extend the base metadata from property_finder_models with
+embedding-specific fields for correlation and tracking.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
 
-from .enums import (
+from property_finder_models import (
+    BaseMetadata,
     EntityType,
     SourceType,
     EmbeddingProvider,
+)
+from .enums import (
     ChunkingMethod,
     PreprocessingStep,
     AugmentationType,
 )
 
 
-class BaseMetadata(BaseModel):
+class PropertyMetadata(BaseMetadata):
     """
-    Base metadata for all embeddings with correlation identifiers.
+    Metadata for property embeddings.
     
-    This contains the minimal set of fields required for every embedding
-    to enable correlation with source data and traceability.
+    Extends BaseMetadata with property-specific fields.
     """
     
-    # Primary Identifiers (MANDATORY)
-    embedding_id: str = Field(default_factory=lambda: str(uuid4()),
-                             description="Unique identifier for this embedding")
-    entity_type: EntityType = Field(description="Type of entity this embedding represents")
-    
-    # Source Tracking (MANDATORY)
-    source_type: SourceType = Field(description="Type of data source")
-    source_file: str = Field(description="Path to source file or database")
-    source_collection: str = Field(description="ChromaDB collection name")
-    source_timestamp: datetime = Field(description="When source data was last modified")
-    
-    # Embedding Context (MANDATORY)
-    embedding_model: str = Field(description="Model name used for embedding")
-    embedding_provider: EmbeddingProvider = Field(description="Provider used")
-    embedding_dimension: int = Field(description="Dimension of embedding vector")
-    embedding_version: str = Field(default="1.0", description="Version of embedding pipeline")
-    text_hash: str = Field(description="SHA256 hash of text used for embedding")
-    generation_timestamp: datetime = Field(default_factory=datetime.utcnow,
-                                          description="When embedding was created")
+    listing_id: str = Field(description="Property listing identifier")
+    property_type: Optional[str] = Field(None, description="Type of property")
+    price: Optional[float] = Field(None, description="Property price")
     
     class Config:
         """Pydantic configuration."""
@@ -55,129 +40,71 @@ class BaseMetadata(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
-    
-    def model_dump(self, **kwargs) -> dict:
-        """Override to ensure ChromaDB-compatible serialization."""
-        # Set exclude_none=True by default for ChromaDB compatibility
-        if 'exclude_none' not in kwargs:
-            kwargs['exclude_none'] = True
-        
-        data = super().model_dump(**kwargs)
-        
-        # Clean data for ChromaDB compatibility
-        cleaned = {}
-        for key, value in data.items():
-            if value is None:
-                continue  # Skip None values
-            elif isinstance(value, datetime):
-                cleaned[key] = value.isoformat()
-            elif isinstance(value, (str, int, float, bool)):
-                cleaned[key] = value
-            elif isinstance(value, dict):
-                # Flatten nested dicts or convert to string
-                cleaned[key] = str(value)
-            elif isinstance(value, list):
-                # Convert lists to comma-separated strings
-                cleaned[key] = ','.join(str(v) for v in value)
-            elif isinstance(value, tuple):
-                # Convert tuples to comma-separated strings
-                cleaned[key] = ','.join(str(v) for v in value)
-            else:
-                # Convert everything else to string
-                cleaned[key] = str(value)
-        
-        return cleaned
-
-
-class ChunkMetadata(BaseModel):
-    """
-    Metadata for multi-chunk documents.
-    
-    Required when a document is split into multiple embeddings.
-    """
-    
-    chunk_index: int = Field(ge=0, description="Zero-based chunk position")
-    chunk_total: int = Field(ge=1, description="Total chunks from source")
-    parent_id: str = Field(description="Primary ID of parent document")
-    chunk_boundaries: Optional[tuple[int, int]] = Field(
-        default=None,
-        description="Character positions (start, end) in original text"
-    )
-    
-    @validator('chunk_index')
-    def validate_chunk_index(cls, v, values):
-        """Ensure chunk_index is less than chunk_total."""
-        if 'chunk_total' in values and v >= values['chunk_total']:
-            raise ValueError(f"chunk_index {v} must be less than chunk_total {values['chunk_total']}")
-        return v
-
-
-class PropertyMetadata(BaseMetadata):
-    """
-    Minimal metadata for property embeddings.
-    
-    Only stores identifiers needed for correlation with source property data.
-    """
-    
-    listing_id: str = Field(description="Primary identifier for property")
-    source_file_index: Optional[int] = Field(
-        default=None,
-        description="Index position in source JSON array"
-    )
-    
-    def __init__(self, **data):
-        """Ensure entity_type is set correctly."""
-        data['entity_type'] = EntityType.PROPERTY
-        super().__init__(**data)
 
 
 class NeighborhoodMetadata(BaseMetadata):
     """
-    Minimal metadata for neighborhood embeddings.
+    Metadata for neighborhood embeddings.
     
-    Only stores identifiers needed for correlation with source neighborhood data.
+    Extends BaseMetadata with neighborhood-specific fields.
     """
     
-    neighborhood_id: str = Field(description="Primary identifier for neighborhood")
-    neighborhood_name: str = Field(description="Name as it appears in source")
-    source_file_index: Optional[int] = Field(
-        default=None,
-        description="Index position in source JSON array"
-    )
+    neighborhood_id: str = Field(description="Neighborhood identifier")
+    neighborhood_name: str = Field(description="Name of the neighborhood")
+    city: Optional[str] = Field(None, description="City name")
+    state: Optional[str] = Field(None, description="State name")
     
-    def __init__(self, **data):
-        """Ensure entity_type is set correctly."""
-        data['entity_type'] = EntityType.NEIGHBORHOOD
-        super().__init__(**data)
+    class Config:
+        """Pydantic configuration."""
+        use_enum_values = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 
 class WikipediaMetadata(BaseMetadata):
     """
-    Minimal metadata for Wikipedia article embeddings.
+    Metadata for Wikipedia article embeddings.
     
-    Only stores identifiers needed for correlation with SQLite database.
+    Extends BaseMetadata with Wikipedia-specific fields.
     """
     
-    page_id: int = Field(description="Wikipedia page ID from database")
-    article_id: Optional[int] = Field(
-        default=None,
-        description="Database row ID for direct lookup"
-    )
-    has_summary: bool = Field(
-        default=False,
-        description="Whether page_summaries table has entry"
-    )
+    page_id: int = Field(description="Wikipedia page ID")
+    title: str = Field(description="Article title")
+    url: Optional[str] = Field(None, description="Wikipedia URL")
+    relevance_score: Optional[float] = Field(None, ge=0.0, le=1.0,
+                                             description="Relevance score for location articles")
     
-    # Multi-chunk support (Wikipedia articles are often chunked)
-    chunk_metadata: Optional[ChunkMetadata] = None
+    class Config:
+        """Pydantic configuration."""
+        use_enum_values = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class ChunkMetadata(BaseModel):
+    """
+    Metadata for text chunks within documents.
     
-    def __init__(self, **data):
-        """Ensure entity_type is set correctly."""
-        if 'has_summary' in data and data['has_summary']:
-            data['entity_type'] = EntityType.WIKIPEDIA_SUMMARY
-        else:
-            data['entity_type'] = EntityType.WIKIPEDIA_ARTICLE
-        super().__init__(**data)
+    Tracks how documents were split into chunks for embedding.
+    """
+    
+    chunk_index: int = Field(description="Index of this chunk in the document")
+    chunk_total: int = Field(description="Total number of chunks from this document")
+    start_position: int = Field(description="Starting character position in original text")
+    end_position: int = Field(description="Ending character position in original text")
+    token_count: Optional[int] = Field(None, description="Number of tokens in chunk")
+    overlap_previous: Optional[int] = Field(None, description="Characters overlapping with previous chunk")
+    overlap_next: Optional[int] = Field(None, description="Characters overlapping with next chunk")
+    
+    @field_validator('chunk_index')
+    @classmethod
+    def validate_chunk_index(cls, v: int, info) -> int:
+        """Ensure chunk_index is valid."""
+        if 'chunk_total' in info.data and v >= info.data['chunk_total']:
+            raise ValueError(f"chunk_index {v} must be less than chunk_total {info.data['chunk_total']}")
+        return v
 
 
 class EmbeddingContextMetadata(BaseModel):
@@ -193,20 +120,13 @@ class EmbeddingContextMetadata(BaseModel):
     embedding_version: str = "1.0"
     text_hash: str
     generation_timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 
 class ProcessingMetadata(BaseModel):
     """
     Details about text processing applied before embedding.
     
-    This helps understand how the text was prepared for embedding generation.
+    Helps understand how the text was prepared for embedding generation.
     """
     
     chunking_method: ChunkingMethod
@@ -220,7 +140,5 @@ class ProcessingMetadata(BaseModel):
         default=AugmentationType.NONE,
         description="Type of augmentation applied"
     )
-    
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
+    original_text_length: int = Field(ge=0, description="Length before processing")
+    processed_text_length: int = Field(ge=0, description="Length after processing")

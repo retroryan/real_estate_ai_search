@@ -38,7 +38,8 @@ The `common_embeddings` module successfully consolidates embedding functionality
 ## Model Comparison Framework Requirements
 
 ### Functional Requirements
-- Run the same evaluation queries against multiple embedding collections
+- Use a `test.config.yaml` file to specify multiple models to test
+- Run the same evaluation queries against all specified model collections
 - Generate side-by-side comparison metrics for all models
 - Produce unified comparison reports showing relative performance
 - Automatically identify the best-performing model overall and per category
@@ -46,33 +47,55 @@ The `common_embeddings` module successfully consolidates embedding functionality
 - Cache evaluation results to avoid redundant computations
 
 ### Technical Requirements
-- Extend EvaluationRunner to handle multiple collections
+- Create TestConfig class to parse test.config.yaml
+- Extend EvaluationRunner to handle multiple collections from config
 - Create ModelComparator class for orchestrating comparisons
 - Update report generator to produce comparison visualizations
 - Implement result caching mechanism
 - Ensure atomic updates without creating parallel code paths
 
+### Test Configuration Design
+
+The `test.config.yaml` will specify:
+- List of models to compare with their configurations
+- Evaluation datasets to use (gold, generated, or custom)
+- Comparison settings and thresholds
+- Output preferences and report formats
+
+Example structure:
+- **evaluation**: Dataset selection, top_k, parallel execution, caching
+- **models**: List of models with provider, config, and collection names
+- **comparison**: Primary metric, significance testing, performance thresholds
+- **reporting**: Output formats, visualizations, summary generation
+- **data_preparation**: Auto-create embeddings if needed
+
 ### Implementation Plan
 
-#### Phase 1: Multi-Collection Support
-- Modify EvaluationRunner to accept list of collection names
-- Update query execution to iterate through collections
+#### Phase 1: Test Configuration Setup
+- Create test.config.yaml schema and example file
+- Implement TestConfig parser class
+- Validate model configurations
+- Ensure all specified models have collections
+
+#### Phase 2: Multi-Model Evaluation
+- Modify run_evaluation.py to read test.config.yaml
+- Update EvaluationRunner to iterate through configured models
 - Ensure consistent query embedding generation across models
 - Maintain separation of results per model
 
-#### Phase 2: Comparison Logic
+#### Phase 3: Comparison Logic
 - Create comparison orchestrator in evaluate module
 - Implement parallel evaluation for efficiency
 - Add statistical comparison methods
 - Calculate performance deltas between models
 
-#### Phase 3: Enhanced Reporting
+#### Phase 4: Enhanced Reporting
 - Update ReportGenerator for comparison reports
 - Add side-by-side metric tables
 - Create performance ranking visualizations
 - Generate category-specific winner analysis
 
-#### Phase 4: Caching and Optimization
+#### Phase 5: Caching and Optimization
 - Implement result caching to avoid re-evaluation
 - Add cache invalidation logic
 - Optimize parallel processing
@@ -87,10 +110,22 @@ The `common_embeddings` module successfully consolidates embedding functionality
 - Performance trade-off analysis
 
 ### Demo Capabilities
-- Compare 3+ models in under 5 minutes
-- Generate professional comparison reports
+- Compare 3+ models in under 5 minutes using test.config.yaml
+- Generate professional comparison reports automatically
 - Provide actionable model selection guidance
 - Showcase embedding model evaluation best practices
+
+### Usage Example
+```bash
+# Run model comparison using test configuration
+python -m common_embeddings.evaluate.run_evaluation --test-config test.config.yaml
+
+# Compare specific models only
+python -m common_embeddings.evaluate.run_evaluation --test-config test.config.yaml --models "nomic-embed-text,mxbai-embed-large"
+
+# Use different dataset
+python -m common_embeddings.evaluate.run_evaluation --test-config test.config.yaml --dataset generated
+```
 
 ## Testing Strategy
 
@@ -126,31 +161,164 @@ The `common_embeddings` module successfully consolidates embedding functionality
 - [ ] Clean, direct implementation
 - [ ] Proper logging throughout
 
-## Todo List
+## Detailed Implementation Phases
 
-### Week 1: Foundation
-- [ ] Extend EvaluationRunner for multiple collections
-- [ ] Update query execution logic
-- [ ] Modify result storage structure
-- [ ] Add collection iteration
+### Phase 0: Fix Configuration Issues (IMMEDIATE - Day 1)
+**Critical**: The refactored codebase needs config alignment
+- [ ] Add ChunkingConfig to property_finder_models
+- [ ] Add ProcessingConfig to property_finder_models  
+- [ ] Update Config model to include chunking and processing
+- [ ] Fix ChromaDBStore to use persist_directory consistently
+- [ ] Ensure all imports use correct model locations
+- [ ] Test configuration loading with complete structure
 
-### Week 2: Comparison Logic
-- [ ] Implement comparison orchestrator
-- [ ] Add parallel evaluation support
-- [ ] Create performance delta calculations
-- [ ] Implement winner determination
+### Phase 1: Test Configuration System (Days 2-3)
+- [ ] Design test.config.yaml schema with multiple models
+- [ ] Create TestConfig Pydantic model with validation
+- [ ] Implement YAML parser for test configuration
+- [ ] Add model configuration validator
+- [ ] Create example configurations for 3+ models
+- [ ] Test configuration loading and parsing
 
-### Week 3: Reporting
-- [ ] Update HTML report template
-- [ ] Add comparison visualizations
-- [ ] Create ranking tables
-- [ ] Generate category analysis
+### Phase 2: Multi-Model Evaluation Engine (Days 4-6)
+- [ ] Update run_evaluation.py to accept --test-config argument
+- [ ] Implement collection existence checking
+- [ ] Add automatic embedding creation if missing
+- [ ] Create model iteration logic from config
+- [ ] Implement parallel evaluation with ThreadPoolExecutor
+- [ ] Ensure consistent query embedding generation across models
 
-### Week 4: Testing and Polish
-- [ ] Complete unit tests
-- [ ] Run integration tests
-- [ ] Performance optimization
-- [ ] Documentation
+### Phase 3: Comparison Orchestrator (Days 7-9)
+- [ ] Create ModelComparator class
+- [ ] Implement overall metric comparison methods
+- [ ] Add category-wise comparison logic
+- [ ] Create query-level comparison functionality
+- [ ] Implement winner determination algorithm
+- [ ] Add statistical significance testing (scipy)
+- [ ] Calculate performance deltas between models
+- [ ] Create model ranking system
+
+### Phase 4: Enhanced Reporting (Days 10-12)
+- [ ] Create ComparisonReportGenerator class
+- [ ] Design comparison HTML template
+- [ ] Implement plotly chart generation
+- [ ] Add side-by-side metric tables
+- [ ] Create performance radar charts
+- [ ] Generate category heatmaps
+- [ ] Add statistical significance indicators
+- [ ] Implement executive summary generation
+- [ ] Create markdown report format
+
+### Phase 5: Caching and Optimization (Days 13-14)
+- [ ] Implement EvaluationCache class
+- [ ] Add cache key generation logic
+- [ ] Create result serialization/deserialization
+- [ ] Implement cache invalidation
+- [ ] Add memory optimization for large datasets
+- [ ] Optimize batch processing based on memory
+- [ ] Add cache statistics tracking
+- [ ] Implement progress tracking for multiple models
+
+### Phase 6: Integration and Testing (Days 15-17)
+- [ ] Update CLI with comparison commands
+- [ ] Create unit tests for ModelComparator
+- [ ] Add tests for statistical significance
+- [ ] Test parallel evaluation functionality
+- [ ] Verify caching behavior
+- [ ] Create integration tests for full pipeline
+- [ ] Add performance benchmarks
+- [ ] Create test fixtures and mock data
+
+### Phase 7: Documentation and Demo (Days 18-20)
+- [ ] Write user documentation for comparison
+- [ ] Create configuration reference guide
+- [ ] Add API documentation
+- [ ] Create troubleshooting guide
+- [ ] Write demo scripts for comparison
+- [ ] Create example configurations
+- [ ] Record video tutorial
+- [ ] Update README with comparison examples
+
+## Next Immediate Actions (TODAY)
+
+### 1. Configuration Alignment (2 hours)
+```python
+# Add to property_finder_models/config.py
+class ChunkingConfig(BaseModel):
+    method: ChunkingMethod
+    chunk_size: int = 800
+    chunk_overlap: int = 100
+    breakpoint_percentile: int = 90
+    buffer_size: int = 2
+    split_oversized_chunks: bool = False
+    max_chunk_size: int = 1000
+
+class ProcessingConfig(BaseModel):
+    batch_size: int = 100
+    max_workers: int = 4
+    show_progress: bool = True
+    rate_limit_delay: float = 0.0
+    document_batch_size: int = 20
+
+# Update Config class
+class Config(BaseModel):
+    embedding: EmbeddingConfig
+    chromadb: ChromaDBConfig
+    chunking: ChunkingConfig  # ADD
+    processing: ProcessingConfig  # ADD
+    metadata_version: str = "1.0"
+```
+
+### 2. Create test.config.yaml (1 hour)
+```yaml
+version: "1.0"
+evaluation:
+  dataset: gold
+  top_k: 10
+  parallel_execution: true
+  cache_results: true
+
+models:
+  - name: nomic-embed-text
+    provider: ollama
+    collection_name: wikipedia_ollama_nomic_embed_text_v1
+    
+  - name: mxbai-embed-large  
+    provider: ollama
+    collection_name: wikipedia_ollama_mxbai_embed_large_v1
+    
+  - name: text-embedding-3-small
+    provider: openai
+    collection_name: wikipedia_openai_text_embedding_3_small_v1
+
+comparison:
+  primary_metric: f1_score
+  significance_threshold: 0.05
+  
+reporting:
+  formats: [html, json, markdown]
+  output_directory: ./comparison_results
+```
+
+### 3. Begin TestConfig Parser (1 hour)
+```python
+# common_embeddings/evaluate/test_config.py
+from pydantic import BaseModel
+from typing import List, Dict, Any
+
+class ModelConfig(BaseModel):
+    name: str
+    provider: str
+    collection_name: str
+    config: Dict[str, Any] = {}
+
+class TestConfig(BaseModel):
+    version: str
+    evaluation: EvaluationConfig
+    models: List[ModelConfig]
+    comparison: ComparisonConfig
+    reporting: ReportingConfig
+```
 
 ## Success Criteria
 

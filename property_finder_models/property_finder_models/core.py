@@ -5,11 +5,18 @@ Provides foundational classes used across all modules.
 """
 
 from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Annotated
 from uuid import uuid4
 import uuid
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, PlainSerializer
+
+
+# Custom datetime type with ISO format serialization for JSON
+ISODatetime = Annotated[
+    datetime,
+    PlainSerializer(lambda x: x.isoformat() if x else None, return_type=str, when_used="json")
+]
 
 
 class BaseEnrichedModel(BaseModel):
@@ -33,7 +40,7 @@ class BaseEnrichedModel(BaseModel):
     )
     
     # Metadata fields
-    created_at: datetime = Field(
+    created_at: ISODatetime = Field(
         default_factory=datetime.utcnow,
         description="Timestamp when this record was created"
     )
@@ -53,10 +60,7 @@ class BaseMetadata(BaseModel):
     """
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
+        use_enum_values=True
     )
     
     # Primary Identifiers
@@ -68,14 +72,14 @@ class BaseMetadata(BaseModel):
     # Source Tracking
     source_file: str = Field(description="Path to source file or database")
     source_collection: str = Field(description="ChromaDB collection name")
-    source_timestamp: datetime = Field(description="When source data was last modified")
+    source_timestamp: ISODatetime = Field(description="When source data was last modified")
     
     # Embedding Context
     embedding_model: str = Field(description="Model name used for embedding")
     embedding_dimension: int = Field(description="Dimension of embedding vector")
     embedding_version: str = Field(default="1.0", description="Version of embedding pipeline")
     text_hash: str = Field(description="SHA256 hash of text used for embedding")
-    generation_timestamp: datetime = Field(
+    generation_timestamp: ISODatetime = Field(
         default_factory=datetime.utcnow,
         description="When embedding was created"
     )
@@ -86,9 +90,10 @@ class BaseMetadata(BaseModel):
         if 'exclude_none' not in kwargs:
             kwargs['exclude_none'] = True
         
+        # Let Pydantic handle enum serialization first with use_enum_values=True
         data = super().model_dump(**kwargs)
         
-        # Clean data for ChromaDB compatibility
+        # Clean data for ChromaDB compatibility - now enums should already be values
         cleaned = {}
         for key, value in data.items():
             if value is None:
@@ -107,7 +112,7 @@ class BaseMetadata(BaseModel):
                 # Convert tuples to comma-separated strings
                 cleaned[key] = ','.join(str(v) for v in value)
             else:
-                # Convert everything else to string
+                # Convert everything else to string (including any remaining enums)
                 cleaned[key] = str(value)
         
         return cleaned

@@ -8,11 +8,14 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 from datetime import datetime
 
 from .enhanced_chromadb import EnhancedChromaDBManager
-from ..models.config import ChromaDBConfig
-from ..models.enums import EntityType, SourceType
-from ..models.correlation import CorrelationMapping
+from ..models import (
+    ChromaDBConfig,
+    EntityType,
+    SourceType,
+    CorrelationMapping,
+    StorageError,
+)
 from ..utils.logging import get_logger, PerformanceLogger
-from ..models.exceptions import StorageError
 
 
 logger = get_logger(__name__)

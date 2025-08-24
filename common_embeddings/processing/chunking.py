@@ -14,9 +14,7 @@ from llama_index.core.node_parser import (
 )
 from llama_index.core.schema import TextNode
 
-from ..models.config import ChunkingConfig
-from ..models.enums import ChunkingMethod
-from ..models.exceptions import ChunkingError
+from ..models import ChunkingConfig, ChunkingMethod, ChunkingError
 from ..utils.logging import get_logger
 from ..utils.hashing import hash_text
 

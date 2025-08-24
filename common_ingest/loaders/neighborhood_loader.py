@@ -78,39 +78,37 @@ class NeighborhoodLoader(BaseLoader[EnrichedNeighborhood]):
         
         return all_neighborhoods
     
-    @log_operation("load_neighborhoods_by_city")
+    @log_operation("load_neighborhoods_by_filter")
     def load_by_filter(self, city: Optional[str] = None, **filters) -> List[EnrichedNeighborhood]:
         """
-        Load neighborhoods filtered by city.
+        Load neighborhoods with filtering support.
         
         Args:
-            city: City name to filter by ("San Francisco" or "Park City")
+            city: Optional city name filter (case-insensitive)
             **filters: Additional filters (for future extension)
             
         Returns:
-            List of EnrichedNeighborhood models matching the filter
+            List of EnrichedNeighborhood models matching the filters
         """
-        if city is None:
-            # No filter, load all
-            return self.load_all()
-        
-        neighborhoods = []
-        
-        # Normalize city name for matching
-        city_lower = city.lower()
-        
-        # Load all neighborhoods first, then filter by city
+        # Load all neighborhoods first
         all_neighborhoods = self.load_all()
         
-        # Filter neighborhoods by city (case-insensitive)
-        filtered_neighborhoods = [
-            nbhd for nbhd in all_neighborhoods
-            if nbhd.city.lower() == city_lower
-        ]
+        # Apply city filter if provided
+        if city:
+            from ..enrichers.address_utils import expand_city_name
+            expanded_city = expand_city_name(city)
+            city_lower = expanded_city.lower()
+            
+            filtered_neighborhoods = [
+                neighborhood for neighborhood in all_neighborhoods
+                if neighborhood.city.lower() == city_lower
+            ]
+            
+            logger.info(f"Filtered {len(filtered_neighborhoods)} neighborhoods for city '{city}' (expanded to '{expanded_city}') from total {len(all_neighborhoods)}")
+            return filtered_neighborhoods
         
-        logger.info(f"Filtered {len(filtered_neighborhoods)} neighborhoods for city '{city}' from total {len(all_neighborhoods)}")
-        
-        return filtered_neighborhoods
+        # No filters, return all
+        return all_neighborhoods
     
     def _load_neighborhoods_from_file(
         self, 
@@ -231,15 +229,3 @@ class NeighborhoodLoader(BaseLoader[EnrichedNeighborhood]):
         )
         
         return enriched_neighborhood
-    
-    def load_neighborhoods_by_city(self, city: str) -> List[EnrichedNeighborhood]:
-        """
-        Convenience method to load neighborhoods by city.
-        
-        Args:
-            city: City name
-            
-        Returns:
-            List of EnrichedNeighborhood models
-        """
-        return self.load_by_filter(city=city)

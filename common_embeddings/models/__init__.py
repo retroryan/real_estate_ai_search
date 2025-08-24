@@ -1,23 +1,43 @@
 """
 Pydantic models for the common embeddings module.
 
-This module defines all data models, configurations, and metadata structures
-following the enhanced metadata management system for correlation.
+This module imports shared models from property_finder_models and defines
+embeddings-specific models for processing and pipeline operations.
 """
 
-from .enums import (
+# Import shared models from property_finder_models
+from property_finder_models import (
+    # Core
+    BaseMetadata,
+    
+    # Enums
     EntityType,
-    SourceType, 
+    SourceType,
     EmbeddingProvider,
+    
+    # Configuration
+    EmbeddingConfig,
+    ChromaDBConfig,
+    Config,
+    
+    # Exceptions
+    ConfigurationError,
+    DataLoadingError,
+    StorageError,
+    ValidationError,
+    MetadataError,
+)
+
+# Import local embeddings-specific models
+from .enums import (
     ChunkingMethod,
     PreprocessingStep,
     AugmentationType,
 )
 
 from .metadata import (
-    BaseMetadata,
     PropertyMetadata,
-    NeighborhoodMetadata, 
+    NeighborhoodMetadata,
     WikipediaMetadata,
     ChunkMetadata,
     EmbeddingContextMetadata,
@@ -25,10 +45,9 @@ from .metadata import (
 )
 
 from .config import (
-    EmbeddingConfig,
-    ChromaDBConfig,
     ChunkingConfig,
-    Config,
+    ProcessingConfig,
+    ExtendedConfig,
 )
 
 from .interfaces import (
@@ -38,15 +57,13 @@ from .interfaces import (
 )
 
 from .exceptions import (
-    ConfigurationError,
-    DataLoadingError,
     EmbeddingGenerationError,
-    StorageError,
     ProviderError,
+    ChunkingError,
 )
 
 from .processing import (
-    ChunkMetadata as ProcessingChunkMetadata,  # Avoid conflict with metadata.ChunkMetadata
+    ProcessingChunkMetadata,
     ProcessingResult,
     BatchProcessingResult,
     DocumentBatch,
@@ -68,16 +85,26 @@ from .correlation import (
 )
 
 __all__ = [
-    # Enums
+    # From property_finder_models
+    "BaseMetadata",
     "EntityType",
     "SourceType",
     "EmbeddingProvider",
+    "EmbeddingConfig",
+    "ChromaDBConfig",
+    "Config",
+    "ConfigurationError",
+    "DataLoadingError",
+    "StorageError",
+    "ValidationError",
+    "MetadataError",
+    
+    # Local enums
     "ChunkingMethod",
     "PreprocessingStep",
     "AugmentationType",
     
-    # Metadata
-    "BaseMetadata",
+    # Local metadata
     "PropertyMetadata",
     "NeighborhoodMetadata",
     "WikipediaMetadata",
@@ -85,37 +112,34 @@ __all__ = [
     "EmbeddingContextMetadata",
     "ProcessingMetadata",
     
-    # Configuration
-    "EmbeddingConfig",
-    "ChromaDBConfig",
+    # Local configuration
     "ChunkingConfig",
-    "Config",
+    "ProcessingConfig",
+    "ExtendedConfig",
     
-    # Interfaces
+    # Local interfaces
     "IDataLoader",
     "IEmbeddingProvider",
     "IVectorStore",
     
-    # Exceptions
-    "ConfigurationError",
-    "DataLoadingError",
+    # Local exceptions
     "EmbeddingGenerationError",
-    "StorageError",
     "ProviderError",
+    "ChunkingError",
     
-    # Processing
+    # Local processing
     "ProcessingChunkMetadata",
-    "ProcessingResult", 
+    "ProcessingResult",
     "BatchProcessingResult",
     "DocumentBatch",
     
-    # Statistics
+    # Local statistics
     "CollectionInfo",
     "PipelineStatistics",
     "BatchProcessorStatistics",
     "SystemStatistics",
     
-    # Correlation and Advanced Operations
+    # Correlation models
     "ChunkGroup",
     "ValidationResult",
     "CollectionHealth",

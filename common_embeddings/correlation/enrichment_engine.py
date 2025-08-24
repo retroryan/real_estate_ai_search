@@ -10,7 +10,7 @@ from datetime import datetime
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ..models.enums import EntityType, SourceType
+from ..models import EntityType, SourceType
 from ..storage.query_manager import QueryManager
 from ..utils.logging import get_logger, PerformanceLogger
 from .models import EnrichedEntity, CorrelationResult

@@ -160,19 +160,19 @@ def test_wikipedia_loader():
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
         
-        # Create articles table
+        # Create articles table (matching production schema)
         cursor.execute("""
             CREATE TABLE articles (
                 id INTEGER PRIMARY KEY,
-                page_id INTEGER UNIQUE,
+                pageid INTEGER UNIQUE,
                 title TEXT NOT NULL,
                 url TEXT,
-                full_text TEXT,
+                extract TEXT,
                 depth INTEGER,
                 relevance_score REAL,
                 latitude REAL,
                 longitude REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
@@ -198,7 +198,7 @@ def test_wikipedia_loader():
         
         # Insert test article
         cursor.execute("""
-            INSERT INTO articles (id, page_id, title, url, full_text, relevance_score, latitude, longitude)
+            INSERT INTO articles (id, pageid, title, url, extract, relevance_score, latitude, longitude)
             VALUES (1, 12345, 'Park City, Utah', '/wiki/Park_City,_Utah', 
                     'Park City is a city in Summit County, Utah...', 0.95, 40.6461, -111.4980)
         """)
@@ -337,19 +337,19 @@ def test_location_filtering_wikipedia():
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
         
-        # Create tables
+        # Create tables (matching production schema)
         cursor.execute("""
             CREATE TABLE articles (
                 id INTEGER PRIMARY KEY,
-                page_id INTEGER UNIQUE,
+                pageid INTEGER UNIQUE,
                 title TEXT NOT NULL,
                 url TEXT,
-                full_text TEXT,
+                extract TEXT,
                 depth INTEGER,
                 relevance_score REAL,
                 latitude REAL,
                 longitude REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
@@ -374,12 +374,12 @@ def test_location_filtering_wikipedia():
         
         # Insert multiple articles
         cursor.execute("""
-            INSERT INTO articles (id, page_id, title, url, full_text, relevance_score)
+            INSERT INTO articles (id, pageid, title, url, extract, relevance_score)
             VALUES (1, 11111, 'San Francisco', '/wiki/San_Francisco', 'SF article', 0.9)
         """)
         
         cursor.execute("""
-            INSERT INTO articles (id, page_id, title, url, full_text, relevance_score)
+            INSERT INTO articles (id, pageid, title, url, extract, relevance_score)
             VALUES (2, 22222, 'Park City, Utah', '/wiki/Park_City,_Utah', 'PC article', 0.95)
         """)
         

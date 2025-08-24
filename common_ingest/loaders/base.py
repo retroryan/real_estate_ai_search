@@ -59,7 +59,14 @@ class BaseLoader(ABC, Generic[T]):
         
         Args:
             source_path: Path to the data source (file or directory)
+            
+        Raises:
+            TypeError: If source_path is not a Path object
+            FileNotFoundError: If source_path does not exist
         """
+        if not isinstance(source_path, Path):
+            raise TypeError(f"source_path must be a Path object, got {type(source_path)}")
+        
         self.source_path = source_path
         self.logger = setup_logger(self.__class__.__name__)
         self._validate_source()

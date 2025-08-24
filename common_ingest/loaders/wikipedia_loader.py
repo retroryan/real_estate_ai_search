@@ -105,8 +105,7 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
                 a.depth,
                 a.relevance_score,
                 a.latitude,
-                a.longitude,
-                a.crawled_at as created_at
+                a.longitude
             FROM articles a
             ORDER BY a.pageid
         """
@@ -131,35 +130,29 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
         
         return articles
     
-    @log_operation("load_articles_by_location")
+    @log_operation("load_articles_by_filter")
     def load_by_filter(
         self, 
         city: Optional[str] = None,
         state: Optional[str] = None,
-        with_summaries: bool = False,
+        relevance_min: Optional[float] = None,
         **filters
     ) -> List[EnrichedWikipediaArticle]:
         """
-        Load Wikipedia articles filtered by location.
+        Load Wikipedia articles with filtering support.
         
         Args:
-            city: City name to filter by
-            state: State name to filter by
-            with_summaries: If True, only return articles that have summaries
-            **filters: Additional filters
+            city: Optional city name filter
+            state: Optional state name filter
+            relevance_min: Optional minimum relevance score filter
+            **filters: Additional filters (for future extension)
             
         Returns:
             List of EnrichedWikipediaArticle models matching the filters
         """
-        if city is None and state is None and not with_summaries:
-            # No filters, load all
-            return self.load_all()
-        
-        articles = []
-        
         # Build query with filters
         query_parts = ["""
-            SELECT DISTINCT
+            SELECT 
                 a.id as article_id,
                 a.pageid as page_id,
                 a.title,
@@ -168,42 +161,30 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
                 a.depth,
                 a.relevance_score,
                 a.latitude,
-                a.longitude,
-                a.crawled_at as created_at
+                a.longitude
             FROM articles a
         """]
         
         conditions = []
         params = []
         
-        if with_summaries:
-            query_parts.append("INNER JOIN page_summaries ps ON a.id = ps.article_id")
+        if city:
+            conditions.append("LOWER(a.title) LIKE LOWER(?)")
+            params.append(f'%{city}%')
             
-            if city:
-                conditions.append("(LOWER(ps.best_city) = LOWER(?) OR LOWER(a.title) LIKE LOWER(?))")
-                params.extend([city, f'%{city}%'])
+        if state:
+            state_full = self._expand_state_code(state)
+            conditions.append("LOWER(a.title) LIKE LOWER(?)")
+            params.append(f'%{state_full}%')
             
-            if state:
-                # Expand state codes if needed
-                state_full = self._expand_state_code(state)
-                conditions.append("(LOWER(ps.best_state) = LOWER(?) OR LOWER(a.title) LIKE LOWER(?))")
-                params.extend([state_full, f'%{state_full}%'])
-        else:
-            # Search in title only if no summaries table join
-            if city:
-                conditions.append("LOWER(a.title) LIKE LOWER(?)")
-                params.append(f'%{city}%')
-            
-            if state:
-                state_full = self._expand_state_code(state)
-                conditions.append("LOWER(a.title) LIKE LOWER(?)")
-                params.append(f'%{state_full}%')
+        if relevance_min is not None:
+            conditions.append("a.relevance_score >= ?")
+            params.append(relevance_min)
         
         if conditions:
             query_parts.append("WHERE " + " AND ".join(conditions))
         
         query_parts.append("ORDER BY a.relevance_score DESC, a.pageid")
-        
         query = " ".join(query_parts)
         
         try:
@@ -247,7 +228,6 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
                 ps.best_county,
                 ps.best_state,
                 ps.overall_confidence,
-                ps.processed_at as created_at,
                 ps.title as article_title,
                 a.url as article_url
             FROM page_summaries ps
@@ -307,7 +287,6 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
                 ps.best_county,
                 ps.best_state,
                 ps.overall_confidence,
-                ps.processed_at as created_at,
                 ps.title as article_title,
                 a.url as article_url
             FROM page_summaries ps
@@ -323,8 +302,9 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
         
         if state:
             state_full = self._expand_state_code(state)
-            conditions.append("(LOWER(ps.best_state) = LOWER(?) OR LOWER(a.title) LIKE LOWER(?))")
-            params.extend([state_full, f'%{state_full}%'])
+            # Search for both the original state and the expanded version
+            conditions.append("(LOWER(ps.best_state) IN (LOWER(?), LOWER(?)) OR LOWER(a.title) LIKE LOWER(?))")
+            params.extend([state, state_full, f'%{state_full}%'])
         
         if conditions:
             query_parts.append("WHERE " + " AND ".join(conditions))
@@ -339,16 +319,12 @@ class WikipediaLoader(BaseLoader[Union[EnrichedWikipediaArticle, WikipediaSummar
                 cursor.execute(query, params)
                 
                 for row in cursor:
-                    summary_dict = dict(row)
-                    
-                    # Parse key_topics if it's a JSON string
-                    if summary_dict.get('key_topics'):
-                        try:
-                            summary_dict['key_topics'] = json.loads(summary_dict['key_topics'])
-                        except (json.JSONDecodeError, TypeError):
-                            pass
-                    
-                    summaries.append(summary_dict)
+                    try:
+                        summary = self._convert_to_enriched_summary(dict(row))
+                        summaries.append(summary)
+                    except Exception as e:
+                        page_id = dict(row).get('page_id', 'unknown')
+                        logger.warning(f"Failed to convert summary with page_id {page_id}: {e}")
             
             logger.info(f"Loaded {len(summaries)} Wikipedia summaries with location filters")
             

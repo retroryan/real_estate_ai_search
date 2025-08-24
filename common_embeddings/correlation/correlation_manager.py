@@ -14,11 +14,10 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import uuid
 
-from ..models.enums import EntityType, SourceType
+from ..models import EntityType, SourceType, StorageError
 from ..storage.query_manager import QueryManager
 from ..utils.correlation import CorrelationValidator, ChunkReconstructor
 from ..utils.logging import get_logger, PerformanceLogger
-from ..models.exceptions import StorageError
 from .models import (
     CorrelationResult, 
     EnrichedEntity, 

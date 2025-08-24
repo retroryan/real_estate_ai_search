@@ -110,9 +110,9 @@ def _calculate_completeness(data_list: List[Any], fields: List[str]) -> Dict[str
 @router.get("/summary", response_model=StatsSummaryResponse)
 async def get_data_summary(
     request: Request,
-    property_loader: PropertyLoaderDep = None,
-    neighborhood_loader: NeighborhoodLoaderDep = None,
-    wikipedia_loader: WikipediaLoaderDep = None
+    property_loader: PropertyLoaderDep,
+    neighborhood_loader: NeighborhoodLoaderDep,
+    wikipedia_loader: WikipediaLoaderDep
 ):
     """
     Get overall data summary statistics.
@@ -189,7 +189,7 @@ async def get_data_summary(
 @router.get("/properties", response_model=PropertyStatsResponse)
 async def get_property_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep = None
+    property_loader: PropertyLoaderDep
 ):
     """
     Get detailed property statistics and distributions.
@@ -289,7 +289,7 @@ async def get_property_statistics(
 @router.get("/neighborhoods", response_model=NeighborhoodStatsResponse)
 async def get_neighborhood_statistics(
     request: Request,
-    neighborhood_loader: NeighborhoodLoaderDep = None
+    neighborhood_loader: NeighborhoodLoaderDep
 ):
     """
     Get detailed neighborhood statistics and distributions.
@@ -372,7 +372,7 @@ async def get_neighborhood_statistics(
 @router.get("/wikipedia", response_model=WikipediaStatsResponse)
 async def get_wikipedia_statistics(
     request: Request,
-    wikipedia_loader: WikipediaLoaderDep = None
+    wikipedia_loader: WikipediaLoaderDep
 ):
     """
     Get detailed Wikipedia data statistics and quality metrics.
@@ -482,9 +482,9 @@ async def get_wikipedia_statistics(
 @router.get("/coverage", response_model=CoverageStatsResponse)
 async def get_coverage_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep = None,
-    neighborhood_loader: NeighborhoodLoaderDep = None,
-    wikipedia_loader: WikipediaLoaderDep = None
+    property_loader: PropertyLoaderDep,
+    neighborhood_loader: NeighborhoodLoaderDep,
+    wikipedia_loader: WikipediaLoaderDep
 ):
     """
     Get geographic coverage and data distribution metrics.
@@ -588,9 +588,9 @@ async def get_coverage_statistics(
 @router.get("/enrichment", response_model=EnrichmentStatsResponse)
 async def get_enrichment_statistics(
     request: Request,
-    property_loader: PropertyLoaderDep = None,
-    neighborhood_loader: NeighborhoodLoaderDep = None,
-    wikipedia_loader: WikipediaLoaderDep = None
+    property_loader: PropertyLoaderDep,
+    neighborhood_loader: NeighborhoodLoaderDep,
+    wikipedia_loader: WikipediaLoaderDep
 ):
     """
     Get data enrichment success rates and quality metrics.

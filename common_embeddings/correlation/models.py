@@ -9,8 +9,7 @@ from typing import Dict, Any, List, Optional, Set, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 
-from ..models.enums import EntityType, SourceType
-from ..models.metadata import BaseMetadata
+from ..models import EntityType, SourceType, BaseMetadata
 
 
 class SourceDataCache(BaseModel):

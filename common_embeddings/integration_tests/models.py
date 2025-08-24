@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field, validator
 
-from ..models.enums import EntityType, SourceType
+from ..models import EntityType, SourceType
 
 
 class TestStatus(str, Enum):

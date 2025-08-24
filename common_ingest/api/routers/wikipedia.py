@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Query, Path as PathParam, Request
 from fastapi.responses import JSONResponse
 
 from ...utils.logger import setup_logger
-from ..dependencies import WikipediaLoaderDep
+from ..dependencies import WikipediaServiceDep
 from ..schemas.requests import WikipediaArticleFilter, WikipediaSummaryFilter, PaginationParams
 from ..schemas.responses import (
     WikipediaArticleListResponse,
@@ -68,14 +68,14 @@ def _build_pagination_links(
 @router.get("/articles", response_model=WikipediaArticleListResponse)
 async def get_articles(
     request: Request,
+    wikipedia_service: WikipediaServiceDep,
     city: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by city name"),
     state: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by state name"),
     relevance_min: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum relevance score"),
     sort_by: str = Query("relevance", pattern="^(relevance|title|page_id)$", description="Sort by relevance, title, or page_id"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
     page: int = Query(1, ge=1, le=1000, description="Page number"),
-    page_size: int = Query(50, ge=1, le=500, description="Number of items per page"),
-    wikipedia_loader: WikipediaLoaderDep = None
+    page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
     """
     Load Wikipedia articles with optional location-based filtering and sorting.
@@ -101,46 +101,16 @@ async def get_articles(
     )
     
     try:
-        # Check if Wikipedia database exists
-        if not hasattr(wikipedia_loader, 'database_path') or not Path(wikipedia_loader.database_path).exists():
-            raise HTTPException(
-                status_code=503,
-                detail="Wikipedia database not available"
-            )
-        
-        # Load articles with filtering
-        if city or state:
-            articles = wikipedia_loader.load_by_filter(city=city, state=state)
-        else:
-            articles = wikipedia_loader.load_all()
-        
-        # Apply relevance filtering
-        if relevance_min is not None:
-            articles = [article for article in articles if article.relevance_score >= relevance_min]
-        
-        # Apply sorting
-        if sort_by == "relevance":
-            articles.sort(key=lambda x: x.relevance_score, reverse=True)
-        elif sort_by == "title":
-            articles.sort(key=lambda x: x.title)
-        elif sort_by == "page_id":
-            articles.sort(key=lambda x: x.page_id)
-        
-        # Calculate pagination
-        total_count = len(articles)
-        total_pages = math.ceil(total_count / page_size) if total_count > 0 else 1
-        
-        # Validate page number
-        if page > total_pages and total_count > 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Page {page} not found. Total pages available: {total_pages}"
-            )
-        
-        # Apply pagination
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated_articles = articles[start_idx:end_idx]
+        # Use service to get paginated articles
+        paginated_articles, total_count, total_pages = wikipedia_service.get_articles(
+            city=city,
+            state=state,
+            relevance_min=relevance_min,
+            sort_by=sort_by,
+            page=page,
+            page_size=page_size,
+            correlation_id=correlation_id
+        )
         
         # TODO: Handle include_embeddings when embedding integration is implemented
         if include_embeddings:
@@ -198,9 +168,9 @@ async def get_articles(
 @router.get("/articles/{page_id}", response_model=WikipediaArticleResponse)
 async def get_article(
     request: Request,
+    wikipedia_service: WikipediaServiceDep,
     page_id: int = PathParam(..., description="Wikipedia page ID"),
-    include_embeddings: bool = Query(False, description="Include embedding data in response"),
-    wikipedia_loader: WikipediaLoaderDep = None
+    include_embeddings: bool = Query(False, description="Include embedding data in response")
 ):
     """
     Get a single Wikipedia article by its page ID.
@@ -219,18 +189,13 @@ async def get_article(
     )
     
     try:
-        # Check if Wikipedia database exists
-        if not hasattr(wikipedia_loader, 'database_path') or not Path(wikipedia_loader.database_path).exists():
-            raise HTTPException(
-                status_code=503,
-                detail="Wikipedia database not available"
-            )
+        # Use service to get article by ID
+        article = wikipedia_service.get_article_by_id(
+            page_id=page_id,
+            correlation_id=correlation_id
+        )
         
-        # Load all articles and find the requested one
-        articles = wikipedia_loader.load_all()
-        article = next((article for article in articles if article.page_id == page_id), None)
-        
-        if article is None:
+        if not article:
             raise HTTPException(
                 status_code=404,
                 detail=f"Wikipedia article with page_id '{page_id}' not found"
@@ -274,14 +239,14 @@ async def get_article(
 @router.get("/summaries", response_model=WikipediaSummaryListResponse)
 async def get_summaries(
     request: Request,
+    wikipedia_service: WikipediaServiceDep,
     city: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by city name"),
     state: Optional[str] = Query(None, min_length=1, max_length=100, description="Filter by state name"),
     confidence_min: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence score"),
     include_key_topics: bool = Query(True, description="Include key topics in response"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
     page: int = Query(1, ge=1, le=1000, description="Page number"),
-    page_size: int = Query(50, ge=1, le=500, description="Number of items per page"),
-    wikipedia_loader: WikipediaLoaderDep = None
+    page_size: int = Query(50, ge=1, le=500, description="Number of items per page")
 ):
     """
     Load Wikipedia summaries with optional location and confidence filtering.
@@ -307,38 +272,15 @@ async def get_summaries(
     )
     
     try:
-        # Check if Wikipedia database exists
-        if not hasattr(wikipedia_loader, 'database_path') or not Path(wikipedia_loader.database_path).exists():
-            raise HTTPException(
-                status_code=503,
-                detail="Wikipedia database not available"
-            )
-        
-        # Load summaries with filtering
-        if city or state:
-            summaries = wikipedia_loader.load_summaries_by_location(city=city, state=state)
-        else:
-            summaries = wikipedia_loader.load_summaries()
-        
-        # Apply confidence filtering
-        if confidence_min is not None:
-            summaries = [summary for summary in summaries if summary.overall_confidence >= confidence_min]
-        
-        # Calculate pagination
-        total_count = len(summaries)
-        total_pages = math.ceil(total_count / page_size) if total_count > 0 else 1
-        
-        # Validate page number
-        if page > total_pages and total_count > 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Page {page} not found. Total pages available: {total_pages}"
-            )
-        
-        # Apply pagination
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated_summaries = summaries[start_idx:end_idx]
+        # Use service to get paginated summaries
+        paginated_summaries, total_count, total_pages = wikipedia_service.get_summaries(
+            city=city,
+            state=state,
+            confidence_min=confidence_min,
+            page=page,
+            page_size=page_size,
+            correlation_id=correlation_id
+        )
         
         # TODO: Handle include_embeddings when embedding integration is implemented
         if include_embeddings:
@@ -396,10 +338,10 @@ async def get_summaries(
 @router.get("/summaries/{page_id}", response_model=WikipediaSummaryResponse)
 async def get_summary(
     request: Request,
+    wikipedia_service: WikipediaServiceDep,
     page_id: int = PathParam(..., description="Wikipedia page ID"),
     include_key_topics: bool = Query(True, description="Include key topics in response"),
-    include_embeddings: bool = Query(False, description="Include embedding data in response"),
-    wikipedia_loader: WikipediaLoaderDep = None
+    include_embeddings: bool = Query(False, description="Include embedding data in response")
 ):
     """
     Get a single Wikipedia summary by its page ID.
@@ -419,18 +361,13 @@ async def get_summary(
     )
     
     try:
-        # Check if Wikipedia database exists
-        if not hasattr(wikipedia_loader, 'database_path') or not Path(wikipedia_loader.database_path).exists():
-            raise HTTPException(
-                status_code=503,
-                detail="Wikipedia database not available"
-            )
+        # Use service to get summary by ID
+        summary = wikipedia_service.get_summary_by_id(
+            page_id=page_id,
+            correlation_id=correlation_id
+        )
         
-        # Load all summaries and find the requested one
-        summaries = wikipedia_loader.load_summaries()
-        summary = next((summary for summary in summaries if summary.page_id == page_id), None)
-        
-        if summary is None:
+        if not summary:
             raise HTTPException(
                 status_code=404,
                 detail=f"Wikipedia summary with page_id '{page_id}' not found"

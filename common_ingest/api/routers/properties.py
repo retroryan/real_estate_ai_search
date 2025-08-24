@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Path, Request
 from fastapi.responses import JSONResponse
 
 from ...utils.logger import setup_logger
-from ..dependencies import PropertyLoaderDep, NeighborhoodLoaderDep
+from ..dependencies import PropertyServiceDep, NeighborhoodServiceDep
 from ..schemas.requests import PropertyFilter, NeighborhoodFilter, PaginationParams
 from ..schemas.responses import (
     PropertyListResponse,
@@ -67,7 +67,7 @@ def _build_pagination_links(
 @router.get("/properties", response_model=PropertyListResponse)
 async def get_properties(
     request: Request,
-    property_loader: PropertyLoaderDep,
+    property_service: PropertyServiceDep,
     city: Optional[str] = Query(None, description="Filter by city name (case-insensitive)"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
     page: int = Query(1, ge=1, le=1000, description="Page number (1-based)"),
@@ -94,27 +94,13 @@ async def get_properties(
     )
     
     try:
-        # Load properties with filtering
-        if city:
-            properties = property_loader.load_properties_by_city(city)
-        else:
-            properties = property_loader.load_all()
-        
-        # Calculate pagination
-        total_count = len(properties)
-        total_pages = math.ceil(total_count / page_size) if total_count > 0 else 1
-        
-        # Validate page number
-        if page > total_pages and total_count > 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Page {page} not found. Total pages available: {total_pages}"
-            )
-        
-        # Apply pagination
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated_properties = properties[start_idx:end_idx]
+        # Use service to get paginated properties
+        paginated_properties, total_count, total_pages = property_service.get_properties(
+            city=city,
+            page=page,
+            page_size=page_size,
+            correlation_id=correlation_id
+        )
         
         # TODO: Handle include_embeddings when embedding integration is implemented
         if include_embeddings:
@@ -165,8 +151,8 @@ async def get_properties(
 @router.get("/properties/{property_id}", response_model=PropertyResponse)
 async def get_property(
     request: Request,
-    property_id: str = Path(..., description="Property listing ID"),
-    property_loader: PropertyLoaderDep = None
+    property_service: PropertyServiceDep,
+    property_id: str = Path(..., description="Property listing ID")
 ):
     """
     Get a single property by its listing ID.
@@ -183,15 +169,11 @@ async def get_property(
     )
     
     try:
-        # Load all properties and find the requested one
-        properties = property_loader.load_all()
-        
-        # Find property by listing_id
-        property_data = None
-        for prop in properties:
-            if prop.listing_id == property_id:
-                property_data = prop
-                break
+        # Use service to get property by ID
+        property_data = property_service.get_property_by_id(
+            property_id=property_id,
+            correlation_id=correlation_id
+        )
         
         if not property_data:
             raise HTTPException(
@@ -229,7 +211,7 @@ async def get_property(
 @router.get("/neighborhoods", response_model=NeighborhoodListResponse)
 async def get_neighborhoods(
     request: Request,
-    neighborhood_loader: NeighborhoodLoaderDep,
+    neighborhood_service: NeighborhoodServiceDep,
     city: Optional[str] = Query(None, description="Filter by city name (case-insensitive)"),
     include_embeddings: bool = Query(False, description="Include embedding data in response"),
     page: int = Query(1, ge=1, le=1000, description="Page number (1-based)"),
@@ -255,27 +237,13 @@ async def get_neighborhoods(
     )
     
     try:
-        # Load neighborhoods with filtering
-        if city:
-            neighborhoods = neighborhood_loader.load_neighborhoods_by_city(city)
-        else:
-            neighborhoods = neighborhood_loader.load_all()
-        
-        # Calculate pagination
-        total_count = len(neighborhoods)
-        total_pages = math.ceil(total_count / page_size) if total_count > 0 else 1
-        
-        # Validate page number
-        if page > total_pages and total_count > 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Page {page} not found. Total pages available: {total_pages}"
-            )
-        
-        # Apply pagination
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated_neighborhoods = neighborhoods[start_idx:end_idx]
+        # Use service to get paginated neighborhoods
+        paginated_neighborhoods, total_count, total_pages = neighborhood_service.get_neighborhoods(
+            city=city,
+            page=page,
+            page_size=page_size,
+            correlation_id=correlation_id
+        )
         
         # TODO: Handle include_embeddings when embedding integration is implemented
         if include_embeddings:
@@ -326,8 +294,8 @@ async def get_neighborhoods(
 @router.get("/neighborhoods/{neighborhood_id}", response_model=NeighborhoodResponse)
 async def get_neighborhood(
     request: Request,
-    neighborhood_id: str = Path(..., description="Neighborhood ID"),
-    neighborhood_loader: NeighborhoodLoaderDep = None
+    neighborhood_service: NeighborhoodServiceDep,
+    neighborhood_id: str = Path(..., description="Neighborhood ID")
 ):
     """
     Get a single neighborhood by its ID.
@@ -344,15 +312,11 @@ async def get_neighborhood(
     )
     
     try:
-        # Load all neighborhoods and find the requested one
-        neighborhoods = neighborhood_loader.load_all()
-        
-        # Find neighborhood by neighborhood_id
-        neighborhood_data = None
-        for neighborhood in neighborhoods:
-            if neighborhood.neighborhood_id == neighborhood_id:
-                neighborhood_data = neighborhood
-                break
+        # Use service to get neighborhood by ID
+        neighborhood_data = neighborhood_service.get_neighborhood_by_id(
+            neighborhood_id=neighborhood_id,
+            correlation_id=correlation_id
+        )
         
         if not neighborhood_data:
             raise HTTPException(

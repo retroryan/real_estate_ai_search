@@ -81,39 +81,37 @@ class PropertyLoader(BaseLoader[EnrichedProperty]):
         
         return all_properties
     
-    @log_operation("load_properties_by_city")
+    @log_operation("load_properties_by_filter")
     def load_by_filter(self, city: Optional[str] = None, **filters) -> List[EnrichedProperty]:
         """
-        Load properties filtered by city.
+        Load properties with filtering support.
         
         Args:
-            city: City name to filter by ("San Francisco" or "Park City")
+            city: Optional city name filter (case-insensitive)
             **filters: Additional filters (for future extension)
             
         Returns:
-            List of EnrichedProperty models matching the filter
+            List of EnrichedProperty models matching the filters
         """
-        if city is None:
-            # No filter, load all
-            return self.load_all()
-        
-        properties = []
-        
-        # Normalize city name for matching
-        city_lower = city.lower()
-        
-        # Load all properties first, then filter by city
+        # Load all properties first
         all_properties = self.load_all()
         
-        # Filter properties by city (case-insensitive)
-        filtered_properties = [
-            prop for prop in all_properties
-            if prop.address.city.lower() == city_lower
-        ]
+        # Apply city filter if provided
+        if city:
+            from ..enrichers.address_utils import expand_city_name
+            expanded_city = expand_city_name(city)
+            city_lower = expanded_city.lower()
+            
+            filtered_properties = [
+                prop for prop in all_properties
+                if prop.address.city.lower() == city_lower
+            ]
+            
+            logger.info(f"Filtered {len(filtered_properties)} properties for city '{city}' (expanded to '{expanded_city}') from total {len(all_properties)}")
+            return filtered_properties
         
-        logger.info(f"Filtered {len(filtered_properties)} properties for city '{city}' from total {len(all_properties)}")
-        
-        return filtered_properties
+        # No filters, return all
+        return all_properties
     
     def _load_properties_from_file(
         self, 
@@ -147,8 +145,15 @@ class PropertyLoader(BaseLoader[EnrichedProperty]):
                         default_state
                     )
                     enriched_properties.append(enriched_prop)
+                except (ValueError, KeyError, TypeError) as e:
+                    listing_id = raw_prop.get('listing_id', 'unknown')
+                    logger.warning(f"Data conversion failed for property {listing_id}: {e}")
+                    # Continue processing other properties
                 except Exception as e:
-                    logger.warning(f"Failed to convert property {raw_prop.get('listing_id', 'unknown')}: {e}")
+                    listing_id = raw_prop.get('listing_id', 'unknown')
+                    logger.error(f"Unexpected error converting property {listing_id}: {e}")
+                    # Re-raise unexpected errors to fail fast
+                    raise
             
             return enriched_properties
             
@@ -275,15 +280,3 @@ class PropertyLoader(BaseLoader[EnrichedProperty]):
         )
         
         return enriched_property
-    
-    def load_properties_by_city(self, city: str) -> List[EnrichedProperty]:
-        """
-        Convenience method to load properties by city.
-        
-        Args:
-            city: City name
-            
-        Returns:
-            List of EnrichedProperty models
-        """
-        return self.load_by_filter(city=city)

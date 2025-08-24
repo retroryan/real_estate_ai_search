@@ -1,152 +1,20 @@
 """
-Configuration models for the common embeddings module.
+Configuration models specific to embeddings processing.
 
-These models define the configuration structure for embedding generation,
-storage, and processing, following patterns from wiki_embed and real_estate_embed.
+Core configuration models (Config, EmbeddingConfig, ChromaDBConfig) are 
+imported from property_finder_models.
 """
 
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from pydantic import BaseModel, Field
 from pathlib import Path
-import os
+import yaml
+import logging
+from typing import Optional
 
-from .enums import EmbeddingProvider, ChunkingMethod
+from property_finder_models import Config as BaseConfig
+from .enums import ChunkingMethod
 
-
-class EmbeddingConfig(BaseModel):
-    """
-    Embedding service configuration supporting multiple providers.
-    
-    Adapted from wiki_embed and real_estate_embed patterns.
-    """
-    
-    provider: EmbeddingProvider = Field(
-        default=EmbeddingProvider.OLLAMA,
-        description="Embedding provider to use"
-    )
-    
-    # Ollama settings
-    ollama_base_url: str = Field(
-        default="http://localhost:11434",
-        description="Ollama API base URL"
-    )
-    ollama_model: str = Field(
-        default="nomic-embed-text",
-        description="Ollama model name"
-    )
-    
-    # OpenAI settings
-    openai_api_key: Optional[str] = Field(None, description="OpenAI API key")
-    openai_model: str = Field(
-        default="text-embedding-3-small",
-        description="OpenAI model name"
-    )
-    
-    # Gemini settings
-    gemini_api_key: Optional[str] = Field(None, description="Google API key")
-    gemini_model: str = Field(
-        default="models/embedding-001",
-        description="Gemini model name"
-    )
-    
-    # Voyage settings
-    voyage_api_key: Optional[str] = Field(None, description="Voyage API key")
-    voyage_model: str = Field(
-        default="voyage-3",
-        description="Voyage model name"
-    )
-    
-    # Cohere settings
-    cohere_api_key: Optional[str] = Field(None, description="Cohere API key")
-    cohere_model: str = Field(
-        default="embed-english-v3.0",
-        description="Cohere model name"
-    )
-    
-    @validator('openai_api_key', pre=True, always=True)
-    def check_openai_key(cls, v, values):
-        """Load OpenAI API key from environment if needed."""
-        if values.get('provider') == EmbeddingProvider.OPENAI and not v:
-            v = os.getenv('OPENAI_API_KEY')
-            if not v:
-                raise ValueError("OPENAI_API_KEY must be set for OpenAI provider")
-        return v
-    
-    @validator('gemini_api_key', pre=True, always=True)
-    def check_gemini_key(cls, v, values):
-        """Load Gemini API key from environment if needed."""
-        if values.get('provider') == EmbeddingProvider.GEMINI and not v:
-            v = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
-            if not v:
-                raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY must be set for Gemini provider")
-        return v
-    
-    @validator('voyage_api_key', pre=True, always=True)
-    def check_voyage_key(cls, v, values):
-        """Load Voyage API key from environment if needed."""
-        if values.get('provider') == EmbeddingProvider.VOYAGE and not v:
-            v = os.getenv('VOYAGE_API_KEY')
-            if not v:
-                raise ValueError("VOYAGE_API_KEY must be set for Voyage provider")
-        return v
-    
-    @validator('cohere_api_key', pre=True, always=True)
-    def check_cohere_key(cls, v, values):
-        """Load Cohere API key from environment if needed."""
-        if values.get('provider') == EmbeddingProvider.COHERE and not v:
-            v = os.getenv('COHERE_API_KEY')
-            if not v:
-                raise ValueError("COHERE_API_KEY must be set for Cohere provider")
-        return v
-
-
-class ChromaDBConfig(BaseModel):
-    """
-    ChromaDB configuration with flexible collection naming patterns.
-    
-    Supports both local file storage and remote ChromaDB server.
-    """
-    
-    # Server configuration (for future remote support)
-    host: str = Field(
-        default="localhost",
-        description="ChromaDB host (for remote server)"
-    )
-    port: int = Field(
-        default=8000,
-        description="ChromaDB port (for remote server)"
-    )
-    persist_directory: str = Field(
-        default="./data/common_embeddings",
-        description="Local storage directory"
-    )
-    
-    # Collection naming patterns by entity type
-    property_collection_pattern: str = Field(
-        default="property_{model}_v{version}",
-        description="Naming pattern for property collections"
-    )
-    wikipedia_collection_pattern: str = Field(
-        default="wikipedia_{model}_v{version}",
-        description="Naming pattern for Wikipedia collections"
-    )
-    neighborhood_collection_pattern: str = Field(
-        default="neighborhood_{model}_v{version}",
-        description="Naming pattern for neighborhood collections"
-    )
-    
-    @validator('persist_directory')
-    def ensure_directory_exists(cls, v):
-        """Create directory if it doesn't exist."""
-        path = Path(v)
-        path.mkdir(parents=True, exist_ok=True)
-        return str(path)
-    
-    # Legacy support - map old 'path' to 'persist_directory'
-    @property
-    def path(self) -> str:
-        """Backward compatibility for path attribute."""
-        return self.persist_directory
+logger = logging.getLogger(__name__)
 
 
 class ChunkingConfig(BaseModel):
@@ -233,79 +101,66 @@ class ProcessingConfig(BaseModel):
         default=20,
         ge=1,
         le=100,
-        description="Batch size for processing documents during chunking (for progress visibility)"
+        description="Batch size for processing documents during chunking"
     )
 
 
-class Config(BaseModel):
+class ExtendedConfig(BaseConfig):
     """
-    Main configuration for the common embeddings module.
+    Extended configuration for embeddings with chunking and processing.
     
-    This is the root configuration that contains all sub-configurations.
+    Extends the base Config from property_finder_models with embedding-specific
+    configuration options.
     """
+    chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
+    processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
+
+
+def load_config_from_yaml(config_path: str = "config.yaml"):
+    """
+    Load configuration from YAML file and create ExtendedConfig instance.
     
-    embedding: EmbeddingConfig = Field(
-        default_factory=EmbeddingConfig,
-        description="Embedding provider configuration"
-    )
-    chromadb: ChromaDBConfig = Field(
-        default_factory=ChromaDBConfig,
-        description="ChromaDB storage configuration"
-    )
-    chunking: ChunkingConfig = Field(
-        default_factory=ChunkingConfig,
-        description="Text chunking configuration"
-    )
-    processing: ProcessingConfig = Field(
-        default_factory=ProcessingConfig,
-        description="Processing and performance configuration"
-    )
+    Returns an ExtendedConfig that includes chunking and processing configs.
+    """
+    config_file = Path(config_path)
+    if not config_file.exists():
+        logger.info(f"Config file not found at {config_path}, using defaults")
+        return ExtendedConfig()
     
-    # Metadata version for tracking
-    metadata_version: str = Field(
-        default="1.0",
-        description="Version of metadata schema"
-    )
-    
-    @classmethod
-    def from_yaml(cls, config_path: str = "common_embeddings/config.yaml") -> "Config":
-        """
-        Load configuration from YAML file.
-        
-        Args:
-            config_path: Path to YAML configuration file
-            
-        Returns:
-            Validated Config instance
-        """
-        import yaml
-        
-        config_file = Path(config_path)
-        if not config_file.exists():
-            # Return default config if file doesn't exist
-            return cls()
-        
+    try:
         with open(config_file, 'r') as f:
             data = yaml.safe_load(f)
         
-        return cls(**data) if data else cls()
-    
-    def to_yaml(self, config_path: str = "common_embeddings/config.yaml") -> None:
-        """
-        Save configuration to YAML file.
+        if not data:
+            logger.info("Empty config file, using defaults")
+            return ExtendedConfig()
         
-        Args:
-            config_path: Path to save YAML configuration
-        """
-        import yaml
+        # Build config dict with all sections
+        config_data = {}
         
-        config_file = Path(config_path)
-        config_file.parent.mkdir(parents=True, exist_ok=True)
+        # Add embedding config if present
+        if 'embedding' in data:
+            config_data['embedding'] = data['embedding']
         
-        with open(config_file, 'w') as f:
-            yaml.safe_dump(
-                self.dict(exclude_unset=True),
-                f,
-                default_flow_style=False,
-                sort_keys=False
-            )
+        # Add chromadb config if present
+        if 'chromadb' in data:
+            config_data['chromadb'] = data['chromadb']
+        
+        # Add chunking config if present
+        if 'chunking' in data:
+            config_data['chunking'] = ChunkingConfig(**data['chunking'])
+        
+        # Add processing config if present
+        if 'processing' in data:
+            config_data['processing'] = ProcessingConfig(**data['processing'])
+        
+        # Create ExtendedConfig with all data
+        config = ExtendedConfig(**config_data)
+        
+        logger.info(f"Loaded config from {config_path}")
+        return config
+        
+    except Exception as e:
+        logger.error(f"Failed to load config from {config_path}: {e}")
+        logger.info("Using default configuration")
+        return ExtendedConfig()

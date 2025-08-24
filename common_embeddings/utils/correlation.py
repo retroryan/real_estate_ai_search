@@ -9,14 +9,15 @@ from typing import List, Dict, Any, Set, Optional, Tuple
 from pathlib import Path
 from collections import defaultdict
 
-from ..models.correlation import (
+from ..models import (
     ValidationResult,
     ChunkGroup,
     CorrelationMapping,
-    CollectionHealth
+    CollectionHealth,
+    EntityType,
+    SourceType,
+    BaseMetadata,
 )
-from ..models.enums import EntityType, SourceType
-from ..models.metadata import BaseMetadata
 from ..utils.logging import get_logger
 
 

@@ -19,19 +19,13 @@ from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from common_embeddings import (
-    Config,
-    EmbeddingPipeline,
-    EntityType,
-    SourceType,
-)
-from common_embeddings.utils import setup_logging, get_logger
-from common_embeddings.utils.progress import create_progress_indicator
-from common_embeddings.loaders import RealEstateLoader, WikipediaLoader
-from common_embeddings.services import CollectionManager
+from .models import Config, EntityType, SourceType
+from .models.config import load_config_from_yaml
+from .pipeline import EmbeddingPipeline
+from .utils import setup_logging, get_logger
+from .utils.progress import create_progress_indicator
+from .loaders import RealEstateLoader, WikipediaLoader
+from .services import CollectionManager
 
 
 # Data loading functions have been moved to loaders/ module
@@ -43,7 +37,7 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
     logger.info("Processing real estate data")
     
     # Load data using new loader
-    data_dir = Path("real_estate_data")
+    data_dir = Path("../real_estate_data")
     if not data_dir.exists():
         logger.error(f"Data directory not found: {data_dir}")
         return
@@ -55,11 +49,18 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
     
     property_docs, neighborhood_docs = loader.load_all()
     
-    # Create pipeline
+    # Create pipeline and collection manager
     pipeline = EmbeddingPipeline(config)
+    collection_manager = CollectionManager(config)
     
     # Process properties with progress indicator
     if property_docs:
+        # Get collection name for properties
+        prop_collection = collection_manager.get_collection_name(
+            EntityType.PROPERTY,
+            pipeline.model_identifier
+        )
+        
         logger.info(f"Processing {len(property_docs)} properties...")
         progress = create_progress_indicator(
             total=len(property_docs),
@@ -72,7 +73,9 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
             property_docs,
             EntityType.PROPERTY,
             SourceType.PROPERTY_JSON,
-            "real_estate_data/properties.json"
+            "real_estate_data/properties.json",
+            collection_name=prop_collection,
+            force_recreate=force_recreate
         ):
             property_count += 1
             progress.update(current=property_count)
@@ -82,6 +85,12 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
     
     # Process neighborhoods with progress indicator
     if neighborhood_docs:
+        # Get collection name for neighborhoods
+        neighborhood_collection = collection_manager.get_collection_name(
+            EntityType.NEIGHBORHOOD,
+            pipeline.model_identifier
+        )
+        
         logger.info(f"Processing {len(neighborhood_docs)} neighborhoods...")
         progress = create_progress_indicator(
             total=len(neighborhood_docs),
@@ -94,7 +103,9 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
             neighborhood_docs,
             EntityType.NEIGHBORHOOD,
             SourceType.NEIGHBORHOOD_JSON,
-            "real_estate_data/neighborhoods.json"
+            "real_estate_data/neighborhoods.json",
+            collection_name=neighborhood_collection,
+            force_recreate=force_recreate
         ):
             neighborhood_count += 1
             progress.update(current=neighborhood_count)
@@ -102,28 +113,7 @@ def process_real_estate_data(config: Config, force_recreate: bool = False):
         progress.complete()
         logger.info(f"Completed processing {neighborhood_count} neighborhood embeddings")
     
-    # Store in separate collections by entity type
-    logger.info("Setting up ChromaDB collections...")
-    collection_manager = CollectionManager(config)
-    
-    # Create separate collections for properties and neighborhoods
-    if property_docs:
-        prop_collection = collection_manager.create_collection_for_entity(
-            entity_type=EntityType.PROPERTY,
-            model_identifier=pipeline.model_identifier,
-            force_recreate=force_recreate,
-            additional_metadata={"source": "real_estate_data", "data_type": "properties"}
-        )
-        logger.info(f"Created property collection: {prop_collection}")
-    
-    if neighborhood_docs:
-        neighborhood_collection = collection_manager.create_collection_for_entity(
-            entity_type=EntityType.NEIGHBORHOOD,
-            model_identifier=pipeline.model_identifier,
-            force_recreate=force_recreate,
-            additional_metadata={"source": "real_estate_data", "data_type": "neighborhoods"}
-        )
-        logger.info(f"Created neighborhood collection: {neighborhood_collection}")
+    # Collections were created during processing, no need to create again
     
     # Get statistics (now returns PipelineStatistics Pydantic model)
     stats = pipeline.get_statistics()
@@ -141,7 +131,7 @@ def process_wikipedia_data(config: Config, force_recreate: bool = False, max_art
     logger.info("Processing Wikipedia data")
     
     # Load data using new loader
-    data_dir = Path("data")
+    data_dir = Path("../data")
     loader = WikipediaLoader(data_dir, max_articles)
     
     if not loader.validate_source():
@@ -154,8 +144,15 @@ def process_wikipedia_data(config: Config, force_recreate: bool = False, max_art
         logger.warning("No Wikipedia documents found to process")
         return
     
-    # Create pipeline
+    # Create pipeline and collection manager
     pipeline = EmbeddingPipeline(config)
+    collection_manager = CollectionManager(config)
+    
+    # Get collection name for Wikipedia
+    wiki_collection = collection_manager.get_collection_name(
+        EntityType.WIKIPEDIA_ARTICLE,
+        pipeline.model_identifier
+    )
     
     # Process Wikipedia articles with progress indicator
     logger.info(f"Processing {len(wikipedia_docs)} Wikipedia articles...")
@@ -170,26 +167,15 @@ def process_wikipedia_data(config: Config, force_recreate: bool = False, max_art
         wikipedia_docs,
         EntityType.WIKIPEDIA_ARTICLE,
         SourceType.WIKIPEDIA_HTML,
-        "data/wikipedia/pages"
+        "../data/wikipedia/pages",
+        collection_name=wiki_collection,
+        force_recreate=force_recreate
     ):
         wiki_count += 1
         progress.update(current=wiki_count)
     
     progress.complete()
     logger.info(f"Completed processing {wiki_count} Wikipedia embeddings")
-    
-    # Store in separate collection for Wikipedia articles
-    logger.info("Setting up ChromaDB collection for Wikipedia...")
-    collection_manager = CollectionManager(config)
-    
-    # Create collection for Wikipedia articles
-    wiki_collection = collection_manager.create_collection_for_entity(
-        entity_type=EntityType.WIKIPEDIA_ARTICLE,
-        model_identifier=pipeline.model_identifier,
-        force_recreate=force_recreate,
-        additional_metadata={"source": "data/wikipedia", "data_type": "articles", "max_articles": max_articles}
-    )
-    logger.info(f"Created Wikipedia collection: {wiki_collection}")
     
     # Get statistics (now returns PipelineStatistics Pydantic model)
     stats = pipeline.get_statistics()
@@ -283,7 +269,7 @@ def process_json_articles(config: Config, json_path: Path, force_recreate: bool 
     )
     
     # Get the ChromaDB store to add embeddings
-    from common_embeddings.storage import ChromaDBStore
+    from .storage import ChromaDBStore
     chroma_store = ChromaDBStore(config.chromadb)
     chroma_store.create_collection(
         name=eval_collection,
@@ -424,7 +410,7 @@ def main():
     logger.info("=" * 60)
     
     # Load configuration
-    config = Config.from_yaml(args.config)
+    config = load_config_from_yaml(args.config)
     logger.info(f"Loaded configuration: provider={config.embedding.provider}")
     
     # Process based on data type and collect statistics
@@ -537,21 +523,5 @@ def main():
     return final_summary
 
 
-if __name__ == "__main__":
-    try:
-        summary = main()
-        # Optionally write summary to file for external tools
-        if summary:
-            import json
-            summary_path = Path("data/common_embeddings/last_run_summary.json")
-            summary_path.parent.mkdir(exist_ok=True, parents=True)
-            with open(summary_path, "w") as f:
-                # Convert any non-serializable objects
-                json_summary = json.loads(json.dumps(summary, default=str))
-                json.dump(json_summary, f, indent=2)
-        sys.exit(0)
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+# This module should be executed as: python -m common_embeddings
+# Direct execution with 'python main.py' is not supported

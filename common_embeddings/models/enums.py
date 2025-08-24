@@ -1,42 +1,15 @@
 """
-Enumerations for type safety in the common embeddings module.
+Enumerations specific to embeddings processing.
 
-These enums ensure consistent values across the system and provide
-clear options for configuration and metadata.
+Core enums (EntityType, SourceType, EmbeddingProvider) are imported 
+from property_finder_models.
 """
 
 from enum import Enum
 
 
-class EntityType(str, Enum):
-    """Types of entities that can have embeddings."""
-    PROPERTY = "property"
-    NEIGHBORHOOD = "neighborhood"
-    WIKIPEDIA_ARTICLE = "wikipedia_article"
-    WIKIPEDIA_SUMMARY = "wikipedia_summary"
-
-
-class SourceType(str, Enum):
-    """Types of data sources for correlation."""
-    PROPERTY_JSON = "property_json"
-    NEIGHBORHOOD_JSON = "neighborhood_json"
-    WIKIPEDIA_DB = "wikipedia_db"
-    WIKIPEDIA_HTML = "wikipedia_html"  # HTML files from Wikipedia pages
-    NEO4J_GRAPH = "neo4j_graph"
-    EVALUATION_JSON = "evaluation_json"  # JSON file for evaluation testing
-
-
-class EmbeddingProvider(str, Enum):
-    """Supported embedding providers."""
-    OLLAMA = "ollama"
-    OPENAI = "openai"
-    GEMINI = "gemini"
-    VOYAGE = "voyage"
-    COHERE = "cohere"
-
-
 class ChunkingMethod(str, Enum):
-    """Text chunking strategies."""
+    """Text chunking strategies for embeddings."""
     SIMPLE = "simple"
     SEMANTIC = "semantic"
     SENTENCE = "sentence"

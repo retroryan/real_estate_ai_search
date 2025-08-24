@@ -4,7 +4,7 @@ Address enrichment utilities.
 Provides functions for normalizing and enriching address data.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from ..utils.logger import setup_logger
 from ..utils.config import get_settings
@@ -62,7 +62,7 @@ def expand_state_code(state: str) -> str:
     return state.strip()
 
 
-def normalize_address(address_dict: Dict[str, any]) -> Dict[str, any]:
+def normalize_address(address_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize address data by expanding abbreviations.
     

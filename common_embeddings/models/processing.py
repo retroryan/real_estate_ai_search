@@ -8,11 +8,11 @@ from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from .enums import EntityType, SourceType, ChunkingMethod
-from .metadata import BaseMetadata
+from property_finder_models import EntityType, SourceType, BaseMetadata
+from .enums import ChunkingMethod
 
 
-class ChunkMetadata(BaseModel):
+class ProcessingChunkMetadata(BaseModel):
     """
     Metadata for a processed chunk with combined document and chunk information.
     

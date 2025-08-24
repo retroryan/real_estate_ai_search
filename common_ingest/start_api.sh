@@ -1,10 +1,35 @@
 #!/bin/bash
 
-# Common Ingest API Start Script
-# Starts the FastAPI server using uvicorn with configuration from config.yaml
+# Common Ingest API Start Script - Simple version for demos
+# Automatically stops any existing server and starts a new one
+# Can be run from any directory - will automatically change to common_ingest/
+
+# Get the directory where this script is located (common_ingest directory)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Change to the common_ingest directory for all operations
+cd "$SCRIPT_DIR" || {
+    echo "Error: Cannot change to directory $SCRIPT_DIR"
+    exit 1
+}
+
+# First, stop any existing server
+echo "Stopping any existing server..."
+PID_FILE="/tmp/common_ingest_api.pid"
+if [ -f "$PID_FILE" ]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [ ! -z "$PID" ]; then
+        kill "$PID" 2>/dev/null
+    fi
+    rm -f "$PID_FILE"
+fi
+pkill -f "uvicorn common_ingest.api.app:app" 2>/dev/null
+sleep 2
 
 echo "Starting Common Ingest API Server..."
 echo "=================================="
+echo "Working directory: $(pwd)"
+echo ""
 
 # Check if uvicorn is installed
 if ! command -v uvicorn &> /dev/null; then
@@ -14,43 +39,36 @@ if ! command -v uvicorn &> /dev/null; then
 fi
 
 # Set Python path to ensure module can be imported
-export PYTHONPATH="${PYTHONPATH}:$(dirname $(dirname $(realpath $0)))"
+export PYTHONPATH="${PYTHONPATH}:$(dirname $(pwd))"
 
 # Read configuration from config.yaml using Python
 CONFIG_OUTPUT=$(python -c "
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath('$0'))))
-from common_ingest.utils.config import get_settings
-settings = get_settings()
-print(f'{settings.api.host}|{settings.api.port}|{settings.logging.level}')
-" 2>&1)
+from pathlib import Path
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path.cwd().parent))
+try:
+    from common_ingest.utils.config import get_settings
+    settings = get_settings()
+    print(f'{settings.api.host}|{settings.api.port}|{settings.logging.level}')
+except Exception as e:
+    # Fallback to defaults
+    print('0.0.0.0|8000|info')
+" 2>/dev/null)
 
 # Check if configuration was read successfully
-if echo "$CONFIG_OUTPUT" | grep -q "WARNING\|ERROR\|Exception"; then
+if [ -z "$CONFIG_OUTPUT" ] || echo "$CONFIG_OUTPUT" | grep -q "WARNING\|ERROR\|Exception"; then
     echo "Note: Using default configuration"
     HOST="0.0.0.0"
     PORT="8000"
     LOG_LEVEL="info"
 else
     IFS='|' read -r HOST PORT LOG_LEVEL <<< "$CONFIG_OUTPUT"
-    # Ensure values are not empty
-    HOST="${HOST:-0.0.0.0}"
-    PORT="${PORT:-8000}"
-    LOG_LEVEL="${LOG_LEVEL:-info}"
-fi
-
-# Check if port is already in use
-if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
-    echo "Warning: Port $PORT is already in use"
-    echo "Another service might be running on this port"
-    echo "You can stop it with: ./stop_api.sh"
-    echo ""
-    read -p "Do you want to continue anyway? (y/n): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    # Ensure values are not empty and trim whitespace
+    HOST=$(echo "${HOST:-0.0.0.0}" | xargs)
+    PORT=$(echo "${PORT:-8000}" | xargs)
+    LOG_LEVEL=$(echo "${LOG_LEVEL:-info}" | xargs)
 fi
 
 # Save PID for stop script
@@ -67,6 +85,8 @@ echo ""
 # Start uvicorn in background and save PID
 echo "Starting server..."
 nohup uvicorn common_ingest.api.app:app \
+    --host "$HOST" \
+    --port "$PORT" \
     --reload \
     --log-level "$LOG_LEVEL" \
     > /tmp/common_ingest_api.log 2>&1 &

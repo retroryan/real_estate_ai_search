@@ -9,9 +9,7 @@ from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings
 
-from ..models.interfaces import IVectorStore
-from ..models.config import ChromaDBConfig
-from ..models.exceptions import StorageError
+from ..models import ChromaDBConfig, StorageError, IVectorStore
 from ..utils.logging import get_logger
 from ..utils.validation import validate_collection_name, validate_metadata_fields
 
@@ -45,10 +43,10 @@ class ChromaDBStore(IVectorStore):
         """Initialize ChromaDB client."""
         try:
             self.client = chromadb.PersistentClient(
-                path=self.config.path,
+                path=self.config.persist_directory,
                 settings=Settings(anonymized_telemetry=False)
             )
-            logger.info(f"Initialized ChromaDB client at {self.config.path}")
+            logger.info(f"Initialized ChromaDB client at {self.config.persist_directory}")
         except Exception as e:
             logger.error(f"Failed to initialize ChromaDB client: {e}")
             raise StorageError(f"ChromaDB initialization failed: {e}")

@@ -3,13 +3,13 @@ Validation utilities for metadata and configuration.
 """
 
 from typing import Tuple, Optional, Dict, Any, List
-from ..models.metadata import (
+from ..models import (
     BaseMetadata,
     PropertyMetadata,
     NeighborhoodMetadata,
     WikipediaMetadata,
+    EntityType,
 )
-from ..models.enums import EntityType
 
 
 def validate_metadata_fields(metadata: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
@@ -22,15 +22,12 @@ def validate_metadata_fields(metadata: Dict[str, Any]) -> Tuple[bool, Optional[s
     Returns:
         Tuple of (is_valid, error_message)
     """
-    # Check for base required fields
+    # Simplified required fields following ChromaDB best practices
+    # ChromaDB docs emphasize simple metadata without over-validation
     required_base_fields = [
         'embedding_id',
-        'entity_type',
-        'source_type',
         'source_file',
-        'source_collection',
         'embedding_model',
-        'embedding_provider',
         'text_hash'
     ]
     

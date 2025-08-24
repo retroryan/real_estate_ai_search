@@ -27,36 +27,37 @@ pip install -e ".[dev,viz]"
 pip install -e ".[providers]"
 ```
 
-### Verify Installation
-
-```bash
-# From common_embeddings directory
-cd common_embeddings
-python -c "import common_embeddings; print('Installation successful!')"
-```
-
 ## Running the Pipeline
 
-**IMPORTANT**: All commands MUST be run from the `common_embeddings/` directory:
+Run the pipeline as a Python module from the parent directory:
 
 ```bash
-# Navigate to common_embeddings directory
-cd /path/to/project/common_embeddings
+# Navigate to parent directory (real_estate_ai_search)
+cd /path/to/real_estate_ai_search
 
-# Create embeddings (from common_embeddings/)
-python -m pipeline.main create --entity-type property
+# Process real estate data only
+python -m common_embeddings --data-type real_estate
 
-# Or with full module path (from common_embeddings/)
-python pipeline/main.py create --entity-type property
+# Process Wikipedia data only  
+python -m common_embeddings --data-type wikipedia
 
-# Run tests (from common_embeddings/)
-pytest
+# Process Wikipedia with limited documents (for testing)
+python -m common_embeddings --data-type wikipedia --max-articles 10
 
-# Type checking (from common_embeddings/)
-mypy .
+# Process all data types
+python -m common_embeddings --data-type all
+
+# Force recreate embeddings (delete existing)
+python -m common_embeddings --data-type all --force-recreate
+
+# Run tests
+pytest common_embeddings/
+
+# Type checking
+mypy common_embeddings/
 ```
 
-**Note**: The module is designed to work ONLY when run from the `common_embeddings/` directory. Running from parent or other directories will cause import errors.
+**Important**: Always use `python -m common_embeddings` to run the pipeline. Direct execution with `python common_embeddings/main.py` is not supported.
 
 ## Configuration
 
@@ -80,10 +81,23 @@ common_embeddings/
 ├── pyproject.toml       # Package configuration
 ├── config.yaml          # Module configuration
 ├── README.md           # This file
+├── models/             # Local models specific to embeddings
+│   ├── __init__.py     # Imports shared models and exports all
+│   ├── config.py       # Chunking and processing configurations
+│   ├── enums.py        # Embeddings-specific enums
+│   ├── exceptions.py   # Embeddings-specific exceptions
+│   ├── interfaces.py   # Abstract interfaces for providers
+│   ├── metadata.py     # Metadata models for embeddings
+│   ├── processing.py   # Processing result models
+│   ├── statistics.py   # Statistics models
+│   └── correlation.py  # Correlation models
 ├── pipeline/           # Processing pipeline
-├── providers/          # Embedding providers
+├── providers/          # Embedding providers  
 ├── storage/            # Storage layer
-├── models_local.py     # Local models specific to embeddings
+├── processing/         # Text processing components
+├── services/           # High-level services
+├── loaders/           # Data loaders
+├── utils/             # Utility functions
 └── tests/              # Test suite
 ```
 
@@ -150,10 +164,49 @@ ollama pull mxbai-embed-large
 
 ## Module Design
 
-This module uses shared models from `property_finder_models` for:
-- Entity definitions (EnrichedProperty, EnrichedNeighborhood, etc.)
-- Configuration models (Config, EmbeddingConfig, ChromaDBConfig)
-- Common enums (EntityType, SourceType, EmbeddingProvider)
-- Base exceptions
+This module follows a clean architecture with clear separation of concerns:
 
-Local models specific to embedding pipeline operations are kept in `models_local.py`.
+### Shared Models (from property_finder_models)
+- **Core entity definitions**: BaseMetadata as the foundation for all metadata
+- **Common enums**: EntityType, SourceType, EmbeddingProvider
+- **Shared configuration**: Config, EmbeddingConfig, ChromaDBConfig
+- **Base exceptions**: ConfigurationError, DataLoadingError, StorageError, ValidationError, MetadataError
+
+### Local Models (in models/ directory)
+- **Enums** (`models/enums.py`): ChunkingMethod, PreprocessingStep, AugmentationType
+- **Config** (`models/config.py`): ChunkingConfig, ProcessingConfig, load_config_from_yaml utility
+- **Metadata** (`models/metadata.py`): PropertyMetadata, NeighborhoodMetadata, WikipediaMetadata, ProcessingMetadata
+- **Processing** (`models/processing.py`): ProcessingResult, BatchProcessingResult, DocumentBatch, ChunkMetadata
+- **Statistics** (`models/statistics.py`): PipelineStatistics, BatchProcessorStatistics, CollectionInfo, SystemStatistics
+- **Interfaces** (`models/interfaces.py`): IDataLoader, IEmbeddingProvider, IVectorStore
+- **Exceptions** (`models/exceptions.py`): EmbeddingGenerationError, ChunkingError, ProviderError
+- **Correlation** (`models/correlation.py`): ChunkGroup, ValidationResult, CollectionHealth, CorrelationMapping
+
+### Architecture Principles
+1. **Clean imports**: All models imported through `models/__init__.py` for consistency
+2. **Proper logging**: Python logging module throughout, no print statements
+3. **Type safety**: Full Pydantic v2 model validation with field validators
+4. **Modular design**: Clear separation between shared and local models
+5. **Single responsibility**: Each model file has a specific purpose
+6. **No duplication**: Shared models used from property_finder_models, no redundancy
+7. **Extensibility**: Easy to add new embedding providers or processing methods
+
+### Processing Pipeline
+The embedding generation follows this flow:
+1. **Data Loading**: Use loaders to read source data (properties, Wikipedia, neighborhoods)
+2. **Text Processing**: Apply chunking strategies (simple, semantic, sentence)
+3. **Embedding Generation**: Use configured provider (Ollama, OpenAI, etc.)
+4. **Storage**: Persist in ChromaDB with comprehensive metadata
+5. **Correlation**: Link embeddings back to source data (handled separately)
+
+### Configuration Management
+- Base configuration from property_finder_models
+- Local extensions for chunking and processing
+- YAML configuration support with `load_config_from_yaml` utility
+- Environment variable support for API keys
+
+### Error Handling
+- Hierarchical exception structure
+- Specific exceptions for each failure type
+- Comprehensive error logging with stack traces
+- Graceful degradation where possible
