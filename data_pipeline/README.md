@@ -1,4 +1,4 @@
-# Data Pipeline
+# Spark Data Pipeline
 
 ## Project Overview
 
@@ -6,13 +6,12 @@ A high-performance data processing pipeline built on Apache Spark for transformi
 
 ## Generative AI Technologies
 
-- **Apache Spark**: Distributed computing framework for processing large-scale datasets with ML capabilities
+- **LlamaIndex**: Document processing and semantic chunking for optimal retrieval
+- **Neo4j**: Graph database with HNSW-based vector indexes for KNN search, cosine/euclidean similarity, and Graph Data Science algorithms
+- **Elasticsearch**: Dense vector search with HNSW algorithm, int8/int4 quantization, and hybrid BM25+KNN scoring
 - **Voyage AI**: State-of-the-art embedding models optimized for semantic search
 - **Ollama**: Local LLM inference for privacy-preserving embedding generation
 - **OpenAI Embeddings**: Industry-standard text embeddings with proven performance
-- **Neo4j**: Graph database with vector similarity search and GDS algorithms
-- **Elasticsearch**: Full-text and vector search with hybrid scoring capabilities
-- **LlamaIndex**: Document processing and semantic chunking for optimal retrieval
 
 ## Quick Start
 
@@ -214,7 +213,7 @@ python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
 python -m data_pipeline --output /path/to/results
 ```
 
-## Data Pipeline Flow
+## Spark Data Pipeline Flow
 
 ### Processing Pipeline
 1. **Data Ingestion**: Load JSON/CSV data from multiple sources using Spark DataFrames
