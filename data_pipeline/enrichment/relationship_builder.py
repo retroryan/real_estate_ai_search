@@ -118,41 +118,39 @@ class RelationshipBuilder:
         """
         relationships = {}
         
-        # Property to Neighborhood relationships
-        if self.config.enable_property_neighborhood and properties_df and neighborhoods_df:
+        # Property to Neighborhood relationships - always enabled if both dataframes exist
+        if properties_df and neighborhoods_df:
             relationships["property_located_in"] = self.build_located_in_relationships(
                 properties_df, neighborhoods_df
             )
             logger.info(f"Built {relationships['property_located_in'].count()} LOCATED_IN relationships")
         
-        # Geographic hierarchy relationships
-        if self.config.enable_geographic_hierarchy and neighborhoods_df:
+        # Geographic hierarchy relationships - always enabled if neighborhoods dataframe exists
+        if neighborhoods_df:
             relationships["geographic_hierarchy"] = self.build_geographic_hierarchy(
                 neighborhoods_df
             )
             logger.info(f"Built {relationships['geographic_hierarchy'].count()} PART_OF relationships")
         
-        # Wikipedia DESCRIBES relationships
-        if self.config.enable_wikipedia_describes and wikipedia_df:
-            if neighborhoods_df:
-                relationships["wikipedia_describes"] = self.build_describes_relationships(
-                    wikipedia_df, neighborhoods_df
-                )
-                logger.info(f"Built {relationships['wikipedia_describes'].count()} DESCRIBES relationships")
+        # Wikipedia DESCRIBES relationships - always enabled if both dataframes exist
+        if wikipedia_df and neighborhoods_df:
+            relationships["wikipedia_describes"] = self.build_describes_relationships(
+                wikipedia_df, neighborhoods_df
+            )
+            logger.info(f"Built {relationships['wikipedia_describes'].count()} DESCRIBES relationships")
         
-        # Similarity relationships
-        if self.config.enable_similarity_relationships:
-            if properties_df:
-                relationships["property_similarity"] = self.calculate_property_similarity(
-                    properties_df
-                )
-                logger.info(f"Built {relationships['property_similarity'].count()} property SIMILAR_TO relationships")
+        # Similarity relationships - always enabled
+        if properties_df:
+            relationships["property_similarity"] = self.calculate_property_similarity(
+                properties_df
+            )
+            logger.info(f"Built {relationships['property_similarity'].count()} property SIMILAR_TO relationships")
             
-            if neighborhoods_df:
-                relationships["neighborhood_similarity"] = self.calculate_neighborhood_similarity(
-                    neighborhoods_df
-                )
-                logger.info(f"Built {relationships['neighborhood_similarity'].count()} neighborhood SIMILAR_TO relationships")
+        if neighborhoods_df:
+            relationships["neighborhood_similarity"] = self.calculate_neighborhood_similarity(
+                neighborhoods_df
+            )
+            logger.info(f"Built {relationships['neighborhood_similarity'].count()} neighborhood SIMILAR_TO relationships")
         
         return relationships
     
@@ -199,11 +197,6 @@ class RelationshipBuilder:
             col("p.from_id"),
             col("n.neighborhood_id").alias("to_id"),
             lit(RelationshipType.LOCATED_IN.value).alias("relationship_type"),
-            # Calculate confidence based on city/state match
-            when(
-                (col("p.city") == col("n.n_city")) & (col("p.state") == col("n.n_state")),
-                lit(1.0)
-            ).otherwise(lit(0.8)).alias("confidence"),
             lit(None).cast("float").alias("distance_meters")
         )
         
@@ -297,8 +290,7 @@ class RelationshipBuilder:
         ).select(
             col("page_id").cast("string").alias("from_id"),
             col("best_city"),
-            col("best_state"),
-            coalesce(col("confidence_score"), col("overall_confidence"), lit(0.5)).alias("confidence")
+            col("best_state")
         )
         
         # Match to neighborhoods by city/state
@@ -315,7 +307,6 @@ class RelationshipBuilder:
             col("from_id"),
             col("neighborhood_id").alias("to_id"),
             lit(RelationshipType.DESCRIBES.value).alias("relationship_type"),
-            col("confidence"),
             lit("location").alias("match_type")
         )
         
@@ -436,7 +427,7 @@ class RelationshipBuilder:
         
         # Filter by threshold
         return similarity_df.filter(
-            col("similarity_score") >= self.config.similarity_threshold
+            col("similarity_score") >= 0.8
         )
     
     def calculate_neighborhood_similarity(self, neighborhoods_df: DataFrame) -> DataFrame:
@@ -516,7 +507,7 @@ class RelationshipBuilder:
         
         # Filter by threshold
         return similarity_df.filter(
-            col("similarity_score") >= self.config.similarity_threshold
+            col("similarity_score") >= 0.8
         )
     
     def get_relationship_statistics(self, relationships: Dict[str, DataFrame]) -> Dict:

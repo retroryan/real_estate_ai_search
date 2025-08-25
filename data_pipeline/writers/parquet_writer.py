@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
-from data_pipeline.config.models import EntityOutputConfig, ParquetWriterConfig
+from data_pipeline.config.models import PipelineConfig
 from data_pipeline.schemas.entity_schemas import (
     NeighborhoodSchema,
     PropertySchema,
@@ -33,7 +33,7 @@ class ParquetWriter(DataWriter):
     specific handling.
     """
     
-    def __init__(self, config: ParquetWriterConfig, spark: SparkSession):
+    def __init__(self, config: PipelineConfig, spark: SparkSession):
         """
         Initialize the Parquet writer.
         

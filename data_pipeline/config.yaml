@@ -1,6 +1,5 @@
 # Data Pipeline Configuration
-# This file configures the multi-entity Spark data pipeline with advanced options
-# for testing, data subsetting, and embedding model selection
+# This file configures the multi-entity Spark data pipeline
 
 # Pipeline metadata
 metadata:
@@ -20,23 +19,6 @@ spark:
     spark.serializer: "org.apache.spark.serializer.KryoSerializer"
     spark.sql.shuffle.partitions: 200
 
-# Data subsetting for testing - CRITICAL FOR DEVELOPMENT
-data_subset:
-  enabled: true  # Set to true to enable data subsetting
-  sample_size: 50  # Number of records to sample from each source
-  sample_method: "head"  # Options: head, random, stratified
-  random_seed: 42  # Seed for reproducible random sampling
-  
-  # Source-specific limits
-  properties_limit: 20  # Max properties per city
-  neighborhoods_limit: 10  # Max neighborhoods per city  
-  wikipedia_limit: 30  # Max Wikipedia articles
-  
-  # Filter by location (if specified)
-  location_filters:
-    cities: []  # e.g., ["San Francisco", "Park City"] - empty means all
-    states: []  # e.g., ["CA", "UT"] - empty means all
-
 # Data sources configuration
 data_sources:
   properties_sf:
@@ -45,9 +27,6 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 50  # Override global limit for this source
-      filter_expression: null  # SQL WHERE clause for filtering
   
   properties_pc:
     path: "real_estate_data/properties_pc.json"
@@ -55,8 +34,6 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 50
       filter_expression: null
   
   neighborhoods_sf:
@@ -65,8 +42,6 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 20
       filter_expression: null
   
   neighborhoods_pc:
@@ -75,8 +50,6 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 20
       filter_expression: null
   
   wikipedia:
@@ -85,8 +58,6 @@ data_sources:
     enabled: true
     options:
       use_pandas: true
-    subset_config:
-      max_records: 30
       filter_expression: "relevance_score > 0.5"  # Only high-relevance articles
   
   locations:
@@ -95,68 +66,8 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: null  # Load all location reference data
       filter_expression: null
 
-# Data enrichment configuration
-enrichment:
-  # Location data integration
-  location_enhancement:
-    enabled: true
-    hierarchy_resolution: true
-    name_standardization: true
-    neighborhood_linking: true
-    min_confidence_threshold: 0.6
-  
-  # Location normalization
-  city_abbreviations:
-    SF: "San Francisco"
-    PC: "Park City"
-    NYC: "New York City"
-    LA: "Los Angeles"
-    SLC: "Salt Lake City"
-    LV: "Las Vegas"
-  
-  state_abbreviations:
-    CA: "California"
-    UT: "Utah"
-    NY: "New York"
-    TX: "Texas"
-    NV: "Nevada"
-    CO: "Colorado"
-  
-  # Entity-specific enrichment options
-  property_enrichment:
-    enable_location_enhancement: true
-    enable_neighborhood_linking: true
-    min_quality_score: 0.4
-  
-  neighborhood_enrichment:
-    enable_location_hierarchy: true
-    establish_parent_relationships: true
-    min_quality_score: 0.3
-  
-  wikipedia_enrichment:
-    enable_location_matching: true
-    enable_geographic_context: true
-    enable_location_organization: true
-    min_quality_score: 0.5
-  
-  # Feature processing
-  normalize_features: true
-  deduplicate_features: true
-  sort_features: true
-  
-  # Derived fields
-  add_derived_fields: true
-  calculate_price_per_sqft: true
-  calculate_days_on_market: true
-  
-  # Quality control
-  quality_threshold: 0.7
-  min_required_fields: 5
-  validate_addresses: true
 
 # Embedding configuration - FLEXIBLE MODEL SELECTION
 embedding:

@@ -6,10 +6,8 @@ including price calculations, address normalization, and quality scoring.
 """
 
 import logging
-import uuid
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
 
 from .base_enricher import BaseEnricher, BaseEnrichmentConfig
@@ -18,81 +16,15 @@ from pyspark.sql.functions import (
     coalesce,
     col,
     concat,
-    current_timestamp,
     expr,
     lit,
     lower,
     trim,
-    udf,
     upper,
     when,
 )
-from pyspark.sql.types import StringType
 
 logger = logging.getLogger(__name__)
-
-
-class PropertyEnrichmentConfig(BaseEnrichmentConfig):
-    """Configuration for property enrichment operations."""
-    
-    enable_price_calculations: bool = Field(
-        default=True,
-        description="Calculate derived price fields like price_per_sqft"
-    )
-    
-    enable_address_normalization: bool = Field(
-        default=True,
-        description="Normalize address and location fields"
-    )
-    
-    enable_quality_scoring: bool = Field(
-        default=True,
-        description="Calculate property data quality scores"
-    )
-    
-    enable_correlation_ids: bool = Field(
-        default=True,
-        description="Generate correlation IDs for tracking"
-    )
-    
-    min_quality_score: float = Field(
-        default=0.4,
-        ge=0.0,
-        le=1.0,
-        description="Minimum acceptable quality score for properties"
-    )
-    
-    city_abbreviations: Dict[str, str] = Field(
-        default_factory=lambda: {
-            "SF": "San Francisco",
-            "PC": "Park City",
-            "NYC": "New York City",
-            "LA": "Los Angeles",
-        },
-        description="City abbreviation mappings"
-    )
-    
-    state_abbreviations: Dict[str, str] = Field(
-        default_factory=lambda: {
-            "CA": "California",
-            "UT": "Utah",
-            "NY": "New York",
-            "TX": "Texas",
-            "FL": "Florida",
-        },
-        description="State abbreviation mappings"
-    )
-    
-    enable_location_enhancement: bool = Field(
-        default=True,
-        description="Enable location hierarchy enhancement using reference data"
-    )
-    
-    enable_neighborhood_linking: bool = Field(
-        default=True,
-        description="Link properties to neighborhoods via neighborhood_id"
-    )
-
 
 class PropertyEnricher(BaseEnricher):
     """
@@ -100,7 +32,7 @@ class PropertyEnricher(BaseEnricher):
     and quality metrics specific to real estate listings.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[PropertyEnrichmentConfig] = None, 
+    def __init__(self, spark: SparkSession, config: Optional[BaseEnrichmentConfig] = None,
                  location_broadcast: Optional[Any] = None):
         """
         Initialize the property enricher.
@@ -113,22 +45,22 @@ class PropertyEnricher(BaseEnricher):
         super().__init__(spark, config, location_broadcast)
         
         # Create broadcast variables for location lookups
-        if self.config.enable_address_normalization:
+        if getattr(self.config, "enable_address_normalization", True):
             self._create_location_broadcasts()
         
         # Override location enricher initialization with property-specific config
-        if self.location_broadcast and self.config.enable_location_enhancement:
+        if self.location_broadcast and getattr(self.config, "enable_location_enhancement", False):
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
                 enable_hierarchy_resolution=True,
-                enable_neighborhood_linking=self.config.enable_neighborhood_linking
+                enable_neighborhood_linking=getattr(self.config, "enable_neighborhood_linking", False)
             )
-            self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
+            self.location_enricher = LocationEnricher(spark, location_broadcast)
     
-    def _get_default_config(self) -> PropertyEnrichmentConfig:
+    def _get_default_config(self) -> BaseEnrichmentConfig:
         """Get the default configuration for property enricher."""
-        return PropertyEnrichmentConfig()
-    
+        return BaseEnrichmentConfig()
+
     def set_location_data(self, location_broadcast: Any):
         """
         Set location broadcast data and create LocationEnricher after initialization.
@@ -138,30 +70,18 @@ class PropertyEnricher(BaseEnricher):
         """
         super().set_location_data(location_broadcast)
         
-        if self.location_broadcast and self.config.enable_location_enhancement:
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_neighborhood_linking=self.config.enable_neighborhood_linking
-            )
-            self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
+        if self.location_broadcast:
+            from .location_enricher import LocationEnricher
+            self.location_enricher = LocationEnricher(self.spark, location_broadcast)
             logger.info("LocationEnricher initialized with broadcast data")
     
-    
     def _create_location_broadcasts(self):
-        """Create broadcast variables for location normalization."""
-        # City mappings
-        city_data = [(k, v) for k, v in self.config.city_abbreviations.items()]
-        self.city_lookup_df = self.spark.createDataFrame(
-            city_data, ["city_abbr", "city_full"]
-        )
-        
-        # State mappings
-        state_data = [(k, v) for k, v in self.config.state_abbreviations.items()]
-        self.state_lookup_df = self.spark.createDataFrame(
-            state_data, ["state_abbr", "state_full"]
-        )
-    
+        """Create broadcast variables for location normalization using base class constants."""
+        city_data = [(k, v) for k, v in self.get_city_abbreviations().items()]
+        self.city_lookup_df = self.spark.createDataFrame(city_data, ["city_abbr", "city_full"])
+        state_data = [(k, v) for k, v in self.get_state_abbreviations().items()]
+        self.state_lookup_df = self.spark.createDataFrame(state_data, ["state_abbr", "state_full"])
+
     def enrich(self, df: DataFrame) -> DataFrame:
         """
         Apply property-specific enrichments.
@@ -177,23 +97,21 @@ class PropertyEnricher(BaseEnricher):
         initial_count = df.count()
         enriched_df = df
         
-        # Add correlation IDs if configured
-        if self.config.enable_correlation_ids:
-            enriched_df = self.add_correlation_ids(enriched_df, "property_correlation_id")
-            logger.info("Added correlation IDs to properties")
+        enriched_df = self.add_correlation_ids(enriched_df, "property_correlation_id")
+        logger.info("Added correlation IDs to properties")
         
         # Normalize addresses and locations
-        if self.config.enable_address_normalization:
+        if getattr(self.config, "enable_address_normalization", True):
             enriched_df = self._normalize_addresses(enriched_df)
             logger.info("Normalized property addresses")
         
         # Enhance with location hierarchy and neighborhood linking
-        if self.location_enricher and self.config.enable_location_enhancement:
+        if self.location_enricher and getattr(self.config, "enable_location_enhancement", False):
             enriched_df = self._enhance_with_location_data(enriched_df)
             logger.info("Enhanced properties with location hierarchy")
 
         # Extract property details if nested
-        if "property_details.square_feet" in enriched_df.columns:
+        if "property_details" in enriched_df.columns:
             enriched_df = enriched_df.withColumn("square_feet", col("property_details.square_feet"))
             enriched_df = enriched_df.withColumn("bedrooms", col("property_details.bedrooms"))
             enriched_df = enriched_df.withColumn("bathrooms", col("property_details.bathrooms"))
@@ -203,20 +121,20 @@ class PropertyEnricher(BaseEnricher):
             enriched_df = enriched_df.withColumn("garage_spaces", col("property_details.garage_spaces"))
             logger.info("Extracted property details from nested structure")
         else:
-            logger.warning(f"Property details not found in nested structure: {col('property_details.listing_id')}")
+            logger.warning(f"Property details not found in nested structure. Available columns: {enriched_df.columns}")
 
-        enriched_df.show(10, truncate=False)
+        # Show sample data with listing_id and extracted fields
+        logger.info("Sample of enriched property data:")
+        if "bedrooms" in enriched_df.columns:
+            enriched_df.select("listing_id", "bedrooms", "square_feet", "bathrooms").show(5, truncate=False)
+        else:
+            enriched_df.select("listing_id").show(5, truncate=False)
+            logger.warning("bedrooms field not found after extraction")
 
-        # Calculate price-related fields
-        if self.config.enable_price_calculations:
-            enriched_df = self._calculate_price_fields(enriched_df)
-            logger.info("Calculated price-related fields")
-        
-        # Calculate quality scores
-        if self.config.enable_quality_scoring:
-            enriched_df = self._calculate_quality_scores(enriched_df)
-            logger.info("Calculated property quality scores")
-        
+        enriched_df = self._calculate_price_fields(enriched_df)
+        logger.info("Calculated price-related fields")
+        enriched_df = self._calculate_quality_scores(enriched_df)
+        logger.info("Calculated property quality scores")
         # Extract coordinates if present
         if "coordinates.latitude" in enriched_df.columns:
             enriched_df = enriched_df.withColumn("latitude", col("coordinates.latitude"))
@@ -378,10 +296,10 @@ class PropertyEnricher(BaseEnricher):
         df_with_validation = df_with_quality.withColumn(
             "property_validation_status",
             when(
-                col("property_quality_score") >= self.config.min_quality_score,
+                col("property_quality_score") >= getattr(self.config, "min_quality_score", 0.5),
                 lit("validated")
             ).when(
-                col("property_quality_score") < self.config.min_quality_score,
+                col("property_quality_score") < getattr(self.config, "min_quality_score", 0.5),
                 lit("low_quality")
             ).otherwise(lit("pending"))
         )
@@ -415,13 +333,12 @@ class PropertyEnricher(BaseEnricher):
             if "county_resolved" in enhanced_df.columns and "county" not in enhanced_df.columns:
                 enhanced_df = enhanced_df.withColumnRenamed("county_resolved", "county")
             
-            # Add neighborhood linking if enabled
-            if self.config.enable_neighborhood_linking:
-                # For properties, we'll try to match against neighborhoods in the same city/state
-                # This is a simplified approach - in reality you might want more sophisticated matching
-                enhanced_df = self.location_enricher.link_to_neighborhood(
-                    enhanced_df, "city", "city", "state"  # Using city as neighborhood for now
-                )
+            # Add neighborhood linking - always enabled
+            # For properties, we'll try to match against neighborhoods in the same city/state
+            # This is a simplified approach - in reality you might want more sophisticated matching
+            enhanced_df = self.location_enricher.link_to_neighborhood(
+                enhanced_df, "city", "city", "state"  # Using city as neighborhood for now
+            )
             
             # Standardize location names
             enhanced_df = self.location_enricher.standardize_location_names(
@@ -621,3 +538,4 @@ class PropertyEnricher(BaseEnricher):
         else:
             logger.warning("No property type column found in DataFrame")
             return df
+

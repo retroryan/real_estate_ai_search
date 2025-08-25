@@ -1,6 +1,5 @@
 # Data Pipeline Configuration
-# This file configures the multi-entity Spark data pipeline with advanced options
-# for testing, data subsetting, and embedding model selection
+# This file configures the multi-entity Spark data pipeline
 
 # Pipeline metadata
 metadata:
@@ -20,14 +19,7 @@ spark:
     spark.serializer: "org.apache.spark.serializer.KryoSerializer"
     spark.sql.shuffle.partitions: 200
 
-# Data subsetting for testing - CRITICAL FOR DEVELOPMENT
-data_subset:
-  enabled: true  # Set to true to enable data subsetting
-  sample_size: 50  # Number of records to sample from each source
-  sample_method: "head"  # Options: head, random, stratified
-  random_seed: 42  # Seed for reproducible random sampling
-  
-  # Source-specific limits
+# Data processing options
   properties_limit: 20  # Max properties per city
   neighborhoods_limit: 10  # Max neighborhoods per city  
   wikipedia_limit: 30  # Max Wikipedia articles
@@ -45,8 +37,7 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 50  # Override global limit for this source
+     50  # Override global limit for this source
       filter_expression: null  # SQL WHERE clause for filtering
   
   properties_pc:
@@ -55,8 +46,7 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 50
+     50
       filter_expression: null
   
   neighborhoods_sf:
@@ -65,8 +55,7 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 20
+     20
       filter_expression: null
   
   neighborhoods_pc:
@@ -75,8 +64,7 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: 20
+     20
       filter_expression: null
   
   wikipedia:
@@ -85,8 +73,7 @@ data_sources:
     enabled: true
     options:
       use_pandas: true
-    subset_config:
-      max_records: 30
+     30
       filter_expression: "relevance_score > 0.5"  # Only high-relevance articles
   
   locations:
@@ -95,8 +82,7 @@ data_sources:
     enabled: true
     options:
       multiLine: true
-    subset_config:
-      max_records: null  # Load all location reference data
+     null  # Load all location reference data
       filter_expression: null
 
 # Data enrichment configuration

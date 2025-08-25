@@ -22,71 +22,9 @@ from pyspark.sql.functions import (
     when,
 )
 
-from .base_enricher import BaseEnricher, BaseEnrichmentConfig
+from .base_enricher import BaseEnricher
 
 logger = logging.getLogger(__name__)
-
-
-class NeighborhoodEnrichmentConfig(BaseEnrichmentConfig):
-    """Configuration for neighborhood enrichment operations."""
-    
-    enable_location_normalization: bool = Field(
-        default=True,
-        description="Normalize location names and boundaries"
-    )
-    
-    enable_demographic_validation: bool = Field(
-        default=True,
-        description="Validate and enrich demographic data"
-    )
-    
-    enable_boundary_processing: bool = Field(
-        default=True,
-        description="Process and validate boundary data"
-    )
-    
-    enable_quality_scoring: bool = Field(
-        default=True,
-        description="Calculate neighborhood data quality scores"
-    )
-    
-    min_quality_score: float = Field(
-        default=0.3,
-        ge=0.0,
-        le=1.0,
-        description="Minimum acceptable quality score for neighborhoods"
-    )
-    
-    city_mappings: Dict[str, str] = Field(
-        default_factory=lambda: {
-            "SF": "San Francisco",
-            "PC": "Park City",
-            "NYC": "New York City",
-            "LA": "Los Angeles",
-        },
-        description="City name mappings"
-    )
-    
-    state_mappings: Dict[str, str] = Field(
-        default_factory=lambda: {
-            "CA": "California",
-            "UT": "Utah",
-            "NY": "New York",
-            "TX": "Texas",
-            "FL": "Florida",
-        },
-        description="State name mappings"
-    )
-    
-    enable_location_hierarchy: bool = Field(
-        default=True,
-        description="Enable location hierarchy establishment using reference data"
-    )
-    
-    establish_parent_relationships: bool = Field(
-        default=True,
-        description="Establish parent location relationships (city, county, state)"
-    )
 
 
 class NeighborhoodEnricher(BaseEnricher):
@@ -95,34 +33,28 @@ class NeighborhoodEnricher(BaseEnricher):
     and quality metrics specific to neighborhood information.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[NeighborhoodEnrichmentConfig] = None,
-                 location_broadcast: Optional[Any] = None):
+    def __init__(self, spark: SparkSession, location_broadcast: Optional[Any] = None):
         """
         Initialize the neighborhood enricher.
         
         Args:
             spark: Active SparkSession
-            config: Neighborhood enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        super().__init__(spark, config, location_broadcast)
+        super().__init__(spark, location_broadcast)
         
-        # Create broadcast variables for location lookups
-        if self.config.enable_location_normalization:
-            self._create_location_broadcasts()
+        # Create broadcast variables for location lookups - always enabled
+        self._create_location_broadcasts()
         
-        # Override location enricher initialization with neighborhood-specific config
-        if self.location_broadcast and self.config.enable_location_hierarchy:
+        # Override location enricher initialization with neighborhood-specific config - always enabled if location broadcast available
+        if self.location_broadcast:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
                 enable_hierarchy_resolution=True,
-                enable_parent_relationships=self.config.establish_parent_relationships
+                enable_parent_relationships=True
             )
             self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
     
-    def _get_default_config(self) -> NeighborhoodEnrichmentConfig:
-        """Get the default configuration for neighborhood enricher."""
-        return NeighborhoodEnrichmentConfig()
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -133,29 +65,22 @@ class NeighborhoodEnricher(BaseEnricher):
         """
         super().set_location_data(location_broadcast)
         
-        if self.location_broadcast and self.config.enable_location_hierarchy:
+        if self.location_broadcast:
             from .location_enricher import LocationEnricher, LocationEnrichmentConfig
             location_config = LocationEnrichmentConfig(
                 enable_hierarchy_resolution=True,
-                enable_parent_relationships=self.config.establish_parent_relationships
+                enable_parent_relationships=True
             )
             self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
             logger.info("LocationEnricher initialized for neighborhoods with broadcast data")
     
     def _create_location_broadcasts(self):
-        """Create broadcast variables for location normalization."""
-        # City mappings
-        city_data = [(k, v) for k, v in self.config.city_mappings.items()]
-        self.city_lookup_df = self.spark.createDataFrame(
-            city_data, ["city_abbr", "city_full"]
-        )
-        
-        # State mappings
-        state_data = [(k, v) for k, v in self.config.state_mappings.items()]
-        self.state_lookup_df = self.spark.createDataFrame(
-            state_data, ["state_abbr", "state_full"]
-        )
-    
+        """Create broadcast variables for location normalization using base class constants."""
+        city_data = [(k, v) for k, v in self.get_city_abbreviations().items()]
+        self.city_lookup_df = self.spark.createDataFrame(city_data, ["city_abbr", "city_full"])
+        state_data = [(k, v) for k, v in self.get_state_abbreviations().items()]
+        self.state_lookup_df = self.spark.createDataFrame(state_data, ["state_abbr", "state_full"])
+
     def enrich(self, df: DataFrame) -> DataFrame:
         """
         Apply neighborhood-specific enrichments.
@@ -171,35 +96,30 @@ class NeighborhoodEnricher(BaseEnricher):
         initial_count = df.count()
         enriched_df = df
         
-        # Add correlation IDs if configured
-        if self.config.enable_correlation_ids:
-            enriched_df = self.add_correlation_ids(enriched_df, "neighborhood_correlation_id")
-            logger.info("Added correlation IDs to neighborhoods")
+        # Add correlation IDs - always enabled
+        enriched_df = self.add_correlation_ids(enriched_df, "neighborhood_correlation_id")
+        logger.info("Added correlation IDs to neighborhoods")
         
-        # Normalize location names
-        if self.config.enable_location_normalization:
-            enriched_df = self._normalize_locations(enriched_df)
-            logger.info("Normalized neighborhood locations")
+        # Normalize location names - always enabled
+        enriched_df = self._normalize_locations(enriched_df)
+        logger.info("Normalized neighborhood locations")
         
-        # Enhance with location hierarchy and parent relationships
-        if self.location_enricher and self.config.enable_location_hierarchy:
+        # Enhance with location hierarchy and parent relationships - always enabled if location enricher available
+        if self.location_enricher:
             enriched_df = self._enhance_with_location_hierarchy(enriched_df)
             logger.info("Enhanced neighborhoods with location hierarchy")
         
-        # Validate and enrich demographics
-        if self.config.enable_demographic_validation:
-            enriched_df = self._validate_demographics(enriched_df)
-            logger.info("Validated demographic data")
+        # Validate and enrich demographics - always enabled
+        enriched_df = self._validate_demographics(enriched_df)
+        logger.info("Validated demographic data")
         
-        # Process boundaries
-        if self.config.enable_boundary_processing:
-            enriched_df = self._process_boundaries(enriched_df)
-            logger.info("Processed neighborhood boundaries")
+        # Process boundaries - always enabled
+        enriched_df = self._process_boundaries(enriched_df)
+        logger.info("Processed neighborhood boundaries")
         
-        # Calculate quality scores
-        if self.config.enable_quality_scoring:
-            enriched_df = self._calculate_quality_scores(enriched_df)
-            logger.info("Calculated neighborhood quality scores")
+        # Calculate quality scores - always enabled
+        enriched_df = self._calculate_quality_scores(enriched_df)
+        logger.info("Calculated neighborhood quality scores")
         
         # Add processing timestamp
         enriched_df = self.add_processing_timestamp(enriched_df)
@@ -231,11 +151,8 @@ class NeighborhoodEnricher(BaseEnricher):
             broadcast(self.city_lookup_df),
             upper(trim(df_with_name.city)) == upper(self.city_lookup_df.city_abbr),
             "left"
-        ).withColumn(
-            "city_normalized",
-            coalesce(col("city_full"), col("city"))
-        ).drop("city_abbr", "city_full")
-        
+        )
+
         # Normalize states
         df_with_state = df_with_city.join(
             broadcast(self.state_lookup_df),
@@ -377,10 +294,10 @@ class NeighborhoodEnricher(BaseEnricher):
         df_with_validation = df_with_quality.withColumn(
             "neighborhood_validation_status",
             when(
-                col("neighborhood_quality_score") >= self.config.min_quality_score,
+                col("neighborhood_quality_score") >= 0.5,
                 lit("validated")
             ).when(
-                col("neighborhood_quality_score") < self.config.min_quality_score,
+                col("neighborhood_quality_score") < 0.5,
                 lit("low_quality")
             ).otherwise(lit("pending"))
         )
@@ -415,7 +332,7 @@ class NeighborhoodEnricher(BaseEnricher):
             enhanced_df = self.location_enricher.normalize_state_names(enhanced_df, "state")
             
             # Establish parent relationships if configured
-            if self.config.establish_parent_relationships:
+            if True:
                 enhanced_df = self.location_enricher.establish_parent_relationships(enhanced_df)
             
             return enhanced_df
@@ -508,9 +425,7 @@ class NeighborhoodEnricher(BaseEnricher):
             col("best_city").isNotNull() & 
             col("best_state").isNotNull()
         ).groupBy("best_city", "best_state").agg(
-            count("page_id").alias("wiki_article_count"),
-            avg("overall_confidence").alias("avg_confidence"),
-            spark_max("overall_confidence").alias("max_confidence")
+            count("page_id").alias("wiki_article_count")
         )
         
         # Join with neighborhoods
@@ -522,16 +437,15 @@ class NeighborhoodEnricher(BaseEnricher):
         ).drop("best_city", "best_state")
         
         # Calculate knowledge score
-        # Formula: weighted combination of article count and confidence
+        # Formula: based on article count only
         df_with_score = df_with_wiki.withColumn(
             "wikipedia_count",
             coalesce(col("wiki_article_count"), lit(0))
         ).withColumn(
             "knowledge_score",
             when(col("wiki_article_count").isNotNull(),
-                 # Score based on article count (max 0.5) + average confidence (max 0.5)
-                 least(col("wiki_article_count") / 10.0, lit(0.5)) + 
-                 (coalesce(col("avg_confidence"), lit(0.0)) * 0.5)
+                 # Score based on article count (max 1.0)
+                 least(col("wiki_article_count") / 10.0, lit(1.0))
             ).otherwise(lit(0.0))
         ).withColumn(
             "knowledge_score",
@@ -541,7 +455,7 @@ class NeighborhoodEnricher(BaseEnricher):
         
         # Drop intermediate columns
         df_with_score = df_with_score.drop(
-            "wiki_article_count", "avg_confidence", "max_confidence"
+            "wiki_article_count"
         )
         
         return df_with_score

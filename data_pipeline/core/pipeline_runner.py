@@ -22,8 +22,8 @@ from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrato
 from data_pipeline.processing.property_text_processor import PropertyTextProcessor, PropertyTextConfig
 from data_pipeline.processing.neighborhood_text_processor import NeighborhoodTextProcessor, NeighborhoodTextConfig
 from data_pipeline.processing.wikipedia_text_processor import WikipediaTextProcessor, WikipediaTextConfig
-from data_pipeline.enrichment.property_enricher import PropertyEnricher, PropertyEnrichmentConfig
-from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher, NeighborhoodEnrichmentConfig
+from data_pipeline.enrichment.property_enricher import PropertyEnricher
+from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher
 from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher, WikipediaEnrichmentConfig
 from data_pipeline.enrichment.relationship_builder import RelationshipBuilder
 from data_pipeline.writers.orchestrator import WriterOrchestrator
@@ -61,7 +61,7 @@ class DataPipelineRunner:
         self._setup_logging()
         
         # Initialize Spark session with conditional Neo4j configuration
-        self.spark = get_or_create_spark_session(self.config.spark, self.config)
+        self.spark = get_or_create_spark_session(self.config, self.config)
         
         # Initialize components
         self.loader = DataLoaderOrchestrator(self.spark, self.config)
@@ -82,74 +82,35 @@ class DataPipelineRunner:
         self._cached_dataframes: Optional[Dict[str, DataFrame]] = None
     
     def _setup_logging(self) -> None:
-        """Configure logging based on pipeline configuration."""
-        log_config = self.config.logging
-        
-        # Configure root logger
+        """Configure logging with simple defaults."""
+        # Configure root logger with INFO level and console output
         root_logger = logging.getLogger()
-        root_logger.setLevel(getattr(logging, log_config.level))
+        root_logger.setLevel(logging.INFO)
         
         # Remove existing handlers
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
         
-        # Create formatter
-        formatter = logging.Formatter(log_config.format)
+        # Create simple formatter
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         
-        # Add console handler if enabled
-        if log_config.console:
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(formatter)
-            root_logger.addHandler(console_handler)
-        
-        # Add file handler if specified
-        if log_config.file:
-            file_path = Path(log_config.file)
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_handler = logging.FileHandler(file_path)
-            file_handler.setFormatter(formatter)
-            root_logger.addHandler(file_handler)
+        # Add console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
     
     def _init_entity_processors(self):
         """Initialize entity-specific processors and enrichers."""
-        # Property processors
-        property_enrichment_config = PropertyEnrichmentConfig(
-            enable_price_calculations=self.config.enrichment.add_derived_fields,
-            enable_address_normalization=self.config.enrichment.normalize_features,
-            enable_quality_scoring=self.config.processing.enable_quality_checks,
-            enable_correlation_ids=True,
-            min_quality_score=self.config.enrichment.quality_threshold,
-            city_abbreviations=self.config.enrichment.city_abbreviations,
-            state_abbreviations=self.config.enrichment.state_abbreviations
-        )
-        self.property_enricher = PropertyEnricher(self.spark, property_enrichment_config)
+        # Property processors - always enabled
+        self.property_enricher = PropertyEnricher(self.spark)
         self.property_text_processor = PropertyTextProcessor(self.spark)
         
-        # Neighborhood processors
-        neighborhood_enrichment_config = NeighborhoodEnrichmentConfig(
-            enable_location_normalization=self.config.enrichment.normalize_features,
-            enable_demographic_validation=True,
-            enable_boundary_processing=False,  # Disabled - no boundary data in source files
-            enable_quality_scoring=self.config.processing.enable_quality_checks,
-            enable_correlation_ids=True,
-            min_quality_score=self.config.enrichment.quality_threshold,
-            city_mappings=self.config.enrichment.city_abbreviations,
-            state_mappings=self.config.enrichment.state_abbreviations
-        )
-        self.neighborhood_enricher = NeighborhoodEnricher(self.spark, neighborhood_enrichment_config)
+        # Neighborhood processors - always enabled
+        self.neighborhood_enricher = NeighborhoodEnricher(self.spark)
         self.neighborhood_text_processor = NeighborhoodTextProcessor(self.spark)
         
-        # Wikipedia processors
-        wikipedia_enrichment_config = WikipediaEnrichmentConfig(
-            enable_location_extraction=True,
-            enable_relevance_scoring=True,
-            enable_confidence_metrics=True,
-            enable_quality_scoring=self.config.processing.enable_quality_checks,
-            enable_correlation_ids=True,
-            min_quality_score=0.5,
-            min_confidence_threshold=0.6
-        )
-        self.wikipedia_enricher = WikipediaEnricher(self.spark, wikipedia_enrichment_config)
+        # Wikipedia processors - always enabled
+        self.wikipedia_enricher = WikipediaEnricher(self.spark)
         self.wikipedia_text_processor = WikipediaTextProcessor(self.spark)
     
     def _init_embedding_config(self):
@@ -163,26 +124,24 @@ class DataPipelineRunner:
         """Initialize the writer orchestrator with configured destinations."""
         writers = []
         
-        # Check if output_destinations is configured
-        if hasattr(self.config, 'output_destinations'):
-            dest_config = self.config.output_destinations
-            
+        # Add writers based on enabled destinations
+        if hasattr(self.config, 'enabled_destinations'):
             # Add Parquet writer if enabled
-            if "parquet" in dest_config.enabled_destinations and dest_config.parquet.enabled:
-                logger.info("Initializing Parquet writer from output_destinations")
-                writers.append(ParquetWriter(dest_config.parquet, self.spark))
+            if "parquet" in self.config.enabled_destinations:
+                logger.info("Initializing Parquet writer")
+                writers.append(ParquetWriter(self.config, self.spark))
             
             # Add Neo4j graph writer if enabled
-            if "neo4j" in dest_config.enabled_destinations and dest_config.neo4j.enabled:
+            if "neo4j" in self.config.enabled_destinations:
                 logger.info("Initializing Neo4j graph writer")
                 from data_pipeline.writers.neo4j import Neo4jOrchestrator
-                writers.append(Neo4jOrchestrator(dest_config.neo4j, self.spark))
+                writers.append(Neo4jOrchestrator(self.config, self.spark))
             
             # Add Elasticsearch writer if enabled
-            if "elasticsearch" in dest_config.enabled_destinations and dest_config.elasticsearch.enabled:
+            if "elasticsearch" in self.config.enabled_destinations:
                 logger.info("Initializing Elasticsearch writer")
                 from data_pipeline.writers.elasticsearch import ElasticsearchOrchestrator
-                writers.append(ElasticsearchOrchestrator(dest_config.elasticsearch, self.spark))
+                writers.append(ElasticsearchOrchestrator(self.config, self.spark))
         
         
         if writers:
@@ -203,7 +162,7 @@ class DataPipelineRunner:
         self._pipeline_start_time = datetime.now()
         
         logger.info("="*60)
-        logger.info(f"🚀 Starting {self.config.metadata.name} v{self.config.metadata.version}")
+        logger.info(f"🚀 Starting {self.config.name} v{self.config.version}")
         logger.info("="*60)
         
         try:
@@ -289,7 +248,7 @@ class DataPipelineRunner:
         processed_df = self.property_text_processor.process(enriched_df)
         
         # Cache if configured
-        if self.config.processing.cache_intermediate_results:
+        if self.config.cache_intermediate_results:
             processed_df = processed_df.cache()
         
         return processed_df
@@ -316,7 +275,7 @@ class DataPipelineRunner:
         processed_df = self.neighborhood_text_processor.process(enriched_df)
         
         # Cache if configured
-        if self.config.processing.cache_intermediate_results:
+        if self.config.cache_intermediate_results:
             processed_df = processed_df.cache()
         
         return processed_df
@@ -343,7 +302,7 @@ class DataPipelineRunner:
         processed_df = self.wikipedia_text_processor.process(enriched_df)
         
         # Cache if configured
-        if self.config.processing.cache_intermediate_results:
+        if self.config.cache_intermediate_results:
             processed_df = processed_df.cache()
         
         return processed_df
@@ -363,7 +322,7 @@ class DataPipelineRunner:
         self._pipeline_start_time = datetime.now()
         
         logger.info("="*60)
-        logger.info(f"🚀 Starting {self.config.metadata.name} v{self.config.metadata.version} with Embeddings")
+        logger.info(f"🚀 Starting {self.config.name} v{self.config.version} with Embeddings")
         logger.info("="*60)
         
         try:
@@ -540,8 +499,8 @@ class DataPipelineRunner:
         
         # Prepare metadata for writers
         metadata = {
-            "pipeline_name": self.config.metadata.name,
-            "pipeline_version": self.config.metadata.version,
+            "pipeline_name": self.config.name,
+            "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
             "record_count": df.count(),
             "environment": self.config_manager.environment
@@ -705,8 +664,8 @@ class DataPipelineRunner:
         
         # Prepare metadata for writers
         metadata = {
-            "pipeline_name": self.config.metadata.name,
-            "pipeline_version": self.config.metadata.version,
+            "pipeline_name": self.config.name,
+            "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
             "total_record_count": total_records,
             "entity_types": list(output_dataframes.keys()),
@@ -733,8 +692,8 @@ class DataPipelineRunner:
                 properties_df=properties_df,
                 neighborhoods_df=neighborhoods_df,
                 wikipedia_df=wikipedia_df,
-                pipeline_name=self.config.metadata.name,
-                pipeline_version=self.config.metadata.version,
+                pipeline_name=self.config.name,
+                pipeline_version=self.config.version,
                 environment=self.config_manager.environment if self.config_manager else "test"
             )
             

@@ -11,7 +11,7 @@ from typing import Any, Dict
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, struct, when, isnan, isnull
 
-from data_pipeline.config.models import ElasticsearchConfig
+from data_pipeline.config.models import PipelineConfig
 from data_pipeline.writers.base import DataWriter
 from data_pipeline.models.writer_models import WriteMetadata
 
@@ -25,7 +25,7 @@ class ElasticsearchOrchestrator(DataWriter):
     Routes each entity type to its dedicated index with proper mappings.
     """
     
-    def __init__(self, config: ElasticsearchConfig, spark: SparkSession):
+    def __init__(self, config: PipelineConfig, spark: SparkSession):
         """
         Initialize the Elasticsearch orchestrator.
         

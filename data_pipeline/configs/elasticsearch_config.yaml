@@ -20,8 +20,7 @@ spark:
     spark.sql.adaptive.enabled: "true"
     spark.sql.adaptive.coalescePartitions.enabled: "true"
 
-# Data subsetting for demo/testing
-data_subset:
+# Data processing configuration
   enabled: false  # Set to true for testing with smaller datasets
   sample_size: 100
   properties_limit: 50
@@ -168,8 +167,7 @@ feature_flags:
 environments:
   # Development environment
   development:
-    data_subset:
-      enabled: true
+          enabled: true
       sample_size: 100
     output_destinations:
       elasticsearch:
@@ -181,8 +179,7 @@ environments:
   
   # Production environment
   production:
-    data_subset:
-      enabled: false
+          enabled: false
     output_destinations:
       elasticsearch:
         hosts:

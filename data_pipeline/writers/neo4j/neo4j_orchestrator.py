@@ -11,7 +11,7 @@ from typing import Dict
 
 from pyspark.sql import DataFrame, SparkSession
 
-from data_pipeline.config.models import Neo4jConfig
+from data_pipeline.config.models import PipelineConfig
 from data_pipeline.writers.base import DataWriter
 from data_pipeline.models.writer_models import WriteMetadata
 
@@ -25,7 +25,7 @@ class Neo4jOrchestrator(DataWriter):
     Routes each entity type to its dedicated Neo4j writer.
     """
     
-    def __init__(self, config: Neo4jConfig, spark: SparkSession):
+    def __init__(self, config: PipelineConfig, spark: SparkSession):
         """
         Initialize the Neo4j orchestrator.
         

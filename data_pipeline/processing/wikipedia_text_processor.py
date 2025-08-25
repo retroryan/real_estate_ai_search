@@ -188,17 +188,6 @@ class WikipediaTextProcessor(BaseTextProcessor):
             stats["median_text_length"] = length_stats["median_length"]
             stats["p95_text_length"] = length_stats["p95_length"]
         
-        # Confidence score statistics (if available)
-        if "confidence_score" in df.columns:
-            confidence_stats = df.filter(col("confidence_score").isNotNull()).select(
-                expr("avg(confidence_score) as avg_confidence"),
-                expr("min(confidence_score) as min_confidence"),
-                expr("max(confidence_score) as max_confidence")
-            ).collect()[0]
-            
-            stats["avg_confidence_score"] = confidence_stats["avg_confidence"]
-            stats["min_confidence_score"] = confidence_stats["min_confidence"]
-            stats["max_confidence_score"] = confidence_stats["max_confidence"]
         
         # Location coverage
         if "best_city" in df.columns:

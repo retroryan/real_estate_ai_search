@@ -26,89 +26,26 @@ from .base_enricher import BaseEnricher, BaseEnrichmentConfig
 logger = logging.getLogger(__name__)
 
 
-class WikipediaEnrichmentConfig(BaseEnrichmentConfig):
-    """Configuration for Wikipedia enrichment operations."""
-    
-    enable_location_extraction: bool = Field(
-        default=True,
-        description="Extract and validate location references"
-    )
-    
-    enable_relevance_scoring: bool = Field(
-        default=True,
-        description="Calculate article relevance scores"
-    )
-    
-    enable_confidence_metrics: bool = Field(
-        default=True,
-        description="Add confidence metrics for extracted data"
-    )
-    
-    enable_quality_scoring: bool = Field(
-        default=True,
-        description="Calculate article data quality scores"
-    )
-    
-    min_quality_score: float = Field(
-        default=0.5,
-        ge=0.0,
-        le=1.0,
-        description="Minimum acceptable quality score for articles"
-    )
-    
-    min_confidence_threshold: float = Field(
-        default=0.6,
-        ge=0.0,
-        le=1.0,
-        description="Minimum confidence threshold for location extraction"
-    )
-    
-    enable_location_matching: bool = Field(
-        default=True,
-        description="Enable location matching against canonical reference data"
-    )
-    
-    enable_geographic_context: bool = Field(
-        default=True,
-        description="Add geographic context using location hierarchy"
-    )
-    
-    enable_location_organization: bool = Field(
-        default=True,
-        description="Enable location-specific content organization"
-    )
-
-
 class WikipediaEnricher(BaseEnricher):
     """
     Enriches Wikipedia article data with location references, relevance scores,
     and confidence metrics specific to geographic content.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[WikipediaEnrichmentConfig] = None,
+    def __init__(self, spark: SparkSession,
                  location_broadcast: Optional[Any] = None):
         """
         Initialize the Wikipedia enricher.
         
         Args:
             spark: Active SparkSession
-            config: Wikipedia enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        super().__init__(spark, config, location_broadcast)
+        super().__init__(spark, location_broadcast)
         
-        # Override location enricher initialization with Wikipedia-specific config
-        if self.location_broadcast and self.config.enable_location_matching:
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_name_standardization=self.config.enable_geographic_context
-            )
-            self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
-    
-    def _get_default_config(self) -> WikipediaEnrichmentConfig:
-        """Get the default configuration for Wikipedia enricher."""
-        return WikipediaEnrichmentConfig()
+        if self.location_broadcast:
+            from .location_enricher import LocationEnricher
+            self.location_enricher = LocationEnricher(spark, location_broadcast)
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -119,13 +56,10 @@ class WikipediaEnricher(BaseEnricher):
         """
         super().set_location_data(location_broadcast)
         
-        if self.location_broadcast and self.config.enable_location_matching:
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_name_standardization=self.config.enable_geographic_context
-            )
-            self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
+        if self.location_broadcast:
+            from .location_enricher import LocationEnricher
+
+            self.location_enricher = LocationEnricher(self.spark, location_broadcast)
             logger.info("LocationEnricher initialized for Wikipedia articles with broadcast data")
     
     def enrich(self, df: DataFrame) -> DataFrame:
@@ -147,40 +81,31 @@ class WikipediaEnricher(BaseEnricher):
         initial_count = df.count()
         enriched_df = df
         
-        # Add correlation IDs if configured
-        if self.config.enable_correlation_ids:
-            enriched_df = self.add_correlation_ids(enriched_df, "article_correlation_id")
-            logger.info("Added correlation IDs to articles")
+        # Add correlation IDs - always enabled
+        enriched_df = self.add_correlation_ids(enriched_df, "article_correlation_id")
+        logger.info("Added correlation IDs to articles")
         
-        # Validate and enrich location data
-        if self.config.enable_location_extraction:
-            enriched_df = self._validate_locations(enriched_df)
-            logger.info("Validated location references")
+        # Validate and enrich location data - always enabled
+        enriched_df = self._validate_locations(enriched_df)
+        logger.info("Validated location references")
         
-        # Enhance with canonical location matching and geographic context
-        if self.location_enricher and self.config.enable_location_matching:
+        # Enhance with canonical location matching and geographic context - always enabled if location enricher available
+        if self.location_enricher:
             enriched_df = self._enhance_with_location_data(enriched_df)
             logger.info("Enhanced articles with canonical location data")
         
-        # Add location-specific organization
-        if self.config.enable_location_organization:
-            enriched_df = self._organize_by_location(enriched_df)
-            logger.info("Added location-specific organization")
+        # Add location-specific organization - always enabled
+        enriched_df = self._organize_by_location(enriched_df)
+        logger.info("Added location-specific organization")
         
-        # Calculate relevance scores
-        if self.config.enable_relevance_scoring:
-            enriched_df = self._calculate_relevance_scores(enriched_df)
-            logger.info("Calculated relevance scores")
+        # Calculate relevance scores - always enabled
+        enriched_df = self._calculate_relevance_scores(enriched_df)
+        logger.info("Calculated relevance scores")
         
-        # Add confidence metrics
-        if self.config.enable_confidence_metrics:
-            enriched_df = self._add_confidence_metrics(enriched_df)
-            logger.info("Added confidence metrics")
         
-        # Calculate quality scores
-        if self.config.enable_quality_scoring:
-            enriched_df = self._calculate_quality_scores(enriched_df)
-            logger.info("Calculated article quality scores")
+        # Calculate quality scores - always enabled
+        enriched_df = self._calculate_quality_scores(enriched_df)
+        logger.info("Calculated article quality scores")
         
         # Add processing timestamp
         enriched_df = self.add_processing_timestamp(enriched_df)
@@ -206,8 +131,7 @@ class WikipediaEnricher(BaseEnricher):
         df_with_location_check = df.withColumn(
             "has_valid_location",
             when(
-                (col("best_city").isNotNull() | col("best_state").isNotNull()) &
-                (col("confidence_score") >= self.config.min_confidence_threshold),
+                col("best_city").isNotNull() | col("best_state").isNotNull(),
                 lit(True)
             ).otherwise(lit(False))
         )
@@ -216,15 +140,13 @@ class WikipediaEnricher(BaseEnricher):
         df_with_normalized = df_with_location_check.withColumn(
             "city_validated",
             when(
-                col("best_city").isNotNull() & 
-                (col("confidence_score") >= self.config.min_confidence_threshold),
+                col("best_city").isNotNull(),
                 trim(col("best_city"))
             ).otherwise(lit(None))
         ).withColumn(
             "state_validated",
             when(
-                col("best_state").isNotNull() &
-                (col("confidence_score") >= self.config.min_confidence_threshold),
+                col("best_state").isNotNull(),
                 trim(col("best_state"))
             ).otherwise(lit(None))
         )
@@ -258,21 +180,16 @@ class WikipediaEnricher(BaseEnricher):
         """
         # Calculate relevance based on multiple factors
         relevance_expr = (
-            # Location relevance (40% weight)
-            when(col("has_valid_location") == True, 0.4)
+            # Location relevance (60% weight)
+            when(col("has_valid_location") == True, 0.6)
             .otherwise(0.0)
         ) + (
-            # Confidence score contribution (30% weight)
-            when(col("confidence_score").isNotNull(),
-                 col("confidence_score") * 0.3)
-            .otherwise(0.0)
-        ) + (
-            # Content quality indicators (30% weight)
+            # Content quality indicators (40% weight)
             when(col("long_summary").isNotNull() & 
-                 (length(col("long_summary")) > 500), 0.15)
+                 (length(col("long_summary")) > 500), 0.2)
             .otherwise(0.0) +
             when(col("key_topics").isNotNull() & 
-                 (expr("size(key_topics)") > 0), 0.15)
+                 (expr("size(key_topics)") > 0), 0.2)
             .otherwise(0.0)
         )
         
@@ -293,45 +210,6 @@ class WikipediaEnricher(BaseEnricher):
         
         return df_with_category
     
-    def _add_confidence_metrics(self, df: DataFrame) -> DataFrame:
-        """
-        Add confidence metrics for extracted data.
-        
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            DataFrame with confidence metrics
-        """
-        # Categorize confidence levels
-        df_with_confidence_level = df.withColumn(
-            "confidence_level",
-            when(col("confidence_score") >= 0.9, lit("very_high"))
-            .when(col("confidence_score") >= 0.75, lit("high"))
-            .when(col("confidence_score") >= 0.6, lit("medium"))
-            .when(col("confidence_score") >= 0.4, lit("low"))
-            .otherwise(lit("very_low"))
-        )
-        
-        # Add extraction reliability flag
-        df_with_reliability = df_with_confidence_level.withColumn(
-            "extraction_reliable",
-            when(col("confidence_score") >= self.config.min_confidence_threshold,
-                 lit(True))
-            .otherwise(lit(False))
-        )
-        
-        # Calculate overall confidence (combining multiple signals)
-        df_with_overall = df_with_reliability.withColumn(
-            "overall_confidence",
-            (
-                coalesce(col("confidence_score"), lit(0.0)) * 0.6 +
-                when(col("has_valid_location") == True, 0.2).otherwise(0.0) +
-                when(col("key_topics").isNotNull(), 0.2).otherwise(0.0)
-            ).cast("decimal(3,2)")
-        )
-        
-        return df_with_overall
     
     def _enhance_with_location_data(self, df: DataFrame) -> DataFrame:
         """
@@ -360,9 +238,8 @@ class WikipediaEnricher(BaseEnricher):
             # Normalize state names from abbreviations to full names
             enhanced_df = self.location_enricher.normalize_state_names(enhanced_df, "best_state")
             
-            # Add geographic context fields
-            if self.config.enable_geographic_context:
-                enhanced_df = self._add_geographic_context(enhanced_df)
+            # Add geographic context fields - always enabled
+            enhanced_df = self._add_geographic_context(enhanced_df)
             
             return enhanced_df
             
@@ -464,7 +341,7 @@ class WikipediaEnricher(BaseEnricher):
             (
                 when(col("best_city").isNotNull(), 0.4).otherwise(0.0) +
                 when(col("best_state").isNotNull(), 0.3).otherwise(0.0) +
-                when(col("confidence_score") >= self.config.min_confidence_threshold, 0.1).otherwise(0.0)
+                0.1
             ).cast("decimal(3,2)")
         )
         
@@ -490,9 +367,7 @@ class WikipediaEnricher(BaseEnricher):
                   (length(col("long_summary")) > 100), 0.1).otherwise(0.0)) +
             
             # Location data (30% weight)
-            (when(col("has_valid_location") == True, 0.15).otherwise(0.0)) +
-            (when(col("confidence_score") >= self.config.min_confidence_threshold, 0.15)
-             .otherwise(0.0)) +
+            (when(col("has_valid_location") == True, 0.30).otherwise(0.0)) +
             
             # Content richness (20% weight)
             (when(col("key_topics").isNotNull() & 
@@ -512,20 +387,8 @@ class WikipediaEnricher(BaseEnricher):
             "article_quality_score",
             quality_expr.cast("decimal(3,2)")
         )
-        
-        # Add validation status
-        df_with_validation = df_with_quality.withColumn(
-            "article_validation_status",
-            when(
-                col("article_quality_score") >= self.config.min_quality_score,
-                lit("validated")
-            ).when(
-                col("article_quality_score") < self.config.min_quality_score,
-                lit("low_quality")
-            ).otherwise(lit("pending"))
-        )
-        
-        return df_with_validation
+
+        return df_with_quality
     
     def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
@@ -555,19 +418,6 @@ class WikipediaEnricher(BaseEnricher):
                 row["location_specificity"]: row["count"] for row in specificity_counts
             }
         
-        # Confidence metrics
-        if "confidence_score" in df.columns:
-            confidence_stats = df.select(
-                expr("avg(confidence_score) as avg_confidence"),
-                expr("min(confidence_score) as min_confidence"),
-                expr("max(confidence_score) as max_confidence"),
-                expr("count(case when extraction_reliable = true then 1 end) as reliable_count")
-            ).collect()[0]
-            
-            stats["avg_confidence_score"] = float(confidence_stats["avg_confidence"]) if confidence_stats["avg_confidence"] else 0
-            stats["min_confidence_score"] = float(confidence_stats["min_confidence"]) if confidence_stats["min_confidence"] else 0
-            stats["max_confidence_score"] = float(confidence_stats["max_confidence"]) if confidence_stats["max_confidence"] else 0
-            stats["reliable_extractions"] = confidence_stats["reliable_count"]
         
         # Relevance scores
         if "location_relevance_score" in df.columns:
@@ -584,9 +434,7 @@ class WikipediaEnricher(BaseEnricher):
         # Quality scores
         if "article_quality_score" in df.columns:
             quality_stats = df.select(
-                expr("avg(article_quality_score) as avg_quality"),
-                expr("count(case when article_validation_status = 'validated' then 1 end) as validated"),
-                expr("count(case when article_validation_status = 'low_quality' then 1 end) as low_quality")
+                expr("avg(article_quality_score) as avg_quality")
             ).collect()[0]
             
             stats["avg_quality_score"] = float(quality_stats["avg_quality"]) if quality_stats["avg_quality"] else 0

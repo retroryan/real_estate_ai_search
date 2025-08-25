@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from data_pipeline.config.models import Neo4jConfig
+from data_pipeline.config.models import PipelineConfig
 from data_pipeline.writers.neo4j_graph_writer import Neo4jGraphWriter
 
 
@@ -42,7 +42,7 @@ class TestNeo4jGraphWriter:
             load_dotenv(local_env, override=True)
         
         # Neo4j configuration
-        self.neo4j_config = Neo4jConfig(
+        self.neo4j_config = PipelineConfig(
             uri=os.getenv('NEO4J_URI', 'bolt://localhost:7687'),
             username=os.getenv('NEO4J_USERNAME', 'neo4j'),
             password=os.getenv('NEO4J_PASSWORD', 'scott_tiger'),

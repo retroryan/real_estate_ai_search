@@ -165,11 +165,6 @@ def main():
             print(f"  Master: {summary['spark']['master']}")
             print(f"  Memory: {summary['spark']['memory']}")
             
-            print(f"\nData Subsetting:")
-            print(f"  Enabled: {summary['data_subsetting']['enabled']}")
-            if summary['data_subsetting']['enabled']:
-                print(f"  Sample Size: {summary['data_subsetting']['sample_size']}")
-                print(f"  Method: {summary['data_subsetting']['method']}")
             
             print(f"\nEmbedding:")
             print(f"  Provider: {summary['embedding']['provider']}")
@@ -207,7 +202,6 @@ def main():
             # Show configuration summary
             summary = config_manager.get_effective_config_summary()
             print(f"\nEnvironment: {summary['pipeline']['environment']}")
-            print(f"Data subsetting: {'ENABLED' if summary['data_subsetting']['enabled'] else 'DISABLED'}")
             print(f"Embedding provider: {summary['embedding']['provider']}")
             
             # Validate pipeline components

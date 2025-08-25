@@ -26,46 +26,6 @@ from pyspark.sql.types import StringType
 logger = logging.getLogger(__name__)
 
 
-class LocationEnrichmentConfig(BaseModel):
-    """Configuration for location enrichment operations."""
-    
-    enable_hierarchy_resolution: bool = Field(
-        default=True,
-        description="Resolve complete geographic hierarchy for locations"
-    )
-    
-    enable_name_standardization: bool = Field(
-        default=True,
-        description="Standardize location names using canonical forms"
-    )
-    
-    enable_neighborhood_linking: bool = Field(
-        default=True,
-        description="Link entities to neighborhoods via neighborhood_id"
-    )
-    
-    enable_parent_relationships: bool = Field(
-        default=True,
-        description="Establish parent location relationships"
-    )
-    
-    state_name_mappings: Dict[str, str] = Field(
-        default_factory=lambda: {
-            "CA": "California",
-            "UT": "Utah",
-            "NY": "New York",
-            "TX": "Texas",
-            "FL": "Florida",
-            "WA": "Washington",
-            "OR": "Oregon",
-            "NV": "Nevada",
-            "AZ": "Arizona",
-            "CO": "Colorado"
-        },
-        description="State abbreviation to full name mappings"
-    )
-
-
 class LocationEnricher:
     """
     Provides location enhancement capabilities for all entity types.
@@ -74,20 +34,17 @@ class LocationEnricher:
     geographic hierarchy, standardized names, and relationship mapping.
     """
     
-    def __init__(self, spark: SparkSession, location_broadcast: Any, 
-                 config: Optional[LocationEnrichmentConfig] = None):
+    def __init__(self, spark: SparkSession, location_broadcast: Any):
         """
         Initialize the location enricher.
         
         Args:
             spark: Active SparkSession
             location_broadcast: Broadcast variable containing location reference data
-            config: Location enrichment configuration
         """
         self.spark = spark
         self.location_broadcast = location_broadcast
-        self.config = config or LocationEnrichmentConfig()
-        
+
         # Create location lookup DataFrames from broadcast data
         if location_broadcast is not None:
             self._create_location_lookups()
@@ -167,8 +124,6 @@ class LocationEnricher:
         Returns:
             DataFrame with enhanced location hierarchy
         """
-        if not self.config.enable_hierarchy_resolution:
-            return df
         
         try:
             # Join with city lookup to add county information
@@ -207,9 +162,6 @@ class LocationEnricher:
         Returns:
             DataFrame with neighborhood linking
         """
-        if not self.config.enable_neighborhood_linking:
-            return df
-        
         try:
             # Create neighborhood_id from neighborhood + city + state
             neighborhood_enhanced = self.neighborhood_lookup_df.withColumn(
@@ -258,9 +210,6 @@ class LocationEnricher:
         Returns:
             DataFrame with standardized location names
         """
-        if not self.config.enable_name_standardization:
-            return df
-        
         try:
             enhanced_df = df
             
@@ -320,13 +269,10 @@ class LocationEnricher:
         Returns:
             DataFrame with normalized state names
         """
-        if not self.config.enable_name_standardization:
-            return df
-        
         try:
-            # Create a mapping DataFrame from config
+            # Create a mapping DataFrame from state abbreviations to full names
             from pyspark.sql import Row
-            mappings = [Row(state_abbr=k, state_full=v) for k, v in self.config.state_name_mappings.items()]
+            mappings = [Row(state_abbr=k, state_full=v) for k, v in self.get_state_abbreviations().items()]
             mapping_df = self.spark.createDataFrame(mappings)
             
             # Join with mapping to get full state names
@@ -359,9 +305,6 @@ class LocationEnricher:
         Returns:
             DataFrame with parent relationship fields
         """
-        if not self.config.enable_parent_relationships:
-            return df
-        
         try:
             # Add hierarchy path and parent information
             # Check which columns exist to avoid ambiguity

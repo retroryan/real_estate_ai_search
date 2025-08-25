@@ -16,7 +16,7 @@ from pyspark.sql.functions import (
     when,
 )
 
-from data_pipeline.config.models import EmbeddingConfig
+from data_pipeline.config.models import PipelineConfig
 from .base_embedding import BaseEmbeddingGenerator
 
 logger = logging.getLogger(__name__)

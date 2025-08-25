@@ -17,15 +17,6 @@ from pyspark.sql.types import StringType
 
 logger = logging.getLogger(__name__)
 
-
-class BaseEnrichmentConfig(BaseModel):
-    """Base configuration for all enrichers."""
-    
-    enable_correlation_ids: bool = True
-    enable_quality_scoring: bool = True
-    min_quality_score: float = 0.5
-
-
 class BaseEnricher(ABC):
     """
     Abstract base class for entity-specific enrichers.
@@ -33,11 +24,28 @@ class BaseEnricher(ABC):
     Provides common functionality like UUID generation, correlation IDs,
     and timestamp management.
     """
-    
+
+    # Shared static location abbreviation constants
+    CITY_ABBREVIATIONS = {
+        "SF": "San Francisco",
+        "PC": "Park City",
+        "NYC": "New York City",
+        "LA": "Los Angeles",
+        "SLC": "Salt Lake City",
+        "LV": "Las Vegas",
+    }
+    STATE_ABBREVIATIONS = {
+        "CA": "California",
+        "UT": "Utah",
+        "NY": "New York",
+        "TX": "Texas",
+        "NV": "Nevada",
+        "CO": "Colorado",
+    }
+
     def __init__(
         self,
         spark: SparkSession,
-        config: Optional[BaseEnrichmentConfig] = None,
         location_broadcast: Optional[Any] = None
     ):
         """
@@ -45,24 +53,15 @@ class BaseEnricher(ABC):
         
         Args:
             spark: Active SparkSession
-            config: Enrichment configuration
             location_broadcast: Optional broadcast variable with location data
         """
         self.spark = spark
-        self.config = config or self._get_default_config()
         self.location_broadcast = location_broadcast
         self.location_enricher = None
         
         # Register common UDFs
         self._register_common_udfs()
-        
-        # Initialize location enricher if configured
         self._initialize_location_enricher()
-    
-    @abstractmethod
-    def _get_default_config(self) -> BaseEnrichmentConfig:
-        """Get the default configuration for this enricher type."""
-        pass
     
     @abstractmethod
     def enrich(self, df: DataFrame) -> DataFrame:
@@ -86,16 +85,13 @@ class BaseEnricher(ABC):
     
     def _initialize_location_enricher(self):
         """Initialize location enricher if location data is available."""
-        if self.location_broadcast and hasattr(self.config, 'enable_location_enhancement'):
-            if getattr(self.config, 'enable_location_enhancement', False):
-                from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-                location_config = LocationEnrichmentConfig()
-                self.location_enricher = LocationEnricher(
-                    self.spark, 
-                    self.location_broadcast, 
-                    location_config
-                )
-                logger.info(f"LocationEnricher initialized for {self.__class__.__name__}")
+        if self.location_broadcast:
+            from .location_enricher import LocationEnricher
+            self.location_enricher = LocationEnricher(
+                self.spark,
+                self.location_broadcast,
+            )
+            logger.info(f"LocationEnricher initialized for {self.__class__.__name__}")
     
     def set_location_data(self, location_broadcast: Any):
         """
@@ -118,9 +114,6 @@ class BaseEnricher(ABC):
         Returns:
             DataFrame with correlation IDs
         """
-        if not self.config.enable_correlation_ids:
-            return df
-            
         if id_column in df.columns:
             return df.withColumn(
                 id_column,
@@ -205,3 +198,9 @@ class BaseEnricher(ABC):
                 }
         
         return stats
+
+    def get_city_abbreviations(self) -> Dict[str, str]:  # convenience accessor
+        return self.CITY_ABBREVIATIONS
+
+    def get_state_abbreviations(self) -> Dict[str, str]:  # convenience accessor
+        return self.STATE_ABBREVIATIONS

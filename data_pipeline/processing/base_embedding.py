@@ -22,7 +22,7 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, DoubleType
 
-from data_pipeline.config.models import EmbeddingConfig, ProviderType
+from data_pipeline.config.models import PipelineConfig, ProviderType
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class BaseEmbeddingGenerator(ABC):
     and embedding metadata management.
     """
     
-    def __init__(self, spark: SparkSession, config: EmbeddingConfig):
+    def __init__(self, spark: SparkSession, config: PipelineConfig):
         """
         Initialize the base embedding generator.
         
