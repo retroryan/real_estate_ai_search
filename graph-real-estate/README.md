@@ -1,68 +1,29 @@
-# Real Estate Graph Builder - Enhanced Edition
+# Graph Real Estate - Demo Searches
 
-A comprehensive GraphRAG system with advanced real estate intelligence, featuring Wikipedia integration, lifestyle-based property discovery, and sophisticated similarity analysis. Built on Neo4j with enhanced schema supporting features, neighborhoods with lifestyle tags, geographic hierarchy (City/County), and property similarity calculations.
+A Neo4j database initialization and demonstration module for the real estate knowledge graph system. Its primary purpose is to demonstrate the data stored by the data_pipeline/ Spark processing and is also used to initialize Neo4j. This module handles database schema creation, constraints, indexes, and provides utilities for managing the graph database structure.
 
-## Enhanced Features
+## Purpose
 
-- **Enhanced Property Model**: Properties now include features arrays, price-per-square-foot calculations, and enriched descriptions
-- **Geographic Hierarchy**: Full City → County relationship modeling with proper geographic organization  
-- **Lifestyle-Based Discovery**: Neighborhoods tagged with lifestyle characteristics (tech-friendly, outdoor-recreation, ski-access, etc.)
-- **Advanced Similarity**: Calculated property and neighborhood similarities based on multiple factors
-- **Rich Analytics**: 26 different query types across 6 categories for comprehensive market analysis
-- **Feature Categorization**: 416+ features organized into 8 categories (Interior, Kitchen, Outdoor, View, etc.)
-- **Performance Optimized**: 7 constraints and 7 indexes for optimal query performance
+This module is responsible for:
+- Demonstrating the data stored by the data_pipeline/ Spark processing
+- Initializing the Neo4j database with proper schema
+- Creating vector embeddings for search using the embeddings model specified in config.yaml (currently configured for Voyage-3 with 1024 dimensions)
+- Creating constraints and indexes for optimal performance
+- Providing database management utilities (clear, stats)
+- Preparing the database to receive data from the data pipeline
 
-## Generative AI Features
+## Vector Embedding Configuration
 
-- **GraphRAG Architecture**: Combines knowledge graphs with vector embeddings for enhanced retrieval-augmented generation, enabling richer context for LLM applications
-- **Multi-Model Embeddings**: Supports Ollama (local), OpenAI, and Google Gemini embedding models with configurable dimensions (768-1536)
-- **Semantic Vector Search**: Natural language property search using LlamaIndex-generated embeddings stored in Neo4j's native vector indexes
-- **Hybrid Scoring Algorithm**: Intelligent ranking that combines vector similarity, graph centrality, and feature richness for improved results
-- **LlamaIndex Integration**: Embedding pipeline with automatic chunking, batching, and error handling
-- **Neo4j Vector Indexes**: Native Approximate Nearest Neighbor (ANN) search with HNSW algorithm for sub-100ms query performance
-- **Embedding Flexibility**: Easy switching between providers and models through configuration without code changes
-- **Pydantic Validation**: All data structures validated with Pydantic models
-- **Modular Design**: Clean separation of concerns for easy maintenance
-- **Type Safety**: Full type hints throughout the codebase
-- **Advanced Filtering**: Price, location, and property detail filters
-- **Scalable Architecture**: Ready for future enhancements
-- **Neo4j Community Edition**: Uses free version of Neo4j with native vector support
+The module uses the embedding model specified in `config.yaml` to create vector embeddings for semantic search:
+- **Current Model**: Voyage-3 (1024 dimensions)
+- **Similarity Function**: Cosine similarity
+- **Hybrid Search Weights**: 60% vector, 20% graph, 20% features
 
-## Graph Data Model
-
-The Neo4j graph database uses a rich, interconnected model that captures the complex relationships between properties, neighborhoods, features, and Wikipedia articles:
-
-**Node Types:**
-- **Property**: Enhanced with features array, price_per_sqft, timestamps, and enriched descriptions
-- **Neighborhood**: Geographic areas with lifestyle tags, price trends, and enhanced attributes
-- **Feature**: Categorized property attributes across 8 categories (Interior, Kitchen, Outdoor, View, Recreation, Technology, Parking, Other)
-- **Wikipedia**: Encyclopedia articles with titles, summaries, confidence scores, and relationship types
-- **City**: High-level geographic nodes with county relationships
-- **County**: Regional organization for geographic hierarchy
-- **PriceRange**: Market segmentation nodes for property grouping
-- **PropertyType**: Property classification nodes
-
-**Relationship Types:**
-- **LOCATED_IN**: Properties to neighborhoods
-- **IN_CITY**: Neighborhoods to cities  
-- **IN_COUNTY**: Cities to counties
-- **HAS_FEATURE**: Properties to their specific features
-- **SIMILAR_TO**: Property and neighborhood similarities based on calculated scores
-- **NEAR**: Neighborhood proximity relationships within cities
-- **IN_PRICE_RANGE**: Properties to price range categories
-- **TYPE_OF**: Properties to property types
-- **DESCRIBES**: Wikipedia articles to neighborhoods with confidence scores
-
-**Vector Layer:**
-- **Property Embeddings**: High-dimensional vector representations of property descriptions stored directly on property nodes
-- **Native Vector Index**: Neo4j's HNSW-based similarity search index for efficient nearest neighbor queries
-- **Hybrid Attributes**: Each node contains both structured data (for filtering) and unstructured embeddings (for semantic search)
-
-##  Installation
+## Installation
 
 1. **Install Dependencies**
 ```bash
-pip install -r requirements.txt
+pip install neo4j python-dotenv
 ```
 
 2. **Start Neo4j** (Docker)
@@ -71,544 +32,370 @@ docker-compose up -d
 ```
 
 3. **Configure Environment**
-Edit `.env` file with your Neo4j credentials:
+Add to the parent directory `.env` file with your Neo4j credentials:
 ```env
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=your_password
 ```
 
-4. **Configure Embeddings** (`config.yaml`)
-The system supports three embedding providers. Edit `config.yaml` to configure:
-
-```yaml
-embedding:
-  provider: ollama  # Options: ollama (local), openai, gemini
-  
-  # For Ollama (default - no API key needed)
-  ollama_model: "nomic-embed-text"  # 768 dimensions
-  # Alternative: "mxbai-embed-large" (1024 dimensions)
-  
-  # For OpenAI (requires OPENAI_API_KEY env var)
-  openai_model: "text-embedding-3-small"  # 1536 dimensions
-  
-  # For Gemini (requires GEMINI_API_KEY env var)  
-  gemini_model: "models/embedding-001"  # 768 dimensions
-
-search:
-  use_graph_boost: true  # Enable hybrid search
-  vector_weight: 0.6     # 60% semantic similarity
-  graph_weight: 0.2      # 20% graph relationships
-  features_weight: 0.2   # 20% property features
+4. **Configure Embeddings** (Optional)
+To use vector embeddings, add your API key to the `.env` file:
+```env
+VOYAGE_API_KEY=your_voyage_api_key
 ```
-
-5. **Install Ollama** (for local embeddings - recommended)
-```bash
-# macOS
-brew install ollama
-
-# Linux
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Start Ollama server
-ollama serve
-
-# Pull embedding model
-ollama pull nomic-embed-text
-```
-
-**Note**: Ollama provides free, local embeddings with no API limits. OpenAI and Gemini require API keys and have usage costs.
 
 ## Usage
 
-### 1. Build the Knowledge Graph Database
+### Running from Parent Directory
 
-The application uses a phased approach to build the knowledge graph:
-
-```bash
-# Run complete graph load (all phases) - RECOMMENDED
-python main.py load
-
-# Or run individual phases:
-python main.py validate       # Phase 1: Validate data sources
-python main.py geographic     # Phase 2: Load geographic foundation (States, Counties, Cities)
-python main.py wikipedia      # Phase 3: Load Wikipedia knowledge layer
-python main.py neighborhoods  # Phase 4: Load neighborhoods with correlations
-
-# Utility commands:
-python main.py verify         # Verify graph integrity after loading
-python main.py stats          # Show database statistics
-python main.py clear          # Clear all data
-```
-
-**Note**: The application has been refactored with a modular architecture using Pydantic models for type safety. The old commands (`setup`, `schema`, `relationships`) are deprecated but still recognized for backward compatibility.
-
-### 2. Create Vector Embeddings
-```bash
-# Generate embeddings using config.yaml settings
-python create_embeddings.py
-
-# Force recreate all embeddings (delete existing and regenerate)
-python create_embeddings.py --force-recreate
-```
-
-**Note**: All embedding settings (provider, model, dimensions) are configured in `config.yaml`. To use a different model like `mxbai-embed-large`, update the `ollama_model` setting in `config.yaml`.
-
-## Quick Start - Running Demos
+The module is designed to run from the parent directory using Python's module execution:
 
 ```bash
-# Build the knowledge graph database with Wikipedia integration
-python main.py load
+# Run demonstration queries (requires populated database)
 
-# Create embeddings (required for demos 1, 3, and 5)
-python create_embeddings.py
+# **Vector Embedding Search Demos**
+python -m graph-real-estate demo --demo 1  # Hybrid Search Demo - Combines vector embeddings with graph intelligence
+python -m graph-real-estate demo --demo 5  # Pure Vector Search Demo - Semantic search using embeddings only
 
-# Run advanced demonstration scripts (from src/demos/)
-python -m src.demos.demo_1_hybrid_search      # Advanced hybrid search
-python -m src.demos.demo_2_graph_analysis     # Graph relationship analysis
-python -m src.demos.demo_3_market_intelligence # Market intelligence
-python -m src.demos.demo_4_wikipedia_enhanced  # Wikipedia-enhanced listings
-python -m src.demos.demo_5_pure_vector_search  # Pure vector embedding search
+# Graph and Market Analysis Demos
+python -m graph-real-estate demo --demo 2  # Graph Analysis Demo
+python -m graph-real-estate demo --demo 3  # Market Intelligence Demo
+python -m graph-real-estate demo --demo 4  # Wikipedia Enhanced Demo
+
+# Run demo with verbose output
+python -m graph-real-estate demo --demo 1 --verbose
+
+# Initialize database with schema and indexes
+python -m graph-real-estate init
+
+# Initialize with database clearing (removes all existing data first)
+python -m graph-real-estate init --clear
+
+# Test database connection
+python -m graph-real-estate test
+
+# Show database statistics
+python -m graph-real-estate stats
+
+# Clear all data from database (interactive confirmation)
+python -m graph-real-estate clear
 ```
 
-See [Advanced Demo Scripts](#advanced-demo-scripts-) section below for detailed information about each demo.
+### Command Details
 
-### 3. Search Properties
-```bash
-# Natural language search
-python search_properties.py "modern condo with city views"
+#### `init` - Initialize Database
+Creates all necessary constraints and indexes for the graph database:
+- **Constraints**: Ensures unique identifiers for all node types
+- **Indexes**: Optimizes query performance for common access patterns
 
-# Search with filters
-python search_properties.py "family home" --city "San Francisco" --price-max 2000000 --bedrooms-min 3
+#### `test` - Test Connection
+Verifies that the Neo4j database is accessible and responding.
 
-# Run demo with multiple queries
-python search_properties.py --demo
+#### `stats` - Show Statistics
+Displays current database statistics including:
+- Node counts by type
+- Relationship counts by type
+- Total nodes and relationships
 
-# Disable graph boost (vector similarity only)
-python search_properties.py "luxury property" --no-graph-boost
-```
+#### `clear` - Clear Database
+Removes all nodes and relationships from the database (requires confirmation).
 
-### 4. Utility Commands
-```bash
-# View database statistics
-python main.py stats
+#### `demo` - Run Demonstrations
+Executes demonstration scripts that showcase different aspects of the graph database:
 
-# Run enhanced demo queries (26 query types)
-python main.py queries
+**Vector Embedding Search Capabilities:**
+- **Demo 1: Hybrid Search** - Combines vector embeddings with graph intelligence for powerful semantic search with contextual understanding. Uses the configured embedding model (Voyage-3) to perform similarity searches enhanced by graph relationships.
+- **Demo 5: Pure Vector Search** - Semantic search using embeddings only. Demonstrates pure vector similarity search capabilities using the configured embedding model for finding semantically similar properties.
 
-# Interactive query mode
-python main.py interactive
+**Graph and Analysis Capabilities:**
+- **Demo 2: Graph Analysis** - Explores relationships and graph patterns
+- **Demo 3: Market Intelligence** - Advanced market analytics and insights
+- **Demo 4: Wikipedia Enhanced** - Leverages Wikipedia integration
 
-# Clear all data
-python main.py clear
-```
+Note: Demos require a populated database. Run data ingestion first.
 
-## Vector Search Features
+## Database Schema
 
-### Hybrid Scoring Algorithm
-The search combines multiple signals:
-- **Vector Similarity (60%)**: Semantic similarity between query and property descriptions
-- **Graph Centrality (20%)**: Importance based on graph connections
-- **Feature Richness (20%)**: Number and quality of property features
+### Node Types
+The database is prepared to handle the following node types:
+- **Property**: Real estate properties
+- **Neighborhood**: Geographic neighborhoods
+- **City**: City entities
+- **County**: County entities
+- **State**: State entities
+- **Wikipedia**: Wikipedia article references
+- **Feature**: Property features
+- **PriceRange**: Price range categories
+- **PropertyType**: Property type classifications
 
-**Note**: These weights (60/20/20) were implemented as a first-pass estimate. Future work should test and optimize these values using data-driven approaches:
-- **A/B Testing** - Compare different weight combinations with real users
-- **Reciprocal Rank Fusion (RRF)** - Weight-free ranking combination
-- **Grid Search Optimization** - Systematic parameter tuning
-- **Learned Weights** - Machine learning based on relevance feedback
-- **Query-Adaptive Weights** - Different weights for different query types
-- **Bayesian Optimization** - Efficient hyperparameter search
+### Constraints Created
+- `property_id`: Unique listing_id for properties
+- `neighborhood_id`: Unique identifier for neighborhoods
+- `city_id`: Unique identifier for cities
+- `county_id`: Unique identifier for counties
+- `state_id`: Unique identifier for states
+- `wikipedia_id`: Unique page_id for Wikipedia articles
+- `feature_name`: Unique name for features
+- `price_range`: Unique range for price categories
+- `property_type`: Unique name for property types
 
-See `HYBRID_SEARCH.md` for detailed implementation proposals.
-
-### Supported Filters
-- `--price-min` / `--price-max`: Price range filtering
-- `--city`: Filter by city name
-- `--neighborhood`: Filter by neighborhood
-- `--bedrooms-min`: Minimum number of bedrooms
-- `--bathrooms-min`: Minimum number of bathrooms
-- `--sqft-min`: Minimum square footage
-
-### Embedding Providers
-Configure in `src/vectors/config.yaml`:
-- **Ollama** (default): Local embeddings with nomic-embed-text or mxbai-embed-large
-- **OpenAI**: Using text-embedding-3-small or text-embedding-3-large
-- **Gemini**: Google's embedding models
-
-## Enhanced Query System
-
-The system includes **26 different query types** across **6 categories**:
-
-### Query Categories & Examples
-
-**Basic Queries (6 types):**
-- Properties by city and geographic hierarchy  
-- Enhanced properties overview with feature statistics
-- Property type and bedroom distributions
-
-**Neighborhood Analytics (5 types):**
-- Most expensive neighborhoods with comprehensive stats
-- Lifestyle-based neighborhood discovery  
-- Neighborhood similarity analysis with lifestyle matching
-
-**Feature Analysis (4 types):**
-- Popular features across 8 categories
-- Luxury feature combinations
-- Feature category performance analysis
-
-**Price Analytics (3 types):**
-- Price range distributions and market segmentation
-- Price per square foot analysis by city
-- Best value properties (lowest price/sqft)
-
-**Similarity Analysis (2 types):**  
-- Property similarity scores and perfect matches
-- Advanced similarity analysis with multiple factors
-
-**Advanced Analytics (6 types):**
-- Market segmentation (Entry Level, Mid Market, Upper Market, Luxury)
-- Investment opportunities (underpriced vs neighborhood average)
-- Feature correlation analysis
-- Lifestyle property analysis
-- Comprehensive property profiles with all enhancements
-
-### Sample Query Results
-```bash
-python main.py queries
-# Lifestyle Neighborhoods: tech-friendly (11), urban (11), outdoor-recreation (10)
-# Most Expensive: Deer Valley $10.2M avg, Promontory $5.1M avg
-# Popular Features: Mountain views (89), City views (85), Bike storage (83)
-# Property Similarities: 812 high-similarity pairs (>0.8 score)
-```
+### Indexes Created
+Performance indexes for:
+- Property: price, type, bedrooms, city, state
+- Neighborhood: city, state, walkability_score
+- Wikipedia: relationship_type, confidence
+- Geographic: city.state, county.state
 
 ## Architecture
 
-This application follows a **clean, modular architecture** designed for maintainability and growth.
-
-### Project Structure
-
 ```
 graph-real-estate/
-├── config.yaml            # Embedding and search configuration
-├── src/                    # Source code (enhanced modular organization)
-│   ├── models/            # Pydantic data models (enhanced)
-│   │   ├── property.py    # Enhanced property models with features
-│   │   ├── graph.py       # Graph node models + lifestyle/geographic
-│   │   └── relationships.py # Relationship models + similarities
-│   ├── data_loader/       # Enhanced data loading
-│   │   ├── loader.py      # Enhanced JSON loader with Wikipedia support
-│   │   └── __init__.py    # Enhanced data loading functions
-│   ├── database/          # Enhanced database layer
-│   │   ├── neo4j_client.py # Neo4j connection and utilities
-│   │   ├── connection.py   # Enhanced connection management
-│   │   └── transaction_manager.py # Transaction handling
-│   ├── controllers/       # Enhanced business logic
-│   │   └── graph_builder.py # Enhanced graph builder with 8 steps
-│   ├── queries/           # NEW: Comprehensive query system
-│   │   ├── query_library.py # 26 queries across 6 categories
-│   │   ├── query_runner.py  # Query execution engine
-│   │   └── __init__.py     # Query system exports
-│   ├── demos/             # NEW: Enhanced demonstrations
-│   │   ├── demo_queries.py  # Enhanced demo with new analytics
-│   │   └── __init__.py     # Demo exports
-│   └── vectors/           # Vector embeddings and search
-│       ├── models.py      # Embedding configuration models
-│       ├── vector_manager.py # Neo4j vector index management
-│       ├── embedding_pipeline.py # LlamaIndex embedding generation
-│       ├── hybrid_search.py # Combined vector + graph search
-│       └── config.yaml    # Vector configuration
-├── config/                # Configuration
-│   └── settings.py        # Application settings
-├── main.py               # Entry point for graph building
-├── create_embeddings.py  # Generate vector embeddings
-├── search_properties.py  # Semantic search interface
-├── requirements.txt      # Dependencies
-├── .env                  # Environment variables
-└── README.md            # This file
+├── __init__.py           # Module initialization
+├── __main__.py           # Entry point for python -m execution
+├── main.py               # Main application logic
+├── pyproject.toml        # Package configuration
+├── utils/
+│   ├── __init__.py       # Utils module initialization
+│   ├── database.py       # Neo4j connection utilities
+│   └── graph_builder.py  # Database initialization logic
+├── archive/              # Legacy code for reference
+├── config/               # Configuration files
+├── demos/                # Demo scripts
+└── tests/                # Test suite
 ```
 
-### Benefits:
-1. **Separation of Concerns**: Each module has a single responsibility
-2. **Testability**: Easy to unit test individual components
-3. **Maintainability**: Changes in one module don't affect others
-4. **Scalability**: Easy to add new features or data sources
-5. **Reusability**: Components can be reused in other projects
+## Integration with Data Pipeline
 
-### Module Responsibilities:
+This module prepares the database structure for data that will be loaded from the `data_pipeline` module. After initialization:
 
-- **models/**: Data validation and type definitions
-- **data/**: Data loading and transformation logic
-- **database/**: Database operations and connection management
-- **controllers/**: Business logic and orchestration
-- **config/**: Centralized configuration management
-- **vectors/**: Vector embeddings and semantic search
-  - `vector_manager.py`: Neo4j vector index operations
-  - `embedding_pipeline.py`: LlamaIndex-based embedding generation
-  - `hybrid_search.py`: Combined vector + graph search logic
+1. Run the data pipeline to process and enrich data:
+   ```bash
+   python -m data_pipeline
+   ```
 
-## Performance & Scale
+2. Load the processed parquet files into the graph database
 
-**Enhanced Database Metrics:**
-- **Total Nodes**: 867 (up from basic schema)
-- **Total Relationships**: 6,447 (comprehensive connections)
-- **Query Performance**: All queries execute <100ms with proper indexing
-- **Feature Processing**: 3,257 property-feature relationships
-- **Similarity Calculations**: 1,707 relationships with scoring
-- **Schema Optimization**: 7 constraints + 7 indexes for optimal performance
+3. The schema and indexes ensure optimal performance for queries
 
-**Build Performance:**
-- **Schema Creation**: ~2 seconds for complete enhanced schema
-- **Data Import**: 420 properties with all features in ~5 seconds  
-- **Relationship Creation**: 6,447 relationships calculated in ~10 seconds
-- **Similarity Analysis**: Property and neighborhood similarities in ~8 seconds
-- **Total Build Time**: Complete enhanced database in ~30 seconds
+## Sample Queries
 
-## Wikipedia Integration
+### Vector Embedding Analysis
 
-The enhanced graph database now includes **full Wikipedia integration**, transforming static property listings into rich, contextual narratives:
+Once your database is populated with properties containing vector embeddings, you can use these Cypher queries to analyze and search the data:
 
-### Wikipedia Features
-- **131 Wikipedia Articles**: Integrated as nodes in the graph database
-- **235 DESCRIBES Relationships**: Connecting Wikipedia articles to neighborhoods
-- **100+ Enriched Properties**: Properties with Wikipedia-powered descriptions
-- **Multiple Relationship Types**: primary, cultural, park, landmark, transit, school
-- **Confidence Scoring**: Each Wikipedia relationship has a confidence score (0.0-1.0)
-
-### Wikipedia Data Model
+#### 1. Basic Embedding Information
 ```cypher
-// Wikipedia Node
-(w:Wikipedia {
-  page_id: INTEGER,        // Wikipedia page ID
-  title: STRING,           // Article title
-  summary: STRING,         // Short summary (500 chars)
-  url: STRING,             // Wikipedia URL (stored but not fetched)
-  confidence: FLOAT,       // Confidence score (0.0-1.0)
-  is_synthetic: BOOLEAN,   // True if confidence < 0.5
-  relationship_type: STRING // Type of relationship to neighborhood
-})
-
-// DESCRIBES Relationship
-(w:Wikipedia)-[:DESCRIBES {
-  confidence: FLOAT,
-  discovered_via: STRING
-}]->(n:Neighborhood)
+// Get overview of embeddings in the database
+MATCH (p:Property) 
+WHERE p.embedding IS NOT NULL
+RETURN 
+    COUNT(p) as total_properties_with_embeddings,
+    AVG(size(p.embedding)) as avg_embedding_dimensions,
+    p.embedding_model as model_used,
+    COUNT(DISTINCT p.city) as unique_cities,
+    COUNT(DISTINCT p.state) as unique_states
 ```
 
-### Wikipedia Enhancement Process
-1. **Data Source**: Wikipedia data from `data/wikipedia/wikipedia.db`
-2. **Automatic Import**: During `python main.py all`, Wikipedia articles are imported
-3. **Relationship Creation**: Articles linked to neighborhoods based on geographic relevance
-4. **Property Enrichment**: Property descriptions enhanced with neighborhood Wikipedia context
-5. **URL Storage**: Wikipedia URLs stored for reference (content is in database, not fetched)
-
-### Using Wikipedia Features
-```python
-# Find properties near cultural landmarks
-MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
-WHERE w.relationship_type = 'cultural'
-RETURN p, n, w.title
-
-# Get neighborhood Wikipedia context
-MATCH (n:Neighborhood {name: 'Pacific Heights'})<-[:DESCRIBES]-(w:Wikipedia)
-RETURN w.title, w.relationship_type, w.confidence
-ORDER BY w.confidence DESC
-
-# Properties with rich Wikipedia context
-MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
-MATCH (n)<-[:DESCRIBES]-(w:Wikipedia)
-WITH p, n, count(w) as wiki_count
-WHERE wiki_count > 5
-RETURN p, n, wiki_count
+#### 2. Properties by Location with Embedding Info
+```cypher
+// Properties grouped by location with embedding metadata
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL
+RETURN 
+    p.state,
+    p.city,
+    COUNT(p) as property_count,
+    AVG(p.listing_price) as avg_price,
+    AVG(p.square_feet) as avg_sqft,
+    AVG(p.embedding_dimension) as embedding_dims,
+    COLLECT(p.listing_id)[0..3] as sample_ids
+ORDER BY property_count DESC
+LIMIT 10
 ```
 
-## Advanced Demo Scripts
+#### 3. Find Similar Properties by Embedding Text
+```cypher
+// Properties with similar embedding text (useful for debugging)
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL 
+  AND p.embedding_text CONTAINS "mountain views"
+RETURN 
+    p.listing_id,
+    p.city + ", " + p.state as location,
+    p.bedrooms,
+    p.bathrooms,
+    p.square_feet,
+    p.listing_price,
+    p.embedding_text[0..100] + "..." as embedding_text_preview,
+    size(p.embedding) as embedding_size
+ORDER BY p.listing_price
+LIMIT 5
+```
 
-The system includes **five comprehensive demonstration scripts** that showcase the full power of vector embeddings, hybrid search, Neo4j graph relationships, and Wikipedia integration for professional-grade real estate market intelligence.
+#### 4. Properties by Price Range with Embedding Analysis
+```cypher
+// Analyze embeddings across different price ranges
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL AND p.listing_price IS NOT NULL
+WITH p, 
+     CASE 
+        WHEN p.listing_price < 300000 THEN "Under $300K"
+        WHEN p.listing_price < 600000 THEN "$300K-$600K" 
+        WHEN p.listing_price < 1000000 THEN "$600K-$1M"
+        ELSE "Over $1M"
+     END as price_category
+RETURN 
+    price_category,
+    COUNT(p) as property_count,
+    AVG(p.listing_price) as avg_price,
+    AVG(p.square_feet) as avg_sqft,
+    AVG(p.property_quality_score) as avg_quality,
+    AVG(size(p.embedding)) as avg_embedding_dims,
+    COLLECT(DISTINCT p.property_type)[0..3] as common_types
+ORDER BY avg_price
+```
 
-### Demo 1: Advanced Hybrid Search (`demo_1_hybrid_search.py`)
+#### 5. Embedding Quality and Completeness Check
+```cypher
+// Check embedding quality and data completeness
+MATCH (p:Property)
+RETURN 
+    COUNT(p) as total_properties,
+    SUM(CASE WHEN p.embedding IS NOT NULL THEN 1 ELSE 0 END) as with_embeddings,
+    SUM(CASE WHEN p.embedding_text IS NOT NULL THEN 1 ELSE 0 END) as with_embedding_text,
+    AVG(CASE WHEN p.embedding_text_length IS NOT NULL THEN p.embedding_text_length ELSE 0 END) as avg_text_length,
+    COUNT(DISTINCT p.embedding_model) as embedding_models_used,
+    COLLECT(DISTINCT p.embedding_model) as models_list
+```
 
-**Purpose**: Demonstrates sophisticated search capabilities combining vector embeddings with graph intelligence for property discovery.
+#### 6. Properties with Rich Feature Sets
+```cypher
+// Find properties with rich descriptions and features (best for embeddings)
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL 
+  AND p.embedding_text_length > 200
+  AND size(p.features) >= 3
+RETURN 
+    p.listing_id,
+    p.city + ", " + p.state as location,
+    p.property_type,
+    p.bedrooms + " bed, " + toString(p.bathrooms) + " bath" as bed_bath,
+    p.square_feet as sqft,
+    "$" + toString(p.listing_price) as price,
+    size(p.features) as feature_count,
+    p.features[0..3] as top_features,
+    p.embedding_text_length as text_length,
+    size(p.embedding) as embedding_dims
+ORDER BY p.embedding_text_length DESC
+LIMIT 10
+```
 
-**Key Features:**
-- **Semantic Understanding**: Natural language queries like "waterfront luxury with investment potential"
-- **Graph Intelligence**: Leverages property similarity networks and neighborhood relationships
-- **Feature Correlations**: Discovers properties through complex feature co-occurrence patterns
-- **Multi-Criteria Search**: Combines price, location, lifestyle, and semantic factors
-- **Geographic Intelligence**: Understands regional preferences and market positioning
+#### 7. Vector Search Preparation Query
+```cypher
+// Prepare data for vector similarity search (extract embeddings as arrays)
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL
+  AND p.city = "San Francisco"  // Filter by location
+  AND p.bedrooms >= 2
+RETURN 
+    p.listing_id as id,
+    p.embedding as vector,
+    {
+        city: p.city,
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        sqft: p.square_feet,
+        price: p.listing_price,
+        type: p.property_type,
+        features: p.features,
+        description: p.description_cleaned
+    } as metadata
+LIMIT 50
+```
 
-**Demo Sections:**
-1. **Basic Semantic Search** - Natural language property discovery
-2. **Graph-Enhanced Search** - Similarity network exploration
-3. **Feature-Based Discovery** - Complex feature combination queries
-4. **Multi-Criteria Analysis** - Investment-focused property discovery
-5. **Geographic Market Intelligence** - Location-based market insights
+#### 8. Neighborhoods with Embedding Statistics
+```cypher
+// Analyze neighborhoods by embedding coverage and property characteristics
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL
+WITH p.neighborhood as neighborhood, 
+     p.city + ", " + p.state as location,
+     COLLECT(p) as properties
+RETURN 
+    neighborhood,
+    location,
+    size(properties) as property_count,
+    AVG([prop IN properties | prop.listing_price]) as avg_price,
+    AVG([prop IN properties | prop.square_feet]) as avg_sqft,
+    AVG([prop IN properties | size(prop.features)]) as avg_features,
+    AVG([prop IN properties | prop.embedding_text_length]) as avg_text_length,
+    [prop IN properties | prop.property_type][0..3] as property_types_sample
+ORDER BY property_count DESC
+LIMIT 15
+```
 
+#### 9. Time-based Embedding Analysis
+```cypher
+// Analyze when embeddings were created
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL AND p.embedded_at IS NOT NULL
+RETURN 
+    date(p.embedded_at) as embedding_date,
+    COUNT(p) as properties_embedded,
+    AVG(size(p.embedding)) as avg_dimensions,
+    COUNT(DISTINCT p.embedding_model) as models_used,
+    COLLECT(DISTINCT p.embedding_model) as models
+ORDER BY embedding_date DESC
+```
 
-**Use Cases:**
-- Real estate agents discovering unique property combinations
-- Investors finding properties with specific investment characteristics
-- Buyers with complex, multi-faceted requirements
+#### 10. Properties Ready for Hybrid Search
+```cypher
+// Find properties that are well-suited for hybrid search (good embeddings + rich graph connections)
+MATCH (p:Property)
+WHERE p.embedding IS NOT NULL 
+  AND p.embedding_text_length > 150
+  AND p.features IS NOT NULL
+  AND size(p.features) >= 2
+OPTIONAL MATCH (p)-[r]-()
+WITH p, COUNT(r) as relationship_count
+RETURN 
+    p.listing_id,
+    p.city + ", " + p.state as location,
+    p.bedrooms + "BR/" + toString(p.bathrooms) + "BA" as layout,
+    p.square_feet as sqft,
+    p.listing_price as price,
+    size(p.features) as feature_count,
+    p.embedding_text_length as text_length,
+    size(p.embedding) as embedding_dims,
+    relationship_count,
+    p.property_quality_score as quality_score
+ORDER BY (relationship_count * 0.3 + p.property_quality_score * 0.4 + size(p.features) * 0.3) DESC
+LIMIT 20
+```
 
----
+### Usage Tips
 
-### Demo 2: Graph Relationship Analysis (`demo_2_graph_analysis.py`)
+- **Performance**: Always filter by `p.embedding IS NOT NULL` when working with vector data
+- **Debugging**: Use the embedding text queries to understand what text was used to generate embeddings
+- **Analysis**: The completeness check helps identify data quality issues
+- **Search**: The vector search preparation query formats data for similarity calculations
 
-**Purpose**: Explores the deep relationship networks within the graph database to uncover hidden patterns and market insights.
+### Running Queries
 
-**Key Features:**
-- **Similarity Networks**: Analyzes property and neighborhood similarity clusters
-- **Feature Co-occurrence**: Discovers which features commonly appear together
-- **Geographic Hierarchies**: Explores city-neighborhood-property relationships
-- **Lifestyle Communities**: Identifies lifestyle-based market segments
-- **Investment Patterns**: Uncovers investment opportunity patterns
-- **Complex Graph Traversals**: Multi-hop relationship analysis
+Execute these queries in:
+- **Neo4j Browser**: `http://localhost:7474`
+- **Python**: Using the `neo4j` driver
+- **Demo Scripts**: Available in the `demos/` directory
 
-**Demo Sections:**
-1. **Property Similarity Networks** - Clusters of highly similar properties
-2. **Feature Co-occurrence Analysis** - Feature combination patterns and market impact
-3. **Geographic Relationship Mapping** - City-neighborhood-property hierarchies
-4. **Lifestyle Community Discovery** - Lifestyle tag-based market segmentation
-5. **Investment Pattern Analysis** - ROI and market opportunity discovery
-6. **Complex Graph Traversals** - Multi-hop relationship exploration
+## Next Steps
 
+After database initialization:
+1. Run the data pipeline to generate enriched parquet files
+2. Use graph loading utilities to import the processed data
+3. Create vector embeddings for semantic search capabilities
+4. Run analytics and queries on the populated graph
 
-**Use Cases:**
-- Market researchers analyzing property relationship patterns
-- Developers understanding feature combinations that create value
-- Investors identifying emerging market clusters
-
----
-
-### Demo 3: Market Intelligence (`demo_3_market_intelligence.py`)
-
-**Purpose**: Provides comprehensive market analysis capabilities using graph relationships and vector embeddings for professional real estate intelligence.
-
-**Key Features:**
-- **Geographic Market Analysis** - City and neighborhood performance metrics
-- **Price Prediction & Trends** - Feature-based pricing intelligence
-- **Investment Opportunity Discovery** - ROI analysis and market gap identification
-- **Lifestyle Market Segmentation** - Demographic and preference analysis
-- **Feature Impact Analysis** - Quantifying feature value and market impact
-- **Competitive Intelligence** - Property positioning and market dynamics
-
-**Demo Sections:**
-1. **Geographic Market Analysis**
-   - City-level market overview and performance metrics
-   - Neighborhood market segmentation (Ultra-Luxury, Luxury, Premium, Mid-Market, Affordable)
-   - Geographic arbitrage opportunities across neighborhoods
-
-2. **Price Prediction & Trends Analysis**
-   - Feature value impact analysis with premium calculations
-   - Property type pricing intelligence across markets
-   - Pricing anomaly detection using statistical analysis
-
-3. **Investment Opportunity Discovery**
-   - Undervalued market segments (high features, lower prices)
-   - Emerging market indicators (diversity and growth potential)
-   - AI-powered investment portfolio recommendations
-
-4. **Lifestyle Market Segmentation**
-   - Lifestyle preference market analysis
-   - Lifestyle-feature correlation matrix
-   - Market size calculations by lifestyle segment
-
-5. **Feature Impact Analysis**
-   - Feature category performance analysis
-   - Feature co-occurrence network analysis with lift calculations
-   - Feature rarity and exclusivity analysis
-
-6. **Competitive Market Intelligence**
-   - Competitive property cluster analysis
-   - Market positioning intelligence
-   - Market gap analysis and opportunity identification
-
-
-**Use Cases:**
-- Real estate professionals conducting market research
-- Investment firms analyzing market opportunities
-- Property developers identifying market gaps
-- Market analysts creating comprehensive reports
-
----
-
-### Demo 4: Wikipedia-Enhanced Listings (`demo_4_wikipedia_enhanced.py`)
-
-**Purpose**: Showcases how Wikipedia integration transforms static property listings into rich, contextual narratives with cultural and historical insights.
-
-**Key Features:**
-- **Property Enhancement**: Listings enriched with Wikipedia neighborhood context
-- **Cultural Intelligence**: Properties near cultural and historical landmarks
-- **Neighborhood Profiles**: Deep neighborhood analysis using Wikipedia data
-- **Investment Insights**: Market opportunities based on Wikipedia significance
-- **Lifestyle Discovery**: Match properties to lifestyle preferences via Wikipedia
-- **Comparative Analysis**: Compare neighborhoods using Wikipedia-derived intelligence
-
-**Demo Sections:**
-1. **Basic Wikipedia Enhancement** - Properties with enriched descriptions
-2. **Cultural & Historical Context** - Landmarks and cultural significance
-3. **Neighborhood Intelligence** - Comprehensive profiles from Wikipedia
-4. **Investment Insights** - Wikipedia density and market opportunities
-5. **Lifestyle Discovery** - Urban cultural, nature, historic preferences
-6. **Comparative Market Analysis** - Neighborhood comparison matrix
-
-
-**Use Cases:**
-- Real estate agents providing rich context to clients
-- Buyers seeking culturally significant neighborhoods
-- Investors identifying historically important areas
-- Lifestyle-focused property searches
-
----
-
-### Demo 5: Pure Vector Embedding Search (`demo_5_pure_vector_search.py`)
-
-**Purpose**: Demonstrates pure vector similarity search without graph boosting, showing the raw power of semantic embeddings for property discovery.
-
-**Key Features:**
-- **Pure Semantic Search**: Natural language queries using only embeddings
-- **Semantic Understanding**: Shows how embeddings capture meaning beyond keywords
-- **Cross-Domain Similarity**: Finding properties through abstract descriptions
-- **Threshold Analysis**: Understanding similarity scores and quality
-- **Vector vs Hybrid**: Direct comparison with graph-enhanced results
-- **Embedding Space**: Exploration of property clusters in vector space
-
-**Demo Sections:**
-1. **Basic Semantic Search** - Natural language property queries
-2. **Semantic Understanding** - Demonstrating meaning capture
-3. **Cross-Domain Similarity** - Abstract and metaphorical queries
-4. **Similarity Thresholds** - Score analysis and quality metrics
-5. **Vector vs Hybrid Comparison** - Pure vs graph-enhanced results
-6. **Embedding Space Exploration** - Property clustering analysis
-
-**Key Insights:**
-- Embeddings understand semantic meaning, not just keywords
-- Similarity scores >0.8 indicate excellent matches
-- Abstract queries like "James Bond style bachelor pad" work
-- Properties naturally cluster in embedding space
-- Hybrid search adds graph intelligence for better results
-
-**Use Cases:**
-- Understanding what embeddings alone can achieve
-- Semantic search without graph dependencies
-- Finding properties through creative descriptions
-- Benchmarking embedding model performance
-
----
-
-
-## Future Enhancements
-
-The modular structure makes it easy to add:
-- Additional data sources
-- New relationship types
-- Advanced analytics
-- API endpoints
-- Caching layers
-- Testing suites
-- Multi-modal embeddings (images + text)
-- Real-time embedding updates
-- Personalized search with user preferences
-
-##  License
+## License
 
 MIT

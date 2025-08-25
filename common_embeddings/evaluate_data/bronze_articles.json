@@ -1,0 +1,52 @@
+{
+  "articles": [
+    {
+      "page_id": 26974,
+      "title": "San Francisco Peninsula",
+      "summary": "The San Francisco Peninsula is a peninsula in the San Francisco Bay Area that separates San Francisco Bay from the Pacific Ocean. On its northern tip is the City and County of San Francisco. Its southern base is in northern Santa Clara County, including the cities of Sunnyvale, Palo Alto, Mountain View, and Los Gatos.",
+      "long_summary": "The San Francisco Peninsula is a peninsula in the San Francisco Bay Area that separates San Francisco Bay from the Pacific Ocean. On its northern tip is the City and County of San Francisco. Its southern base is in northern Santa Clara County, including the cities of Sunnyvale, Palo Alto, Mountain View, and Los Gatos. Most of the Peninsula is occupied by San Mateo County, between San Francisco and Santa Clara counties, and including the cities and towns of Atherton, Belmont, Brisbane, Burlingame, Colma, Daly City, East Palo Alto, El Granada, Foster City, Half Moon Bay, Hillsborough, La Honda, Loma Mar, Los Altos, Los Altos Hills, Menlo Park, Millbrae, Mountain View, Pacifica, Palo Alto, Pescadero, Portola Valley, Redwood City, Redwood Shores, San Bruno, San Carlos, San Gregorio, San Mateo, South San Francisco, Sunnyvale, and Woodside.",
+      "key_topics": "San Francisco Bay Area, Pacific Ocean, San Mateo County, Silicon Valley, Geography",
+      "city": "San Francisco",
+      "county": "San Francisco County",
+      "state": "California",
+      "country": "United States",
+      "confidence": 0.95,
+      "categories": ["Peninsulas of California", "San Francisco Bay Area", "Geography of the San Francisco Bay Area"],
+      "html_file": "data/wikipedia/pages/26974.html"
+    },
+    {
+      "page_id": 71083,
+      "title": "Wayne County, Utah",
+      "summary": "Wayne County is a county in the U.S. state of Utah. As of the 2020 United States Census, the population was 2,486, making it the fourth-least populous county in Utah. Its county seat is Loa, and it is named for General 'Mad Anthony' Wayne.",
+      "long_summary": "Wayne County is a county in the U.S. state of Utah. As of the 2020 United States Census, the population was 2,486, making it the fourth-least populous county in Utah. Its county seat is Loa, and it is named for General 'Mad Anthony' Wayne. Wayne County is part of the Hanksville Micropolitan Statistical Area. The county lies in south-central Utah and is known for its scenic beauty, including Capitol Reef National Park, which covers much of the county. The county is also home to portions of Dixie National Forest and Fishlake National Forest. The terrain is characterized by high plateaus, deep canyons, and colorful rock formations.",
+      "key_topics": "Utah counties, Capitol Reef National Park, Rural Utah, Tourism, National Parks",
+      "city": "Loa",
+      "county": "Wayne County",
+      "state": "Utah",
+      "country": "United States",
+      "confidence": 0.98,
+      "categories": ["Counties in Utah", "Wayne County, Utah", "1892 establishments in Utah Territory"],
+      "html_file": "data/wikipedia/pages/71083.html"
+    },
+    {
+      "page_id": 1706289,
+      "title": "Fillmore District, San Francisco",
+      "summary": "The Fillmore District is a historical neighborhood in San Francisco located to the southwest of Nob Hill, west of Market Street and north of the Mission District. It has been given various nicknames such as 'the Moe' or 'the Fill'. The Fillmore District began to rise to prominence after the 1906 San Francisco earthquake.",
+      "long_summary": "The Fillmore District is a historical neighborhood in San Francisco located to the southwest of Nob Hill, west of Market Street and north of the Mission District. It has been given various nicknames such as 'the Moe' or 'the Fill'. The Fillmore District began to rise to prominence after the 1906 San Francisco earthquake. As a result of not being affected by the earthquake itself nor the large fires that resulted, it quickly became one of the major commercial and cultural centers of the city. After the earthquake, the district experienced a large influx of diverse ethnic populations. It began to house large numbers of African Americans, Japanese and Jews. Each group significantly contributed to the local culture and earned the Fillmore district a reputation for being 'One of the most diverse neighborhoods in San Francisco'. In particular, the district became known as 'the Harlem of the West' during the 1940s and 1950s for its vibrant African American jazz scene.",
+      "key_topics": "San Francisco neighborhoods, African American history, Jazz history, Urban development, Cultural districts",
+      "city": "San Francisco",
+      "county": "San Francisco County", 
+      "state": "California",
+      "country": "United States",
+      "confidence": 0.97,
+      "categories": ["Neighborhoods in San Francisco", "African-American history in San Francisco", "Jazz in San Francisco"],
+      "html_file": "data/wikipedia/pages/1706289.html"
+    }
+  ],
+  "metadata": {
+    "total_articles": 3,
+    "dataset_type": "bronze",
+    "description": "Small test dataset for quick evaluation",
+    "created": "2024-01-01"
+  }
+}

@@ -1,0 +1,66 @@
+# Common Embeddings Module Configuration
+# This configuration controls embedding generation, storage, and processing
+
+# Embedding provider configuration
+embedding:
+  provider: ollama  # Options: ollama, openai, gemini, voyage, cohere
+  
+  # Ollama settings (local models)
+  ollama_base_url: http://localhost:11434
+  ollama_model: nomic-embed-text  # Or: mxbai-embed-large
+  
+  # OpenAI settings (if provider=openai)
+  # openai_api_key: null  # Set via OPENAI_API_KEY env var
+  openai_model: text-embedding-3-small
+  
+  # Gemini settings (if provider=gemini)
+  # gemini_api_key: null  # Set via GOOGLE_API_KEY env var
+  gemini_model: models/embedding-001
+  
+  # Voyage settings (if provider=voyage)
+  # voyage_api_key: null  # Set via VOYAGE_API_KEY env var
+  voyage_model: voyage-3
+  
+  # Cohere settings (if provider=cohere)
+  # cohere_api_key: null  # Set via COHERE_API_KEY env var
+  cohere_model: embed-english-v3.0
+
+# ChromaDB configuration for future embedding support
+chromadb:
+  host: "localhost"
+  port: 8000
+  persist_directory: "./data/common_embeddings"
+  
+  # Collection naming patterns
+  property_collection_pattern: "property_{model}_v{version}"
+  wikipedia_collection_pattern: "wikipedia_{model}_v{version}"
+  neighborhood_collection_pattern: "neighborhood_{model}_v{version}"
+
+# Text chunking configuration
+chunking:
+  method: semantic  # Options: simple, semantic, sentence, none
+  
+  # Simple chunking parameters
+  chunk_size: 800
+  chunk_overlap: 100
+  
+  # Semantic chunking parameters
+  breakpoint_percentile: 90
+  buffer_size: 2
+  
+  # Processing options
+  split_oversized_chunks: false
+  max_chunk_size: 1000
+
+# Processing and performance configuration
+processing:
+  batch_size: 100
+  max_workers: 4
+  show_progress: true
+  rate_limit_delay: 0.0  # Seconds between API calls
+  
+  # Document chunking batch size (for progress visibility during semantic chunking)
+  document_batch_size: 20
+
+# Metadata schema version
+metadata_version: "1.0"

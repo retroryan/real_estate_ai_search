@@ -9,18 +9,16 @@ from .models import (
     WikipediaPOI,
     LocationContext,
     NeighborhoodContext,
-    LocationScores
+    LocationScores,
+    POICategory
 )
-from .extractor import WikipediaExtractor
-from .enricher import PropertyEnricher
 
 __all__ = [
     'WikipediaArticle',
     'WikipediaLocation',
     'WikipediaPOI',
+    'POICategory',
     'LocationContext',
     'NeighborhoodContext',
-    'LocationScores',
-    'WikipediaExtractor',
-    'PropertyEnricher'
+    'LocationScores'
 ]

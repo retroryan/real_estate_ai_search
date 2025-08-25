@@ -1,6 +1,6 @@
 # Real Estate AI Search
 
-This repository demonstrates both **GraphRAG** and **RAG** architectures through two production-ready real estate search implementations, alongside comprehensive tools for Wikipedia content processing and semantic search using generative AI and embeddings. The core modules showcase how to build AI-driven data pipelines for both approaches. GraphRAG uses Neo4j where embeddings are stored as node properties within the graph database for unified hybrid search. RAG leverages Elasticsearch with vector search capabilities. Both implementations demonstrate how to prepare, process, and serve data for generative AI applications.
+This repository demonstrates both **GraphRAG** and **RAG** architectures through two production-ready real estate search implementations, alongside comprehensive tools for Wikipedia content processing and semantic search using generative AI and embeddings. The data is ingested via Spark Data Pipelines, providing scalable processing and transformation capabilities. The core modules showcase how to build AI-driven data pipelines for both approaches. GraphRAG uses Neo4j where embeddings are stored as node properties within the graph database for unified hybrid search. RAG leverages Elasticsearch with vector search capabilities. Both implementations demonstrate how to prepare, process, and serve data for generative AI applications.
 
 ### Core AI Capabilities
 - **Neo4j GraphRAG Implementation**: Graph-based retrieval system with native vector search, combining knowledge graph relationships with semantic embeddings for enhanced accuracy
@@ -19,43 +19,44 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                    Generative AI Pipeline                      │
+│              Generative AI Pipeline (Data Preparation)         │
 ├───────────────┬──────────────┬──────────────┬──────────────────┤
 │ Data Sources  │  Processing  │  AI Models   │   Storage        │
 ├───────────────┼──────────────┼──────────────┼──────────────────┤
-│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • NEO4J GraphRAG │
-│ • Real Estate │ • LlamaIndex │ • OpenRouter │ • Elasticsearch  │
-│ • User Queries│ • Chunking   │ • Gemini     │ • ChromaDB       │
-│               │ • Filtering  │ • VoyageAI   │ • SQLite         │
+│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • Parquet        │
+│ • Real Estate │ • LlamaIndex │ • OpenRouter │ • ChromaDB       │
+│ • User Queries│ • Chunking   │ • Claude     │                  │
+│               │ • Filtering  │ • VoyageAI   │                  │
 └───────────────┴──────────────┴──────────────┴──────────────────┘
                               ↓
-        ┌────────────────────────────────────────────┐
-        │         NEO4J GRAPHRAG SYSTEM              │
-        ├────────────────────────────────────────────┤
-        │ • Knowledge Graph Construction             │
-        │ • Native Vector Indexing                   │
-        │ • Hybrid Graph + Vector Search             │
-        │ • Relationship-Aware Retrieval             │
-        │ • Graph Centrality Scoring                 │
-        └────────────────────────────────────────────┘
-                              ↓
+┌────────────────────────────────────────────────────────────────┐
+│                      Spark Data Pipeline                       │
+├────────────────────────────────────────────────────────────────┤
+│ • Distributed Data Processing & Transformation                 │
+│ • Scalable ETL Operations                                      │
+│ • Data Enrichment & Feature Engineering                        │
+│ • Parallel Embedding Generation                                │
+│ • Orchestration of All Data Flows                              │
+└────────────────────────────────────────────────────────────────┘
+                    ↙                       ↘
+    ┌──────────────────────────┐   ┌──────────────────────────┐
+    │        NEO4J              │   │     ELASTICSEARCH        │
+    ├──────────────────────────┤   ├──────────────────────────┤
+    │ • Knowledge Graph         │   │ • Full-Text Search       │
+    │ • Native Vector Indexing  │   │ • Vector Search          │
+    │ • Hybrid Graph + Vector   │   │ • Faceted Filtering      │
+    │ • Relationship Retrieval  │   │ • Relevance Scoring      │
+    │ • Graph Centrality        │   │ • Aggregations           │
+    └──────────────────────────┘   └──────────────────────────┘
+                    ↘                       ↙
                     ┌──────────────────┐
                     │   RAG/GraphRAG   │
                     │   Applications   │
                     └──────────────────┘
 ```
 
-### [1. Wikipedia Crawler](./wiki_crawl/)
-**Purpose**: Acquire Wikipedia data for location-based analysis  
-**Key Features**:
-- BFS crawling with depth control
-- Relevance scoring for location articles
-- Neighborhood-specific search capabilities
-
----
-
-### [2. Wikipedia Summarization](./wiki_summary/)
-**Purpose**: Use generative AI with DSPy for intelligent content classification and summarization  
+### [1. Wikipedia Summarization](./wiki_summary/README.md)
+**Purpose**: Use generative AI with DSPy for Context Engineering and LLM Calling  
 **Key Features**:
 - **AI Content Classification**: Employs generative AI models to classify and extract relevant content
 - **DSPy Pipeline**: Uses DSPy framework for structured Chain-of-Thought reasoning and prompt optimization
@@ -65,20 +66,31 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 
 ---
 
-### [3. Wikipedia Embedding System](./wiki_embed/)
-**Purpose**: Generate and store AI embeddings from Wikipedia articles for semantic search  
+### [2. Spark Data Pipeline](./data_pipeline/)
+**Purpose**: Spark-based distributed data processing and transformation pipeline that adds Vector Embeddings using LlamaIndex  
 **Key Features**:
-- **Generative AI Embeddings**: Creates semantic embeddings using multiple AI providers (Ollama, Gemini, Voyage, OpenAI)
-- **Vector Database Storage**: Stores AI-generated embeddings in ChromaDB for fast similarity search
-- **RAG Integration**: Prepares embeddings for retrieval-augmented generation workflows
-- **Multi-Query Testing**: Tests 6 query types (geographic, landmark, historical, recreational, cultural, administrative)
-- **AI Model Comparison**: Benchmarks different embedding models for optimal retrieval performance
-- **Location-Aware Retrieval**: Uses AI to understand spatial and semantic relationships
+- **Scalable ETL Operations**: Distributed processing of property and location data
+- **Data Enrichment**: Feature engineering and data augmentation
+- **Parallel Processing**: Leverages Spark for high-performance data transformations
+- **Vector Embedding Integration**: Coordinates embedding generation across multiple providers like Voyage, Ollama, OpenAI, and Gemini
+- **Output to Multiple Stores**: Writes to Parquet, Neo4j, and Elasticsearch
 
 ---
 
-### [4. AI-Enhanced Real Estate Search Engine with Elasticsearch](./real_estate_search/)
-**Purpose**: AI-powered Elasticsearch-based property search system for synthetic data  
+### [3. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
+**Purpose**: Neo4j-based GraphRAG system for intelligent property and Wikipedia search with knowledge graph relationships  
+**Key Features**:
+- **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
+- **Hybrid Scoring Algorithm**: Combines vector similarity, graph centrality, and feature richness
+- **Knowledge Graph Structure**: Properties, neighborhoods, features, and Wikipedia articles connected through semantic relationships
+- **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
+- **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
+- **Natural Language Search**: "modern condo with city views", "family home near schools"
+
+---
+
+### [4. Elasticsearch Real Estate RAG](./real_estate_search/)
+**Purpose**: Elasticsearch-based RAG real estate and Wikipedia search  
 **Key Features**:
 - AI-enhanced full-text search with multi-field queries and relevance scoring
 - Intelligent geographic radius search with coordinate-based ranking
@@ -89,27 +101,15 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 
 ---
 
-### [5. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
-**Purpose**: Neo4j-based GraphRAG system for intelligent property search with knowledge graph relationships  
+### [5. Common Embeddings](./common_embeddings/)
+**Purpose**: Testing LlamaIndex Semantic Chunking and embedding evaluations using Voyage, Ollama and OpenAI with ChromaDB  
 **Key Features**:
-- **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
-- **Hybrid Scoring Algorithm**: Combines vector similarity, graph centrality, and feature richness
-- **Knowledge Graph Structure**: 84 properties, 387 features, 21 neighborhoods, 1,267 relationships
-- **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
-- **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
-- **Natural Language Search**: "modern condo with city views", "family home near schools"
-
----
-
-### [6. Real Estate Embedding Pipeline](./real_estate_embed/)
-**Purpose**: Use generative AI to create, store, and benchmark semantic embeddings for synthetic real estate data  
-**Key Features**:
-- **AI Embedding Generation**: Uses generative AI models to create semantic embeddings from synthetic property descriptions
-- **Multi-Model Support**: Compare embeddings from nomic-embed-text, mxbai-embed-large, and other AI models
-- **Dual Vector Storage**: Stores AI-generated embeddings in both ChromaDB and Elasticsearch for flexible retrieval options
-- **RAG Preparation**: Prepares embeddings for use in retrieval-augmented generation pipelines with either storage backend
-- **Performance Metrics**: Evaluates retrieval accuracy with precision, recall, and F1 scores
-- **Realistic Testing**: Tests with 10 real-world property search queries on synthetic data
+- **Semantic Chunking**: LlamaIndex-powered intelligent text segmentation
+- **Multi-Provider Comparison**: Benchmarks Voyage, Ollama, and OpenAI embeddings
+- **ChromaDB Integration**: Vector storage and retrieval testing
+- **Evaluation Metrics**: Comprehensive accuracy and performance analysis
+- **Chunking Strategies**: Compare semantic vs fixed-size chunking approaches
+- **Retrieval Testing**: End-to-end RAG pipeline evaluation
 
 ## Generative AI Technologies
 
@@ -161,6 +161,7 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 #### AI Content Intelligence
 - **Chain-of-Thought (CoT) Reasoning**: Multi-step AI logical analysis for classification
 - **AI Structured Data Extraction**: Converting unstructured text to typed schemas using LLMs
+- **AI Summarization**: Intelligent content summarization with key information extraction
 - **AI Confidence Scoring**: Probabilistic quality assessment of extractions
 - **AI Content Classification Pipeline**: Multi-stage AI filtering and categorization
 
@@ -172,17 +173,9 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 
 ## Getting Started
 
-### System Requirements
-
-- **Python**: 3.8+ (3.9+ recommended)
-- **Memory**: 4GB RAM minimum
-- **Storage**: 5GB free space for data and models
-- **OS**: macOS, Linux, Windows (WSL recommended)
-- **Elasticsearch**: 8.x (optional, for real estate search engine)
-
 ### Installation
 
-#### 2. Set Up Python Environment
+#### 1. Set Up Python Environment
 ```bash
 # Create virtual environment
 python -m venv venv
@@ -197,13 +190,13 @@ venv\Scripts\activate
 pip install --upgrade pip
 ```
 
-#### 3. Install Dependencies
+#### 2. Install Dependencies
 ```bash
-# Install all dependencies
-pip install -r requirements.txt
+# Install all dependencies using pyproject.toml
+pip install -e .
 ```
 
-#### 4. Install and Configure Ollama (for local embeddings)
+#### 3. Install and Configure Ollama (for local embeddings)
 ```bash
 # macOS
 brew install ollama
@@ -219,7 +212,7 @@ ollama pull nomic-embed-text
 ollama pull mxbai-embed-large
 ```
 
-#### 5. Configure API Keys (optional)
+#### 4. Configure API Keys (optional)
 For enhanced functionality with external APIs:
 
 ```bash
@@ -231,40 +224,66 @@ cp .env.example .env
 # OPENROUTER_API_KEY=your-key-here
 # GEMINI_API_KEY=your-key-here
 # VOYAGE_API_KEY=your-key-here
+# NEO4J_URI=bolt://localhost:7687
+# NEO4J_USER=neo4j
+# NEO4J_PASSWORD=password
 ```
 
 ## Data Organization
 
 ```
-property_finder/
+real_estate_ai_search/
 ├── data/                      # Shared data directory
-│   ├── real_estate_chroma_db/ # Embeddings for real estate
-│   ├── wiki_chroma_db/        # Embeddings for Wikipedia
-│   ├── wikipedia/             # Wikipedia articles and pages
-│   │   ├── pages/            # HTML files
-│   │   └── wikipedia.db      # SQLite database
-│   └── test_queries.json      # Test queries for evaluation
+│   ├── parquet/              # Parquet files for Spark processing
+│   ├── chroma_db/            # ChromaDB vector storage
+│   ├── wikipedia/            # Wikipedia articles and pages
+│   │   ├── pages/           # HTML files
+│   │   └── wikipedia.db     # SQLite database
+│   └── embeddings/          # Generated embeddings
 │
-├── graph-real-estate/         # Neo4j GraphRAG module
-│   ├── src/                  # Source code
-│   │   ├── models/          # Pydantic models
-│   │   ├── vectors/         # Embedding pipeline
-│   │   └── database/        # Neo4j client
-│   ├── main.py              # Graph builder
-│   ├── create_embeddings.py # Vector generation
+├── data_pipeline/            # Spark Data Pipeline
+│   ├── core/                # Core pipeline components
+│   ├── loaders/            # Data loaders
+│   ├── enrichment/         # Enrichment processors
+│   └── outputs/            # Output writers
+│
+├── graph-real-estate/        # Neo4j GraphRAG module
+│   ├── src/                # Source code
+│   │   ├── models/        # Pydantic models
+│   │   ├── vectors/       # Embedding pipeline
+│   │   └── database/      # Neo4j client
 │   └── search_properties.py # Hybrid search
 │
-├── real_estate_data/          # Synthetic property data (AI-generated for demo purposes)
-│   ├── properties_sf.json    # Synthetic San Francisco properties
-│   ├── properties_pc.json    # Synthetic Park City properties
-│   ├── neighborhoods_sf.json # Synthetic SF neighborhoods
-│   └── neighborhoods_pc.json # Synthetic PC neighborhoods
+├── real_estate_search/       # Elasticsearch RAG module
+│   ├── api/                # FastAPI endpoints
+│   ├── models/             # Data models
+│   └── search/             # Search logic
 │
-└── results/                   # Evaluation results
-    └── comparison.json        # Model comparison metrics
+├── common_embeddings/        # Embedding evaluation
+│   ├── chunkers/           # Semantic chunking
+│   ├── embedders/          # Multi-provider embeddings
+│   └── evaluators/         # Performance metrics
+│
+└── real_estate_data/         # Source data
+    ├── properties_*.json    # Property datasets
+    └── neighborhoods_*.json # Neighborhood datasets
 ```
 
 ## Common Workflows
+
+### Spark Data Pipeline
+Run the complete data pipeline with output to multiple destinations:
+
+```bash
+# Run Spark pipeline with outputs to Neo4j, Elasticsearch, and Parquet
+python -m data_pipeline --output-destination neo4j,elasticsearch,parquet
+
+# Run with specific configuration
+python -m data_pipeline --config config/production.yaml
+
+# Run in test mode with sample data
+python -m data_pipeline --test-mode --sample-size 100
+```
 
 ### Neo4j GraphRAG Pipeline
 Build a complete GraphRAG system with Neo4j:
@@ -273,43 +292,39 @@ Build a complete GraphRAG system with Neo4j:
 # 1. Setup Neo4j with Docker
 docker-compose up -d
 
-# 2. Build the knowledge graph
-python graph-real-estate/main.py all
+# 2. Run Spark pipeline to populate Neo4j
+python -m data_pipeline --output-destination neo4j
 
-# 3. Generate vector embeddings
-python graph-real-estate/create_embeddings.py
-
-# 4. Test hybrid search
+# 3. Test hybrid search
 python graph-real-estate/search_properties.py "modern condo with city views" --demo
+```
+
+### Elasticsearch RAG Pipeline
+Set up Elasticsearch-based RAG system:
+
+```bash
+# 1. Start Elasticsearch
+docker-compose up elasticsearch -d
+
+# 2. Run Spark pipeline to populate Elasticsearch
+python -m data_pipeline --output-destination elasticsearch
+
+# 3. Start the search API
+uvicorn real_estate_search.api:app --reload
 ```
 
 ### Complete Wikipedia Pipeline
 Process Wikipedia data from crawling to searchable embeddings:
 
 ```bash
-# 1. Crawl Wikipedia for a location
-python wiki_crawl/wikipedia_location_crawler.py crawl "Park City" "Utah" --depth 2
-
-# 2. Generate summaries with LLM
+# 1. Generate summaries with DSPy
 python wiki_summary/summarize_main.py --limit 50
 
-# 3. Create embeddings for search
-python -m wiki_embed.main create
+# 2. Run Spark pipeline for Wikipedia data
+python -m data_pipeline --data-type wikipedia
 
-# 4. Test retrieval accuracy
-python -m wiki_embed.main test
-```
-
-### Real Estate Analysis
-Compare embedding models on synthetic property data:
-
-```bash
-# Create embeddings for both models
-python -m real_estate_embed.main create --model nomic-embed-text
-python -m real_estate_embed.main create --model mxbai-embed-large
-
-# Compare performance
-python -m real_estate_embed.main compare
+# 3. Test embeddings with LlamaIndex
+python -m common_embeddings.main evaluate
 ```
 
 ### Neighborhood Research

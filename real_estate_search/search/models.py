@@ -8,9 +8,9 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt, NonNegativeFloat, PositiveInt
 
-from ..indexer.enums import PropertyType, PropertyStatus, SortOrder, FieldName
-from ..indexer.models import Property, Address, Neighborhood
-from .enums import QueryType, GeoDistanceUnit, AggregationName
+from indexer.enums import PropertyType, PropertyStatus, SortOrder, FieldName
+from indexer.models import Property, Address, Neighborhood
+from search.enums import QueryType, GeoDistanceUnit, AggregationName
 
 
 class GeoPoint(BaseModel):
@@ -141,6 +141,9 @@ class PropertyHit(BaseModel):
     
     # Internal ID
     doc_id: str = Field(..., description="Elasticsearch document ID")
+    
+    # Raw Elasticsearch hit for accessing enrichment data (excluded from serialization)
+    raw_hit: Optional[Dict[str, Any]] = Field(None, exclude=True)
 
 
 class Aggregation(BaseModel):

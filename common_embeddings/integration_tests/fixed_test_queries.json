@@ -1,0 +1,103 @@
+{
+  "test_queries": [
+    {
+      "query_id": "geo_001", 
+      "query": "Silicon Valley technology companies and urban development",
+      "expected_articles": ["San Francisco Peninsula"],
+      "description": "Geographic query about tech industry and urban development",
+      "category": "geographic_tech",
+      "expected_page_ids": [26974]
+    },
+    {
+      "query_id": "rec_001",
+      "query": "water sports boating fishing reservoir camping facilities",
+      "expected_articles": ["Deer Creek State Park (Utah)", "Bear Lake State Park (Utah)"],
+      "description": "Recreational activities query should match both parks",
+      "category": "recreational_activities",
+      "expected_page_ids": [17997272, 7369514]
+    },
+    {
+      "query_id": "hist_001",
+      "query": "historical landmarks heritage sites California",
+      "expected_articles": ["California Historical Landmarks in Solano County"],
+      "description": "Historical landmarks and heritage sites query",
+      "category": "historical_sites",
+      "expected_page_ids": [36842068]
+    },
+    {
+      "query_id": "geo_002",
+      "query": "mountain range peaks elevation southwestern Utah",
+      "expected_articles": ["Black Mountains (Utah)"],
+      "description": "Geographic query about mountain ranges",
+      "category": "geographic_mountains",
+      "expected_page_ids": [34629558]
+    },
+    {
+      "query_id": "trans_001",
+      "query": "transportation highways public transit Caltrain BART",
+      "expected_articles": ["San Francisco Peninsula"],
+      "description": "Transportation infrastructure query",
+      "category": "transportation",
+      "expected_page_ids": [26974]
+    },
+    {
+      "query_id": "water_001",
+      "query": "Provo River Project water resource management Salt Lake City",
+      "expected_articles": ["Deer Creek State Park (Utah)"],
+      "description": "Water resource management and infrastructure",
+      "category": "water_management",
+      "expected_page_ids": [17997272]
+    },
+    {
+      "query_id": "cult_001",
+      "query": "Mountain Man Rendezvous Bear Lake Raspberry Days annual events",
+      "expected_articles": ["Bear Lake State Park (Utah)"],
+      "description": "Cultural events and celebrations",
+      "category": "cultural_events",
+      "expected_page_ids": [7369514]
+    },
+    {
+      "query_id": "hist_002",
+      "query": "Old Spanish National Historic Trail Parowan Gap Petroglyphs",
+      "expected_articles": ["Black Mountains (Utah)"],
+      "description": "Historic trails and archaeological sites",
+      "category": "historic_trails",
+      "expected_page_ids": [34629558]
+    },
+    {
+      "query_id": "county_001",
+      "query": "San Mateo County Santa Clara County Bay Area",
+      "expected_articles": ["San Francisco Peninsula"],
+      "description": "County-specific geographic query",
+      "category": "administrative_geography",
+      "expected_page_ids": [26974]
+    },
+    {
+      "query_id": "multi_001",
+      "query": "Utah state parks outdoor recreation camping hiking",
+      "expected_articles": ["Deer Creek State Park (Utah)", "Bear Lake State Park (Utah)"],
+      "description": "Multi-match query for Utah recreational areas",
+      "category": "multi_match_recreation",
+      "expected_page_ids": [17997272, 7369514]
+    }
+  ],
+  "metadata": {
+    "total_queries": 10,
+    "query_types": [
+      "single_match",
+      "multi_match", 
+      "geographic",
+      "recreational",
+      "historical",
+      "cultural",
+      "administrative"
+    ],
+    "designed_for": "integration_tests",
+    "test_coverage": {
+      "all_articles_covered": true,
+      "diverse_query_types": true,
+      "precision_recall_testing": true
+    },
+    "created_date": "2025-08-23"
+  }
+}

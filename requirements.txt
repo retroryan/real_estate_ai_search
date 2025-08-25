@@ -8,6 +8,14 @@ chromadb==0.4.22
 pydantic==2.5.3
 pyyaml==6.0.1
 
+# FastAPI dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Testing dependencies
+pytest>=7.4.0
+httpx>=0.25.0  # Required for FastAPI TestClient
+
 # Vector store dependencies
 elasticsearch>=8.0.0
 

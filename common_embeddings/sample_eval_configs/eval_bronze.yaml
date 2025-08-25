@@ -1,0 +1,24 @@
+# Bronze evaluation config - using smaller dataset for testing
+embedding:
+  provider: ollama
+  ollama_model: nomic-embed-text  # Will be overridden by test runner
+  ollama_host: http://localhost:11434
+
+chromadb:
+  persist_directory: ./data/wiki_chroma_db
+  collection_name: bronze_ollama_nomic  # Will be overridden
+
+chunking:
+  method: simple
+  chunk_size: 1000
+  chunk_overlap: 100
+  
+processing:
+  batch_size: 32
+  max_workers: 4
+  verbose: true
+
+evaluation_data:
+  articles_path: common_embeddings/evaluate_data/bronze_articles.json
+  queries_path: common_embeddings/evaluate_data/bronze_queries.json
+  dataset_type: bronze

@@ -1,0 +1,70 @@
+{
+  "queries": [
+    {
+      "query_id": "bronze_geo_001",
+      "query_text": "What cities are located on the San Francisco Peninsula?",
+      "category": "geographic",
+      "expected_results": [26974],
+      "relevance_annotations": {
+        "26974": 3,
+        "71083": 0,
+        "1706289": 1
+      }
+    },
+    {
+      "query_id": "bronze_admin_001", 
+      "query_text": "What is the county seat of Wayne County, Utah?",
+      "category": "administrative",
+      "expected_results": [71083],
+      "relevance_annotations": {
+        "26974": 0,
+        "71083": 3,
+        "1706289": 0
+      }
+    },
+    {
+      "query_id": "bronze_hist_001",
+      "query_text": "Which San Francisco neighborhood became known as the Harlem of the West?",
+      "category": "historical",
+      "expected_results": [1706289],
+      "relevance_annotations": {
+        "26974": 0,
+        "71083": 0,
+        "1706289": 3
+      }
+    },
+    {
+      "query_id": "bronze_geo_002",
+      "query_text": "What national park is located in Wayne County, Utah?",
+      "category": "geographic",
+      "expected_results": [71083],
+      "relevance_annotations": {
+        "26974": 0,
+        "71083": 3,
+        "1706289": 0
+      }
+    },
+    {
+      "query_id": "bronze_semantic_001",
+      "query_text": "Tell me about areas affected by the 1906 San Francisco earthquake",
+      "category": "semantic",
+      "expected_results": [1706289],
+      "relevance_annotations": {
+        "26974": 1,
+        "71083": 0,
+        "1706289": 3
+      }
+    }
+  ],
+  "metadata": {
+    "total_queries": 5,
+    "dataset_type": "bronze",
+    "description": "Small test query set for bronze articles",
+    "categories": {
+      "geographic": 2,
+      "administrative": 1,
+      "historical": 1,
+      "semantic": 1
+    }
+  }
+}

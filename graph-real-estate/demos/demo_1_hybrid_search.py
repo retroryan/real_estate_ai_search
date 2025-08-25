@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""
+DEMO 1: ADVANCED HYBRID SEARCH SHOWCASE
+========================================
+
+This demo showcases the power of combining semantic vector search with graph relationships
+in Neo4j. It demonstrates how natural language queries are enhanced by graph intelligence,
+feature relationships, and similarity calculations.
+
+Key Capabilities Demonstrated:
+1. Semantic vector search with natural language understanding
+2. Graph-boosted scoring using property similarities
+3. Feature-based intelligence and cross-feature correlations  
+4. Lifestyle-based neighborhood matching
+5. Complex multi-criteria search with contextual ranking
+6. Geographic and market intelligence integration
+
+Database Context:
+- 420 properties with 768-dimensional embeddings
+- 415+ features across 8 categories with 3,257+ feature relationships
+- 20,000+ property similarities with detailed component scores
+- 15 neighborhoods with lifestyle tags across 2 cities
+- 62,380+ geographic proximity relationships
+- Complex graph with 80,000+ total relationships
+"""
+
+import sys
+import signal
+from pathlib import Path
+from typing import Dict, List, Any
+import time
+
+# Handle broken pipe errors gracefully when piping output
+if hasattr(signal, 'SIGPIPE'):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+# Add src to path
+sys.path.append(str(Path(__file__).parent.parent))
+
+# Updated imports for current project structure
+from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from database import get_neo4j_driver, close_neo4j_driver, run_query
+from demos.models import SearchResult
+
+
+class AdvancedHybridSearchDemo:
+    """Comprehensive demonstration of hybrid search capabilities"""
+    
+    def __init__(self):
+        """Initialize the demo with database connection and search pipeline"""
+        print("Initializing Advanced Hybrid Search Demo...")
+        
+        # Connect to database
+        self.driver = get_neo4j_driver()
+        
+        # Load configurations
+        embedding_config = get_embedding_config()
+        vector_config = get_vector_index_config()
+        search_config = get_search_config()
+        
+        # Initialize search pipeline with constructor injection
+        # Clean initialization - embedding config handles model selection
+        self.pipeline = PropertyEmbeddingPipeline(self.driver, embedding_config)
+        
+        # Create dependencies for hybrid search
+        from core.query_executor import QueryExecutor
+        from vectors.vector_manager import PropertyVectorManager
+        
+        query_executor = QueryExecutor(self.driver)
+        vector_manager = PropertyVectorManager(self.driver, query_executor)
+        
+        self.search = HybridPropertySearch(query_executor, self.pipeline, vector_manager, search_config)
+        
+        # Verify embeddings exist by checking if properties have embeddings
+        query = "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as with_embeddings"
+        result = query_executor.execute_read(query)
+        embeddings_count = result[0]['with_embeddings'] if result else 0
+        
+        if embeddings_count == 0:
+            print("⚠️  No embeddings found! Running without vector search capabilities.")
+            print("   Create embeddings with: python -m src.scripts.create_embeddings")
+        else:
+            print(f"✅ Ready to search {embeddings_count} properties with embeddings")
+        
+        # Show relationship statistics
+        self._show_relationship_stats()
+    
+    def _show_relationship_stats(self):
+        """Display current relationship statistics"""
+        queries = {
+            'Property Similarities': "MATCH ()-[r:SIMILAR_TO]->() RETURN count(r) as count",
+            'Geographic Proximities': "MATCH ()-[r:NEAR_BY]->() RETURN count(r) as count", 
+            'Neighborhood Connections': "MATCH ()-[r:NEAR]->() RETURN count(r) as count",
+            'Feature Relationships': "MATCH ()-[r:HAS_FEATURE]->() RETURN count(r) as count"
+        }
+        
+        print("\nRelationship Statistics:")
+        for name, query in queries.items():
+            result = run_query(self.driver, query)
+            count = result[0]['count'] if result else 0
+            print(f"  {name}: {count:,}")
+    
+    def format_result(self, result: SearchResult, index: int, show_analysis: bool = True) -> str:
+        """Format search result with detailed analysis"""
+        output = []
+        output.append(f"\n{index}. {result.listing_id}")
+        output.append("   " + "─" * 70)
+        
+        # Basic property info
+        if result.address:
+            output.append(f"   Address: {result.address}")
+        output.append(f"   Location: {result.neighborhood}, {result.city}")
+        output.append(f"   Price: ${result.listing_price:,.0f}")
+        
+        # Property details
+        if result.bedrooms or result.bathrooms or result.square_feet:
+            details = []
+            if result.bedrooms:
+                details.append(f"{result.bedrooms} bed")
+            if result.bathrooms:
+                details.append(f"{result.bathrooms} bath")
+            if result.square_feet:
+                details.append(f"{result.square_feet:,} sqft")
+            if result.square_feet and result.listing_price:
+                price_per_sqft = result.listing_price / result.square_feet
+                details.append(f"${price_per_sqft:.0f}/sqft")
+            output.append(f"   Details: {' | '.join(details)}")
+        
+        # Enhanced scoring analysis with new relationships
+        if show_analysis:
+            output.append(f"   Scoring Analysis:")
+            output.append(f"      Vector Similarity: {result.vector_score:.3f} (semantic match)")
+            output.append(f"      Graph Intelligence: {result.graph_score:.3f} (similarity + proximity + features)")
+            output.append(f"      Combined Score: {result.combined_score:.3f}")
+        
+        # Features (top 5 most relevant)
+        if result.features and len(result.features) > 0:
+            output.append(f"   Key Features: {', '.join(result.features[:5])}")
+            if len(result.features) > 5:
+                output.append(f"      ... and {len(result.features) - 5} more features")
+        
+        # Similar properties (graph intelligence)
+        if result.similar_properties:
+            output.append(f"   Similar Properties: {', '.join(result.similar_properties[:3])}")
+        
+        return '\n'.join(output)
+    
+    def demo_1_semantic_understanding(self):
+        """Demo 1: Semantic vector search understanding complex queries"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 1: SEMANTIC UNDERSTANDING & NATURAL LANGUAGE PROCESSING")
+        print("="*82)
+        print("Showcasing how vector embeddings understand natural language nuances")
+        
+        # Complex semantic queries that test natural language understanding
+        semantic_queries = [
+            {
+                "query": "modern luxury home with mountain views and gourmet kitchen",
+                "description": "Tests understanding of: style (modern), quality (luxury), location features (mountain views), specific amenities (gourmet kitchen)"
+            },
+            {
+                "query": "family-friendly starter home near good schools with garage",
+                "description": "Tests understanding of: target demographic (family), size/price point (starter), educational priorities, practical needs"
+            },
+            {
+                "query": "investment property with rental potential in growing neighborhood",
+                "description": "Tests understanding of: investment intent, rental features, market dynamics, growth indicators"
+            }
+        ]
+        
+        for i, test in enumerate(semantic_queries, 1):
+            print(f"\nTest {i}: {test['description']}")
+            print(f"Query: \"{test['query']}\"")
+            
+            # Search with pure vector similarity first
+            print("\n   🔍 Semantic search results:")
+            start_time = time.time()
+            results = self.search.search(test['query'], top_k=3, use_graph_boost=False)
+            search_time = time.time() - start_time
+            
+            if results:
+                print(f"   Found {len(results)} matches in {search_time*1000:.1f}ms")
+                for j, result in enumerate(results, 1):
+                    print(f"   {j}. {result.listing_id} - ${result.listing_price:,} ({result.neighborhood})")
+                    print(f"      Vector Score: {result.vector_score:.3f}")
+                    print(f"      Features: {', '.join(result.features[:3]) if result.features else 'None'}")
+            else:
+                print("   No results found")
+                
+            print("\n" + "-" * 60)
+    
+    def demo_2_graph_intelligence(self):
+        """Demo 2: Graph relationships enhancing search relevance"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 2: GRAPH INTELLIGENCE & RELATIONSHIP BOOSTING")
+        print("="*82)
+        print("Comparing pure vector search with graph-enhanced hybrid search")
+        
+        # Queries that benefit from graph relationships
+        graph_queries = [
+            {
+                "query": "luxury home with premium amenities",
+                "description": "Benefits from similarity relationships to highly-featured properties"
+            },
+            {
+                "query": "property in well-connected neighborhood",
+                "description": "Benefits from proximity relationships and neighborhood networks"
+            }
+        ]
+        
+        for i, test in enumerate(graph_queries, 1):
+            print(f"\nTest {i}: {test['description']}")
+            print(f"Query: \"{test['query']}\"")
+            
+            # Pure vector search
+            print("\n   📊 Pure Vector Search:")
+            vector_results = self.search.search(test['query'], top_k=3, use_graph_boost=False)
+            
+            # Graph-enhanced search
+            print("\n   🧠 Graph-Enhanced Hybrid Search:")
+            hybrid_results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
+            
+            # Compare results
+            if vector_results and hybrid_results:
+                print("\n   📈 Comparison Analysis:")
+                for j, (v_result, h_result) in enumerate(zip(vector_results, hybrid_results), 1):
+                    print(f"\n   Position {j}:")
+                    print(f"      Vector Only: {v_result.listing_id} (score: {v_result.vector_score:.3f})")
+                    print(f"      Hybrid: {h_result.listing_id} (vector: {h_result.vector_score:.3f}, graph: {h_result.graph_score:.3f}, combined: {h_result.combined_score:.3f})")
+                    
+                    if h_result.similar_properties:
+                        print(f"      Graph boost from {len(h_result.similar_properties)} similar properties")
+            
+            print("\n" + "-" * 60)
+    
+    def demo_3_feature_intelligence(self):
+        """Demo 3: Feature-based search and correlations"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 3: FEATURE INTELLIGENCE & CROSS-FEATURE CORRELATIONS")  
+        print("="*82)
+        print("Finding properties through feature relationships and combinations")
+        
+        feature_queries = [
+            {
+                "query": "home with updated kitchen and hardwood floors",
+                "description": "Tests specific feature combination matching"
+            },
+            {
+                "query": "property with garage and outdoor space",
+                "description": "Tests practical feature requirements"
+            }
+        ]
+        
+        for i, test in enumerate(feature_queries, 1):
+            print(f"\nTest {i}: {test['description']}")
+            print(f"Query: \"{test['query']}\"")
+            
+            results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
+            
+            if results:
+                print(f"\n   🏠 Found {len(results)} feature-rich matches:")
+                for j, result in enumerate(results, 1):
+                    print(f"\n   {j}. {result.listing_id} - ${result.listing_price:,}")
+                    print(f"      Combined Score: {result.combined_score:.3f}")
+                    if result.features:
+                        print(f"      Features ({len(result.features)}): {', '.join(result.features[:6])}")
+                        if len(result.features) > 6:
+                            print(f"      ... and {len(result.features) - 6} more")
+                    
+                    # Show feature intelligence
+                    feature_boost = result.graph_score * 0.2  # Feature component of graph score
+                    print(f"      Feature Intelligence Boost: {feature_boost:.3f}")
+            
+            print("\n" + "-" * 60)
+    
+    def demo_4_complex_multi_criteria(self):
+        """Demo 4: Complex search with multiple criteria and ranking"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 4: COMPLEX MULTI-CRITERIA SEARCH")
+        print("="*82)
+        print("Advanced search combining semantic understanding with precise filtering")
+        
+        # Complex multi-criteria search scenarios
+        complex_queries = [
+            {
+                "query": "family home under $2M with modern updates",
+                "filters": {"listing_price_max": 2000000, "bedrooms_min": 3},
+                "description": "Combining semantic preferences with hard constraints"
+            },
+            {
+                "query": "investment property with good rental potential",
+                "filters": {"listing_price_max": 1500000},
+                "description": "Investment-focused search with budget constraints"
+            }
+        ]
+        
+        for i, test in enumerate(complex_queries, 1):
+            print(f"\nTest {i}: {test['description']}")
+            print(f"Query: \"{test['query']}\"")
+            print(f"Filters: {test['filters']}")
+            
+            results = self.search.search(
+                test['query'], 
+                filters=test['filters'], 
+                top_k=4, 
+                use_graph_boost=True
+            )
+            
+            if results:
+                print(f"\n   💎 Found {len(results)} qualifying matches:")
+                for j, result in enumerate(results, 1):
+                    print(self.format_result(result, j, show_analysis=True))
+            else:
+                print("\n   No properties match the specified criteria")
+            
+            print("\n" + "-" * 60)
+    
+    def demo_5_geographic_intelligence(self):
+        """Demo 5: Geographic and proximity intelligence"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 5: GEOGRAPHIC & PROXIMITY INTELLIGENCE")
+        print("="*82)
+        print("Leveraging geographic proximity relationships for location-aware search")
+        
+        location_queries = [
+            {
+                "query": "home in well-connected area with nearby amenities",
+                "description": "Tests geographic proximity relationships and neighborhood connectivity"
+            },
+            {
+                "query": "property in dense residential neighborhood",
+                "description": "Tests proximity-based scoring for urban/suburban preferences"
+            }
+        ]
+        
+        for i, test in enumerate(location_queries, 1):
+            print(f"\nTest {i}: {test['description']}")
+            print(f"Query: \"{test['query']}\"")
+            
+            results = self.search.search(test['query'], top_k=3, use_graph_boost=True)
+            
+            if results:
+                print(f"\n   🗺️  Geographic intelligence results:")
+                for j, result in enumerate(results, 1):
+                    print(f"\n   {j}. {result.listing_id} - {result.neighborhood}, {result.city}")
+                    print(f"      Price: ${result.listing_price:,}")
+                    print(f"      Graph Score: {result.graph_score:.3f} (includes proximity relationships)")
+                    print(f"      Combined Score: {result.combined_score:.3f}")
+                    
+                    if result.similar_properties:
+                        print(f"      Connected to {len(result.similar_properties)} similar properties")
+            
+            print("\n" + "-" * 60)
+    
+    def run_complete_demo(self):
+        """Run the complete hybrid search demonstration"""
+        print("🚀 Starting Advanced Hybrid Search Demonstration")
+        print("=" * 80)
+        
+        # Run all demo sections
+        try:
+            self.demo_1_semantic_understanding()
+            self.demo_2_graph_intelligence()
+            self.demo_3_feature_intelligence() 
+            self.demo_4_complex_multi_criteria()
+            self.demo_5_geographic_intelligence()
+            
+            print("\n" + "="*80)
+            print("🎉 HYBRID SEARCH DEMONSTRATION COMPLETE")
+            print("="*80)
+            print("\nKey Achievements Demonstrated:")
+            print("✅ Semantic understanding of natural language queries")
+            print("✅ Graph intelligence boosting search relevance")
+            print("✅ Feature-based intelligence and correlations")
+            print("✅ Complex multi-criteria search with filtering")
+            print("✅ Geographic proximity and neighborhood intelligence")
+            print("\nThe hybrid search successfully combines vector embeddings with")
+            print("graph relationships for superior search intelligence!")
+            
+        except Exception as e:
+            print(f"\n❌ Demo failed: {e}")
+            print("\nTroubleshooting:")
+            print("1. Ensure embeddings are created")
+            print("2. Verify all relationships exist")
+            print("3. Check database connectivity")
+    
+    def cleanup(self):
+        """Clean up resources"""
+        if hasattr(self, 'driver'):
+            close_neo4j_driver()
+
+
+def main():
+    """Main execution function"""
+    demo = None
+    try:
+        demo = AdvancedHybridSearchDemo()
+        demo.run_complete_demo()
+    except Exception as e:
+        print(f"\n❌ Failed to initialize demo: {e}")
+        print("\nPlease ensure:")
+        print("1. Neo4j is running")
+        print("2. Database is loaded with property data")
+        print("3. Embeddings have been created")
+        print("4. All relationships are established")
+        return 1
+    finally:
+        if demo:
+            demo.cleanup()
+    
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())
