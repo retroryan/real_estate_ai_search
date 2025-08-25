@@ -22,7 +22,7 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, DoubleType
 
-from data_pipeline.config.models import PipelineConfig, ProviderType
+from data_pipeline.config.models import ProviderType
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ class BaseEmbeddingGenerator(ABC):
     and embedding metadata management.
     """
     
-    def __init__(self, spark: SparkSession, config: PipelineConfig):
+    def __init__(self, spark: SparkSession, config):
         """
         Initialize the base embedding generator.
         
         Args:
             spark: Active SparkSession
-            config: Embedding configuration
+            config: Embedding configuration (dict or PipelineConfig)
         """
         self.spark = spark
         self.config = config
@@ -52,28 +52,55 @@ class BaseEmbeddingGenerator(ABC):
     
     def _get_model_identifier(self) -> str:
         """Get the model identifier string based on provider."""
-        provider = self.config.provider
+        # Handle both dict and object config
+        if isinstance(self.config, dict):
+            provider_str = self.config.get('provider', 'voyage')
+            models_config = self.config.get('models', {})
+            model_config = models_config.get(provider_str, {}) if provider_str in models_config else None
+        else:
+            provider = self.config.provider
+            provider_str = provider.value if hasattr(provider, 'value') else str(provider)
+            # Get model config if available
+            model_config = self.config.get_model_config() if hasattr(self.config, 'get_model_config') else None
         
-        # Get model config if available
-        model_config = self.config.get_model_config() if hasattr(self.config, 'get_model_config') else None
+        # Convert string to ProviderType enum for consistent comparison
+        try:
+            provider_enum = ProviderType(provider_str.lower()) if isinstance(provider_str, str) else provider_str
+        except ValueError:
+            # If provider string doesn't match any enum value, use it as-is
+            provider_enum = None
         
-        if provider == ProviderType.OPENAI:
-            return model_config.model if model_config else "text-embedding-3-small"
-        elif provider == ProviderType.GEMINI:
-            return model_config.model if model_config else "models/embedding-001"
-        elif provider == ProviderType.OLLAMA:
-            return model_config.model if model_config else "nomic-embed-text"
-        elif provider == ProviderType.VOYAGE:
-            return model_config.model if model_config else "voyage-3"
-        elif provider == ProviderType.MOCK:
+        # Get model from config or use defaults
+        if isinstance(model_config, dict):
+            model = model_config.get('model')
+        else:
+            model = model_config.model if model_config and hasattr(model_config, 'model') else None
+        
+        # Use ProviderType constants for comparison
+        if provider_enum == ProviderType.OPENAI:
+            return model or "text-embedding-3-small"
+        elif provider_enum == ProviderType.GEMINI:
+            return model or "models/embedding-001"
+        elif provider_enum == ProviderType.OLLAMA:
+            return model or "nomic-embed-text"
+        elif provider_enum == ProviderType.VOYAGE:
+            return model or "voyage-3"
+        elif provider_enum == ProviderType.MOCK:
             return "mock-embedding"
         else:
-            return f"{provider.value}-embedding"
+            # Fallback for unknown providers
+            return f"{provider_str}-embedding"
     
     def _register_udfs(self):
         """Register UDFs for embedding generation."""
         # Get dimension once, outside the UDF - use config if available
-        if hasattr(self.config, 'models') and self.config.models:
+        if isinstance(self.config, dict):
+            # For dict config, get dimension from models config
+            provider = self.config.get('provider', 'voyage')
+            models_config = self.config.get('models', {})
+            model_config = models_config.get(provider, {})
+            dim = model_config.get('dimension') if model_config else self._get_embedding_dimension()
+        elif hasattr(self.config, 'models') and self.config.models:
             model_config = self.config.get_model_config()
             dim = model_config.dimension if model_config and hasattr(model_config, 'dimension') else self._get_embedding_dimension()
         else:
@@ -107,19 +134,31 @@ class BaseEmbeddingGenerator(ABC):
     
     def _get_embedding_dimension(self) -> int:
         """Get the embedding dimension for the current model."""
-        # This would be determined by the actual model
+        # Get provider from config
+        if isinstance(self.config, dict):
+            provider_str = self.config.get('provider', 'voyage')
+        else:
+            provider = self.config.provider
+            provider_str = provider.value if hasattr(provider, 'value') else str(provider)
+        
+        # Convert to enum for comparison
+        try:
+            provider_enum = ProviderType(provider_str.lower()) if isinstance(provider_str, str) else provider_str
+        except ValueError:
+            provider_enum = None
+        
         # Common dimensions:
         # - OpenAI text-embedding-3-small: 1536
         # - Gemini embedding-001: 768
         # - Nomic embed-text: 768
         # - Voyage-3: 1024
-        if self.config.provider == ProviderType.OPENAI:
+        if provider_enum == ProviderType.OPENAI:
             return 1536
-        elif self.config.provider == ProviderType.GEMINI:
+        elif provider_enum == ProviderType.GEMINI:
             return 768
-        elif self.config.provider == ProviderType.OLLAMA:
+        elif provider_enum == ProviderType.OLLAMA:
             return 768  # Nomic default
-        elif self.config.provider == ProviderType.VOYAGE:
+        elif provider_enum == ProviderType.VOYAGE:
             return 1024
         else:
             return 384  # Default/mock dimension

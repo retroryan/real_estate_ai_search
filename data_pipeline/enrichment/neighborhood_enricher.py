@@ -46,14 +46,10 @@ class NeighborhoodEnricher(BaseEnricher):
         # Create broadcast variables for location lookups - always enabled
         self._create_location_broadcasts()
         
-        # Override location enricher initialization with neighborhood-specific config - always enabled if location broadcast available
+        # Override location enricher initialization - always enabled if location broadcast available
         if self.location_broadcast:
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_parent_relationships=True
-            )
-            self.location_enricher = LocationEnricher(spark, location_broadcast, location_config)
+            from .location_enricher import LocationEnricher
+            self.location_enricher = LocationEnricher(spark, location_broadcast)
     
     
     def set_location_data(self, location_broadcast: Any):
@@ -66,12 +62,8 @@ class NeighborhoodEnricher(BaseEnricher):
         super().set_location_data(location_broadcast)
         
         if self.location_broadcast:
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_parent_relationships=True
-            )
-            self.location_enricher = LocationEnricher(self.spark, location_broadcast, location_config)
+            from .location_enricher import LocationEnricher
+            self.location_enricher = LocationEnricher(self.spark, location_broadcast)
             logger.info("LocationEnricher initialized for neighborhoods with broadcast data")
     
     def _create_location_broadcasts(self):
@@ -112,10 +104,6 @@ class NeighborhoodEnricher(BaseEnricher):
         # Validate and enrich demographics - always enabled
         enriched_df = self._validate_demographics(enriched_df)
         logger.info("Validated demographic data")
-        
-        # Process boundaries - always enabled
-        enriched_df = self._process_boundaries(enriched_df)
-        logger.info("Processed neighborhood boundaries")
         
         # Calculate quality scores - always enabled
         enriched_df = self._calculate_quality_scores(enriched_df)
@@ -223,36 +211,6 @@ class NeighborhoodEnricher(BaseEnricher):
         )
         
         return df_with_bracket
-    
-    def _process_boundaries(self, df: DataFrame) -> DataFrame:
-        """
-        Process and validate boundary data.
-        
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            DataFrame with processed boundaries
-        """
-        # Check if boundaries exist and are valid
-        df_with_boundary_check = df.withColumn(
-            "has_valid_boundary",
-            when(col("boundary").isNotNull() & 
-                 (expr("size(boundary)") > 0),
-                 lit(True))
-            .otherwise(lit(False))
-        )
-        
-        # Calculate boundary area if coordinates exist
-        # This is a simplified check - actual area calculation would be more complex
-        df_with_area = df_with_boundary_check.withColumn(
-            "boundary_point_count",
-            when(col("boundary").isNotNull(),
-                 expr("size(boundary)"))
-            .otherwise(lit(0))
-        )
-        
-        return df_with_area
     
     def _calculate_quality_scores(self, df: DataFrame) -> DataFrame:
         """
