@@ -6,10 +6,10 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 import json
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import WikipediaConfig
-from src.data_sources import WikipediaFileDataSource
-from src.models.wikipedia import WikipediaArticle, WikipediaLoadResult
+from core.query_executor import QueryExecutor
+from core.config import WikipediaConfig
+from data_sources import WikipediaFileDataSource
+from models.wikipedia import WikipediaArticle, WikipediaLoadResult
 
 
 class WikipediaLoader:

@@ -4,10 +4,10 @@ import logging
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import SearchConfig
-from src.vectors.embedding_pipeline import PropertyEmbeddingPipeline
-from src.vectors.vector_manager import PropertyVectorManager
+from core.query_executor import QueryExecutor
+from core.config import SearchConfig
+from vectors.embedding_pipeline import PropertyEmbeddingPipeline
+from vectors.vector_manager import PropertyVectorManager
 
 
 @dataclass

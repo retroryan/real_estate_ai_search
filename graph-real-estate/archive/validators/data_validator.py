@@ -6,8 +6,8 @@ from typing import List, Dict, Optional, Set, Tuple
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from src.models.geographic import LocationEntry
-from src.database import get_neo4j_driver, run_query, close_neo4j_driver
+from models.geographic import LocationEntry
+from database import get_neo4j_driver, run_query, close_neo4j_driver
 
 
 class ValidationStats(BaseModel):

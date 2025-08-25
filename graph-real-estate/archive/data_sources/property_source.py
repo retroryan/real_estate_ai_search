@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 import logging
 
 from api_client import APIClientFactory, PropertyAPIClient
-from src.core.interfaces import IPropertyDataSource
+from core.interfaces import IPropertyDataSource
 
 
 class PropertyFileDataSource(IPropertyDataSource):

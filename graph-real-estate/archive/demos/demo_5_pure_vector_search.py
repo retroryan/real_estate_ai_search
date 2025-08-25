@@ -32,10 +32,10 @@ if hasattr(signal, 'SIGPIPE'):
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.database import get_neo4j_driver
-from src.database.neo4j_client import run_query
-from src.vectors import PropertyEmbeddingPipeline
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config
+from database import get_neo4j_driver
+from database.neo4j_client import run_query
+from vectors import PropertyEmbeddingPipeline
+from vectors.config_loader import get_embedding_config, get_vector_index_config
 
 
 class PureVectorSearchDemo:
@@ -46,8 +46,8 @@ class PureVectorSearchDemo:
         
         # Initialize embedding pipeline with constructor injection
         try:
-            from src.core.query_executor import QueryExecutor
-            from src.vectors.vector_manager import PropertyVectorManager
+            from core.query_executor import QueryExecutor
+            from vectors.vector_manager import PropertyVectorManager
             
             embedding_config = get_embedding_config()
             vector_config = get_vector_index_config()
@@ -357,8 +357,8 @@ class PureVectorSearchDemo:
         
         # Import hybrid search for comparison
         try:
-            from src.vectors import HybridPropertySearch
-            from src.vectors.config_loader import get_search_config
+            from vectors import HybridPropertySearch
+            from vectors.config_loader import get_search_config
             
             search_config = get_search_config()
             hybrid_search = HybridPropertySearch(self.driver, self.pipeline, search_config)

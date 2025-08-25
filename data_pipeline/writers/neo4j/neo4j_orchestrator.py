@@ -325,16 +325,16 @@ class Neo4jOrchestrator(EntityWriter):
                 "target_keys": "to_id:neighborhood_id"
             },
             "PART_OF": {
-                "source_labels": "",  # Can be Neighborhood, City, or County
-                "source_keys": "from_id",
-                "target_labels": "",  # Can be City, County, or State
-                "target_keys": "to_id"
+                "source_labels": ":Neighborhood",
+                "source_keys": "from_id:neighborhood_id",
+                "target_labels": ":City",
+                "target_keys": "to_id:city_id"
             },
             "DESCRIBES": {
                 "source_labels": ":WikipediaArticle",
                 "source_keys": "from_id:page_id",
-                "target_labels": "",  # Can be Neighborhood or City
-                "target_keys": "to_id"
+                "target_labels": ":Neighborhood",
+                "target_keys": "to_id:neighborhood_id"
             },
             "SIMILAR_TO": {
                 "source_labels": "",  # Can be Property or Neighborhood

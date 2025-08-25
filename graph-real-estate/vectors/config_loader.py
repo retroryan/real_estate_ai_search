@@ -31,8 +31,8 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         Dictionary with configuration
     """
     if config_path is None:
-        # Look for config.yaml in project root first, then fallback to vectors directory
-        project_root = Path(__file__).parent.parent.parent
+        # Look for config.yaml in graph-real-estate root first, then fallback to vectors directory
+        project_root = Path(__file__).parent.parent  # graph-real-estate directory
         root_config = project_root / "config.yaml"
         vector_config = Path(__file__).parent / "config.yaml"
         

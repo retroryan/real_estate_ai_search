@@ -35,8 +35,8 @@ if hasattr(signal, 'SIGPIPE'):
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from src.database import get_neo4j_driver
-from src.database.neo4j_client import run_query
+from database import get_neo4j_driver
+from database.neo4j_client import run_query
 
 
 class WikipediaEnhancedListings:
@@ -113,7 +113,7 @@ class WikipediaEnhancedListings:
         )
         
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         OPTIONAL MATCH (n)<-[:DESCRIBES]-(w:WikipediaArticle)
         WHERE w.overall_confidence > 0.4
         WITH p, n, collect(DISTINCT {
@@ -230,7 +230,7 @@ class WikipediaEnhancedListings:
         )
         
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
         WHERE w.location_type IN ['neighborhood', 'district', 'city']
         WITH p, n, collect(DISTINCT {
             title: w.title,
@@ -277,7 +277,7 @@ class WikipediaEnhancedListings:
             summary: substring(w.summary, 0, 150)
         }) as wiki_articles
         WHERE size(wiki_articles) >= 3
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
+        MATCH (p:Property)-[:LOCATED_IN]->(n)
         WITH n, wiki_articles,
              count(p) as property_count,
              avg(p.listing_price) as avg_price,
@@ -347,7 +347,7 @@ class WikipediaEnhancedListings:
         WHERE w.overall_confidence > 0.3
         WITH n, count(DISTINCT w) as wiki_count,
              collect(DISTINCT w.location_type) as wiki_types
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
+        MATCH (p:Property)-[:LOCATED_IN]->(n)
         WITH n, wiki_count, wiki_types,
              count(p) as property_count,
              avg(p.listing_price) as avg_price,
@@ -427,7 +427,7 @@ class WikipediaEnhancedListings:
             WITH n, count(DISTINCT w) as lifestyle_match_count,
                  collect(DISTINCT w.title) as matching_articles
             WHERE lifestyle_match_count >= 2
-            MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
+            MATCH (p:Property)-[:LOCATED_IN]->(n)
             WITH n, lifestyle_match_count, matching_articles,
                  min(p.listing_price) as min_price,
                  max(p.listing_price) as max_price,
@@ -475,7 +475,7 @@ class WikipediaEnhancedListings:
              count(DISTINCT CASE WHEN w.location_type = 'county' THEN w END) as county_count,
              avg(w.overall_confidence) as avg_confidence
         WHERE total_articles >= 1
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n)
+        MATCH (p:Property)-[:LOCATED_IN]->(n)
         WITH n, total_articles, neighborhood_count, city_count, district_count, county_count,
              avg_confidence,
              avg(p.listing_price) as avg_price,

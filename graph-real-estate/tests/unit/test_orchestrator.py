@@ -4,14 +4,14 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from datetime import datetime
 
-from src.orchestrator import GraphOrchestrator
-from src.core.dependencies import LoaderDependencies
-from src.loaders.validator import ValidationResult
-from src.models.geographic import GeographicLoadResult
-from src.models.wikipedia import WikipediaLoadResult
-from src.models.neighborhood import NeighborhoodLoadResult
-from src.models.property import PropertyLoadResult
-from src.models.similarity import SimilarityLoadResult
+from orchestrator import GraphOrchestrator
+from core.dependencies import LoaderDependencies
+from loaders.validator import ValidationResult
+from models.geographic import GeographicLoadResult
+from models.wikipedia import WikipediaLoadResult
+from models.neighborhood import NeighborhoodLoadResult
+from models.property import PropertyLoadResult
+from models.similarity import SimilarityLoadResult
 
 
 class TestGraphOrchestrator:

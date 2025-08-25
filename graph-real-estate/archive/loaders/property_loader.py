@@ -5,10 +5,10 @@ from typing import List, Dict, Set, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import PropertyConfig, LoaderConfig
-from src.data_sources import PropertyFileDataSource
-from src.models.property import (
+from core.query_executor import QueryExecutor
+from core.config import PropertyConfig, LoaderConfig
+from data_sources import PropertyFileDataSource
+from models.property import (
     Property, PropertyDetails, Address, Coordinates,
     PropertyType as PropertyTypeEnum, PriceRange, Feature, PropertyLoadResult
 )

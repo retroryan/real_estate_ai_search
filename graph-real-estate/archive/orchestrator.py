@@ -4,13 +4,13 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from src.core.dependencies import LoaderDependencies
-from src.models.geographic import GeographicLoadResult
-from src.models.wikipedia import WikipediaLoadResult
-from src.models.neighborhood import NeighborhoodLoadResult
-from src.models.property import PropertyLoadResult
-from src.models.similarity import SimilarityLoadResult
-from src.loaders.validator import ValidationResult
+from core.dependencies import LoaderDependencies
+from models.geographic import GeographicLoadResult
+from models.wikipedia import WikipediaLoadResult
+from models.neighborhood import NeighborhoodLoadResult
+from models.property import PropertyLoadResult
+from models.similarity import SimilarityLoadResult
+from loaders.validator import ValidationResult
 
 
 class GraphOrchestrator:

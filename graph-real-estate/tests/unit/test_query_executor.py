@@ -5,7 +5,7 @@ from unittest.mock import Mock, MagicMock, patch
 from neo4j import Driver
 from neo4j.exceptions import ServiceUnavailable, TransientError
 
-from src.core.query_executor import QueryExecutor
+from core.query_executor import QueryExecutor
 
 
 class TestQueryExecutor:

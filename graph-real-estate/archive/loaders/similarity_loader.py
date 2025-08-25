@@ -5,9 +5,9 @@ from typing import Dict, Any, List, Tuple
 from datetime import datetime
 import math
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import SimilarityConfig, LoaderConfig
-from src.models.similarity import SimilarityLoadResult
+from core.query_executor import QueryExecutor
+from core.config import SimilarityConfig, LoaderConfig
+from models.similarity import SimilarityLoadResult
 
 
 class SimilarityLoader:

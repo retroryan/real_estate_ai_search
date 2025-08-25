@@ -38,10 +38,10 @@ if hasattr(signal, 'SIGPIPE'):
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Updated imports for current project structure
-from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from src.vectors.hybrid_search import SearchResult
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
-from src.database import get_neo4j_driver, close_neo4j_driver, run_query
+from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from vectors.hybrid_search import SearchResult
+from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from database import get_neo4j_driver, close_neo4j_driver, run_query
 
 
 class AdvancedHybridSearchDemo:
@@ -64,8 +64,8 @@ class AdvancedHybridSearchDemo:
         self.pipeline = PropertyEmbeddingPipeline(self.driver, model_name)
         
         # Create dependencies for hybrid search
-        from src.core.query_executor import QueryExecutor
-        from src.vectors.vector_manager import PropertyVectorManager
+        from core.query_executor import QueryExecutor
+        from vectors.vector_manager import PropertyVectorManager
         
         query_executor = QueryExecutor(self.driver)
         vector_manager = PropertyVectorManager(self.driver, query_executor)

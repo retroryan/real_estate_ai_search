@@ -35,8 +35,8 @@ if hasattr(signal, 'SIGPIPE'):
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from src.database import get_neo4j_driver
-from src.database.neo4j_client import run_query
+from database import get_neo4j_driver
+from database.neo4j_client import run_query
 
 
 class WikipediaEnhancedListings:

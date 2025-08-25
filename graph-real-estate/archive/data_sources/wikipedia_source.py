@@ -5,7 +5,7 @@ import logging
 import json
 
 from api_client import APIClientFactory, WikipediaAPIClient
-from src.core.interfaces import IWikipediaDataSource
+from core.interfaces import IWikipediaDataSource
 
 
 class WikipediaFileDataSource(IWikipediaDataSource):

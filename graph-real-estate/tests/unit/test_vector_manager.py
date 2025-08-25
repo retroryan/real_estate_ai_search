@@ -5,8 +5,8 @@ from unittest.mock import Mock, MagicMock
 import numpy as np
 from neo4j import Driver
 
-from src.vectors.vector_manager import PropertyVectorManager
-from src.core.query_executor import QueryExecutor
+from vectors.vector_manager import PropertyVectorManager
+from core.query_executor import QueryExecutor
 
 
 class TestPropertyVectorManager:

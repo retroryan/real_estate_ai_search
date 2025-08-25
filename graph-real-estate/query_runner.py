@@ -7,8 +7,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.database import get_neo4j_driver, close_neo4j_driver
-from src.queries import QueryRunner, QueryLibrary
+from database import get_neo4j_driver, close_neo4j_driver
+from queries import QueryRunner, QueryLibrary
 
 def main():
     """Main function for query runner"""

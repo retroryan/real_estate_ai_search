@@ -4,7 +4,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from neo4j import Driver
 
-from src.core.interfaces import IVectorManager
+from core.interfaces import IVectorManager
 
 
 class EmbeddingModel:

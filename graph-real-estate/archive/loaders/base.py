@@ -5,7 +5,7 @@ from pathlib import Path
 import logging
 from datetime import datetime
 
-from src.database import get_neo4j_driver, run_query, close_neo4j_driver
+from database import get_neo4j_driver, run_query, close_neo4j_driver
 from neo4j import Driver
 
 

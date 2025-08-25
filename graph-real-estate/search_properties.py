@@ -12,10 +12,10 @@ from typing import Dict, Any
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from src.vectors.hybrid_search import SearchResult
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
-from src.database.neo4j_client import get_neo4j_driver, close_neo4j_driver
+from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from vectors.hybrid_search import SearchResult
+from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from database.neo4j_client import get_neo4j_driver, close_neo4j_driver
 
 
 def print_result(result: SearchResult, index: int):

@@ -40,4 +40,4 @@ search:
   vector_weight: 0.6
   graph_weight: 0.2
   features_weight: 0.2
-  min_similarity: 0.3
+  min_similarity: 0.01  # Lowered for Voyage embeddings which have lower similarity scores

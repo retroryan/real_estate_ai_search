@@ -37,7 +37,7 @@ if hasattr(signal, 'SIGPIPE'):
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.database import get_neo4j_driver, close_neo4j_driver, run_query
+from database import get_neo4j_driver, close_neo4j_driver, run_query
 
 
 class GraphRelationshipAnalysisDemo:
@@ -67,193 +67,221 @@ class GraphRelationshipAnalysisDemo:
         result = run_query(self.driver, "MATCH ()-[r]->() RETURN count(r) as count")
         return result[0]['count'] if result else 0
     
-    def demo_1_similarity_networks(self):
-        """Demo 1: Property similarity networks and clustering analysis"""
+    def demo_1_property_relationships(self):
+        """Demo 1: Property location relationships and neighborhood analysis"""
         print("\n" + "="*80 + "\n")
-        print("DEMO 2A: PROPERTY SIMILARITY NETWORKS & CLUSTERING")
+        print("DEMO 2A: PROPERTY LOCATION RELATIONSHIPS")
         print("="*82)
-        print("Analyzing 1,608 property similarities to discover market clusters and patterns")
+        print("Analyzing property-neighborhood relationships and geographic patterns")
         
-        # Find similarity network hubs (most connected properties)
-        print("\nSIMILARITY NETWORK HUBS:")
-        print("   Properties with the most similar connections (market influencers)")
-        
-        query = """
-        MATCH (p:Property)-[s:SIMILAR_TO]->()
-        WITH p, count(s) as connections
-        ORDER BY connections DESC
-        LIMIT 5
-        MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)-[:IN_CITY]->(c:City)
-        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
-        WITH p, n, c, connections, collect(DISTINCT f.name)[0..5] as top_features
-        RETURN p.listing_id as property_id, 
-               p.listing_price as listing_price,
-               n.name as neighborhood,
-               c.name as city,
-               connections,
-               top_features
-        """
-        
-        hubs = run_query(self.driver, query)
-        for i, hub in enumerate(hubs, 1):
-            print(f"\n{i}. {hub['property_id']} ({hub['connections']} similar properties)")
-            print(f"   {hub['neighborhood']}, {hub['city']}")
-            print(f"   ${hub['listing_price']:,.0f}")
-            print(f"   Key features: {', '.join(hub['top_features'])}")
-            
-            # Analyze the similarity network for this hub
-            network_analysis = self._analyze_similarity_network(hub['property_id'])
-            print(f"   Network analysis: {network_analysis}")
-        
-        # Find high-similarity clusters (perfect or near-perfect matches)
-        print("\n\nHIGH-SIMILARITY CLUSTERS:")
-        print("   Groups of properties with very high similarity scores (>0.9)")
+        # Find neighborhoods with most properties
+        print("\nNEIGHBORHOOD PROPERTY DENSITY:")
+        print("   Neighborhoods with the highest concentration of properties")
         
         query = """
-        MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
-        WHERE s.score > 0.9 AND p1.listing_id < p2.listing_id
-        MATCH (p1)-[:LOCATED_IN]->(n1:Neighborhood)
-        MATCH (p2)-[:LOCATED_IN]->(n2:Neighborhood)
-        RETURN p1.listing_id as prop1, p1.listing_price as listing_price1, n1.name as neighborhood1,
-               p2.listing_id as prop2, p2.listing_price as listing_price2, n2.name as neighborhood2,
-               s.score as similarity_score
-        ORDER BY s.score DESC
-        LIMIT 5
-        """
-        
-        clusters = run_query(self.driver, query)
-        for i, cluster in enumerate(clusters, 1):
-            print(f"\n{i}. Similarity Score: {cluster['similarity_score']:.3f}")
-            print(f"   Property A: {cluster['prop1']} (${cluster['listing_price1']:,.0f}) in {cluster['neighborhood1']}")
-            print(f"   Property B: {cluster['prop2']} (${cluster['listing_price2']:,.0f}) in {cluster['neighborhood2']}")
-            
-            # Analyze why these properties are so similar
-            similarity_factors = self._analyze_similarity_factors(cluster['prop1'], cluster['prop2'])
-            print(f"   Similarity factors: {similarity_factors}")
-        
-        # Similarity distribution analysis
-        print("\n\nSIMILARITY SCORE DISTRIBUTION ANALYSIS:")
-        self._analyze_similarity_distribution()
-    
-    def demo_2_feature_networks(self):
-        """Demo 2: Feature co-occurrence networks and correlation analysis"""
-        print("\n" + "="*80 + "\n")
-        print("DEMO 2B: FEATURE CO-OCCURRENCE NETWORKS")
-        print("="*82)
-        print("Analyzing 3,257 feature relationships to discover feature correlation patterns")
-        
-        # Feature category co-occurrence analysis
-        print("\nFEATURE CATEGORY CO-OCCURRENCE:")
-        print("   How different feature categories appear together in properties")
-        
-        query = """
-        MATCH (p:Property)-[:HAS_FEATURE]->(f1:Feature),
-              (p)-[:HAS_FEATURE]->(f2:Feature)
-        WHERE f1.category < f2.category
-        WITH f1.category as category1, f2.category as category2, count(p) as cooccurrence
-        WHERE cooccurrence >= 10
-        RETURN category1, category2, cooccurrence
-        ORDER BY cooccurrence DESC
-        LIMIT 10
-        """
-        
-        category_pairs = run_query(self.driver, query)
-        for pair in category_pairs:
-            print(f"   {pair['category1']} + {pair['category2']}: {pair['cooccurrence']} properties")
-        
-        # Specific feature correlation networks
-        print("\n\nHIGH-VALUE FEATURE CORRELATIONS:")
-        print("   Features that frequently appear together in high-value properties")
-        
-        query = """
-        MATCH (p:Property)-[:HAS_FEATURE]->(f1:Feature),
-              (p)-[:HAS_FEATURE]->(f2:Feature)
-        WHERE f1.name < f2.name AND p.listing_price > 3000000
-        WITH f1.name as feature1, f2.name as feature2, 
-             count(p) as cooccurrence,
-             avg(p.listing_price) as avg_price
-        WHERE cooccurrence >= 5
-        RETURN feature1, feature2, cooccurrence, avg_price
-        ORDER BY avg_price DESC
-        LIMIT 8
-        """
-        
-        luxury_correlations = run_query(self.driver, query)
-        for corr in luxury_correlations:
-            print(f"   {corr['feature1']} + {corr['feature2']}")
-            print(f"      {corr['cooccurrence']} properties, ${corr['avg_price']:,.0f} avg price")
-        
-        # Feature influence on property value
-        print("\n\nFEATURE VALUE INFLUENCE ANALYSIS:")
-        self._analyze_feature_value_influence()
-        
-        # Unique feature combinations
-        print("\n\nUNIQUE FEATURE COMBINATIONS:")
-        print("   Rare but valuable feature combinations")
-        
-        query = """
-        MATCH (p:Property)-[:HAS_FEATURE]->(f1:Feature {category: 'Recreation'}),
-              (p)-[:HAS_FEATURE]->(f2:Feature {category: 'View'}),
-              (p)-[:HAS_FEATURE]->(f3:Feature {category: 'Technology'})
-        WITH p, collect(DISTINCT f1.name + ', ' + f2.name + ', ' + f3.name) as combo
-        MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
-        RETURN p.listing_id as property_id,
-               p.listing_price as listing_price,
-               n.name as neighborhood,
-               combo[0] as feature_combination
-        ORDER BY p.listing_price DESC
-        LIMIT 3
-        """
-        
-        unique_combos = run_query(self.driver, query)
-        for combo in unique_combos:
-            print(f"   {combo['property_id']}: ${combo['listing_price']:,.0f}")
-            print(f"      {combo['neighborhood']}")
-            print(f"      {combo['feature_combination']}")
-    
-    def demo_3_geographic_hierarchies(self):
-        """Demo 3: Geographic relationship hierarchies and proximity analysis"""
-        print("\n" + "="*80 + "\n")
-        print("DEMO 2C: GEOGRAPHIC RELATIONSHIP HIERARCHIES")
-        print("="*82)
-        print("Analyzing geographic relationships: County -> City -> Neighborhood -> Property")
-        
-        # Full geographic hierarchy analysis
-        print("\nCOMPLETE GEOGRAPHIC HIERARCHY:")
-        
-        query = """
-        MATCH (co:County)<-[:IN_COUNTY]-(c:City)<-[:IN_CITY]-(n:Neighborhood)<-[:LOCATED_IN]-(p:Property)
-        WITH co, c, n, 
-             count(p) as properties,
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        WITH n, count(p) as property_count,
              avg(p.listing_price) as avg_price,
              min(p.listing_price) as min_price,
              max(p.listing_price) as max_price
-        RETURN co.name as county,
-               c.name as city,
-               n.name as neighborhood,
-               properties,
+        RETURN n.name as neighborhood,
+               n.city as city,
+               n.state as state,
+               property_count,
                avg_price,
                min_price,
                max_price
-        ORDER BY co.name, c.name, avg_price DESC
+        ORDER BY property_count DESC
+        LIMIT 10
+        """
+        
+        neighborhoods = run_query(self.driver, query)
+        for i, hood in enumerate(neighborhoods, 1):
+            print(f"\n{i}. {hood['neighborhood']}, {hood['city']}, {hood['state']}")
+            print(f"   Properties: {hood['property_count']}")
+            print(f"   Price range: ${hood['min_price']:,.0f} - ${hood['max_price']:,.0f}")
+            print(f"   Average price: ${hood['avg_price']:,.0f}")
+        
+        # Property price distribution analysis
+        print("\n\nPROPERTY PRICE DISTRIBUTION:")
+        print("   Price ranges across all properties")
+        
+        query = """
+        MATCH (p:Property)
+        WITH p.listing_price as price
+        RETURN 
+            count(*) as total_properties,
+            avg(price) as avg_price,
+            percentileCont(price, 0.25) as q1_price,
+            percentileCont(price, 0.5) as median_price,
+            percentileCont(price, 0.75) as q3_price,
+            min(price) as min_price,
+            max(price) as max_price
+        """
+        
+        price_stats = run_query(self.driver, query)
+        if price_stats and len(price_stats) > 0:
+            stats = price_stats[0]
+            print(f"   Total properties: {stats['total_properties']:,}")
+            print(f"   Price range: ${stats['min_price']:,.0f} - ${stats['max_price']:,.0f}")
+            print(f"   Average: ${stats['avg_price']:,.0f}")
+            print(f"   Median: ${stats['median_price']:,.0f}")
+            print(f"   Q1-Q3: ${stats['q1_price']:,.0f} - ${stats['q3_price']:,.0f}")
+        
+        # High-value property concentrations
+        print("\n\nHIGH-VALUE PROPERTY CLUSTERS:")
+        print("   Neighborhoods with highest concentration of luxury properties (>$2M)")
+        
+        query = """
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        WHERE p.listing_price > 2000000
+        WITH n, count(p) as luxury_count, avg(p.listing_price) as avg_luxury_price
+        WHERE luxury_count >= 3
+        MATCH (n)<-[:LOCATED_IN]-(all_props:Property)
+        WITH n, luxury_count, avg_luxury_price, count(all_props) as total_props
+        RETURN n.name as neighborhood,
+               n.city as city,
+               luxury_count,
+               total_props,
+               (luxury_count * 100.0 / total_props) as luxury_percentage,
+               avg_luxury_price
+        ORDER BY luxury_percentage DESC
+        LIMIT 5
+        """
+        
+        luxury_areas = run_query(self.driver, query)
+        for area in luxury_areas:
+            print(f"\n{area['neighborhood']}, {area['city']}")
+            print(f"   Luxury properties: {area['luxury_count']} of {area['total_props']} ({area['luxury_percentage']:.1f}%)")
+            print(f"   Average luxury price: ${area['avg_luxury_price']:,.0f}")
+    
+    def demo_2_wikipedia_relationships(self):
+        """Demo 2: Wikipedia article relationships and location descriptions"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 2B: WIKIPEDIA ARTICLE RELATIONSHIPS")
+        print("="*82)
+        print("Analyzing Wikipedia articles that describe neighborhoods and locations")
+        
+        # Wikipedia articles describing neighborhoods
+        print("\nWIKIPEDIA-NEIGHBORHOOD RELATIONSHIPS:")
+        print("   Wikipedia articles that provide detailed descriptions of neighborhoods")
+        
+        query = """
+        MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
+        WITH n, count(w) as article_count,
+             collect(w.title)[0..3] as sample_articles
+        WHERE article_count > 0
+        MATCH (n)<-[:LOCATED_IN]-(p:Property)
+        WITH n, article_count, sample_articles,
+             count(p) as property_count,
+             avg(p.listing_price) as avg_price
+        RETURN n.name as neighborhood,
+               n.city as city,
+               n.state as state,
+               article_count,
+               sample_articles,
+               property_count,
+               avg_price
+        ORDER BY article_count DESC
+        LIMIT 10
+        """
+        
+        wiki_neighborhoods = run_query(self.driver, query)
+        for wiki in wiki_neighborhoods:
+            print(f"\n{wiki['neighborhood']}, {wiki['city']}, {wiki['state']}")
+            print(f"   Wikipedia articles: {wiki['article_count']}")
+            print(f"   Sample articles: {', '.join(wiki['sample_articles'])}")
+            print(f"   Properties: {wiki['property_count']} (avg: ${wiki['avg_price']:,.0f})")
+        
+        # Most documented locations
+        print("\n\nMOST DOCUMENTED LOCATIONS:")
+        print("   Areas with the richest Wikipedia content coverage")
+        
+        query = """
+        MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
+        WITH w, n, size(w.text) as article_length
+        WHERE article_length > 1000
+        WITH n, 
+             count(w) as detailed_articles,
+             avg(article_length) as avg_article_length,
+             sum(article_length) as total_content_length
+        MATCH (n)<-[:LOCATED_IN]-(p:Property)
+        WITH n, detailed_articles, avg_article_length, total_content_length,
+             count(p) as property_count,
+             avg(p.listing_price) as avg_price
+        WHERE detailed_articles >= 2
+        RETURN n.name as neighborhood,
+               n.city as city,
+               detailed_articles,
+               avg_article_length,
+               total_content_length,
+               property_count,
+               avg_price
+        ORDER BY total_content_length DESC
+        LIMIT 5
+        """
+        
+        documented_areas = run_query(self.driver, query)
+        for area in documented_areas:
+            print(f"\n{area['neighborhood']}, {area['city']}")
+            print(f"   Detailed articles: {area['detailed_articles']}")
+            print(f"   Total content: {area['total_content_length']:,} characters")
+            print(f"   Avg article length: {area['avg_article_length']:,.0f} characters")
+            print(f"   Properties: {area['property_count']} (avg: ${area['avg_price']:,.0f})")
+    
+    def demo_3_geographic_hierarchies(self):
+        """Demo 3: Geographic relationship hierarchies using PART_OF relationships"""
+        print("\n" + "="*80 + "\n")
+        print("DEMO 2C: GEOGRAPHIC RELATIONSHIP HIERARCHIES")
+        print("="*82)
+        print("Analyzing geographic PART_OF relationships and location hierarchies")
+        
+        # Geographic hierarchy analysis using PART_OF relationships
+        print("\nGEOGRAPHIC PART_OF RELATIONSHIPS:")
+        print("   Analyzing hierarchical geographic relationships")
+        
+        query = """
+        MATCH (child)-[:PART_OF]->(parent)
+        RETURN child.name as child_name,
+               labels(child)[0] as child_type,
+               parent.name as parent_name,
+               labels(parent)[0] as parent_type
+        ORDER BY parent_name, child_name
+        LIMIT 20
         """
         
         hierarchy = run_query(self.driver, query)
-        current_county = None
-        current_city = None
+        current_parent = None
         
-        for area in hierarchy:
-            if area['county'] != current_county:
-                current_county = area['county']
-                print(f"\n{current_county} County")
-                current_city = None
+        for rel in hierarchy:
+            if rel['parent_name'] != current_parent:
+                current_parent = rel['parent_name']
+                print(f"\n{rel['parent_name']} ({rel['parent_type']})")
             
-            if area['city'] != current_city:
-                current_city = area['city']
-                print(f"  {current_city}")
-            
-            print(f"    {area['neighborhood']}: {area['properties']} properties")
-            print(f"       ${area['min_price']:,.0f} - ${area['max_price']:,.0f} (avg: ${area['avg_price']:,.0f})")
+            print(f"   └─ {rel['child_name']} ({rel['child_type']})")
+        
+        # Property distribution by geographic hierarchy
+        print("\n\nPROPERTY DISTRIBUTION BY LOCATION:")
+        print("   Properties distributed across geographic regions")
+        
+        query = """
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
+        WITH n.city as city, n.state as state,
+             count(p) as property_count,
+             avg(p.listing_price) as avg_price,
+             min(p.listing_price) as min_price,
+             max(p.listing_price) as max_price
+        RETURN city, state, property_count, avg_price, min_price, max_price
+        ORDER BY property_count DESC
+        LIMIT 10
+        """
+        
+        distribution = run_query(self.driver, query)
+        for area in distribution:
+            print(f"\n{area['city']}, {area['state']}")
+            print(f"   Properties: {area['property_count']}")
+            print(f"   Price range: ${area['min_price']:,.0f} - ${area['max_price']:,.0f}")
+            print(f"   Average: ${area['avg_price']:,.0f}")
         
         # Neighborhood proximity analysis
         print("\n\n NEIGHBORHOOD PROXIMITY NETWORKS:")
@@ -694,17 +722,22 @@ class GraphRelationshipAnalysisDemo:
         print("GRAPH RELATIONSHIP ANALYSIS DEMONSTRATION")
         print("Advanced Neo4j Graph Intelligence for Real Estate Market Analysis")
         print("="*82)
-        print("Graph Database: 6,447 relationships, 1,608 similarities, complex interconnections")
-        print("Analysis Focus: Property networks, feature correlations, geographic patterns")
+        
+        # Show actual relationship statistics
+        print("Relationship Statistics:")
+        relationships = ["LOCATED_IN", "PART_OF", "DESCRIBES"]
+        for rel_type in relationships:
+            query = f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count"
+            result = run_query(self.driver, query)
+            count = result[0]['count'] if result and len(result) > 0 else 0
+            print(f"  {rel_type}: {count}")
+        print()
         
         try:
             # Run all demo sections
-            self.demo_1_similarity_networks()
-            self.demo_2_feature_networks()
+            self.demo_1_property_relationships()
+            self.demo_2_wikipedia_relationships()
             self.demo_3_geographic_hierarchies()
-            self.demo_4_lifestyle_communities()
-            self.demo_5_investment_patterns()
-            self.demo_6_complex_graph_traversals()
             
             # Summary
             print("\n" + "" + "="*80)

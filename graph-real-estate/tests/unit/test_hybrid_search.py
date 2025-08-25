@@ -4,11 +4,11 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from typing import List
 
-from src.vectors.hybrid_search import HybridPropertySearch, SearchResult
-from src.core.query_executor import QueryExecutor
-from src.core.config import SearchConfig
-from src.vectors.embedding_pipeline import PropertyEmbeddingPipeline
-from src.vectors.vector_manager import PropertyVectorManager
+from vectors.hybrid_search import HybridPropertySearch, SearchResult
+from core.query_executor import QueryExecutor
+from core.config import SearchConfig
+from vectors.embedding_pipeline import PropertyEmbeddingPipeline
+from vectors.vector_manager import PropertyVectorManager
 
 
 class TestHybridPropertySearch:

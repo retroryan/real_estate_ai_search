@@ -31,10 +31,10 @@ if hasattr(signal, 'SIGPIPE'):
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from src.database import get_neo4j_driver
-from src.database.neo4j_client import run_query
-from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from database import get_neo4j_driver
+from database.neo4j_client import run_query
+from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
 
 
 class MarketIntelligenceAnalyzer:
@@ -87,7 +87,7 @@ class MarketIntelligenceAnalyzer:
         # City-level market overview
         self.print_subsection("City Market Overview")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n.city as City, 
              count(DISTINCT n) as Neighborhoods,
              count(p) as Properties,
@@ -110,7 +110,7 @@ class MarketIntelligenceAnalyzer:
         # Neighborhood market segmentation
         self.print_subsection("Neighborhood Market Segmentation")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n,
              count(p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
@@ -143,8 +143,8 @@ class MarketIntelligenceAnalyzer:
         # Geographic arbitrage opportunities
         self.print_subsection("Geographic Arbitrage Analysis")
         query = """
-        MATCH (p1:Property)-[:IN_NEIGHBORHOOD]->(n1:Neighborhood),
-              (p2:Property)-[:IN_NEIGHBORHOOD]->(n2:Neighborhood)
+        MATCH (p1:Property)-[:LOCATED_IN]->(n1:Neighborhood),
+              (p2:Property)-[:LOCATED_IN]->(n2:Neighborhood)
         WHERE n1 <> n2 AND n1.city = n2.city AND p1.square_feet > 0 AND p2.square_feet > 0
         WITH n1.name as Neighborhood1, n2.name as Neighborhood2, n1.city as City,
              avg(p1.listing_price / p1.square_feet) as PricePerSqft1,
@@ -215,7 +215,7 @@ class MarketIntelligenceAnalyzer:
         # Property type pricing intelligence
         self.print_subsection("Property Type Market Analysis")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH p.property_type as PropertyType, n.city as City,
              count(p) as Count,
              avg(p.listing_price) as AvgPrice,
@@ -240,7 +240,7 @@ class MarketIntelligenceAnalyzer:
         # Pricing anomaly detection
         self.print_subsection("Pricing Anomaly Detection")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n, 
              collect(p) as Properties,
              avg(p.listing_price) as NeighborhoodAvg,
@@ -285,7 +285,7 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Undervalued Market Segments")
         query = """
         // Simplified approach: Find neighborhoods with above-average features but below-average prices
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n, count(p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
              avg(size([(p)-[:HAS_FEATURE]->(:Feature) | 1])) as AvgFeaturesPerProperty
@@ -325,7 +325,7 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Emerging Market Indicators")
         query = """
         // Find areas with diverse property types and growing feature adoption
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         WITH n,
@@ -398,7 +398,7 @@ class MarketIntelligenceAnalyzer:
         # Lifestyle tag market analysis
         self.print_subsection("Lifestyle Preference Markets")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         UNWIND n.lifestyle_tags as LifestyleTag
         
@@ -428,7 +428,7 @@ class MarketIntelligenceAnalyzer:
         # Lifestyle-feature correlation analysis
         self.print_subsection("Lifestyle-Feature Correlation Matrix")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         UNWIND n.lifestyle_tags as LifestyleTag
         
@@ -471,7 +471,7 @@ class MarketIntelligenceAnalyzer:
         # Demographic market sizing
         self.print_subsection("Market Size by Lifestyle Segment")
         query = """
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         
         WITH n.city as City, n.lifestyle_tags as LifestyleTags,
@@ -667,7 +667,7 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Market Positioning Analysis")
         query = """
         // Analyze positioning within price bands and feature categories
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         WITH p, n,
@@ -723,7 +723,7 @@ class MarketIntelligenceAnalyzer:
         self.print_subsection("Market Gap Analysis")
         query = """
         // Find underserved market segments
-        MATCH (p:Property)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         WITH n.city as City, p.property_type as PropertyType,

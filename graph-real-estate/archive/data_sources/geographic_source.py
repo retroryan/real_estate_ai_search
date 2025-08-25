@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 import logging
 
 from api_client import APIClientFactory, StatsAPIClient, SystemAPIClient
-from src.core.interfaces import IGeographicDataSource
+from core.interfaces import IGeographicDataSource
 
 
 class GeographicFileDataSource(IGeographicDataSource):

@@ -4,10 +4,10 @@ import logging
 from typing import List, Dict, Any
 from datetime import datetime
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import PropertyConfig
-from src.data_sources import PropertyFileDataSource
-from src.models.neighborhood import Neighborhood, NeighborhoodLoadResult
+from core.query_executor import QueryExecutor
+from core.config import PropertyConfig
+from data_sources import PropertyFileDataSource
+from models.neighborhood import Neighborhood, NeighborhoodLoadResult
 
 
 class NeighborhoodLoader:

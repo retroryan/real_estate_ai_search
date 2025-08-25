@@ -3,8 +3,8 @@ from typing import List, Dict, Any, Optional
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from src.database import get_neo4j_driver, close_neo4j_driver, run_query, clear_database, print_stats
-from src.data_loader import (
+from database import get_neo4j_driver, close_neo4j_driver, run_query, clear_database, print_stats
+from data_loader import (
     load_property_data, 
     validate_property_data, 
     get_unique_neighborhoods, 
@@ -13,7 +13,7 @@ from src.data_loader import (
     load_enhanced_property_data,
     load_wikipedia_data
 )
-from src.models import Property, PropertyDetails, Neighborhood, City, Feature, PriceRange, GraphStats
+from models import Property, PropertyDetails, Neighborhood, City, Feature, PriceRange, GraphStats
 
 
 class RealEstateGraphBuilder:
@@ -664,7 +664,7 @@ class RealEstateGraphBuilder:
     
     def run_sample_queries(self):
         """Run sample queries to demonstrate the enhanced graph"""
-        from src.demos import QueryDemonstrator
+        from demos import QueryDemonstrator
         
         demonstrator = QueryDemonstrator(self.driver)
         demonstrator.run_phase4_queries()

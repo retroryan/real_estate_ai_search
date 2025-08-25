@@ -5,10 +5,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from src.core.query_executor import QueryExecutor
-from src.core.config import GeographicConfig
-from src.data_sources import GeographicFileDataSource
-from src.models.geographic import State, County, City, GeographicLoadResult
+from core.query_executor import QueryExecutor
+from core.config import GeographicConfig
+from data_sources import GeographicFileDataSource
+from models.geographic import State, County, City, GeographicLoadResult
 
 
 class GeographicFoundationLoader:

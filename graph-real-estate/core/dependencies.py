@@ -95,13 +95,13 @@ class LoaderDependencies:
             LoaderDependencies instance
         """
         # Import here to avoid circular dependencies
-        from src.loaders.validator import DataValidator
-        from src.loaders.geographic_loader import GeographicFoundationLoader
-        from src.loaders.wikipedia_loader import WikipediaLoader
-        from src.loaders.neighborhood_loader import NeighborhoodLoader
-        from src.loaders.property_loader import PropertyLoader
-        from src.loaders.similarity_loader import SimilarityLoader
-        from src.data_sources import (
+        from loaders.validator import DataValidator
+        from loaders.geographic_loader import GeographicFoundationLoader
+        from loaders.wikipedia_loader import WikipediaLoader
+        from loaders.neighborhood_loader import NeighborhoodLoader
+        from loaders.property_loader import PropertyLoader
+        from loaders.similarity_loader import SimilarityLoader
+        from data_sources import (
             PropertyFileDataSource,
             WikipediaFileDataSource,
             GeographicFileDataSource
@@ -168,9 +168,9 @@ class SearchDependencies:
             SearchDependencies instance
         """
         # Import here to avoid circular dependencies
-        from src.vectors.embedding_pipeline import PropertyEmbeddingPipeline
-        from src.vectors.vector_manager import PropertyVectorManager
-        from src.vectors.hybrid_search import HybridPropertySearch
+        from vectors.embedding_pipeline import PropertyEmbeddingPipeline
+        from vectors.vector_manager import PropertyVectorManager
+        from vectors.hybrid_search import HybridPropertySearch
         
         # Create embedding pipeline
         embedding_pipeline = PropertyEmbeddingPipeline(

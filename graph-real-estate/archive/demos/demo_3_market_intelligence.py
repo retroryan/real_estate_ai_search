@@ -31,10 +31,10 @@ if hasattr(signal, 'SIGPIPE'):
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
 
-from src.database import get_neo4j_driver
-from src.database.neo4j_client import run_query
-from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from database import get_neo4j_driver
+from database.neo4j_client import run_query
+from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
 
 
 class MarketIntelligenceAnalyzer:

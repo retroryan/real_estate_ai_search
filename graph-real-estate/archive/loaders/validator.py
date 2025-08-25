@@ -5,8 +5,8 @@ from typing import List, Optional
 from pathlib import Path
 from pydantic import BaseModel, Field
 
-from src.core.query_executor import QueryExecutor
-from src.data_sources import PropertyFileDataSource, WikipediaFileDataSource
+from core.query_executor import QueryExecutor
+from data_sources import PropertyFileDataSource, WikipediaFileDataSource
 
 
 class ValidationResult(BaseModel):

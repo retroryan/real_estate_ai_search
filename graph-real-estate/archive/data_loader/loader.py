@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import ValidationError
 
-from src.models import Property, Neighborhood, City, Feature
+from models import Property, Neighborhood, City, Feature
 
 def load_json_file(file_path: Path) -> List[Dict[str, Any]]:
     """Load JSON data from file"""

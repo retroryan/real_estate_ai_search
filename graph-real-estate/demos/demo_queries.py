@@ -1,7 +1,7 @@
 """Demo queries for showcasing the real estate graph database"""
 from typing import Dict, List, Any
 from neo4j import Driver
-from src.queries import QueryRunner
+from queries import QueryRunner
 
 class QueryDemonstrator:
     """Handles demonstration queries for the real estate graph"""
@@ -282,7 +282,7 @@ class QueryDemonstrator:
     
     def _check_query_library(self):
         """Check if query library is properly set up"""
-        from src.queries import QueryLibrary
+        from queries import QueryLibrary
         queries = QueryLibrary.get_all_queries()
         assert len(queries) >= 6, "Not enough query categories"
         total_queries = sum(len(q) for q in queries.values())
@@ -297,7 +297,7 @@ class QueryDemonstrator:
     
     def _check_interactive(self):
         """Check if interactive components exist"""
-        from src.queries import QueryRunner
+        from queries import QueryRunner
         assert hasattr(QueryRunner, 'run_interactive'), "Interactive mode not implemented"
     
     def _check_performance(self):

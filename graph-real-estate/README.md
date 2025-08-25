@@ -1,11 +1,13 @@
-# Graph Real Estate - Database Initialization Module
+# Graph Real Estate - Demo Searches
 
-A Neo4j database initialization module for the real estate knowledge graph system. This module handles database schema creation, constraints, indexes, and provides utilities for managing the graph database structure.
+A Neo4j database initialization and demonstration module for the real estate knowledge graph system. Its primary purpose is to demonstrate the data stored by the data_pipeline/ Spark processing and is also used to initialize Neo4j. This module handles database schema creation, constraints, indexes, and provides utilities for managing the graph database structure.
 
 ## Purpose
 
 This module is responsible for:
+- Demonstrating the data stored by the data_pipeline/ Spark processing
 - Initializing the Neo4j database with proper schema
+- Creating vector embeddings for search using the embeddings model specified in config.yaml (currently configured for Voyage-3 with 1024 dimensions)
 - Creating constraints and indexes for optimal performance
 - Providing database management utilities (clear, stats)
 - Preparing the database to receive data from the data pipeline
@@ -23,7 +25,7 @@ docker-compose up -d
 ```
 
 3. **Configure Environment**
-Create `.env` file with your Neo4j credentials:
+Add to the parent directory `.env` file with your Neo4j credentials:
 ```env
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
@@ -37,6 +39,20 @@ NEO4J_PASSWORD=your_password
 The module is designed to run from the parent directory using Python's module execution:
 
 ```bash
+# Run demonstration queries (requires populated database)
+
+# **Vector Embedding Search Demos**
+python -m graph-real-estate demo --demo 1  # Hybrid Search Demo - Combines vector embeddings with graph intelligence
+python -m graph-real-estate demo --demo 5  # Pure Vector Search Demo - Semantic search using embeddings only
+
+# Graph and Market Analysis Demos
+python -m graph-real-estate demo --demo 2  # Graph Analysis Demo
+python -m graph-real-estate demo --demo 3  # Market Intelligence Demo
+python -m graph-real-estate demo --demo 4  # Wikipedia Enhanced Demo
+
+# Run demo with verbose output
+python -m graph-real-estate demo --demo 1 --verbose
+
 # Initialize database with schema and indexes
 python -m graph-real-estate init
 
@@ -51,16 +67,6 @@ python -m graph-real-estate stats
 
 # Clear all data from database (interactive confirmation)
 python -m graph-real-estate clear
-
-# Run demonstration queries (requires populated database)
-python -m graph-real-estate demo --demo 1  # Hybrid Search Demo
-python -m graph-real-estate demo --demo 2  # Graph Analysis Demo
-python -m graph-real-estate demo --demo 3  # Market Intelligence Demo
-python -m graph-real-estate demo --demo 4  # Wikipedia Enhanced Demo
-python -m graph-real-estate demo --demo 5  # Pure Vector Search Demo
-
-# Run demo with verbose output
-python -m graph-real-estate demo --demo 1 --verbose
 ```
 
 ### Command Details
@@ -84,11 +90,15 @@ Removes all nodes and relationships from the database (requires confirmation).
 
 #### `demo` - Run Demonstrations
 Executes demonstration scripts that showcase different aspects of the graph database:
-- **Demo 1**: Hybrid Search - Combines vector embeddings with graph intelligence
-- **Demo 2**: Graph Analysis - Explores relationships and graph patterns
-- **Demo 3**: Market Intelligence - Advanced market analytics and insights
-- **Demo 4**: Wikipedia Enhanced - Leverages Wikipedia integration
-- **Demo 5**: Pure Vector Search - Semantic search using embeddings only
+
+**Vector Embedding Search Capabilities:**
+- **Demo 1: Hybrid Search** - Combines vector embeddings with graph intelligence for powerful semantic search with contextual understanding. Uses the configured embedding model (Voyage-3) to perform similarity searches enhanced by graph relationships.
+- **Demo 5: Pure Vector Search** - Semantic search using embeddings only. Demonstrates pure vector similarity search capabilities using the configured embedding model for finding semantically similar properties.
+
+**Graph and Analysis Capabilities:**
+- **Demo 2: Graph Analysis** - Explores relationships and graph patterns
+- **Demo 3: Market Intelligence** - Advanced market analytics and insights
+- **Demo 4: Wikipedia Enhanced** - Leverages Wikipedia integration
 
 Note: Demos require a populated database. Run data ingestion first.
 

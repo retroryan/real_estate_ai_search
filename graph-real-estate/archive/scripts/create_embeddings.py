@@ -10,9 +10,9 @@ from pathlib import Path
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.vectors import PropertyEmbeddingPipeline
-from src.vectors.config_loader import get_embedding_config, get_vector_index_config
-from src.database.neo4j_client import get_neo4j_driver, close_neo4j_driver
+from vectors import PropertyEmbeddingPipeline
+from vectors.config_loader import get_embedding_config, get_vector_index_config
+from database.neo4j_client import get_neo4j_driver, close_neo4j_driver
 
 
 def main():
@@ -45,8 +45,8 @@ def main():
         pipeline = PropertyEmbeddingPipeline(driver, model_name)
         
         # Create vector manager for index creation
-        from src.core.query_executor import QueryExecutor
-        from src.vectors.vector_manager import PropertyVectorManager
+        from core.query_executor import QueryExecutor
+        from vectors.vector_manager import PropertyVectorManager
         
         query_executor = QueryExecutor(driver)
         vector_manager = PropertyVectorManager(driver, query_executor)

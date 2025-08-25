@@ -4,11 +4,11 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 
-from src.loaders.property_loader import PropertyLoader
-from src.core.query_executor import QueryExecutor
-from src.core.config import PropertyConfig, LoaderConfig
-from src.data_sources import PropertyFileDataSource
-from src.models.property import PropertyLoadResult
+from loaders.property_loader import PropertyLoader
+from core.query_executor import QueryExecutor
+from core.config import PropertyConfig, LoaderConfig
+from data_sources import PropertyFileDataSource
+from models.property import PropertyLoadResult
 
 
 class TestPropertyLoader:
