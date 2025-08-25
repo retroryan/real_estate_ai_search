@@ -175,10 +175,8 @@ def main():
             print(f"  Format: {summary['output']['format']}")
             print(f"  Path: {summary['output']['path']}")
             
-            print(f"\nProcessing:")
-            print(f"  Quality Checks: {summary['processing']['quality_checks']}")
-            print(f"  Cache Enabled: {summary['processing']['cache_enabled']}")
-            print(f"  Parallel Tasks: {summary['processing']['parallel_tasks']}")
+            print(f"\nDestinations:")
+            print(f"  Enabled: {summary['destinations']['enabled']}")
             
             print("=" * 60)
             return 0

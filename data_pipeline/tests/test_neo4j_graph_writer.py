@@ -44,9 +44,9 @@ class TestNeo4jGraphWriter:
         # Neo4j configuration
         self.neo4j_config = PipelineConfig(
             uri=os.getenv('NEO4J_URI', 'bolt://localhost:7687'),
-            username=os.getenv('NEO4J_USERNAME', 'neo4j'),
-            password=os.getenv('NEO4J_PASSWORD', 'scott_tiger'),
-            database=os.getenv('NEO4J_DATABASE', 'neo4j'),
+            username=os.getenv('NEO4J_USERNAME'),
+            password=os.getenv('NEO4J_PASSWORD'),
+            database=os.getenv('NEO4J_DATABASE'),
             clear_before_write=True
         )
         

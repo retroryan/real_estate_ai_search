@@ -91,7 +91,6 @@ class WikipediaLoader(BaseLoader):
             col("long_summary"),
             col("key_topics"),  # Already parsed as array
             col("relevance_score").cast("double"),
-            col("overall_confidence").cast("double").alias("confidence_score"),
             # Embedding fields will be populated by embedding generator
             lit(None).cast("string").alias("embedding_text"),
             lit(None).cast("array<double>").alias("embedding"),
@@ -127,8 +126,7 @@ class WikipediaLoader(BaseLoader):
                 s.long_summary,
                 s.key_topics,
                 s.best_city,
-                s.best_state,
-                s.overall_confidence
+                s.best_state
             FROM articles a 
             INNER JOIN page_summaries s ON a.pageid = s.page_id
             WHERE s.long_summary IS NOT NULL 
@@ -149,7 +147,6 @@ class WikipediaLoader(BaseLoader):
                 'best_city': '',
                 'best_state': '',
                 'relevance_score': 0.0,
-                'overall_confidence': 0.5,
                 'latitude': 0.0,
                 'longitude': 0.0
             })
@@ -205,12 +202,5 @@ class WikipediaLoader(BaseLoader):
         ).count()
         if empty_content > 0:
             logger.warning(f"Found {empty_content} Wikipedia articles with empty content")
-        
-        # Check confidence scores
-        low_confidence = df.filter(
-            col("overall_confidence") < 0.5
-        ).count()
-        if low_confidence > 0:
-            logger.info(f"Found {low_confidence} articles with low confidence scores")
         
         return True

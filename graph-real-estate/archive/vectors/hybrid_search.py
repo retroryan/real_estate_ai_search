@@ -15,7 +15,7 @@ class SearchResult:
     """Hybrid search result combining vector and graph data"""
     listing_id: str
     address: Optional[str]
-    price: float
+    listing_price: float  # Changed from price to listing_price for consistency
     vector_score: float
     graph_score: float
     combined_score: float
@@ -27,6 +27,12 @@ class SearchResult:
     description: Optional[str]
     similar_properties: List[str]
     features: List[str]
+    
+    # Backward compatibility property
+    @property
+    def price(self) -> float:
+        """Backward compatibility for old code using .price"""
+        return self.listing_price
 
 
 class HybridPropertySearch:
@@ -120,7 +126,7 @@ class HybridPropertySearch:
             enhanced_results.append(SearchResult(
                 listing_id=result['listing_id'],
                 address=result.get('address'),
-                price=result.get('price', 0),
+                listing_price=result.get('listing_price', result.get('price', 0)),  # Try listing_price first, fall back to price
                 vector_score=vector_score,
                 graph_score=graph_score,
                 combined_score=combined_score,

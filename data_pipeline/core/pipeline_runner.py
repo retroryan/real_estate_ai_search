@@ -198,18 +198,20 @@ class DataPipelineRunner:
             # Process each entity type separately
             processed_entities = {}
             
+            # Process neighborhoods first (needed for property enrichment)
+            if loaded_data.neighborhoods is not None:
+                logger.info("\n🏘️ Processing neighborhoods...")
+                processed_entities['neighborhoods'] = self._process_neighborhoods(
+                    loaded_data.neighborhoods
+                )
+                # Set neighborhoods data for property enricher
+                self.property_enricher.set_neighborhoods_data(processed_entities['neighborhoods'])
+            
             # Process properties
             if loaded_data.properties is not None:
                 logger.info("\n🏠 Processing properties...")
                 processed_entities['properties'] = self._process_properties(
                     loaded_data.properties
-                )
-            
-            # Process neighborhoods
-            if loaded_data.neighborhoods is not None:
-                logger.info("\n🏘️ Processing neighborhoods...")
-                processed_entities['neighborhoods'] = self._process_neighborhoods(
-                    loaded_data.neighborhoods
                 )
             
             # Process Wikipedia articles
@@ -258,10 +260,6 @@ class DataPipelineRunner:
         # Process text for properties
         processed_df = self.property_text_processor.process(enriched_df)
         
-        # Cache if configured
-        if self.config.cache_intermediate_results:
-            processed_df = processed_df.cache()
-        
         return processed_df
     
     def _process_neighborhoods(self, df: DataFrame) -> DataFrame:
@@ -285,10 +283,6 @@ class DataPipelineRunner:
         # Process text for neighborhoods
         processed_df = self.neighborhood_text_processor.process(enriched_df)
         
-        # Cache if configured
-        if self.config.cache_intermediate_results:
-            processed_df = processed_df.cache()
-        
         return processed_df
     
     def _process_wikipedia(self, df: DataFrame) -> DataFrame:
@@ -311,10 +305,6 @@ class DataPipelineRunner:
         
         # Process text for Wikipedia (minimal processing as content is already optimized)
         processed_df = self.wikipedia_text_processor.process(enriched_df)
-        
-        # Cache if configured
-        if self.config.cache_intermediate_results:
-            processed_df = processed_df.cache()
         
         return processed_df
     
@@ -376,6 +366,19 @@ class DataPipelineRunner:
                 WikipediaEmbeddingGenerator
             )
             
+            # Process neighborhoods first (needed for property enrichment)
+            if loaded_data.neighborhoods is not None:
+                logger.info("\n🏘️ Processing neighborhoods with embeddings...")
+                processed_df = self._process_neighborhoods(loaded_data.neighborhoods)
+                
+                # Generate neighborhood-specific embeddings
+                logger.info("   🔮 Generating neighborhood embeddings...")
+                neighborhood_embedder = NeighborhoodEmbeddingGenerator(self.spark, self.embedding_config)
+                processed_entities['neighborhoods'] = neighborhood_embedder.generate_embeddings(processed_df)
+                
+                # Set neighborhoods data for property enricher
+                self.property_enricher.set_neighborhoods_data(processed_entities['neighborhoods'])
+            
             # Process properties with embeddings
             if loaded_data.properties is not None:
                 logger.info("\n🏠 Processing properties with embeddings...")
@@ -385,16 +388,6 @@ class DataPipelineRunner:
                 logger.info("   🔮 Generating property embeddings...")
                 property_embedder = PropertyEmbeddingGenerator(self.spark, self.embedding_config)
                 processed_entities['properties'] = property_embedder.generate_embeddings(processed_df)
-            
-            # Process neighborhoods with embeddings
-            if loaded_data.neighborhoods is not None:
-                logger.info("\n🏘️ Processing neighborhoods with embeddings...")
-                processed_df = self._process_neighborhoods(loaded_data.neighborhoods)
-                
-                # Generate neighborhood-specific embeddings
-                logger.info("   🔮 Generating neighborhood embeddings...")
-                neighborhood_embedder = NeighborhoodEmbeddingGenerator(self.spark, self.embedding_config)
-                processed_entities['neighborhoods'] = neighborhood_embedder.generate_embeddings(processed_df)
             
             # Process Wikipedia articles with embeddings
             if loaded_data.wikipedia is not None:

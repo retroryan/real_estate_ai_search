@@ -4,6 +4,8 @@ import argparse
 import sys
 import logging
 from utils.graph_builder import GraphDatabaseInitializer
+from utils.demo_runner import DemoRunner
+from utils.models import DemoConfig
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -20,6 +22,7 @@ Commands:
   clear     Clear all data from database
   stats     Show database statistics
   test      Test database connection
+  demo      Run demonstration queries
 
 Examples:
   python main.py init          # Initialize database schema
@@ -27,12 +30,19 @@ Examples:
   python main.py clear         # Clear database only
   python main.py stats         # Show current database statistics
   python main.py test          # Test database connection
+  python main.py demo --demo 1 # Run demo 1 (Basic Graph Queries)
+  python main.py demo --demo 2 # Run demo 2 (Hybrid Search Simple)
+  python main.py demo --demo 3 # Run demo 3 (Hybrid Search Advanced)
+  python main.py demo --demo 4 # Run demo 4 (Graph Analysis)
+  python main.py demo --demo 5 # Run demo 5 (Market Intelligence)
+  python main.py demo --demo 6 # Run demo 6 (Wikipedia Enhanced)
+  python main.py demo --demo 7 # Run demo 7 (Pure Vector Search)
         """
     )
     
     parser.add_argument(
         "action",
-        choices=["init", "clear", "stats", "test"],
+        choices=["init", "clear", "stats", "test", "demo"],
         help="Action to perform"
     )
     
@@ -40,6 +50,13 @@ Examples:
         "--clear",
         action="store_true",
         help="Clear database before initialization (use with 'init')"
+    )
+    
+    parser.add_argument(
+        "--demo",
+        type=int,
+        choices=[1, 2, 3, 4, 5, 6, 7],
+        help="Demo number to run (1-7, use with 'demo' action)"
     )
     
     parser.add_argument(
@@ -112,6 +129,29 @@ def main():
         elif args.action == "stats":
             # Show database statistics
             initializer.print_stats()
+            sys.exit(0)
+        
+        elif args.action == "demo":
+            # Run demo
+            if not args.demo:
+                logger.error("Demo number required. Use --demo N where N is 1-7")
+                parser.print_help()
+                sys.exit(1)
+            
+            logger.info(f"Running demo {args.demo}...")
+            
+            # Create demo config with Pydantic validation
+            demo_config = DemoConfig(
+                demo_number=args.demo,
+                verbose=args.verbose
+            )
+            
+            # Run the demo
+            from utils.demo_runner import DemoRunner
+            demo_runner = DemoRunner(initializer.driver, demo_config)
+            demo_runner.run_demo()
+            
+            logger.info(f"✅ Demo {args.demo} completed successfully")
             sys.exit(0)
             
     except Exception as e:

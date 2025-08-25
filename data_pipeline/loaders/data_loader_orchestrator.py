@@ -113,8 +113,7 @@ class DataLoaderOrchestrator:
                     
             except Exception as e:
                 logger.error(f"✗ Failed to load {path}: {e}")
-                if self.config.processing.enable_quality_checks:
-                    raise
+                # Continue with next file instead of failing
         
         if not dataframes:
             return None
@@ -152,8 +151,7 @@ class DataLoaderOrchestrator:
                     
             except Exception as e:
                 logger.error(f"✗ Failed to load {path}: {e}")
-                if self.config.processing.enable_quality_checks:
-                    raise
+                # Continue with next file instead of failing
         
         if not dataframes:
             return None
@@ -190,8 +188,6 @@ class DataLoaderOrchestrator:
                 
         except Exception as e:
             logger.error(f"✗ Failed to load Wikipedia: {e}")
-            if self.config.processing.enable_quality_checks:
-                raise
             return None
     
     def _load_locations(self) -> Optional[DataFrame]:
@@ -218,8 +214,6 @@ class DataLoaderOrchestrator:
                 
         except Exception as e:
             logger.error(f"✗ Failed to load locations: {e}")
-            if self.config.processing.enable_quality_checks:
-                raise
             return None
     
     def get_location_broadcast(self):

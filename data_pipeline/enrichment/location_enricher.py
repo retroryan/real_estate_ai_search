@@ -44,7 +44,7 @@ class LocationEnricher:
         """
         self.spark = spark
         self.location_broadcast = location_broadcast
-
+        
         # Create location lookup DataFrames from broadcast data
         if location_broadcast is not None:
             self._create_location_lookups()
@@ -272,7 +272,15 @@ class LocationEnricher:
         try:
             # Create a mapping DataFrame from state abbreviations to full names
             from pyspark.sql import Row
-            mappings = [Row(state_abbr=k, state_full=v) for k, v in self.get_state_abbreviations().items()]
+            state_abbreviations = {
+                "CA": "California",
+                "UT": "Utah",
+                "NY": "New York",
+                "TX": "Texas",
+                "NV": "Nevada",
+                "CO": "Colorado",
+            }
+            mappings = [Row(state_abbr=k, state_full=v) for k, v in state_abbreviations.items()]
             mapping_df = self.spark.createDataFrame(mappings)
             
             # Join with mapping to get full state names

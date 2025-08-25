@@ -125,7 +125,6 @@ class WikipediaArticle(SparkModel):
     long_summary: Optional[str] = None
     key_topics: Optional[str] = None
     relevance_score: Optional[float] = None
-    confidence_score: Optional[float] = None
     embedding_text: Optional[str] = None
     embedding: Optional[List[float]] = None
     embedding_model: Optional[str] = None
@@ -153,6 +152,7 @@ class FlattenedProperty(SparkModel):
     """Flattened property model after transformation."""
     listing_id: str
     neighborhood_id: Optional[str] = None
+    neighborhood: Optional[str] = None  # Neighborhood name for demo compatibility
     
     # Flattened address fields
     street: Optional[str] = None
@@ -185,6 +185,12 @@ class FlattenedProperty(SparkModel):
     virtual_tour_url: Optional[str] = None
     images: Optional[List[str]] = None
     price_history: Optional[List[PriceHistory]] = None
+    
+    # Embedding fields
+    embedding: Optional[List[float]] = None
+    embedding_text: Optional[str] = None
+    embedding_model: Optional[str] = None
+    embedding_dimension: Optional[int] = None
 
 
 class FlattenedNeighborhood(SparkModel):

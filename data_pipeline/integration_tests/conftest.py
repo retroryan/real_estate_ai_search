@@ -37,9 +37,7 @@ def test_settings():
     config_manager = ConfigurationManager(environment="test")
     settings = config_manager.load_config()
     
-    # Override settings for testing (don't modify environment field, it's not writable)
-    settings.data_subset.enabled = True
-    settings.data_subset.sample_size = 15  # Small dataset for faster tests
+    # Settings for testing loaded directly from config
     
     return settings
 

@@ -200,12 +200,7 @@ class ConfigurationManager:
         if self._config.provider == "mock":
             issues.append("Mock embedding provider should not be used in production")
         
-        # Check development settings
-        if self._config.test_mode:
-            issues.append("Test mode is enabled")
-        
-        if self._config.debug_mode:
-            issues.append("Debug mode is enabled")
+        # Check development settings removed - no longer in config
         
         if issues:
             logger.warning(f"Configuration issues for production: {issues}")
@@ -243,10 +238,8 @@ class ConfigurationManager:
                 "format": self._config.format,
                 "path": self._config.path
             },
-            "processing": {
-                "quality_checks": self._config.enable_quality_checks,
-                "cache_enabled": self._config.cache_intermediate_results,
-                "parallel_tasks": self._config.parallel_tasks
+            "destinations": {
+                "enabled": self._config.enabled_destinations
             }
         }
 
@@ -285,8 +278,5 @@ def create_test_configuration(
     
     # Use mock embeddings for speed
     config.provider = provider
-    
-    # Disable caching for tests
-    config.cache_intermediate_results = False
     
     return config

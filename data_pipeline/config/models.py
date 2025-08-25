@@ -82,15 +82,5 @@ class PipelineConfig(BaseModel):
     format: str = Field(default="parquet")
     enabled_destinations: List[str] = Field(default_factory=lambda: ["parquet"])
     
-    # Processing
-    cache_intermediate_results: bool = Field(default=False)
-    parallel_tasks: int = Field(default=4, gt=0)
-    enable_quality_checks: bool = Field(default=True)
-    
-    
     # Writer-specific configurations
     base_path: str = Field(default="data/processed")
-    
-    # Development/testing
-    test_mode: bool = Field(default=False)
-    debug_mode: bool = Field(default=False)

@@ -34,13 +34,18 @@ class ParquetWriter(EntityWriter):
             config: Pipeline configuration
             spark: SparkSession instance
         """
-        super().__init__(config)
-        self.config = config
+        # Create a WriterConfig from PipelineConfig for base class
+        from .base import WriterConfig
+        writer_config = WriterConfig(enabled=True)
+        super().__init__(writer_config)
+        
+        # Store pipeline config separately to avoid overwriting base class config
+        self.pipeline_config = config
         self.spark = spark
         self.logger = logging.getLogger(__name__)
         
         # Create base path
-        self.base_path = Path(self.config.base_path)
+        self.base_path = Path(self.pipeline_config.base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
     
     def validate_connection(self) -> bool:

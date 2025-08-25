@@ -38,8 +38,40 @@ class GraphDatabaseInitializer:
         clear_database(self.driver)
         print("✓ Database cleared")
     
+    def _create_vector_indexes(self, dimension: int = 768) -> None:
+        """
+        Create vector indexes for embeddings.
+        
+        Args:
+            dimension: Embedding dimension (default 768 for nomic-embed-text)
+        """
+        # Define vector indexes to create
+        vector_indexes = [
+            ("property_embedding", "Property", "embedding"),
+            ("neighborhood_embedding", "Neighborhood", "embedding"),
+            ("wikipedia_embedding", "Wikipedia", "embedding")
+        ]
+        
+        for index_name, label, field in vector_indexes:
+            # Create vector index
+            vector_index_query = f"""
+            CREATE VECTOR INDEX {index_name} IF NOT EXISTS
+            FOR (n:{label})
+            ON n.{field}
+            OPTIONS {{ indexConfig: {{
+                `vector.dimensions`: {dimension},
+                `vector.similarity_function`: 'cosine'
+            }}}}
+            """
+            
+            try:
+                run_query(self.driver, vector_index_query)
+                print(f"  ✓ Vector index created: {index_name} on {label}.{field} (dimensions: {dimension})")
+            except Exception as e:
+                print(f"  ⚠ Vector index {index_name}: {e}")
+    
     def create_constraints_and_indexes(self) -> None:
-        """Create all necessary constraints and indexes"""
+        """Create all necessary constraints and indexes including vector indexes"""
         print("\nCreating constraints and indexes...")
         
         # Define constraints
@@ -86,6 +118,10 @@ class GraphDatabaseInitializer:
                 print(f"  ✓ Index created: {name}")
             except Exception as e:
                 print(f"  ⚠ Index {name}: {e}")
+        
+        # Create vector indexes for embeddings
+        # Default to 768 (nomic-embed-text), but can be overridden
+        self._create_vector_indexes(768)
     
     def initialize_database(self, clear: bool = False) -> bool:
         """

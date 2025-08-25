@@ -101,12 +101,6 @@ class RelationshipBuilder:
                 properties_df
             )
             logger.info(f"Built {relationships['property_similarity'].count()} property SIMILAR_TO relationships")
-            
-        if neighborhoods_df:
-            relationships["neighborhood_similarity"] = self.calculate_neighborhood_similarity(
-                neighborhoods_df
-            )
-            logger.info(f"Built {relationships['neighborhood_similarity'].count()} neighborhood SIMILAR_TO relationships")
         
         return relationships
     
@@ -267,7 +261,6 @@ class RelationshipBuilder:
             col("from_id"),
             concat(lower(col("best_city")), lit("_"), lower(col("best_state"))).alias("to_id"),
             lit(RelationshipType.DESCRIBES.value).alias("relationship_type"),
-            col("confidence"),
             lit("city").alias("match_type")
         ).filter(col("best_city").isNotNull())
         
@@ -288,9 +281,6 @@ class RelationshipBuilder:
         Returns:
             DataFrame of SimilarToRelationship records
         """
-        # Use listing_price if price doesn't exist, handle nested property_details
-        price_col = "listing_price" if "listing_price" in properties_df.columns else "price"
-        
         # Extract fields from nested structures if needed
         prep_df = properties_df
         if "property_details.bedrooms" in prep_df.columns:
@@ -304,11 +294,11 @@ class RelationshipBuilder:
         # Prepare properties for comparison and alias immediately
         p1 = prep_df.filter(
             col("listing_id").isNotNull() & 
-            col(price_col).isNotNull() &
+            col("listing_price").isNotNull() &
             col("city").isNotNull()
         ).select(
             col("listing_id"),
-            col(price_col).alias("price"),
+            col("listing_price").alias("price"),
             col("bedrooms"), col("bathrooms"),
             col("square_feet"), col("features"), col("city"), col("state")
         ).alias("p1")
@@ -316,11 +306,11 @@ class RelationshipBuilder:
         # Create second alias for self-join
         p2 = prep_df.filter(
             col("listing_id").isNotNull() & 
-            col(price_col).isNotNull() &
+            col("listing_price").isNotNull() &
             col("city").isNotNull()
         ).select(
             col("listing_id"),
-            col(price_col).alias("price"),
+            col("listing_price").alias("price"),
             col("bedrooms"), col("bathrooms"),
             col("square_feet"), col("features"), col("city"), col("state")
         ).alias("p2")
@@ -382,85 +372,6 @@ class RelationshipBuilder:
             col("similarity_score") >= 0.8
         )
     
-    def calculate_neighborhood_similarity(self, neighborhoods_df: DataFrame) -> DataFrame:
-        """
-        Calculate SIMILAR_TO relationships between neighborhoods.
-        
-        Similarity based on median price, walkability, and lifestyle.
-        
-        Args:
-            neighborhoods_df: Neighborhood DataFrame
-            
-        Returns:
-            DataFrame of SimilarToRelationship records
-        """
-        # Prepare neighborhoods for comparison and alias immediately
-        n1 = neighborhoods_df.filter(
-            col("neighborhood_id").isNotNull()
-        ).select(
-            "neighborhood_id", "median_home_price", "walkability_score",
-            "transit_score", "lifestyle_tags", "state"
-        ).alias("n1")
-        
-        # Create second alias for self-join
-        n2 = neighborhoods_df.filter(
-            col("neighborhood_id").isNotNull()
-        ).select(
-            "neighborhood_id", "median_home_price", "walkability_score",
-            "transit_score", "lifestyle_tags", "state"
-        ).alias("n2")
-        
-        pairs = n1.join(
-            n2,
-            (n1["neighborhood_id"] < n2["neighborhood_id"]) &
-            (n1["state"] == n2["state"]),
-            "inner"
-        )
-        
-        # Calculate similarity using column references to avoid ambiguity
-        similarity_df = pairs.select(
-            n1["neighborhood_id"].alias("from_id"),
-            n2["neighborhood_id"].alias("to_id"),
-            lit(RelationshipType.SIMILAR_TO.value).alias("relationship_type"),
-            
-            # Combined similarity score using proper column references
-            (
-                # Price similarity (50% weight)
-                when(
-                    n1["median_home_price"].isNotNull() & n2["median_home_price"].isNotNull(),
-                    when(
-                        abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"] < 0.2, lit(0.5)
-                    ).when(
-                        abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"] < 0.4, lit(0.25)
-                    ).otherwise(lit(0.0))
-                ).otherwise(lit(0.25)) +
-                
-                # Walkability similarity (25% weight)
-                when(
-                    n1["walkability_score"].isNotNull() & n2["walkability_score"].isNotNull(),
-                    lit(0.25) * (lit(1.0) - least(abs(n1["walkability_score"] - n2["walkability_score"]) / lit(10.0), lit(1.0)))
-                ).otherwise(lit(0.125)) +
-                
-                # Transit similarity (25% weight)
-                when(
-                    n1["transit_score"].isNotNull() & n2["transit_score"].isNotNull(),
-                    lit(0.25) * (lit(1.0) - least(abs(n1["transit_score"] - n2["transit_score"]) / lit(10.0), lit(1.0)))
-                ).otherwise(lit(0.125))
-            ).alias("similarity_score"),
-            
-            # Component scores
-            when(
-                n1["median_home_price"].isNotNull() & n2["median_home_price"].isNotNull(),
-                lit(1.0) - least(abs(n1["median_home_price"] - n2["median_home_price"]) / n1["median_home_price"], lit(1.0))
-            ).otherwise(lit(0.5)).alias("price_similarity"),
-            lit(None).cast("float").alias("feature_similarity"),
-            lit(None).cast("float").alias("size_similarity")
-        )
-        
-        # Filter by threshold
-        return similarity_df.filter(
-            col("similarity_score") >= 0.8
-        )
     
     def get_relationship_statistics(self, relationships: Dict[str, DataFrame]) -> Dict:
         """

@@ -29,8 +29,8 @@ class Neo4jBasicTest:
         
         # Get Neo4j configuration
         self.neo4j_uri = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
-        self.neo4j_username = os.getenv('NEO4J_USERNAME', 'neo4j')
-        self.neo4j_password = os.getenv('NEO4J_PASSWORD', 'scott_tiger')
+        self.neo4j_username = os.getenv('NEO4J_USERNAME')
+        self.neo4j_password = os.getenv('NEO4J_PASSWORD')
         self.neo4j_database = os.getenv('NEO4J_DATABASE', 'neo4j')
         
         # Path to Neo4j connector JAR (Scala 2.13 for Spark 4.0)
@@ -196,10 +196,6 @@ class Neo4jBasicTest:
         print("\n" + "="*60)
         if all_passed:
             print("✅ ALL TESTS PASSED - Phase 1 Complete!")
-            print("\nYou can now view the properties in Neo4j Browser:")
-            print("  1. Open http://localhost:7474")
-            print("  2. Login with neo4j/scott_tiger")
-            print("  3. Run: MATCH (p:Property) RETURN p LIMIT 10")
         else:
             print("❌ TESTS FAILED - Please check the errors above")
         print("="*60)

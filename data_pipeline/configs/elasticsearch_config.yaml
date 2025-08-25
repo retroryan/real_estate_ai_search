@@ -84,14 +84,6 @@ embedding:
   batch_size: 100
   skip_existing: false
 
-# Processing configuration
-processing:
-  enable_quality_checks: true
-  min_quality_score: 0.7
-  drop_low_quality: false
-  continue_on_error: true
-  parallel_tasks: 4
-
 # Multi-destination output configuration
 output_destinations:
   enabled_destinations:
@@ -139,55 +131,3 @@ logging:
   file: "logs/elasticsearch_pipeline.log"
   log_execution_time: true
   log_record_counts: true
-
-# Monitoring configuration
-monitoring:
-  enabled: true
-  track_metrics:
-    - "records_processed"
-    - "indices_created"
-    - "write_time"
-    - "error_rate"
-
-# Development/testing configuration
-development:
-  test_mode: false
-  debug_mode: false
-  verbose_logging: false
-  validate_inputs: true
-  validate_outputs: true
-
-# Feature flags
-feature_flags:
-  enable_smart_chunking: false
-  enable_adaptive_batching: false
-  enable_incremental_processing: false
-
-# Environment-specific overrides
-environments:
-  # Development environment
-  development:
-          enabled: true
-      sample_size: 100
-    output_destinations:
-      elasticsearch:
-        hosts:
-          - "localhost:9200"
-        clear_before_write: true
-    logging:
-      level: "DEBUG"
-  
-  # Production environment
-  production:
-          enabled: false
-    output_destinations:
-      elasticsearch:
-        hosts:
-          - "es-prod-1:9200"
-          - "es-prod-2:9200"
-          - "es-prod-3:9200"
-        username: "elastic"
-        password: "${ES_PROD_PASSWORD}"
-        clear_before_write: false
-    logging:
-      level: "WARNING"

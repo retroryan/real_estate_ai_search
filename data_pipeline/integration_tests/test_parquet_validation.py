@@ -25,8 +25,6 @@ def run_pipeline_with_test_config(test_settings_with_temp_output):
     original_env = {}
     test_env = {
         "PIPELINE_ENV": "test",
-        "DATA_SUBSET_ENABLED": "true",
-        "DATA_SUBSET_SAMPLE_SIZE": str(test_settings_with_temp_output.data_subset.sample_size),
         "OUTPUT_DESTINATIONS": "parquet"
     }
     

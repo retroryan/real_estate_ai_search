@@ -49,6 +49,9 @@ class PropertyEnricher(BaseEnricher):
         if self.location_broadcast:
             from .location_enricher import LocationEnricher
             self.location_enricher = LocationEnricher(spark, location_broadcast)
+        
+        # Store reference to neighborhoods DataFrame for joining
+        self.neighborhoods_df = None
     
 
     def set_location_data(self, location_broadcast: Any):
@@ -64,6 +67,16 @@ class PropertyEnricher(BaseEnricher):
             from .location_enricher import LocationEnricher
             self.location_enricher = LocationEnricher(self.spark, location_broadcast)
             logger.info("LocationEnricher initialized with broadcast data")
+    
+    def set_neighborhoods_data(self, neighborhoods_df: DataFrame):
+        """
+        Set neighborhoods DataFrame for joining neighborhood names.
+        
+        Args:
+            neighborhoods_df: DataFrame containing neighborhood data
+        """
+        self.neighborhoods_df = neighborhoods_df
+        logger.info("Neighborhoods data set for property enrichment")
     
     def _create_location_broadcasts(self):
         """Create broadcast variables for location normalization using base class constants."""
@@ -93,6 +106,11 @@ class PropertyEnricher(BaseEnricher):
         # Normalize addresses and locations - always enabled
         enriched_df = self._normalize_addresses(enriched_df)
         logger.info("Normalized property addresses")
+        
+        # Join with neighborhoods to populate neighborhood name
+        if self.neighborhoods_df is not None:
+            enriched_df = self._add_neighborhood_names(enriched_df)
+            logger.info("Added neighborhood names to properties")
         
         # Enhance with location hierarchy and neighborhood linking - always enabled if location enricher available
         if self.location_enricher:
@@ -136,6 +154,31 @@ class PropertyEnricher(BaseEnricher):
         # Validate enrichment
         return self.validate_enrichment(enriched_df, initial_count, "Property")
     
+    
+    def _add_neighborhood_names(self, df: DataFrame) -> DataFrame:
+        """
+        Join with neighborhoods DataFrame to add neighborhood names.
+        
+        Args:
+            df: Property DataFrame
+            
+        Returns:
+            DataFrame with neighborhood names added
+        """
+        # Select only the fields we need from neighborhoods
+        neighborhoods_lookup = self.neighborhoods_df.select(
+            col("neighborhood_id"),
+            col("name").alias("neighborhood")
+        )
+        
+        # Left join to add neighborhood name
+        df_with_names = df.join(
+            broadcast(neighborhoods_lookup),
+            df["neighborhood_id"] == neighborhoods_lookup["neighborhood_id"],
+            "left"
+        ).drop(neighborhoods_lookup["neighborhood_id"])
+        
+        return df_with_names
     
     def _normalize_addresses(self, df: DataFrame) -> DataFrame:
         """
@@ -192,16 +235,13 @@ class PropertyEnricher(BaseEnricher):
         """
         # Property details are already flattened - square_feet, bedrooms, etc. are top-level columns
         
-        # Handle both 'price' and 'listing_price' field names
-        price_col = "listing_price" if "listing_price" in df.columns else "price"
-        
         # Price per square foot (handle if price_per_sqft already exists in source data)
         if "price_per_sqft" not in df.columns:
             df_with_price_sqft = df.withColumn(
                 "price_per_sqft",
                 when(
-                    (col("square_feet") > 0) & col(price_col).isNotNull(),
-                    (col(price_col) / col("square_feet")).cast("decimal(10,2)")
+                    (col("square_feet") > 0) & col("listing_price").isNotNull(),
+                    (col("listing_price") / col("square_feet")).cast("decimal(10,2)")
                 ).otherwise(lit(None))
             )
         else:
@@ -222,14 +262,11 @@ class PropertyEnricher(BaseEnricher):
 
         # Property details are already flattened - these are top-level columns
         
-        # Handle both 'price' and 'listing_price' field names
-        price_col = "listing_price" if "listing_price" in df.columns else "price"
-        
         # Property-specific quality score calculation
         quality_expr = (
             # Essential fields (50% weight)
             (when(col("listing_id").isNotNull(), 0.1).otherwise(0.0)) +
-            (when(col(price_col).isNotNull() & (col(price_col) > 0), 0.15).otherwise(0.0)) +
+            (when(col("listing_price").isNotNull() & (col("listing_price") > 0), 0.15).otherwise(0.0)) +
             (when(col("bedrooms").isNotNull() & (col("bedrooms") >= 0), 0.1).otherwise(0.0)) +
             (when(col("bathrooms").isNotNull() & (col("bathrooms") >= 0), 0.05).otherwise(0.0)) +
             (when(col("square_feet").isNotNull() & (col("square_feet") > 0), 0.1).otherwise(0.0)) +
@@ -290,12 +327,8 @@ class PropertyEnricher(BaseEnricher):
             if "county_resolved" in enhanced_df.columns and "county" not in enhanced_df.columns:
                 enhanced_df = enhanced_df.withColumnRenamed("county_resolved", "county")
             
-            # Add neighborhood linking - always enabled
-            # For properties, we'll try to match against neighborhoods in the same city/state
-            # This is a simplified approach - in reality you might want more sophisticated matching
-            enhanced_df = self.location_enricher.link_to_neighborhood(
-                enhanced_df, "city", "city", "state"  # Using city as neighborhood for now
-            )
+            # Skip neighborhood linking for properties - they already have neighborhood_id from the loader
+            # Properties come with their neighborhood_id already assigned from the source data
             
             # Standardize location names
             enhanced_df = self.location_enricher.standardize_location_names(
@@ -376,17 +409,14 @@ class PropertyEnricher(BaseEnricher):
         """
         from pyspark.sql.functions import when
         
-        # Handle both 'price' and 'listing_price' field names
-        price_col = "listing_price" if "listing_price" in df.columns else "price"
-        
         # Define price range thresholds and IDs
         df_with_range = df.withColumn(
             "price_range_id",
-            when(col(price_col) < 500000, lit("range_0_500k"))
-            .when(col(price_col) < 1000000, lit("range_500k_1m"))
-            .when(col(price_col) < 2000000, lit("range_1m_2m"))
-            .when(col(price_col) < 3000000, lit("range_2m_3m"))
-            .when(col(price_col) < 5000000, lit("range_3m_5m"))
+            when(col("listing_price") < 500000, lit("range_0_500k"))
+            .when(col("listing_price") < 1000000, lit("range_500k_1m"))
+            .when(col("listing_price") < 2000000, lit("range_1m_2m"))
+            .when(col("listing_price") < 3000000, lit("range_2m_3m"))
+            .when(col("listing_price") < 5000000, lit("range_3m_5m"))
             .otherwise(lit("range_5m_plus"))
         )
         
