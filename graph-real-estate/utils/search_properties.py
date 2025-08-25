@@ -194,7 +194,7 @@ def main():
         return 1
     finally:
         if driver:
-            close_neo4j_driver(driver)
+            close_neo4j_driver()
 
 
 if __name__ == "__main__":

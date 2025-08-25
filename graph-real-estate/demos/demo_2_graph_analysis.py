@@ -765,7 +765,7 @@ class GraphRelationshipAnalysisDemo:
     def close(self):
         """Clean up resources"""
         if self.driver:
-            close_neo4j_driver(self.driver)
+            close_neo4j_driver()
 
 
 def main():

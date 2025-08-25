@@ -1,13 +1,9 @@
 """Neo4j connection management with singleton pattern and proper lifecycle"""
-import os
 import atexit
 import logging
 from typing import Optional
 from neo4j import GraphDatabase
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv('.env', override=True)
+from config.settings import get_settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,14 +27,13 @@ class Neo4jConnection:
     
     def _initialize_driver(self):
         """Initialize driver with proper configuration"""
-        uri = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
-        username = os.getenv('NEO4J_USERNAME', 'neo4j')
-        password = os.getenv('NEO4J_PASSWORD', 'password')
+        settings = get_settings()
+        db_config = settings.database
         
         try:
             self._driver = GraphDatabase.driver(
-                uri,
-                auth=(username, password),
+                db_config.uri,
+                auth=(db_config.user, db_config.password),
                 max_connection_lifetime=3600,  # 1 hour
                 max_connection_pool_size=50,
                 connection_acquisition_timeout=60,
@@ -49,28 +44,20 @@ class Neo4jConnection:
             # Register cleanup
             atexit.register(self.close)
             
-            # Verify connectivity
-            self.verify_connectivity()
+            # Verify connection
+            with self._driver.session(database=db_config.database) as session:
+                session.run("RETURN 1")
+                logger.info("Neo4j connection verified")
             
-            logger.info(f"Neo4j driver initialized successfully to {uri}")
+            logger.info(f"Neo4j driver initialized successfully to {db_config.uri}")
             
-        except Exception as e:
-            logger.error(f"Failed to initialize Neo4j driver: {e}")
-            raise
-    
-    def verify_connectivity(self):
-        """Verify database connectivity"""
-        try:
-            with self._driver.session() as session:
-                result = session.run("RETURN 1 as test").single()
-                if result['test'] != 1:
-                    raise Exception("Connectivity test failed")
-            logger.info("Neo4j connection verified")
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
+            self._driver = None
             raise
     
-    def get_driver(self):
+    @property
+    def driver(self):
         """Get the driver instance"""
         if self._driver is None:
             self._initialize_driver()
@@ -81,55 +68,42 @@ class Neo4jConnection:
         if self._driver:
             try:
                 self._driver.close()
-                self._driver = None
                 logger.info("Neo4j driver closed successfully")
             except Exception as e:
                 logger.error(f"Error closing Neo4j driver: {e}")
+            finally:
+                self._driver = None
     
-    def health_check(self) -> bool:
-        """Check if the connection is healthy"""
-        try:
-            with self._driver.session() as session:
-                session.run("RETURN 1").single()
-            return True
-        except Exception as e:
-            logger.warning(f"Health check failed: {e}")
-            return False
-    
-    def get_database_info(self) -> dict:
-        """Get database server information"""
-        try:
-            with self._driver.session() as session:
-                result = session.run("""
-                    CALL dbms.components() 
-                    YIELD name, versions, edition
-                    RETURN name, versions[0] as version, edition
-                """).single()
-                
-                return {
-                    'name': result['name'],
-                    'version': result['version'],
-                    'edition': result['edition']
-                }
-        except Exception as e:
-            logger.error(f"Failed to get database info: {e}")
-            return {}
+    def reset(self):
+        """Reset the connection (close and reinitialize)"""
+        self.close()
+        self._initialize_driver()
 
 
 # Global connection instance
-neo4j_connection = Neo4jConnection()
+_connection = Neo4jConnection()
+
+
+def get_driver():
+    """Get the Neo4j driver instance"""
+    return _connection.driver
 
 
 def get_neo4j_driver():
-    """Get Neo4j driver instance (backwards compatibility)"""
-    return neo4j_connection.get_driver()
+    """Get the Neo4j driver instance (alias for compatibility)"""
+    return get_driver()
 
 
-def close_neo4j_driver(driver=None):
-    """Close Neo4j driver connection (backwards compatibility)"""
-    neo4j_connection.close()
+def close_driver():
+    """Close the Neo4j driver"""
+    _connection.close()
 
 
-def verify_neo4j_health() -> bool:
-    """Verify Neo4j connection health"""
-    return neo4j_connection.health_check()
+def close_neo4j_driver():
+    """Close the Neo4j driver (alias for compatibility)"""
+    close_driver()
+
+
+def reset_connection():
+    """Reset the Neo4j connection"""
+    _connection.reset()

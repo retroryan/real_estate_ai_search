@@ -1,18 +1,16 @@
 """Neo4j database client and utilities"""
-import os
 from typing import Dict, List, Any, Optional
-from dotenv import load_dotenv
+from config.settings import get_settings
 
 # Import from new connection module
 from .connection import get_neo4j_driver, close_neo4j_driver
 from .transaction_manager import TransactionManager
 
-# Load environment variables
-load_dotenv('.env', override=True)
 
 def run_query(driver, query: str, params: Optional[Dict[str, Any]] = None, database: Optional[str] = None) -> List[Dict[str, Any]]:
     """Execute a Cypher query and return results with retry logic"""
-    db = database or os.getenv('NEO4J_DATABASE', 'neo4j')
+    settings = get_settings()
+    db = database or settings.database.database
     manager = TransactionManager(driver)
     
     # Determine if this is a write operation based on query keywords
@@ -61,35 +59,23 @@ def print_stats(driver):
         count = result[0]['count'] if result else 0
         print(f"{label}: {count}")
     
-    # Wikipedia article types distribution
-    type_query = """
-    MATCH (w:WikipediaArticle) 
-    RETURN w.relationship_type as type, COUNT(w) as count 
+    # Relationship type statistics
+    rel_types_query = """
+    MATCH ()-[r]->()
+    RETURN TYPE(r) as relationship_type, COUNT(r) as count
     ORDER BY count DESC
     """
-    type_result = run_query(driver, type_query)
-    if type_result:
-        print("\n--- Wikipedia Article Types ---")
-        for record in type_result:
-            article_type = record['type'] or 'unknown'
-            count = record['count']
-            print(f"{article_type}: {count}")
     
-    # Neighborhoods with Wikipedia coverage
-    coverage_query = """
-    MATCH (n:Neighborhood)
-    OPTIONAL MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n)
-    WITH n.name as neighborhood, COUNT(w) as wiki_count
-    WHERE wiki_count > 0
-    RETURN neighborhood, wiki_count
-    ORDER BY wiki_count DESC
-    """
-    coverage_result = run_query(driver, coverage_query)
-    if coverage_result:
-        print(f"\n--- Wikipedia Coverage by Neighborhood ---")
-        for record in coverage_result[:10]:  # Top 10
-            neighborhood = record['neighborhood']
-            wiki_count = record['wiki_count']
-            print(f"{neighborhood}: {wiki_count} articles")
-    
-    print("===========================\n")
+    print("\n--- Relationship Types ---")
+    results = run_query(driver, rel_types_query)
+    for result in results:
+        print(f"{result['relationship_type']}: {result['count']}")
+
+# Export functions
+__all__ = [
+    'get_neo4j_driver',
+    'close_neo4j_driver', 
+    'run_query',
+    'clear_database',
+    'print_stats'
+]

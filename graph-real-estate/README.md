@@ -12,6 +12,13 @@ This module is responsible for:
 - Providing database management utilities (clear, stats)
 - Preparing the database to receive data from the data pipeline
 
+## Vector Embedding Configuration
+
+The module uses the embedding model specified in `config.yaml` to create vector embeddings for semantic search:
+- **Current Model**: Voyage-3 (1024 dimensions)
+- **Similarity Function**: Cosine similarity
+- **Hybrid Search Weights**: 60% vector, 20% graph, 20% features
+
 ## Installation
 
 1. **Install Dependencies**
@@ -30,6 +37,12 @@ Add to the parent directory `.env` file with your Neo4j credentials:
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=your_password
+```
+
+4. **Configure Embeddings** (Optional)
+To use vector embeddings, add your API key to the `.env` file:
+```env
+VOYAGE_API_KEY=your_voyage_api_key
 ```
 
 ## Usage

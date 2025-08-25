@@ -102,7 +102,7 @@ Examples:
         import traceback
         traceback.print_exc()
     finally:
-        close_neo4j_driver(driver)
+        close_neo4j_driver()
 
 if __name__ == "__main__":
     main()

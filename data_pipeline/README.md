@@ -71,7 +71,7 @@ pytest data_pipeline/integration_tests/test_parquet_validation.py -v
 docker run \
     --name neo4j \
     -p 7474:7474 -p 7687:7687 \
-    -e NEO4J_AUTH=neo4j/scott_tiger \
+    -e NEO4J_AUTH=neo4j/password \
     -e NEO4J_PLUGINS='["apoc"]' \
     -v $HOME/neo4j/data:/data \
     -v $HOME/neo4j/logs:/logs \
@@ -84,7 +84,7 @@ docker-compose up -d neo4j
 # Verify Neo4j is running
 curl http://localhost:7474
 # Access Neo4j Browser at http://localhost:7474
-# Default credentials: neo4j/scott_tiger
+# Default credentials: neo4j/password
 ```
 
 #### 2. Install Neo4j Spark Connector (Required for Spark Integration)
@@ -116,7 +116,7 @@ python -m data_pipeline --sample-size 100 --output-destination neo4j
 python -m data_pipeline --output-destination neo4j --entities properties,neighborhoods
 
 # Load to both Neo4j and Parquet
-python -m data_pipeline --output-destination neo4j,parquet
+python -m data_pipeline --output-destination neo4j,elasticsearch,parquet
 ```
 
 #### 4. Verify Data in Neo4j
@@ -142,51 +142,6 @@ WHERE s.similarity_score > 0.8
 RETURN p1.address, p2.address, s.similarity_score LIMIT 10;
 ```
 
-#### 5. Alternative: Direct Neo4j Loading (Without Spark Connector)
-
-If the Spark connector is not available, use the direct Python driver approach:
-
-```bash
-# Use the direct Neo4j writer (bypasses Spark connector requirement)
-python -m data_pipeline.writers.neo4j.direct_writer
-
-# Or load from existing Parquet files
-python -m data_pipeline.tools.parquet_to_neo4j \
-    --parquet-path data/entities/ \
-    --neo4j-uri bolt://localhost:7687 \
-    --neo4j-user neo4j \
-    --neo4j-password scott_tiger
-```
-
-### Neo4j Testing
-
-```bash
-# Test Neo4j connection
-python -c "from neo4j import GraphDatabase; \
-driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'scott_tiger')); \
-with driver.session() as session: \
-    result = session.run('RETURN 1 as test'); \
-    print('Neo4j connection successful:', result.single()['test']); \
-driver.close()"
-
-# Run pipeline with Neo4j output
-python -m data_pipeline --sample-size 50 --output-destination neo4j
-
-# Verify in Neo4j Browser (http://localhost:7474)
-MATCH (p:Property) RETURN count(p);
-```
-
-### Elasticsearch Testing
-
-```bash
-# Run pipeline with Elasticsearch output
-python -m data_pipeline --sample-size 50 --output-destination elasticsearch
-
-# Verify data in Elasticsearch
-curl -X GET "localhost:9200/_cat/indices?v"
-curl -X GET "localhost:9200/properties/_count"
-```
-
 ## Configuration
 
 ### Configuration File
@@ -207,7 +162,7 @@ neo4j:
   enabled: false  # Change to true to enable
   uri: "bolt://localhost:7687"
   username: "neo4j"
-  password: "scott_tiger"  # Default password
+  password: "password"
   database: "neo4j"
 ```
 
@@ -223,7 +178,7 @@ python -m data_pipeline --output-destination neo4j
 
 Parent `.env` file (`/Users/ryanknight/projects/temporal/.env`):
 ```bash
-NEO4J_PASSWORD=scott_tiger
+NEO4J_PASSWORD=password
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_DATABASE=neo4j

@@ -47,19 +47,28 @@ class EmbeddingModel:
     
     def _initialize_provider(self):
         """Initialize provider-specific settings"""
+        # Get the active model config for the selected provider
+        model_config = self.embedding_config.get_active_model_config()
+        
         if self.provider == "voyage":
-            self.api_key = self.embedding_config.voyage_api_key or os.getenv("VOYAGE_API_KEY")
+            self.api_key = model_config.api_key or os.getenv("VOYAGE_API_KEY")
             if not self.api_key:
                 raise ValueError("Voyage API key is required but not found in config or environment")
             self.api_url = "https://api.voyageai.com/v1/embeddings"
         elif self.provider == "openai":
-            self.api_key = self.embedding_config.openai_api_key or os.getenv("OPENAI_API_KEY")
+            self.api_key = model_config.api_key or os.getenv("OPENAI_API_KEY")
             if not self.api_key:
                 raise ValueError("OpenAI API key is required but not found in config or environment")
             self.api_url = "https://api.openai.com/v1/embeddings"
         elif self.provider == "ollama":
-            self.base_url = self.embedding_config.ollama_base_url
+            self.base_url = model_config.base_url
             self.api_url = f"{self.base_url}/api/embeddings"
+        elif self.provider == "gemini":
+            self.api_key = model_config.api_key or os.getenv("GEMINI_API_KEY")
+            if not self.api_key:
+                raise ValueError("Gemini API key is required but not found in config or environment")
+            # Gemini uses a different endpoint structure
+            self.api_url = "https://generativelanguage.googleapis.com/v1beta/models"
         else:
             raise ValueError(f"Unsupported embedding provider: {self.provider}")
     

@@ -101,7 +101,7 @@ def test_hybrid_search():
         import traceback
         traceback.print_exc()
     finally:
-        close_neo4j_driver(driver)
+        close_neo4j_driver()
 
 def main():
     """Main entry point for demo runner"""

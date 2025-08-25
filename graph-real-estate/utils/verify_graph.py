@@ -81,7 +81,7 @@ def verify_graph():
     print("✅ GRAPH VERIFICATION COMPLETE")
     print("="*60)
     
-    close_neo4j_driver(driver)
+    close_neo4j_driver()
 
 if __name__ == "__main__":
     verify_graph()
