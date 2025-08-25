@@ -214,22 +214,6 @@ python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
 python -m data_pipeline --output /path/to/results
 ```
 
-### Operational Options
-
-```bash
-# Show current configuration
-python -m data_pipeline --show-config
-
-# Validate configuration without running
-python -m data_pipeline --validate-only
-
-# Set logging level
-python -m data_pipeline --log-level DEBUG
-
-# Spark cores
-python -m data_pipeline --cores 4
-```
-
 ## Data Pipeline Flow
 
 ### Processing Pipeline
@@ -394,15 +378,18 @@ python -m data_pipeline \
   --checkpoint-dir /tmp/spark-checkpoint
 ```
 
-### Testing and Validation
+### Additional Commands
 
 ```bash
-# Validate configuration
-python -m data_pipeline --validate-only
-
 # Show current configuration
 python -m data_pipeline --show-config
 
-# Run integration tests
-pytest data_pipeline/integration_tests/ -v
+# Validate configuration only
+python -m data_pipeline --validate-only
+
+# Set logging level
+python -m data_pipeline --log-level DEBUG
+
+# Specify CPU cores
+python -m data_pipeline --cores 4
 ```

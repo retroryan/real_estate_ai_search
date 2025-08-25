@@ -2,12 +2,14 @@
 
 A Neo4j database initialization and demonstration module for the real estate knowledge graph system. Its primary purpose is to demonstrate the data stored by the data_pipeline/ Spark processing and is also used to initialize Neo4j. This module handles database schema creation, constraints, indexes, and provides utilities for managing the graph database structure.
 
+The data ingestion is now done via the Spark Data Pipeline that does common data processing and vector embeddings and is in the data_pipeline/ module.
+
 ## Purpose
 
 This module is responsible for:
 - Demonstrating the data stored by the data_pipeline/ Spark processing
 - Initializing the Neo4j database with proper schema
-- Creating vector embeddings for search using the embeddings model specified in config.yaml (currently configured for Voyage-3 with 1024 dimensions)
+- Creating vector indexes for search
 - Creating constraints and indexes for optimal performance
 - Providing database management utilities (clear, stats)
 - Preparing the database to receive data from the data pipeline
