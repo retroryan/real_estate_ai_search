@@ -114,7 +114,9 @@ class EntityWriter(ABC):
         Returns:
             True if writer is enabled
         """
-        return self.config.enabled
+        # Default implementation - always enabled if instantiated
+        # Subclasses can override this if they have specific enable/disable logic
+        return True
     
     def write_relationships(self, relationships: Dict[str, DataFrame]) -> bool:
         """

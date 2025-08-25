@@ -47,8 +47,8 @@ def test_hybrid_search():
         from src.core.query_executor import QueryExecutor
         from src.vectors.vector_manager import PropertyVectorManager
         
-        model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
-        pipeline = PropertyEmbeddingPipeline(driver, model_name)
+        # Clean initialization - embedding config handles model selection
+        pipeline = PropertyEmbeddingPipeline(driver, embedding_config)
         
         query_executor = QueryExecutor(driver)
         vector_manager = PropertyVectorManager(driver, query_executor)

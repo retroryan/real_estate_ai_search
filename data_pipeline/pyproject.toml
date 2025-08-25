@@ -34,7 +34,8 @@ dependencies = [
     "typing-extensions>=4.5.0",
     
     # Spark dependencies
-    "pyspark>=3.5.0",
+    # Using 3.5.3 for Neo4j connector compatibility (latest connector supports up to Spark 3.5)
+    "pyspark==3.5.3",
     
     # Database and storage
     "chromadb>=0.4.0",

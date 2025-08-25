@@ -52,8 +52,8 @@ class PureVectorSearchDemo:
             embedding_config = get_embedding_config()
             vector_config = get_vector_index_config()
             
-            model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
-            self.pipeline = PropertyEmbeddingPipeline(driver, model_name)
+            # Clean initialization - embedding config handles model selection
+            self.pipeline = PropertyEmbeddingPipeline(driver, embedding_config)
             
             # Create vector manager for embeddings check
             query_executor = QueryExecutor(driver)

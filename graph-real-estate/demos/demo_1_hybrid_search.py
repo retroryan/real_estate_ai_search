@@ -41,7 +41,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
 from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
 from src.database import get_neo4j_driver, close_neo4j_driver, run_query
-from models import SearchResult
+from demos.models import SearchResult
 
 
 class AdvancedHybridSearchDemo:
@@ -60,8 +60,8 @@ class AdvancedHybridSearchDemo:
         search_config = get_search_config()
         
         # Initialize search pipeline with constructor injection
-        model_name = embedding_config.ollama_model if hasattr(embedding_config, 'ollama_model') else "nomic-embed-text"
-        self.pipeline = PropertyEmbeddingPipeline(self.driver, model_name)
+        # Clean initialization - embedding config handles model selection
+        self.pipeline = PropertyEmbeddingPipeline(self.driver, embedding_config)
         
         # Create dependencies for hybrid search
         from src.core.query_executor import QueryExecutor

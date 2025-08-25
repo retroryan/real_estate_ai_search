@@ -1,86 +1,59 @@
 # Common Embeddings Module
 
-A unified embedding generation and storage system that provides centralized management for embeddings from multiple data sources using shared Property Finder models.
+## Project Overview
 
-## Installation
+A comprehensive evaluation testing toolkit for benchmarking and comparing embedding models in real-world retrieval scenarios. Built with cutting-edge generative AI technologies, this module provides a robust framework for assessing embedding quality across different providers and models.
 
-### Prerequisites
-- Python 3.9+
-- common package installed
-- Ollama server running (for local embeddings)
+## Generative AI Technologies
 
-### Setup
+- **LlamaIndex**: Advanced framework for semantic chunking and document processing with built-in RAG capabilities
+- **ChromaDB**: High-performance vector database optimized for AI applications with metadata filtering
+- **Voyage AI**: State-of-the-art cloud-based embeddings with domain-specific optimization
+- **Ollama**: Local LLM inference for privacy-preserving embedding generation
+- **OpenAI Embeddings**: Industry-standard text-embedding models with proven performance
+- **Google Gemini**: Multi-modal embedding capabilities for diverse content types
+- **Cohere**: Specialized embeddings with reranking capabilities
 
-```bash
-# Install shared models first (from project root)
-cd common
-pip install -e .
-
-# Install common_embeddings (from project root)
-cd ../common_embeddings
-pip install -e .
-
-# For development with additional tools
-pip install -e ".[dev,viz]"
-
-# For all provider support
-pip install -e ".[providers]"
-```
-
-### Environment Configuration
-
-Create a `.env` file in the project root directory with your API keys:
+## Quick Start
 
 ```bash
-# .env file
-# For Voyage AI embeddings
-VOYAGE_API_KEY=your-voyage-api-key-here
+# Install the module (from parent directory)
+pip install -e common_embeddings/
 
-# For OpenAI embeddings (optional)
-OPENAI_API_KEY=your-openai-api-key-here
+# Set up environment variables for API keys
+echo "VOYAGE_API_KEY=your-key-here" >> .env
+echo "OPENAI_API_KEY=your-key-here" >> .env  # Optional
 
-# For Google Gemini embeddings (optional)
-GEMINI_API_KEY=your-gemini-api-key-here
-```
+# Run evaluation with sample config
+python -m common_embeddings --data-type eval --config common_embeddings/sample_eval_configs/nomic.yaml
 
-The framework automatically loads the `.env` file when running, simplifying API key management.
+# Compare multiple models
+python -m common_embeddings.evaluate compare common_embeddings/sample_eval_configs/
 
-## Running the Pipeline
-
-Run the pipeline as a Python module from the **parent directory** (this is required for proper module imports):
-
-```bash
-# Navigate to parent directory (real_estate_ai_search)
-cd /path/to/real_estate_ai_search
-
-# ❌ WRONG: Running from inside common_embeddings/ directory
-# cd common_embeddings && python main.py  # This will fail with import errors
-
-# ✅ CORRECT: Running as module from parent directory
-
-# Process real estate data only
-python -m common_embeddings --data-type real_estate
-
-# Process Wikipedia data only  
-python -m common_embeddings --data-type wikipedia
-
-# Process Wikipedia with limited documents (for testing)
+# Process real data
 python -m common_embeddings --data-type wikipedia --max-articles 10
-
-# Process all data types
-python -m common_embeddings --data-type all
-
-# Force recreate embeddings (delete existing)
-python -m common_embeddings --data-type all --force-recreate
-
-# Run tests
-pytest common_embeddings/
-
-# Type checking
-mypy common_embeddings/
 ```
 
-**Important**: Always use `python -m common_embeddings` to run the pipeline. Direct execution with `python common_embeddings/main.py` is not supported.
+## Data Pipeline Flow
+
+### Processing Pipeline
+1. **Data Ingestion**: Load structured data from multiple sources (properties, Wikipedia, neighborhoods)
+2. **Semantic Chunking**: Apply LlamaIndex-powered chunking strategies for optimal retrieval
+3. **Embedding Generation**: Create vector representations using configured provider
+4. **Vector Storage**: Persist embeddings in ChromaDB with comprehensive metadata
+5. **Evaluation**: Run standardized benchmarks to assess retrieval quality
+
+### Architecture Overview
+
+```
+Data Sources → Text Processing → Embedding Provider → ChromaDB Storage
+     ↓              ↓                    ↓                    ↓
+ [JSON/CSV]   [LlamaIndex]      [Voyage/Ollama]      [Vector Index]
+                                         ↓
+                              Evaluation Framework
+                                         ↓
+                            [Metrics & Comparison Reports]
+```
 
 ## Evaluation System
 
@@ -380,6 +353,54 @@ python -m common_embeddings        # This works!
 - Verify common is installed: `pip list | grep common`
 - Ensure you're in the correct parent directory with `pwd`
 - Check that `common_embeddings/__main__.py` exists
+
+## Advanced Usage
+
+### Batch Processing Configuration
+
+Configure batch processing for large datasets with rate limiting:
+
+```yaml
+# config.yaml
+processing:
+  batch_size: 100
+  rate_limit_delay: 0.1  # seconds between API calls
+  max_retries: 3
+  timeout: 30
+```
+
+### Multi-Model Comparison
+
+Run comprehensive model comparisons across different providers:
+
+```bash
+# Compare all models in directory
+python -m common_embeddings.evaluate compare common_embeddings/eval_configs/ --force-recreate
+
+# Generate detailed comparison report
+python -m common_embeddings.evaluate run --output-format html
+```
+
+### LlamaIndex Semantic Chunking
+
+Use LlamaIndex's advanced chunking for better retrieval:
+
+```bash
+# Enable semantic chunking in config
+python -m common_embeddings --data-type wikipedia --chunking-method semantic
+```
+
+### ChromaDB Query Filtering
+
+Query with metadata filters for precise retrieval:
+
+```bash
+# Query specific entity types
+python -m common_embeddings.query \
+  --collection bronze_ollama_nomic \
+  --filter '{"entity_type": "wikipedia"}' \
+  --query "San Francisco landmarks"
+```
 
 ## Module Design
 

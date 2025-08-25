@@ -17,11 +17,12 @@ api:
 
 # Embedding configuration
 embedding:
-  provider: "voyage"  # Options: voyage | ollama | openai | gemini | mock
+  provider: "voyage"  # Options: voyage | ollama | openai | gemini
   models:
     voyage:
       model: "voyage-3"
       api_key: "${VOYAGE_API_KEY}"
+      dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
 
 # Vector index configuration
 vector_index:

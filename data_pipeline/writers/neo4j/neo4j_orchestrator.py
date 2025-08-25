@@ -10,10 +10,12 @@ import time
 from typing import Dict
 
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.types import DecimalType, DoubleType, ArrayType, StringType, FloatType
 
 from data_pipeline.config.pipeline_config import PipelineConfig
 from data_pipeline.writers.base import EntityWriter
-from data_pipeline.models.writer_models import WriteMetadata
+from data_pipeline.models.writer_models import WriteMetadata, EntityType
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +85,11 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if write was successful, False otherwise
         """
-        entity_type = metadata.entity_type.value.lower()
+        # Handle both enum and string entity types
+        if hasattr(metadata.entity_type, 'value'):
+            entity_type = metadata.entity_type.value.lower()
+        else:
+            entity_type = str(metadata.entity_type).lower()
         
         if entity_type == "property":
             return self._write_properties(df, metadata)
@@ -94,6 +100,41 @@ class Neo4jOrchestrator(EntityWriter):
         else:
             self.logger.error(f"Unknown entity type: {entity_type}")
             return False
+    
+    def _convert_decimal_columns(self, df: DataFrame) -> DataFrame:
+        """
+        Convert Decimal type columns to Double for Neo4j compatibility.
+        
+        Neo4j Spark connector cannot handle Spark's DecimalType directly and will throw:
+        "Unable to convert org.apache.spark.sql.types.Decimal to Neo4j Value"
+        This method converts all Decimal columns to Double type which Neo4j can handle.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with Decimal columns converted to Double
+        """
+        for field in df.schema.fields:
+            if isinstance(field.dataType, DecimalType):
+                df = df.withColumn(field.name, F.col(field.name).cast(DoubleType()))
+                self.logger.debug(f"Converted Decimal column {field.name} to Double for Neo4j compatibility")
+            elif isinstance(field.dataType, ArrayType):
+                # Check if this is an embedding array (contains float/double values)
+                if field.name in ['embedding', 'embedding_vector', 'embeddings'] or 'embedding' in field.name.lower():
+                    # Keep embeddings as arrays - Neo4j can handle float arrays
+                    if isinstance(field.dataType.elementType, (FloatType, DoubleType)):
+                        # Already numeric array, keep as-is
+                        self.logger.debug(f"Keeping embedding column {field.name} as numeric array")
+                    else:
+                        # Convert to double array
+                        df = df.withColumn(field.name, F.col(field.name).cast(ArrayType(DoubleType())))
+                        self.logger.debug(f"Converted embedding column {field.name} to Double array for Neo4j compatibility")
+                else:
+                    # Convert non-embedding arrays to string representation
+                    df = df.withColumn(field.name, F.col(field.name).cast(StringType()))
+                    self.logger.debug(f"Converted Array column {field.name} to String for Neo4j compatibility")
+        return df
     
     def _write_nodes(self, df: DataFrame, label: str, key_field: str) -> bool:
         """
@@ -108,6 +149,9 @@ class Neo4jOrchestrator(EntityWriter):
             True if successful
         """
         try:
+            # Convert Decimal columns to Double for Neo4j compatibility
+            df = self._convert_decimal_columns(df)
+            
             record_count = df.count()
             self.logger.info(f"📊 Starting write of {record_count:,} {label} nodes to Neo4j")
             
@@ -118,8 +162,8 @@ class Neo4jOrchestrator(EntityWriter):
             # Track start time for performance metrics
             start_time = time.time()
             
-            # Connection config comes from SparkSession
-            writer = df.write.format(self.format_string).mode("append")
+            # Connection config comes from SparkSession - use overwrite mode to handle duplicates
+            writer = df.write.format(self.format_string).mode("overwrite")
             
             # Only set data-specific options
             writer = writer.option("labels", f":{label}")
@@ -129,7 +173,7 @@ class Neo4jOrchestrator(EntityWriter):
             if record_count > 10000:
                 self.logger.info(f"   Large dataset detected, optimizing partitions...")
                 df = df.coalesce(10)
-                writer = df.write.format(self.format_string).mode("append")
+                writer = df.write.format(self.format_string).mode("overwrite")
                 writer = writer.option("labels", f":{label}")
                 writer = writer.option("node.keys", key_field)
             
@@ -160,9 +204,6 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if successful
         """
-        if self.config.clear_before_write:
-            self._clear_entity("Property")
-        
         return self._write_nodes(df, "Property", "listing_id")
     
     def _write_neighborhoods(self, df: DataFrame, metadata: WriteMetadata) -> bool:
@@ -176,9 +217,6 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if successful
         """
-        if self.config.clear_before_write:
-            self._clear_entity("Neighborhood")
-        
         return self._write_nodes(df, "Neighborhood", "neighborhood_id")
     
     def _write_wikipedia(self, df: DataFrame, metadata: WriteMetadata) -> bool:
@@ -192,14 +230,11 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if successful
         """
-        if self.config.clear_before_write:
-            self._clear_entity("WikipediaArticle")
-        
         return self._write_nodes(df, "WikipediaArticle", "page_id")
     
-    def write_relationships(self, relationships_df: DataFrame, relationship_type: str) -> bool:
+    def _write_relationship_batch(self, relationships_df: DataFrame, relationship_type: str) -> bool:
         """
-        Write relationship DataFrame to Neo4j with progress tracking and error handling.
+        Write a single relationship type DataFrame to Neo4j with progress tracking and error handling.
         
         Args:
             relationships_df: DataFrame containing relationship data
@@ -229,10 +264,9 @@ class Neo4jOrchestrator(EntityWriter):
             # Validate that source and target nodes exist (sample check)
             if record_count > 0:
                 sample = relationships_df.limit(1).collect()[0]
-                self.logger.debug(
-                    f"   Sample relationship: {sample.get('from_id', 'N/A')} -> "
-                    f"{sample.get('to_id', 'N/A')}"
-                )
+                from_id = sample['from_id'] if 'from_id' in sample else 'N/A'
+                to_id = sample['to_id'] if 'to_id' in sample else 'N/A'
+                self.logger.debug(f"   Sample relationship: {from_id} -> {to_id}")
             
             # Connection config comes from SparkSession
             writer = relationships_df.write.format(self.format_string).mode("append")
@@ -318,7 +352,7 @@ class Neo4jOrchestrator(EntityWriter):
         
         return configs.get(relationship_type)
     
-    def write_all_relationships(self, relationships: Dict[str, DataFrame]) -> bool:
+    def _write_all_relationship_types(self, relationships: Dict[str, DataFrame]) -> bool:
         """
         Write all relationship DataFrames to Neo4j.
         
@@ -351,33 +385,68 @@ class Neo4jOrchestrator(EntityWriter):
                 elif "PART" in rel_type:
                     rel_type = "PART_OF"
             
-            if not self.write_relationships(rel_df, rel_type):
+            if not self._write_relationship_batch(rel_df, rel_type):
                 success = False
                 self.logger.error(f"Failed to write {rel_name} relationships")
         
         return success
     
-    def _clear_entity(self, label: str) -> None:
+    def write_properties(self, df: DataFrame) -> bool:
         """
-        Clear all nodes of a specific type.
+        Write property data using the generic write method.
         
         Args:
-            label: Node label to clear
+            df: Property DataFrame
+            
+        Returns:
+            True if successful
         """
-        try:
-            query_df = self.spark.createDataFrame([{"query": f"MATCH (n:{label}) DETACH DELETE n"}])
+        metadata = WriteMetadata(
+            entity_type=EntityType.PROPERTY,
+            record_count=df.count() if df else 0,
+            columns=list(df.columns) if df else [],
+            pipeline_name="real_estate_data_pipeline",
+            pipeline_version="1.0.0"
+        )
+        return self.write(df, metadata)
+    
+    def write_neighborhoods(self, df: DataFrame) -> bool:
+        """
+        Write neighborhood data using the generic write method.
+        
+        Args:
+            df: Neighborhood DataFrame
             
-            # Connection config comes from SparkSession
-            (query_df.write
-             .format(self.format_string)
-             .mode("append")
-             .option("query", f"MATCH (n:{label}) DETACH DELETE n")
-             .save())
+        Returns:
+            True if successful
+        """
+        metadata = WriteMetadata(
+            entity_type=EntityType.NEIGHBORHOOD,
+            record_count=df.count() if df else 0,
+            columns=list(df.columns) if df else [],
+            pipeline_name="real_estate_data_pipeline",
+            pipeline_version="1.0.0"
+        )
+        return self.write(df, metadata)
+    
+    def write_wikipedia(self, df: DataFrame) -> bool:
+        """
+        Write Wikipedia data using the generic write method.
+        
+        Args:
+            df: Wikipedia DataFrame
             
-            self.logger.info(f"Cleared all {label} nodes")
-            
-        except Exception as e:
-            self.logger.warning(f"Failed to clear {label} nodes: {e}")
+        Returns:
+            True if successful
+        """
+        metadata = WriteMetadata(
+            entity_type=EntityType.WIKIPEDIA,
+            record_count=df.count() if df else 0,
+            columns=list(df.columns) if df else [],
+            pipeline_name="real_estate_data_pipeline",
+            pipeline_version="1.0.0"
+        )
+        return self.write(df, metadata)
     
     def get_writer_name(self) -> str:
         """
@@ -407,4 +476,4 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if all writes were successful, False otherwise
         """
-        return self.write_all_relationships(relationships)
+        return self._write_all_relationship_types(relationships)

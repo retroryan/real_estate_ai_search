@@ -42,7 +42,16 @@ class PipelineConfig(BaseModel):
     master: str = Field(default="local[*]")
     memory: str = Field(default="4g")
     executor_memory: str = Field(default="2g")
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: Dict[str, Any] = Field(default_factory=lambda: {
+        # Include Neo4j connector JAR if available
+        "spark.jars": "lib/neo4j-connector-apache-spark_2.12-5.3.0_for_spark_3.jar",
+        # Java 17+ compatibility - Arrow needs access to Unsafe
+        "spark.driver.extraJavaOptions": "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.base/sun.nio.cs=ALL-UNNAMED --illegal-access=permit",
+        "spark.executor.extraJavaOptions": "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.base/sun.nio.cs=ALL-UNNAMED --illegal-access=permit",
+        # Disable Arrow optimization to avoid Unsafe issues
+        "spark.sql.execution.arrow.pyspark.enabled": "false",
+        "spark.sql.execution.arrow.pyspark.fallback.enabled": "true"
+    })
     
     # Data sources - Simple lists of paths
     properties: List[str] = Field(

@@ -68,7 +68,7 @@ class PropertyVectorManager:
                 filter_params['bedrooms_min'] = filters['bedrooms_min']
             
             if filter_conditions:
-                filter_clause = "WHERE " + " AND ".join(filter_conditions)
+                filter_clause = "AND " + " AND ".join(filter_conditions)
         
         # Get all property embeddings
         query = f"""

@@ -1,25 +1,18 @@
 # Data Pipeline
 
-A comprehensive Apache Spark data pipeline for processing real estate and Wikipedia data with embeddings generation and multi-destination output support.
+## Project Overview
 
-## Project Structure
+A high-performance data processing pipeline built on Apache Spark for transforming, enriching, and indexing real estate and Wikipedia data with advanced embedding generation capabilities. Designed for scalable AI-powered search and recommendation systems.
 
-This is a standalone Python module that can be run independently. All configuration and dependencies are self-contained within this directory.
+## Generative AI Technologies
 
-```
-data_pipeline/
-├── config.yaml          # Main configuration file
-├── pyproject.toml       # Project dependencies and metadata
-├── README.md            # This file
-├── __main__.py          # CLI entry point
-├── core/                # Core pipeline components
-├── loaders/             # Data loading modules
-├── enrichment/          # Data enrichment engines
-├── processing/          # Text and embedding processing
-├── writers/             # Multi-destination output writers
-├── integration_tests/   # Integration test suite
-└── tests/               # Unit tests
-```
+- **Apache Spark**: Distributed computing framework for processing large-scale datasets with ML capabilities
+- **Voyage AI**: State-of-the-art embedding models optimized for semantic search
+- **Ollama**: Local LLM inference for privacy-preserving embedding generation
+- **OpenAI Embeddings**: Industry-standard text embeddings with proven performance
+- **Neo4j**: Graph database with vector similarity search and GDS algorithms
+- **Elasticsearch**: Full-text and vector search with hybrid scoring capabilities
+- **LlamaIndex**: Document processing and semantic chunking for optimal retrieval
 
 ## Quick Start
 
@@ -37,48 +30,24 @@ Or from within this directory:
 pip install -e .
 ```
 
-### Quick Neo4j Data Load
-
 ```bash
-# 2. Load sample data to Neo4j (fast test)
-python -m data_pipeline --sample-size 50 --output-destination parquet, neo4j
+# Install the module (from parent directory)
+pip install -e data_pipeline/
 
-# 3. Load full dataset to Neo4j (requires Spark connector - see setup below)
-python -m data_pipeline --output-destination neo4j
-
-# 4. Verify in Neo4j Browser at http://localhost:7474
-# Login: neo4j/scott_tiger
-# Run: MATCH (n) RETURN labels(n)[0] as type, COUNT(n) as count
-```
-
-### Basic Usage
-
-Run from the parent directory:
-
-```bash
-# Full pipeline run
-python -m data_pipeline
-
-# Run with limited sample size (50 records)
-python -m data_pipeline --sample-size 50
-
-# Run with specific output destinations
-python -m data_pipeline --output-destination neo4j
-python -m data_pipeline --output-destination elasticsearch
-python -m data_pipeline --output-destination parquet,neo4j
-```
-
-### Quick Testing
-
-```bash
-# Test mode (10 records, mock embeddings)
+# Run test pipeline (10 records, mock embeddings)
 python -m data_pipeline --test-mode
 
-# Quick test with real embeddings (20 records)
-python -m data_pipeline --sample-size 20
+# Process with real embeddings (50 records)
+python -m data_pipeline --sample-size 50
 
-# Test specific output destination
-python -m data_pipeline --sample-size 10 --output-destination neo4j
+# Load to Neo4j graph database
+python -m data_pipeline --sample-size 100 --output-destination neo4j
+
+# Load to Elasticsearch for search
+python -m data_pipeline --sample-size 100 --output-destination elasticsearch
+
+# Full pipeline with all destinations
+python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
 ```
 
 ## Integration Testing
@@ -306,24 +275,36 @@ python -m data_pipeline --log-level DEBUG
 python -m data_pipeline --cores 4
 ```
 
-## Overview
+## Data Pipeline Flow
 
-### Architecture
+### Processing Pipeline
+1. **Data Ingestion**: Load JSON/CSV data from multiple sources using Spark DataFrames
+2. **Data Enrichment**: Enhance properties with location data, calculate derived features
+3. **Embedding Generation**: Create vector representations using configured AI provider
+4. **Relationship Discovery**: Identify similarities and connections between entities
+5. **Multi-Destination Output**: Write to Parquet, Neo4j, and Elasticsearch simultaneously
 
-The pipeline processes data through these stages:
-1. **Data Loading**: Read properties and Wikipedia articles
-2. **Embeddings Generation**: Create vector representations using configured provider
-3. **Data Writing**: Output to configured destinations (Parquet, Neo4j, Elasticsearch)
+### Architecture Overview
+
+```
+Data Sources → Spark Processing → Enrichment → Embeddings → Output Writers
+     ↓              ↓                ↓            ↓              ↓
+[JSON/CSV]    [DataFrames]    [Location]   [Voyage/Ollama]  [Storage]
+                                    ↓                           ↓
+                              [Features]                   [Neo4j Graph]
+                                                           [Elasticsearch]
+                                                           [Parquet Files]
+```
 
 ### Supported Data Entities
-- **Properties**: Real estate listings with location and features
-- **Wikipedia Articles**: Location-based content with summaries
-- **Neighborhoods**: Geographic areas with demographic data
+- **Properties**: Real estate listings with addresses, prices, features, and amenities
+- **Wikipedia Articles**: Location-based content with geographic context
+- **Neighborhoods**: Geographic boundaries with demographic and statistical data
 
 ### Output Destinations
-- **Parquet**: Default file-based storage for analytics
-- **Neo4j**: Graph database for relationship queries
-- **Elasticsearch**: Search engine for full-text and vector search
+- **Parquet**: Columnar storage for analytics and data science workflows
+- **Neo4j**: Graph database for relationship traversal and similarity search
+- **Elasticsearch**: Full-text and vector search with faceted filtering
 
 ## Testing
 
@@ -419,32 +400,54 @@ curl -X GET "localhost:9200/_cat/indices?v"
 curl -X GET "localhost:9200/properties/_search?q=city:Seattle&size=5"
 ```
 
-## Performance Tips
+## Advanced Usage
 
-1. **Development**: Use `--sample-size 20-50` for quick iterations
-2. **Testing**: Use `--test-mode` for fastest feedback
-3. **Production**: Run without sample-size limit
-4. **Debugging**: Always add `--log-level DEBUG`
-5. **Multiple Destinations**: Test each destination separately first
+### Configuration Management
 
-## Project Structure
+```yaml
+# config.yaml - Key settings
+data_subset:
+  enabled: true
+  sample_size: 100  # Limit data for testing
 
-```
-data_pipeline/
-├── config/              # Configuration management
-├── core/                # Core pipeline components  
-├── loaders/             # Data loading modules
-├── enrichment/          # Data enrichment engines
-├── processing/          # Text and embedding processing
-├── writers/             # Multi-destination output writers
-├── integration_tests/   # Integration test suite
-├── tests/               # Unit tests
-└── examples/            # Usage examples
+embedding:
+  provider: voyage  # or ollama, openai
+  batch_size: 100
+  
+output_destinations:
+  enabled_destinations:
+    - parquet
+    - neo4j
+    - elasticsearch
 ```
 
-## Next Steps
+### Environment Variables
 
-- Review configuration: `config.yaml`
-- Check logs: `logs/pipeline.log`
-- Monitor output: `data/processed/entity_datasets/`
-- Explore data in target systems (Neo4j Browser, Elasticsearch, Parquet files)
+```bash
+# Set API keys in .env file
+VOYAGE_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here
+NEO4J_PASSWORD=your-password
+```
+
+### Batch Processing
+
+```bash
+# Process in batches with checkpointing
+python -m data_pipeline \
+  --batch-size 1000 \
+  --checkpoint-dir /tmp/spark-checkpoint
+```
+
+### Testing and Validation
+
+```bash
+# Validate configuration
+python -m data_pipeline --validate-only
+
+# Show current configuration
+python -m data_pipeline --show-config
+
+# Run integration tests
+pytest data_pipeline/integration_tests/ -v
+```

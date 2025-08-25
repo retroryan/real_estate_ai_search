@@ -2,7 +2,27 @@
 
 from typing import List, Optional, Dict, Any, Union
 from decimal import Decimal
+from dataclasses import dataclass
 from pydantic import BaseModel, Field, ConfigDict
+
+
+@dataclass
+class SearchResult:
+    """Hybrid search result combining vector and graph data"""
+    listing_id: str
+    address: Optional[str]
+    listing_price: float
+    vector_score: float
+    graph_score: float
+    combined_score: float
+    neighborhood: str
+    city: str
+    bedrooms: Optional[int]
+    bathrooms: Optional[float]
+    square_feet: Optional[int]
+    description: Optional[str]
+    similar_properties: List[str]
+    features: List[str]
 
 
 class PropertyResult(BaseModel):

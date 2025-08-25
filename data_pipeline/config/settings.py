@@ -7,6 +7,7 @@ providing a centralized configuration management system for the pipeline.
 
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -14,6 +15,13 @@ import yaml
 from pydantic import ValidationError
 
 from data_pipeline.config.pipeline_config import PipelineConfig
+
+# Try to import dotenv, but don't fail if it's not available
+try:
+    from dotenv import load_dotenv
+    HAS_DOTENV = True
+except ImportError:
+    HAS_DOTENV = False
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +55,41 @@ class ConfigurationManager:
         self._config: Optional[PipelineConfig] = None
         self._raw_config: Optional[Dict[str, Any]] = None
     
+    def _substitute_env_vars(self, config_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Recursively substitute environment variables in configuration.
+        
+        Supports ${VAR_NAME} syntax for environment variable substitution.
+        
+        Args:
+            config_dict: Configuration dictionary
+            
+        Returns:
+            Configuration with environment variables substituted
+        """
+        def substitute_value(value):
+            if isinstance(value, str):
+                # Find all ${VAR_NAME} patterns
+                pattern = re.compile(r'\$\{([^}]+)\}')
+                matches = pattern.findall(value)
+                
+                for var_name in matches:
+                    env_value = os.environ.get(var_name)
+                    if env_value is not None:
+                        value = value.replace(f'${{{var_name}}}', env_value)
+                    else:
+                        logger.warning(f"Environment variable {var_name} not found, keeping placeholder")
+                
+                return value
+            elif isinstance(value, dict):
+                return {k: substitute_value(v) for k, v in value.items()}
+            elif isinstance(value, list):
+                return [substitute_value(item) for item in value]
+            else:
+                return value
+        
+        return substitute_value(config_dict)
+    
     def _resolve_config_path(self, config_path: Optional[str]) -> Path:
         """
         Resolve the configuration file path.
@@ -79,6 +122,23 @@ class ConfigurationManager:
         
         return path
     
+    def _load_env_file(self) -> None:
+        """
+        Load environment variables from .env file if it exists.
+        
+        Looks for .env in the parent directory (project root).
+        """
+        if not HAS_DOTENV:
+            return
+        
+        # Look for .env in parent directory (project root)
+        parent_env = Path(__file__).parent.parent.parent / ".env"
+        if parent_env.exists():
+            load_dotenv(parent_env, override=False)
+            logger.info(f"Loaded environment variables from: {parent_env}")
+        else:
+            logger.debug(f"No .env file found at: {parent_env}")
+    
     def load_config(self) -> PipelineConfig:
         """
         Load and validate configuration with argument overrides.
@@ -89,12 +149,18 @@ class ConfigurationManager:
         if self._config is not None:
             return self._config
         
+        # Load environment variables from .env file
+        self._load_env_file()
+        
         if self.config_path.exists():
             logger.info(f"Loading configuration from: {self.config_path}")
             
             try:
                 with open(self.config_path, "r") as f:
                     self._raw_config = yaml.safe_load(f)
+                
+                # Substitute environment variables
+                self._raw_config = self._substitute_env_vars(self._raw_config)
                 
                 # Apply direct argument overrides
                 self._apply_argument_overrides()

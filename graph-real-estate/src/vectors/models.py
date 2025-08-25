@@ -24,7 +24,7 @@ class VectorIndexConfig(BaseModel):
 
 class EmbeddingConfig(BaseModel):
     """Configuration for embedding generation"""
-    provider: Literal["ollama", "openai", "gemini", "voyage", "mock"] = Field(
+    provider: Literal["ollama", "openai", "gemini", "voyage"] = Field(
         default="ollama",
         description="Embedding provider to use"
     )
@@ -38,6 +38,10 @@ class EmbeddingConfig(BaseModel):
         default="nomic-embed-text",
         description="Ollama model name"
     )
+    ollama_dimension: Optional[int] = Field(
+        default=None,
+        description="Ollama model embedding dimensions"
+    )
     
     # OpenAI settings
     openai_api_key: Optional[str] = Field(
@@ -47,6 +51,10 @@ class EmbeddingConfig(BaseModel):
     openai_model: str = Field(
         default="text-embedding-3-small",
         description="OpenAI embedding model"
+    )
+    openai_dimension: Optional[int] = Field(
+        default=None,
+        description="OpenAI model embedding dimensions"
     )
     
     # Voyage settings  
@@ -58,6 +66,10 @@ class EmbeddingConfig(BaseModel):
         default="voyage-3",
         description="Voyage embedding model"
     )
+    voyage_dimension: Optional[int] = Field(
+        default=None,
+        description="Voyage model embedding dimensions"
+    )
     
     # Gemini settings
     gemini_api_key: Optional[str] = Field(
@@ -67,6 +79,10 @@ class EmbeddingConfig(BaseModel):
     gemini_model: str = Field(
         default="models/embedding-001",
         description="Gemini embedding model"
+    )
+    gemini_dimension: Optional[int] = Field(
+        default=None,
+        description="Gemini model embedding dimensions"
     )
     
     # Processing settings
@@ -79,36 +95,39 @@ class EmbeddingConfig(BaseModel):
         description="Show progress bar during embedding generation"
     )
     
+    def get_model_name(self) -> str:
+        """Get the configured model name based on provider"""
+        if self.provider == "ollama":
+            return self.ollama_model
+        elif self.provider == "openai":
+            return self.openai_model
+        elif self.provider == "gemini":
+            return self.gemini_model
+        elif self.provider == "voyage":
+            return self.voyage_model
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
+    
     def get_dimensions(self) -> int:
         """Get embedding dimensions for the configured model"""
-        dimensions_map = {
-            # Ollama models
-            "nomic-embed-text": 768,
-            "mxbai-embed-large": 1024,
-            # OpenAI models
-            "text-embedding-3-small": 1536,
-            "text-embedding-3-large": 3072,
-            "text-embedding-ada-002": 1536,
-            # Gemini models
-            "models/embedding-001": 768,
-            # Voyage models
-            "voyage-3": 1024,
-            "voyage-large-2": 1536,
-            "voyage-code-2": 1536,
-        }
-        
         if self.provider == "ollama":
-            model_key = self.ollama_model
+            if not self.ollama_dimension:
+                raise ValueError(f"Dimension not configured for Ollama model {self.ollama_model}")
+            return self.ollama_dimension
         elif self.provider == "openai":
-            model_key = self.openai_model
+            if not self.openai_dimension:
+                raise ValueError(f"Dimension not configured for OpenAI model {self.openai_model}")
+            return self.openai_dimension
         elif self.provider == "gemini":
-            model_key = self.gemini_model
+            if not self.gemini_dimension:
+                raise ValueError(f"Dimension not configured for Gemini model {self.gemini_model}")
+            return self.gemini_dimension
         elif self.provider == "voyage":
-            model_key = self.voyage_model
-        else:  # mock
-            model_key = "nomic-embed-text"
-        
-        return dimensions_map.get(model_key, 768)
+            if not self.voyage_dimension:
+                raise ValueError(f"Dimension not configured for Voyage model {self.voyage_model}")
+            return self.voyage_dimension
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
 
 
 class SearchConfig(BaseModel):

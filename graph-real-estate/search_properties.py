@@ -100,7 +100,8 @@ def main():
         
         # Create pipeline and search
         print("Initializing search pipeline...")
-        pipeline = PropertyEmbeddingPipeline(driver, embedding_config, vector_config)
+        # Clean initialization - embedding config handles model selection
+        pipeline = PropertyEmbeddingPipeline(driver, embedding_config)
         search = HybridPropertySearch(driver, pipeline, search_config)
         
         # Check if embeddings exist

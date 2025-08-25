@@ -210,21 +210,33 @@ def _add_neo4j_config_if_enabled(spark_config: PipelineConfig, pipeline_config: 
     Returns:
         Updated PipelineConfig with Neo4j settings if enabled
     """
-    # Check if Neo4j writer is enabled in the pipeline configuration
-    if (hasattr(pipeline_config, 'output_destinations') and 
-        hasattr(pipeline_config.output_destinations, 'neo4j') and
-        pipeline_config.output_destinations.neo4j.enabled):
+    # Check if neo4j is enabled in the destinations list
+    if hasattr(pipeline_config, 'enabled_destinations') and 'neo4j' in pipeline_config.enabled_destinations:
+        logger.info("Neo4j in enabled destinations - checking for Neo4j configuration")
         
-        neo4j_cfg = pipeline_config.output_destinations.neo4j
+        # Try to get Neo4j config from raw config if available
+        if hasattr(pipeline_config, 'output_destinations_neo4j'):
+            # If it's in the model
+            neo4j_cfg = pipeline_config.output_destinations_neo4j
+        else:
+            # Fall back to hardcoded values from environment (already loaded via dotenv)
+            import os
+            neo4j_cfg = {
+                'uri': os.getenv('NEO4J_URI', 'bolt://localhost:7687'),
+                'username': os.getenv('NEO4J_USERNAME', 'neo4j'),
+                'password': os.getenv('NEO4J_PASSWORD', ''),
+                'database': os.getenv('NEO4J_DATABASE', 'neo4j')
+            }
+            
         logger.info("Neo4j writer enabled - adding connection configuration to SparkSession")
         
         # Add Neo4j connection settings to Spark config
-        spark_config.config["neo4j.url"] = neo4j_cfg.uri
-        spark_config.config["neo4j.authentication.basic.username"] = neo4j_cfg.username
-        spark_config.config["neo4j.authentication.basic.password"] = neo4j_cfg.get_password() or ""
-        spark_config.config["neo4j.database"] = neo4j_cfg.database
+        spark_config.config["neo4j.url"] = neo4j_cfg.get('uri') if isinstance(neo4j_cfg, dict) else neo4j_cfg.uri
+        spark_config.config["neo4j.authentication.basic.username"] = neo4j_cfg.get('username') if isinstance(neo4j_cfg, dict) else neo4j_cfg.username
+        spark_config.config["neo4j.authentication.basic.password"] = neo4j_cfg.get('password', '') if isinstance(neo4j_cfg, dict) else (neo4j_cfg.get_password() or "")
+        spark_config.config["neo4j.database"] = neo4j_cfg.get('database') if isinstance(neo4j_cfg, dict) else neo4j_cfg.database
         
-        logger.debug(f"Added Neo4j config for database: {neo4j_cfg.database}")
+        logger.debug(f"Added Neo4j config for database: {spark_config.config['neo4j.database']}")
     
     return spark_config
 

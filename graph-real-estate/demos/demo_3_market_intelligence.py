@@ -49,7 +49,8 @@ class MarketIntelligenceAnalyzer:
             vector_config = get_vector_index_config()
             search_config = get_search_config()
             
-            self.pipeline = PropertyEmbeddingPipeline(driver, embedding_config, vector_config)
+            # Clean initialization - embedding config handles model selection
+            self.pipeline = PropertyEmbeddingPipeline(driver, embedding_config)
             self.search = HybridPropertySearch(driver, self.pipeline, search_config)
             
             # Check embeddings availability

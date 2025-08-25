@@ -1,28 +1,71 @@
 """Property embedding pipeline with constructor injection"""
 
 import logging
+import os
 from typing import List, Dict, Any, Optional
+import requests
+import numpy as np
 from neo4j import Driver
 
 from src.core.interfaces import IVectorManager
 
 
 class EmbeddingModel:
-    """Simple embedding model interface"""
+    """Embedding model supporting multiple providers"""
     
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, embedding_config=None):
         """
         Initialize embedding model
         
         Args:
             model_name: Name of the embedding model
+            embedding_config: Embedding configuration object
         """
         self.model_name = model_name
+        self.embedding_config = embedding_config
         self.logger = logging.getLogger(self.__class__.__name__)
+        
+        # Determine dimensions based on model and config
+        self.dimensions = self._get_model_dimensions()
+        
+        # Initialize provider-specific settings
+        if not embedding_config:
+            raise ValueError("EmbeddingConfig is required")
+        self.provider = embedding_config.provider
+        self._initialize_provider()
+    
+    def _get_model_dimensions(self) -> int:
+        """
+        Get embedding dimensions based on model name and configuration
+        
+        Returns:
+            Number of dimensions for the embedding
+        """
+        if not self.embedding_config:
+            raise ValueError("EmbeddingConfig is required to determine dimensions")
+        return self.embedding_config.get_dimensions()
+    
+    def _initialize_provider(self):
+        """Initialize provider-specific settings"""
+        if self.provider == "voyage":
+            self.api_key = self.embedding_config.voyage_api_key or os.getenv("VOYAGE_API_KEY")
+            if not self.api_key:
+                raise ValueError("Voyage API key is required but not found in config or environment")
+            self.api_url = "https://api.voyageai.com/v1/embeddings"
+        elif self.provider == "openai":
+            self.api_key = self.embedding_config.openai_api_key or os.getenv("OPENAI_API_KEY")
+            if not self.api_key:
+                raise ValueError("OpenAI API key is required but not found in config or environment")
+            self.api_url = "https://api.openai.com/v1/embeddings"
+        elif self.provider == "ollama":
+            self.base_url = self.embedding_config.ollama_base_url
+            self.api_url = f"{self.base_url}/api/embeddings"
+        else:
+            raise ValueError(f"Unsupported embedding provider: {self.provider}")
     
     def get_text_embedding(self, text: str) -> List[float]:
         """
-        Generate embedding for text
+        Generate embedding for text using configured provider
         
         Args:
             text: Text to embed
@@ -30,42 +73,90 @@ class EmbeddingModel:
         Returns:
             Embedding vector
         """
-        # Simplified implementation - in production would use actual model
-        # This is a placeholder that creates a deterministic embedding based on text
-        import hashlib
+        if self.provider == "voyage":
+            return self._get_voyage_embedding(text)
+        elif self.provider == "openai":
+            return self._get_openai_embedding(text)
+        elif self.provider == "ollama":
+            return self._get_ollama_embedding(text)
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
+    
+    def _get_voyage_embedding(self, text: str) -> List[float]:
+        """Get embedding from Voyage API"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
         
-        # Create a hash of the text for deterministic "embedding"
-        hash_obj = hashlib.sha256(text.encode())
-        hash_bytes = hash_obj.digest()
+        data = {
+            "input": text,
+            "model": self.model_name
+        }
         
-        # Convert to list of floats normalized to [-1, 1]
-        embedding = []
-        for i in range(0, min(len(hash_bytes), 384), 3):  # 384-dim embedding
-            if i + 2 < len(hash_bytes):
-                value = (hash_bytes[i] + hash_bytes[i+1] + hash_bytes[i+2]) / 765.0  # Normalize
-                embedding.append(value * 2 - 1)  # Scale to [-1, 1]
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+            return result["data"][0]["embedding"]
+        except Exception as e:
+            self.logger.error(f"Failed to get Voyage embedding: {e}")
+            raise
+    
+    def _get_openai_embedding(self, text: str) -> List[float]:
+        """Get embedding from OpenAI API"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
         
-        # Pad to standard size if needed
-        while len(embedding) < 384:
-            embedding.append(0.0)
+        data = {
+            "input": text,
+            "model": self.model_name
+        }
         
-        return embedding[:384]  # Ensure exactly 384 dimensions
+        try:
+            response = requests.post(self.api_url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+            return result["data"][0]["embedding"]
+        except Exception as e:
+            self.logger.error(f"Failed to get OpenAI embedding: {e}")
+            raise
+    
+    def _get_ollama_embedding(self, text: str) -> List[float]:
+        """Get embedding from Ollama API"""
+        data = {
+            "model": self.model_name,
+            "prompt": text
+        }
+        
+        try:
+            response = requests.post(self.api_url, json=data)
+            response.raise_for_status()
+            result = response.json()
+            return result["embedding"]
+        except Exception as e:
+            self.logger.error(f"Failed to get Ollama embedding: {e}")
+            raise
+    
 
 
 class PropertyEmbeddingPipeline:
     """Generate embeddings for properties with injected dependencies"""
     
-    def __init__(self, driver: Driver, model_name: str = "nomic-embed-text"):
+    def __init__(self, driver: Driver, embedding_config):
         """
         Initialize embedding pipeline with dependencies
         
         Args:
             driver: Neo4j driver
-            model_name: Name of embedding model to use
+            embedding_config: Embedding configuration object
         """
         self.driver = driver
-        self.model_name = model_name
-        self.embed_model = EmbeddingModel(model_name)
+        self.embedding_config = embedding_config
+        self.model_name = embedding_config.get_model_name()
+        self.embed_model = EmbeddingModel(self.model_name, embedding_config)
         self.logger = logging.getLogger(self.__class__.__name__)
         
         # Track statistics

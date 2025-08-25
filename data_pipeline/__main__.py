@@ -182,7 +182,7 @@ def main():
             return 0
         
         # Initialize pipeline runner with loaded configuration
-        runner = DataPipelineRunner()
+        runner = DataPipelineRunner(config_override=config)
         
         # Validate only mode
         if args.validate_only:

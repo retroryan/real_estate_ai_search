@@ -3,7 +3,21 @@ import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
 from .models import VectorIndexConfig, EmbeddingConfig, SearchConfig
+
+# Load environment variables from parent .env file
+env_path = Path(__file__).parent.parent.parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+
+
+def resolve_env_var(value: str) -> str:
+    """Resolve environment variable if value is in ${VAR} format"""
+    if value and isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+        env_var = value[2:-1]
+        return os.getenv(env_var, value)  # Return original if env var not found
+    return value
 
 
 def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
@@ -54,12 +68,36 @@ def get_embedding_config(config_path: Optional[str] = None) -> EmbeddingConfig:
     """
     config = load_config(config_path)
     embedding_config = config["embedding"]
+    provider = embedding_config.get("provider", "ollama")
     
-    # Handle the new models structure from data_pipeline config
-    if "models" in embedding_config and embedding_config.get("provider") == "voyage":
-        voyage_config = embedding_config.get("models", {}).get("voyage", {})
-        embedding_config["voyage_model"] = voyage_config.get("model", "voyage-3")
-        embedding_config["voyage_api_key"] = voyage_config.get("api_key")
+    # Handle the models structure to extract provider-specific config
+    if "models" in embedding_config:
+        models_config = embedding_config.get("models", {})
+        
+        if provider == "voyage" and "voyage" in models_config:
+            voyage_config = models_config["voyage"]
+            embedding_config["voyage_model"] = voyage_config.get("model")
+            embedding_config["voyage_api_key"] = resolve_env_var(voyage_config.get("api_key"))
+            embedding_config["voyage_dimension"] = voyage_config.get("dimension")
+        
+        elif provider == "openai" and "openai" in models_config:
+            openai_config = models_config["openai"]
+            embedding_config["openai_model"] = openai_config.get("model")
+            embedding_config["openai_api_key"] = resolve_env_var(openai_config.get("api_key"))
+            embedding_config["openai_dimension"] = openai_config.get("dimension")
+        
+        elif provider == "gemini" and "gemini" in models_config:
+            gemini_config = models_config["gemini"]
+            embedding_config["gemini_model"] = gemini_config.get("model")
+            embedding_config["gemini_api_key"] = resolve_env_var(gemini_config.get("api_key"))
+            embedding_config["gemini_dimension"] = gemini_config.get("dimension")
+        
+        elif provider == "ollama" and "ollama" in models_config:
+            ollama_config = models_config["ollama"]
+            embedding_config["ollama_model"] = ollama_config.get("model")
+            embedding_config["ollama_base_url"] = ollama_config.get("base_url", embedding_config.get("ollama_base_url"))
+            embedding_config["ollama_dimension"] = ollama_config.get("dimension")
+        
         # Remove models key as it's not part of EmbeddingConfig
         embedding_config = {k: v for k, v in embedding_config.items() if k != "models"}
     
