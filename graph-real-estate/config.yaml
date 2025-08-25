@@ -23,6 +23,15 @@ embedding:
       model: "voyage-3"
       api_key: "${VOYAGE_API_KEY}"
 
+# Vector index configuration
+vector_index:
+  index_name: "property_embeddings"
+  vector_dimensions: 1024  # For voyage-3
+  similarity_function: "cosine"
+  node_label: "Property"
+  embedding_property: "embedding"
+  source_property: "description"
+
 # Search configuration
 search:
   default_top_k: 10

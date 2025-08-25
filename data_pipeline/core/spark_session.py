@@ -11,7 +11,7 @@ from typing import Any, Dict, Generator, Optional
 
 from pyspark.sql import SparkSession
 
-from data_pipeline.config.models import PipelineConfig
+from data_pipeline.config.pipeline_config import PipelineConfig
 
 logger = logging.getLogger(__name__)
 

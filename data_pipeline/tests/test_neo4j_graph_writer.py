@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from data_pipeline.config.models import PipelineConfig
+from data_pipeline.config.pipeline_config import PipelineConfig
 from data_pipeline.writers.neo4j_graph_writer import Neo4jGraphWriter
 
 

@@ -39,9 +39,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Updated imports for current project structure
 from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from src.vectors.hybrid_search import SearchResult
 from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
 from src.database import get_neo4j_driver, close_neo4j_driver, run_query
+from models import SearchResult
 
 
 class AdvancedHybridSearchDemo:

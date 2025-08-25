@@ -1,6 +1,6 @@
 """Pydantic models for demo data structures"""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -123,3 +123,63 @@ class DemoConfig(BaseModel):
     verbose: bool = Field(False, description="Verbose output")
     show_timings: bool = Field(False, description="Show execution timings")
     max_results_per_query: int = Field(5, description="Max results per query")
+
+
+class RelationshipCount(BaseModel):
+    """Model for relationship type counts"""
+    relationship_type: str = Field(..., description="Type of relationship")
+    count: int = Field(0, description="Count of relationships")
+
+
+class GeographicHierarchy(BaseModel):
+    """Model for geographic hierarchy data"""
+    city: str = Field(..., description="City name")
+    county: str = Field(..., description="County name")
+    state: str = Field(..., description="State name")
+    neighborhoods: int = Field(0, description="Number of neighborhoods")
+
+
+class FeatureCount(BaseModel):
+    """Model for feature popularity data"""
+    feature: str = Field(..., description="Feature name")
+    properties: int = Field(0, description="Number of properties with this feature")
+
+
+class PriceAnalysis(BaseModel):
+    """Model for price analysis by city"""
+    city: str = Field(..., description="City name")
+    count: int = Field(0, description="Number of properties")
+    avg_price: float = Field(0.0, description="Average price")
+    min_price: float = Field(0.0, description="Minimum price")
+    max_price: float = Field(0.0, description="Maximum price")
+
+
+class PropertyType(BaseModel):
+    """Model for property type statistics"""
+    type: str = Field(..., description="Property type")
+    count: int = Field(0, description="Number of properties")
+
+
+class WikipediaStats(BaseModel):
+    """Model for Wikipedia article statistics"""
+    article_type: str = Field(..., description="Type of Wikipedia article")
+    count: int = Field(0, description="Number of articles")
+
+
+class NeighborhoodWikipedia(BaseModel):
+    """Model for neighborhoods with Wikipedia coverage"""
+    neighborhood: str = Field(..., description="Neighborhood name")
+    articles: int = Field(0, description="Number of Wikipedia articles")
+
+
+class SimilarityNetwork(BaseModel):
+    """Model for property similarity network stats"""
+    similar_properties: int = Field(0, description="Number of properties with similarities")
+    similarity_relationships: int = Field(0, description="Number of similarity pairs")
+
+
+class PropertyFeatures(BaseModel):
+    """Model for properties with feature counts"""
+    address: Optional[str] = Field(None, description="Property address")
+    price: float = Field(0.0, description="Property price")
+    feature_count: int = Field(0, description="Number of features")

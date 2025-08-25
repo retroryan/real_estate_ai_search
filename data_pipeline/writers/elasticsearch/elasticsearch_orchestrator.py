@@ -11,7 +11,7 @@ from typing import Any, Dict
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, struct, when, isnan, isnull
 
-from data_pipeline.config.models import PipelineConfig
+from data_pipeline.config.pipeline_config import PipelineConfig
 from data_pipeline.writers.base import EntityWriter
 from data_pipeline.models.writer_models import WriteMetadata
 

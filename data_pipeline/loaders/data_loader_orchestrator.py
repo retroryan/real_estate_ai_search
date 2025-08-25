@@ -11,7 +11,7 @@ from typing import Optional
 from pydantic import BaseModel
 from pyspark.sql import DataFrame, SparkSession
 
-from data_pipeline.config.models import PipelineConfig
+from data_pipeline.config.pipeline_config import PipelineConfig
 from data_pipeline.loaders.location_loader import LocationLoader
 from data_pipeline.loaders.neighborhood_loader import NeighborhoodLoader
 from data_pipeline.loaders.property_loader import PropertyLoader

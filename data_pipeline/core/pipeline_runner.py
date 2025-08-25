@@ -115,7 +115,7 @@ class DataPipelineRunner:
     
     def _init_embedding_config(self):
         """Initialize embedding configuration for entity-specific generators."""
-        from data_pipeline.config.models import ProviderType
+        from data_pipeline.config.pipeline_config import ProviderType
         
         # Return the embedding config from settings directly
         return self.config.embedding

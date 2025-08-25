@@ -22,7 +22,7 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, DoubleType
 
-from data_pipeline.config.models import ProviderType
+from data_pipeline.config.pipeline_config import ProviderType
 
 logger = logging.getLogger(__name__)
 

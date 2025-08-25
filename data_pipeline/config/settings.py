@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 import yaml
 from pydantic import ValidationError
 
-from data_pipeline.config.models import PipelineConfig
+from data_pipeline.config.pipeline_config import PipelineConfig
 
 logger = logging.getLogger(__name__)
 

@@ -12,9 +12,9 @@ from pathlib import Path
 # Add src to path 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from vectors import PropertyEmbeddingPipeline, HybridPropertySearch
-from vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
-from database import get_neo4j_driver, close_neo4j_driver, run_query
+from src.vectors import PropertyEmbeddingPipeline, HybridPropertySearch
+from src.vectors.config_loader import get_embedding_config, get_vector_index_config, get_search_config
+from src.database import get_neo4j_driver, close_neo4j_driver, run_query
 
 def test_hybrid_search():
     """Simple test of enhanced hybrid search"""
@@ -102,6 +102,10 @@ def test_hybrid_search():
         traceback.print_exc()
     finally:
         close_neo4j_driver(driver)
+
+def main():
+    """Main entry point for demo runner"""
+    test_hybrid_search()
 
 if __name__ == "__main__":
     test_hybrid_search()

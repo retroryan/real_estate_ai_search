@@ -9,6 +9,17 @@ from neo4j import Driver
 from pydantic import BaseModel, Field
 from .models import DemoConfig
 from .database import run_query
+from demos.models import (
+    RelationshipCount,
+    GeographicHierarchy, 
+    FeatureCount,
+    PriceAnalysis,
+    PropertyType,
+    WikipediaStats,
+    NeighborhoodWikipedia,
+    SimilarityNetwork,
+    PropertyFeatures
+)
 
 
 class PropertySample(BaseModel):
@@ -19,35 +30,6 @@ class PropertySample(BaseModel):
     baths: float = Field(0.0, description="Number of bathrooms")
     neighborhood: str = Field("N/A", description="Neighborhood name")
     city: str = Field("N/A", description="City name")
-
-
-class RelationshipCount(BaseModel):
-    """Relationship count model"""
-    relationship_type: str = Field(..., description="Type of relationship")
-    count: int = Field(0, description="Count of relationships")
-
-
-class GeographicHierarchy(BaseModel):
-    """Geographic hierarchy model"""
-    city: str = Field(..., description="City name")
-    county: str = Field(..., description="County name")
-    state: str = Field(..., description="State name")
-    neighborhoods: int = Field(0, description="Number of neighborhoods")
-
-
-class FeatureCount(BaseModel):
-    """Feature count model"""
-    feature: str = Field(..., description="Feature name")
-    properties: int = Field(0, description="Number of properties with feature")
-
-
-class PriceAnalysis(BaseModel):
-    """Price analysis model"""
-    city: str = Field(..., description="City name")
-    count: int = Field(0, description="Number of properties")
-    avg_price: float = Field(0.0, description="Average price")
-    min_price: float = Field(0.0, description="Minimum price")
-    max_price: float = Field(0.0, description="Maximum price")
 
 
 class DemoRunner:
@@ -258,12 +240,15 @@ class SimpleDemoRunner:
         # Count each relationship type
         print("Relationship Types:")
         rel_types = ['LOCATED_IN', 'IN_CITY', 'IN_COUNTY', 'HAS_FEATURE', 'SIMILAR_TO', 'NEAR', 'DESCRIBES']
+        relationship_counts = []
         for rel_type in rel_types:
             query = f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count"
             result = run_query(self.driver, query)
             count = result[0]['count'] if result else 0
             if count > 0:
-                print(f"  {rel_type}: {count:,}")
+                rel_count = RelationshipCount(relationship_type=rel_type, count=count)
+                relationship_counts.append(rel_count)
+                print(f"  {rel_count.relationship_type}: {rel_count.count:,}")
         
         print("\nGeographic Hierarchy:")
         query = """
@@ -275,8 +260,16 @@ class SimpleDemoRunner:
         LIMIT 3
         """
         results = run_query(self.driver, query)
+        hierarchies = []
         for row in results:
-            print(f"  {row['city']}, {row['state']} → {row['county']} County ({row['neighborhoods']} neighborhoods)")
+            hierarchy = GeographicHierarchy(
+                city=row['city'],
+                county=row['county'],
+                state=row['state'],
+                neighborhoods=row['neighborhoods']
+            )
+            hierarchies.append(hierarchy)
+            print(f"  {hierarchy.city}, {hierarchy.state} → {hierarchy.county} County ({hierarchy.neighborhoods} neighborhoods)")
         
         print("\nTop 5 Popular Features:")
         query = """
@@ -286,8 +279,14 @@ class SimpleDemoRunner:
         LIMIT 5
         """
         results = run_query(self.driver, query)
+        feature_counts = []
         for row in results:
-            print(f"  {row['feature']}: {row['properties']} properties")
+            feature = FeatureCount(
+                feature=row['feature'],
+                properties=row['properties']
+            )
+            feature_counts.append(feature)
+            print(f"  {feature.feature}: {feature.properties} properties")
     
     def _demo_3_analytics(self, run_query):
         """Section 3: Analytics queries"""
@@ -305,9 +304,18 @@ class SimpleDemoRunner:
         ORDER BY avg_price DESC
         """
         results = run_query(self.driver, query)
+        price_analyses = []
         for row in results[:3]:
-            print(f"  {row['city']}: {row['count']} properties")
-            print(f"    Avg: ${row['avg_price']:,.0f} (${row['min_price']:,.0f} - ${row['max_price']:,.0f})")
+            analysis = PriceAnalysis(
+                city=row['city'],
+                count=row['count'],
+                avg_price=row['avg_price'],
+                min_price=row['min_price'],
+                max_price=row['max_price']
+            )
+            price_analyses.append(analysis)
+            print(f"  {analysis.city}: {analysis.count} properties")
+            print(f"    Avg: ${analysis.avg_price:,.0f} (${analysis.min_price:,.0f} - ${analysis.max_price:,.0f})")
         
         print("\nProperty Types:")
         query = """
@@ -318,8 +326,14 @@ class SimpleDemoRunner:
         LIMIT 3
         """
         results = run_query(self.driver, query)
+        property_types = []
         for row in results:
-            print(f"  {row['type']}: {row['count']} properties")
+            prop_type = PropertyType(
+                type=row['type'],
+                count=row['count']
+            )
+            property_types.append(prop_type)
+            print(f"  {prop_type.type}: {prop_type.count} properties")
     
     def _demo_4_wikipedia(self, run_query):
         """Section 4: Wikipedia integration"""
@@ -341,8 +355,14 @@ class SimpleDemoRunner:
             LIMIT 3
             """
             results = run_query(self.driver, query)
+            wiki_stats = []
             for row in results:
-                print(f"  {row['type']}: {row['count']}")
+                stat = WikipediaStats(
+                    article_type=row['type'],
+                    count=row['count']
+                )
+                wiki_stats.append(stat)
+                print(f"  {stat.article_type}: {stat.count}")
             
             print("\nTop Neighborhoods with Wikipedia:")
             query = """
@@ -352,8 +372,14 @@ class SimpleDemoRunner:
             LIMIT 3
             """
             results = run_query(self.driver, query)
+            neighborhood_wikis = []
             for row in results:
-                print(f"  {row['neighborhood']}: {row['articles']} articles")
+                n_wiki = NeighborhoodWikipedia(
+                    neighborhood=row['neighborhood'],
+                    articles=row['articles']
+                )
+                neighborhood_wikis.append(n_wiki)
+                print(f"  {n_wiki.neighborhood}: {n_wiki.articles} articles")
         else:
             print("No Wikipedia data found (requires full data pipeline)")
     
@@ -370,9 +396,12 @@ class SimpleDemoRunner:
         """
         result = run_query(self.driver, query)
         if result and result[0]['similar_properties']:
-            row = result[0]
-            print(f"  Properties with high similarity: {row['similar_properties']}")
-            print(f"  Similarity pairs (score > 0.8): {row['similarity_relationships']}")
+            similarity = SimilarityNetwork(
+                similar_properties=result[0]['similar_properties'],
+                similarity_relationships=int(result[0]['similarity_relationships'])
+            )
+            print(f"  Properties with high similarity: {similarity.similar_properties}")
+            print(f"  Similarity pairs (score > 0.8): {similarity.similarity_relationships}")
         else:
             print("  No similarity relationships found")
         
@@ -386,8 +415,15 @@ class SimpleDemoRunner:
         LIMIT 3
         """
         results = run_query(self.driver, query)
+        property_features = []
         for row in results:
-            print(f"  {row['address']}: {row['feature_count']} features (${row['price']:,.0f})")
+            prop_feat = PropertyFeatures(
+                address=row['address'],
+                price=row['price'],
+                feature_count=row['feature_count']
+            )
+            property_features.append(prop_feat)
+            print(f"  {prop_feat.address}: {prop_feat.feature_count} features (${prop_feat.price:,.0f})")
         
         if self.config.verbose:
             print("\nNote: Verbose mode enabled - showing additional details")
