@@ -14,6 +14,7 @@ import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, lit
 
+from data_pipeline.models.spark_models import WikipediaArticle
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,13 @@ class WikipediaLoader(BaseLoader):
     """Loads Wikipedia data into strongly-typed DataFrames."""
     
     def _define_schema(self):
-        """Wikipedia loads from SQLite, not JSON, so schema is handled differently."""
-        return None  # Schema is inferred from pandas DataFrame
+        """
+        Define the expected schema for Wikipedia data.
+        
+        Returns:
+            Spark schema generated from WikipediaArticle SparkModel
+        """
+        return WikipediaArticle.spark_schema()
     
     def load(self, db_path: str) -> DataFrame:
         """
@@ -48,8 +54,7 @@ class WikipediaLoader(BaseLoader):
         if pandas_df.empty:
             logger.warning("No Wikipedia articles found in database")
             # Return empty DataFrame with proper schema
-            from data_pipeline.schemas.entity_schemas import WikipediaArticleSchema
-            return self.spark.createDataFrame([], schema=WikipediaArticleSchema.get_spark_schema())
+            return self.spark.createDataFrame([], schema=self.schema)
         
         # Convert to Spark DataFrame
         spark_df = self.spark.createDataFrame(pandas_df)

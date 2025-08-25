@@ -13,7 +13,7 @@ from data_pipeline.config.models import (
     OutputDestinationsConfig,
     PipelineConfig
 )
-from data_pipeline.writers.base import DataWriter, WriterConfig
+from data_pipeline.writers.base import EntityWriter, WriterConfig
 from data_pipeline.writers.orchestrator import WriterOrchestrator
 from data_pipeline.models.writer_models import (
     EntityType,
@@ -79,7 +79,7 @@ class TestWriterConfiguration:
         del os.environ["TEST_NEO4J_PASS"]
 
 
-class MockWriter(DataWriter):
+class MockWriter(EntityWriter):
     """Mock writer for testing orchestrator."""
     
     def __init__(self, name: str, enabled: bool = True, should_fail: bool = False):

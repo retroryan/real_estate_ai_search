@@ -12,14 +12,14 @@ import chromadb
 from chromadb.config import Settings
 from pyspark.sql import DataFrame, SparkSession
 
-from data_pipeline.writers.base import DataWriter
+from data_pipeline.writers.base import EntityWriter
 from data_pipeline.models.writer_models import WriteMetadata
 from .chromadb_config import ChromaDBWriterConfig
 
 logger = logging.getLogger(__name__)
 
 
-class ChromadbOrchestrator(DataWriter):
+class ChromadbOrchestrator(EntityWriter):
     """
     Orchestrator for entity-specific ChromaDB writing.
     

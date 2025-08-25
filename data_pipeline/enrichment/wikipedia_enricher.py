@@ -21,7 +21,7 @@ from pyspark.sql.functions import (
     when,
 )
 
-from .base_enricher import BaseEnricher, BaseEnrichmentConfig
+from .base_enricher import BaseEnricher
 
 logger = logging.getLogger(__name__)
 

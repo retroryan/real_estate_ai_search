@@ -20,53 +20,21 @@ spark:
     spark.sql.shuffle.partitions: 200
 
 # Data sources configuration
-data_sources:
-  properties_sf:
-    path: "real_estate_data/properties_sf.json"
-    format: "json"
-    enabled: true
-    options:
-      multiLine: true
-  
-  properties_pc:
-    path: "real_estate_data/properties_pc.json"
-    format: "json"
-    enabled: true
-    options:
-      multiLine: true
-      filter_expression: null
-  
-  neighborhoods_sf:
-    path: "real_estate_data/neighborhoods_sf.json"
-    format: "json"
-    enabled: true
-    options:
-      multiLine: true
-      filter_expression: null
-  
-  neighborhoods_pc:
-    path: "real_estate_data/neighborhoods_pc.json"
-    format: "json"
-    enabled: true
-    options:
-      multiLine: true
-      filter_expression: null
-  
-  wikipedia:
-    path: "data/wikipedia/wikipedia.db"
-    format: "sqlite"
-    enabled: true
-    options:
-      use_pandas: true
-      filter_expression: "relevance_score > 0.5"  # Only high-relevance articles
-  
-  locations:
-    path: "real_estate_data/locations.json"
-    format: "json"
-    enabled: true
-    options:
-      multiLine: true
-      filter_expression: null
+properties:
+  - "real_estate_data/properties_sf.json"
+  - "real_estate_data/properties_pc.json"
+
+neighborhoods:
+  - "real_estate_data/neighborhoods_sf.json"
+  - "real_estate_data/neighborhoods_pc.json"
+
+wikipedia:
+  path: "data/wikipedia/wikipedia.db"
+  enabled: true
+
+locations:
+  path: "real_estate_data/locations.json"
+  enabled: true
 
 
 # Embedding configuration - FLEXIBLE MODEL SELECTION

@@ -10,16 +10,8 @@ import logging
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
-from pyspark.sql.types import (
-    ArrayType,
-    DecimalType,
-    DoubleType,
-    IntegerType,
-    StringType,
-    StructField,
-    StructType,
-)
 
+from data_pipeline.models.spark_models import Property
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -28,73 +20,57 @@ logger = logging.getLogger(__name__)
 class PropertyLoader(BaseLoader):
     """Loads property data from JSON files into Spark DataFrames."""
     
-    def _define_schema(self) -> StructType:
+    def _define_schema(self):
         """
         Define the expected schema for property JSON files.
         
         Returns:
-            StructType defining property data schema
+            Spark schema generated from Property SparkModel
         """
-        return StructType([
-            StructField("listing_id", StringType(), False),
-            StructField("neighborhood_id", StringType(), True),
-            StructField("address", StructType([
-                StructField("street", StringType(), True),
-                StructField("city", StringType(), True),
-                StructField("county", StringType(), True),
-                StructField("state", StringType(), True),
-                StructField("zip", StringType(), True),  # Note: source uses 'zip' not 'zip_code'
-            ]), True),
-            StructField("coordinates", StructType([
-                StructField("latitude", DoubleType(), True),
-                StructField("longitude", DoubleType(), True),
-            ]), True),
-            StructField("property_details", StructType([
-                StructField("square_feet", IntegerType(), True),
-                StructField("bedrooms", IntegerType(), True),
-                StructField("bathrooms", DoubleType(), True),
-                StructField("property_type", StringType(), True),
-                StructField("year_built", IntegerType(), True),
-                StructField("lot_size", DoubleType(), True),
-                StructField("stories", IntegerType(), True),
-                StructField("garage_spaces", IntegerType(), True),
-            ]), True),
-            StructField("listing_price", DecimalType(12, 2), True),
-            StructField("price_per_sqft", IntegerType(), True),
-            StructField("description", StringType(), True),
-            StructField("features", ArrayType(StringType()), True),
-            StructField("listing_date", StringType(), True),
-            StructField("days_on_market", IntegerType(), True),
-            StructField("virtual_tour_url", StringType(), True),
-            StructField("images", ArrayType(StringType()), True),
-            StructField("price_history", ArrayType(StructType([
-                StructField("date", StringType(), True),
-                StructField("price", DecimalType(12, 2), True),
-                StructField("event", StringType(), True),
-            ])), True),
-        ])
+        return Property.spark_schema()
     
     
     def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
-        Transform raw property data to property-specific schema.
+        Transform raw property data to flattened property schema.
+        
+        Flattens nested structures (address, coordinates, property_details) into top-level columns.
         
         Args:
             df: Raw property DataFrame
             source_path: Source file path for tracking
             
         Returns:
-            DataFrame conforming to property-specific schema
+            DataFrame with flattened structure conforming to property entity schema
         """
-
-        # Return all the nested structures - the enricher will handle flattening
+        # Flatten nested structures into top-level columns
         return df.select(
-            # Core property fields
+            # Core fields
             col("listing_id"),
             col("neighborhood_id"),
-            col("address"),
-            col("coordinates"),
-            col("property_details"),
+            
+            # Flatten address struct
+            col("address.street").alias("street"),
+            col("address.city").alias("city"),
+            col("address.county").alias("county"),
+            col("address.state").alias("state"),
+            col("address.zip").alias("zip_code"),
+            
+            # Flatten coordinates struct
+            col("coordinates.latitude").alias("latitude"),
+            col("coordinates.longitude").alias("longitude"),
+            
+            # Flatten property_details struct
+            col("property_details.square_feet").alias("square_feet"),
+            col("property_details.bedrooms").alias("bedrooms"),
+            col("property_details.bathrooms").alias("bathrooms"),
+            col("property_details.property_type").alias("property_type"),
+            col("property_details.year_built").alias("year_built"),
+            col("property_details.lot_size").alias("lot_size"),
+            col("property_details.stories").alias("stories"),
+            col("property_details.garage_spaces").alias("garage_spaces"),
+            
+            # Direct fields
             col("listing_price"),
             col("price_per_sqft"),
             col("description"),

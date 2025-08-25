@@ -25,8 +25,6 @@ from pyspark.sql.functions import (
     size,
     when,
 )
-from pyspark.sql.types import StringType, StructField, StructType
-
 from data_pipeline.models.graph_models import (
     DescribesRelationship,
     LocatedInRelationship,
@@ -35,49 +33,9 @@ from data_pipeline.models.graph_models import (
     RelationshipType,
     SimilarToRelationship,
 )
+from data_pipeline.models.spark_models import Relationship
 
 logger = logging.getLogger(__name__)
-
-
-class RelationshipBuilderConfig(BaseModel):
-    """Configuration for relationship building operations."""
-    
-    enable_property_neighborhood: bool = Field(
-        default=True,
-        description="Create LOCATED_IN relationships between properties and neighborhoods"
-    )
-    
-    enable_geographic_hierarchy: bool = Field(
-        default=True,
-        description="Create PART_OF relationships for geographic hierarchy"
-    )
-    
-    enable_wikipedia_describes: bool = Field(
-        default=True,
-        description="Create DESCRIBES relationships from Wikipedia to entities"
-    )
-    
-    enable_similarity_relationships: bool = Field(
-        default=True,
-        description="Create SIMILAR_TO relationships between entities"
-    )
-    
-    similarity_threshold: float = Field(
-        default=0.5,
-        ge=0.0,
-        le=1.0,
-        description="Minimum similarity score to create relationship"
-    )
-    
-    max_similar_properties: int = Field(
-        default=10,
-        description="Maximum similar properties per property"
-    )
-    
-    max_similar_neighborhoods: int = Field(
-        default=5,
-        description="Maximum similar neighborhoods per neighborhood"
-    )
 
 
 class RelationshipBuilder:
@@ -88,16 +46,14 @@ class RelationshipBuilder:
     geographic hierarchy, similarity, and Wikipedia descriptions.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[RelationshipBuilderConfig] = None):
+    def __init__(self, spark: SparkSession):
         """
         Initialize the relationship builder.
         
         Args:
             spark: Active SparkSession
-            config: Relationship builder configuration
         """
         self.spark = spark
-        self.config = config or RelationshipBuilderConfig()
     
     def build_all_relationships(
         self,
@@ -262,11 +218,7 @@ class RelationshipBuilder:
             return result
         else:
             # Return empty DataFrame with correct schema
-            return self.spark.createDataFrame([], StructType([
-                StructField("from_id", StringType(), False),
-                StructField("to_id", StringType(), False),
-                StructField("relationship_type", StringType(), False)
-            ]))
+            return self.spark.createDataFrame([], schema=Relationship.spark_schema())
     
     def build_describes_relationships(
         self,

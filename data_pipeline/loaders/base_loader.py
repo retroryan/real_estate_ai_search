@@ -12,7 +12,6 @@ from typing import Optional
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, lit
-from pyspark.sql.types import StructType
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +35,12 @@ class BaseLoader(ABC):
         self.schema = self._define_schema()
     
     @abstractmethod
-    def _define_schema(self) -> StructType:
+    def _define_schema(self):
         """
         Define the expected schema for the entity's data files.
         
         Returns:
-            StructType defining the entity data schema
+            Spark schema generated from SparkModel.as_spark_schema()
         """
         pass
     

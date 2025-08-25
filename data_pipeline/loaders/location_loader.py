@@ -16,12 +16,8 @@ from pyspark.sql.functions import (
     trim,
     when
 )
-from pyspark.sql.types import (
-    StringType,
-    StructField,
-    StructType,
-)
 
+from data_pipeline.models.spark_models import Location
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -30,19 +26,14 @@ logger = logging.getLogger(__name__)
 class LocationLoader(BaseLoader):
     """Loads location reference data from JSON files into Spark DataFrames."""
     
-    def _define_schema(self) -> StructType:
+    def _define_schema(self):
         """
         Define the expected input schema for location JSON files.
         
         Returns:
-            StructType defining location input data schema
+            Spark schema generated from Location SparkModel
         """
-        return StructType([
-            StructField("state", StringType(), True),
-            StructField("county", StringType(), True),
-            StructField("city", StringType(), True),
-            StructField("neighborhood", StringType(), True),
-        ])
+        return Location.spark_schema()
     
     
     def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:

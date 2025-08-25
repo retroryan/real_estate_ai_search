@@ -7,30 +7,23 @@ Parquet files with proper partitioning and organization.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
 from data_pipeline.config.models import PipelineConfig
-from data_pipeline.schemas.entity_schemas import (
-    NeighborhoodSchema,
-    PropertySchema,
-    WikipediaArticleSchema,
-)
-from data_pipeline.writers.base import DataWriter
-from data_pipeline.models.writer_models import WriteMetadata
+from data_pipeline.writers.base import EntityWriter
 
 logger = logging.getLogger(__name__)
 
 
-class ParquetWriter(DataWriter):
+class ParquetWriter(EntityWriter):
     """
-    Entity-specific Parquet file writer.
+    Simple Parquet file writer for demo purposes.
     
-    Writes DataFrames to entity-specific Parquet files with proper partitioning
-    and directory organization. Each entity type has its own write method with
-    specific handling.
+    Writes DataFrames to entity-specific Parquet files without complex
+    partitioning or optimization.
     """
     
     def __init__(self, config: PipelineConfig, spark: SparkSession):
@@ -38,7 +31,7 @@ class ParquetWriter(DataWriter):
         Initialize the Parquet writer.
         
         Args:
-            config: Parquet writer configuration with entity-specific settings
+            config: Pipeline configuration
             spark: SparkSession instance
         """
         super().__init__(config)
@@ -62,10 +55,9 @@ class ParquetWriter(DataWriter):
             if not self.base_path.exists():
                 self.base_path.mkdir(parents=True, exist_ok=True)
             
-            # Validate entity-specific paths
-            for entity_name in ["properties", "neighborhoods", "wikipedia"]:
-                entity_config = getattr(self.config, entity_name)
-                entity_path = self.base_path / entity_config.path
+            # Create entity directories
+            for entity_dir in ["properties", "neighborhoods", "wikipedia"]:
+                entity_path = self.base_path / entity_dir
                 entity_path.mkdir(parents=True, exist_ok=True)
             
             self.logger.info(f"Validated Parquet output paths under: {self.base_path}")
@@ -75,35 +67,9 @@ class ParquetWriter(DataWriter):
             self.logger.error(f"Failed to validate output paths: {e}")
             return False
     
-    def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
-        """
-        Route DataFrame to appropriate entity-specific writer.
-        
-        Args:
-            df: DataFrame to write
-            metadata: WriteMetadata with entity type and other information
-            
-        Returns:
-            True if write was successful, False otherwise
-        """
-        entity_type = metadata.entity_type.value.lower()
-        
-        if entity_type == "property":
-            return self.write_properties(df)
-        elif entity_type == "neighborhood":
-            return self.write_neighborhoods(df)
-        elif entity_type == "wikipedia":
-            return self.write_wikipedia(df)
-        else:
-            self.logger.error(f"Unknown entity type: {entity_type}")
-            return False
-    
     def write_properties(self, df: DataFrame) -> bool:
         """
-        Write property data with specific partitioning and validation.
-        
-        Properties are partitioned by state and city for efficient querying
-        of local real estate markets.
+        Write property data to Parquet.
         
         Args:
             df: Property DataFrame
@@ -113,7 +79,7 @@ class ParquetWriter(DataWriter):
         """
         try:
             record_count = df.count()
-            output_path = self.base_path / self.config.properties.path
+            output_path = self.base_path / "properties"
             
             self.logger.info(f"Writing {record_count} property records to {output_path}")
             
@@ -124,20 +90,8 @@ class ParquetWriter(DataWriter):
                 self.logger.error(f"Missing required property columns: {missing}")
                 return False
             
-            # Prepare writer with property-specific settings
-            writer = df.write.mode(self.config.mode)
-            writer = writer.option("compression", self.config.compression)
-            
-            # Apply coalescing if configured
-            if self.config.properties.coalesce_partitions:
-                df = df.coalesce(self.config.properties.coalesce_partitions)
-            
-            # Partition by state and city for property data
-            if self.config.properties.partition_by:
-                writer = writer.partitionBy(*self.config.properties.partition_by)
-            
-            # Write to Parquet
-            writer.parquet(str(output_path))
+            # Write to Parquet with simple overwrite mode
+            df.write.mode("overwrite").parquet(str(output_path))
             
             self.logger.info(f"Successfully wrote {record_count} property records")
             return True
@@ -148,9 +102,7 @@ class ParquetWriter(DataWriter):
     
     def write_neighborhoods(self, df: DataFrame) -> bool:
         """
-        Write neighborhood data with specific partitioning and validation.
-        
-        Neighborhoods are partitioned by state for regional analysis.
+        Write neighborhood data to Parquet.
         
         Args:
             df: Neighborhood DataFrame
@@ -160,7 +112,7 @@ class ParquetWriter(DataWriter):
         """
         try:
             record_count = df.count()
-            output_path = self.base_path / self.config.neighborhoods.path
+            output_path = self.base_path / "neighborhoods"
             
             self.logger.info(f"Writing {record_count} neighborhood records to {output_path}")
             
@@ -171,20 +123,8 @@ class ParquetWriter(DataWriter):
                 self.logger.error(f"Missing required neighborhood columns: {missing}")
                 return False
             
-            # Prepare writer with neighborhood-specific settings
-            writer = df.write.mode(self.config.mode)
-            writer = writer.option("compression", self.config.compression)
-            
-            # Apply coalescing if configured
-            if self.config.neighborhoods.coalesce_partitions:
-                df = df.coalesce(self.config.neighborhoods.coalesce_partitions)
-            
-            # Partition by state for neighborhood data
-            if self.config.neighborhoods.partition_by:
-                writer = writer.partitionBy(*self.config.neighborhoods.partition_by)
-            
-            # Write to Parquet
-            writer.parquet(str(output_path))
+            # Write to Parquet with simple overwrite mode
+            df.write.mode("overwrite").parquet(str(output_path))
             
             self.logger.info(f"Successfully wrote {record_count} neighborhood records")
             return True
@@ -195,10 +135,7 @@ class ParquetWriter(DataWriter):
     
     def write_wikipedia(self, df: DataFrame) -> bool:
         """
-        Write Wikipedia article data with specific partitioning and validation.
-        
-        Wikipedia articles are partitioned by best_state for location-based
-        content discovery.
+        Write Wikipedia article data to Parquet.
         
         Args:
             df: Wikipedia DataFrame
@@ -208,7 +145,7 @@ class ParquetWriter(DataWriter):
         """
         try:
             record_count = df.count()
-            output_path = self.base_path / self.config.wikipedia.path
+            output_path = self.base_path / "wikipedia"
             
             self.logger.info(f"Writing {record_count} Wikipedia records to {output_path}")
             
@@ -220,32 +157,15 @@ class ParquetWriter(DataWriter):
                 return False
             
             # Handle articles without best_state by adding a default
-            if "best_state" in self.config.wikipedia.partition_by:
-                if "best_state" not in df.columns:
-                    self.logger.warning("best_state column missing, adding default")
-                    df = df.withColumn("best_state", col("best_state").cast("string"))
-                
-                # Replace nulls with "unknown" for partitioning
-                df = df.fillna({"best_state": "unknown"})
+            if "best_state" not in df.columns:
+                self.logger.warning("best_state column missing, adding default 'unknown'")
+                df = df.withColumn("best_state", col("best_state").cast("string"))
             
-            # Prepare writer with Wikipedia-specific settings
-            writer = df.write.mode(self.config.mode)
-            writer = writer.option("compression", self.config.compression)
+            # Replace nulls with "unknown" for consistency
+            df = df.fillna({"best_state": "unknown"})
             
-            # Apply coalescing if configured
-            if self.config.wikipedia.coalesce_partitions:
-                df = df.coalesce(self.config.wikipedia.coalesce_partitions)
-            
-            # Partition by best_state for Wikipedia data
-            if self.config.wikipedia.partition_by:
-                # Filter to only partition by columns that exist
-                partition_cols = [col for col in self.config.wikipedia.partition_by 
-                                 if col in df.columns]
-                if partition_cols:
-                    writer = writer.partitionBy(*partition_cols)
-            
-            # Write to Parquet
-            writer.parquet(str(output_path))
+            # Write to Parquet with simple overwrite mode
+            df.write.mode("overwrite").parquet(str(output_path))
             
             self.logger.info(f"Successfully wrote {record_count} Wikipedia records")
             return True
@@ -275,12 +195,14 @@ class ParquetWriter(DataWriter):
         """
         entity_type = entity_type.lower()
         
+        # Normalize entity type names
         if entity_type == "property":
-            return self.base_path / self.config.properties.path
+            entity_type = "properties"
         elif entity_type == "neighborhood":
-            return self.base_path / self.config.neighborhoods.path
-        elif entity_type == "wikipedia":
-            return self.base_path / self.config.wikipedia.path
+            entity_type = "neighborhoods"
+        
+        if entity_type in ["properties", "neighborhoods", "wikipedia"]:
+            return self.base_path / entity_type
         else:
             return None
     

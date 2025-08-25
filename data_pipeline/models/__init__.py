@@ -18,6 +18,27 @@ from data_pipeline.models.processing_results import (
     PipelineExecutionResult,
 )
 
+# Spark models for schema generation
+from data_pipeline.models.spark_models import (
+    # Property models
+    Address,
+    Coordinates,
+    PropertyDetails,
+    PriceHistory,
+    Property,
+    FlattenedProperty,
+    
+    # Neighborhood models
+    Demographics,
+    Neighborhood,
+    FlattenedNeighborhood,
+    
+    # Other models
+    Location,
+    WikipediaArticle,
+    Relationship,
+)
+
 __all__ = [
     # Statistics models
     "ValidationStats",
@@ -33,4 +54,22 @@ __all__ = [
     
     # Pipeline execution
     "PipelineExecutionResult",
+    
+    # Spark models - Property
+    "Address",
+    "Coordinates",
+    "PropertyDetails",
+    "PriceHistory",
+    "Property",
+    "FlattenedProperty",
+    
+    # Spark models - Neighborhood
+    "Demographics",
+    "Neighborhood",
+    "FlattenedNeighborhood",
+    
+    # Spark models - Other
+    "Location",
+    "WikipediaArticle",
+    "Relationship",
 ]

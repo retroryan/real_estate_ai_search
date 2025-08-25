@@ -1,18 +1,15 @@
 """
-Base classes for data writers.
+Base classes for entity-specific data writers.
 
-This module provides the abstract base class for all data writers and the base
-configuration model using Pydantic for type safety and validation.
+This module provides the abstract base class for all data writers with
+entity-specific write methods and Pydantic models for type safety.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame
-
-if TYPE_CHECKING:
-    from data_pipeline.models.writer_models import WriteMetadata
 
 
 class WriterConfig(BaseModel):
@@ -33,17 +30,17 @@ class WriterConfig(BaseModel):
     )
 
 
-class DataWriter(ABC):
+class EntityWriter(ABC):
     """
-    Abstract base class for data writers.
+    Abstract base class for entity-specific data writers.
     
-    All concrete writers must implement the required methods for validating
-    connections and writing DataFrames to their respective destinations.
+    All concrete writers must implement entity-specific write methods
+    for properties, neighborhoods, and wikipedia data.
     """
     
     def __init__(self, config: WriterConfig):
         """
-        Initialize the data writer.
+        Initialize the entity writer.
         
         Args:
             config: Writer configuration
@@ -62,13 +59,38 @@ class DataWriter(ABC):
         pass
     
     @abstractmethod
-    def write(self, df: DataFrame, metadata: 'WriteMetadata') -> bool:
+    def write_properties(self, df: DataFrame) -> bool:
         """
-        Write a DataFrame to the destination.
+        Write property data to the destination.
         
         Args:
-            df: DataFrame to write
-            metadata: WriteMetadata model with information about the data being written
+            df: Property DataFrame
+            
+        Returns:
+            True if write was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def write_neighborhoods(self, df: DataFrame) -> bool:
+        """
+        Write neighborhood data to the destination.
+        
+        Args:
+            df: Neighborhood DataFrame
+            
+        Returns:
+            True if write was successful, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    def write_wikipedia(self, df: DataFrame) -> bool:
+        """
+        Write Wikipedia data to the destination.
+        
+        Args:
+            df: Wikipedia DataFrame
             
         Returns:
             True if write was successful, False otherwise
@@ -120,3 +142,31 @@ class DataWriter(ABC):
         """
         # Default: most writers don't support relationships
         return False
+    
+    def get_entity_path(self, entity_type: str) -> Optional[str]:
+        """
+        Get the output path for a specific entity type.
+        
+        Args:
+            entity_type: Type of entity (properties, neighborhoods, wikipedia)
+            
+        Returns:
+            Path string for the entity output, or None if not applicable
+        """
+        # Default implementation returns None
+        # Writers that use file paths can override this
+        return None
+    
+    def clear_entity_data(self, entity_type: str) -> bool:
+        """
+        Clear existing data for a specific entity type.
+        
+        Args:
+            entity_type: Type of entity to clear
+            
+        Returns:
+            True if successful or not applicable, False if failed
+        """
+        # Default implementation is no-op
+        # Writers that support clearing can override this
+        return True

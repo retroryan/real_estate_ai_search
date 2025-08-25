@@ -15,12 +15,12 @@ from .orchestrator import WriterOrchestrator
 from .parquet_writer import ParquetWriter
 
 # Import base classes
-from .base import DataWriter
+from .base import EntityWriter
 
 __all__ = [
     "Neo4jOrchestrator",
     "ElasticsearchOrchestrator", 
     "WriterOrchestrator",
     "ParquetWriter",
-    "DataWriter",
+    "EntityWriter",
 ]

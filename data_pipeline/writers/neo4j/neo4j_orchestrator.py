@@ -12,13 +12,13 @@ from typing import Dict
 from pyspark.sql import DataFrame, SparkSession
 
 from data_pipeline.config.models import PipelineConfig
-from data_pipeline.writers.base import DataWriter
+from data_pipeline.writers.base import EntityWriter
 from data_pipeline.models.writer_models import WriteMetadata
 
 logger = logging.getLogger(__name__)
 
 
-class Neo4jOrchestrator(DataWriter):
+class Neo4jOrchestrator(EntityWriter):
     """
     Orchestrator for entity-specific Neo4j writers.
     

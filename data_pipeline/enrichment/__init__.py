@@ -6,21 +6,17 @@ and Wikipedia articles with consistent patterns for data enhancement.
 """
 
 from .base_enricher import BaseEnricher
-from .location_enricher import LocationEnricher, LocationEnrichmentConfig
+from .location_enricher import LocationEnricher
 from .neighborhood_enricher import NeighborhoodEnricher  
-from .property_enricher import PropertyEnricher, PropertyEnrichmentConfig
-from .relationship_builder import RelationshipBuilder, RelationshipBuilderConfig
-from .wikipedia_enricher import WikipediaEnricher, WikipediaEnrichmentConfig
+from .property_enricher import PropertyEnricher
+from .relationship_builder import RelationshipBuilder
+from .wikipedia_enricher import WikipediaEnricher
 
 __all__ = [
     "BaseEnricher",
     "LocationEnricher",
-    "LocationEnrichmentConfig",
     "NeighborhoodEnricher",
     "PropertyEnricher",
-    "PropertyEnrichmentConfig",
     "RelationshipBuilder",
-    "RelationshipBuilderConfig",
     "WikipediaEnricher",
-    "WikipediaEnrichmentConfig",
 ]

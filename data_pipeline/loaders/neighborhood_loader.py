@@ -10,16 +10,8 @@ import logging
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
-from pyspark.sql.types import (
-    ArrayType,
-    DecimalType,
-    DoubleType,
-    IntegerType,
-    StringType,
-    StructField,
-    StructType,
-)
 
+from data_pipeline.models.spark_models import Neighborhood
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -28,26 +20,14 @@ logger = logging.getLogger(__name__)
 class NeighborhoodLoader(BaseLoader):
     """Loads neighborhood data from JSON files into Spark DataFrames."""
     
-    def _define_schema(self) -> StructType:
+    def _define_schema(self):
         """
         Define the expected schema for neighborhood JSON files.
         
         Returns:
-            StructType defining neighborhood data schema
+            Spark schema generated from Neighborhood SparkModel
         """
-        return StructType([
-            StructField("neighborhood_id", StringType(), False),
-            StructField("name", StringType(), True),
-            StructField("city", StringType(), True),
-            StructField("state", StringType(), True),
-            StructField("description", StringType(), True),
-            StructField("amenities", ArrayType(StringType()), True),
-            StructField("demographics", StructType([
-                StructField("population", IntegerType(), True),
-                StructField("median_income", DecimalType(10, 2), True),
-                StructField("median_age", DoubleType(), True),
-            ]), True),
-        ])
+        return Neighborhood.spark_schema()
     
     
     def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:

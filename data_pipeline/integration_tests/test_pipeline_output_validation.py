@@ -13,7 +13,7 @@ from typing import Dict, Any
 import pandas as pd
 import pytest
 from pyspark.sql import SparkSession
-from pyspark.sql.types import ArrayType, StructType
+from pyspark.sql.types import ArrayType
 
 from data_pipeline.core.pipeline_runner import DataPipelineRunner
 from data_pipeline.config.settings import ConfigurationManager

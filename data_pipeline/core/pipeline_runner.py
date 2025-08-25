@@ -15,7 +15,7 @@ from pyspark.sql.functions import avg, col, count, desc
 
 from data_pipeline.config.settings import ConfigurationManager
 from data_pipeline.core.spark_session import get_or_create_spark_session
-from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrator
+from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrator, LoadedData
 # Entity-specific imports will be done where needed
 # Entity-specific embedding generators used instead
 # Import entity-specific processors and enrichers
@@ -24,7 +24,7 @@ from data_pipeline.processing.neighborhood_text_processor import NeighborhoodTex
 from data_pipeline.processing.wikipedia_text_processor import WikipediaTextProcessor, WikipediaTextConfig
 from data_pipeline.enrichment.property_enricher import PropertyEnricher
 from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher
-from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher, WikipediaEnrichmentConfig
+from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher
 from data_pipeline.enrichment.relationship_builder import RelationshipBuilder
 from data_pipeline.writers.orchestrator import WriterOrchestrator
 from data_pipeline.models.writer_models import (
@@ -168,19 +168,30 @@ class DataPipelineRunner:
         try:
             # Step 1: Load all data sources as separate DataFrames
             logger.info("📥 Loading data from all sources...")
-            entity_dataframes = self.loader.load_all_sources()
+            loaded_data = self.loader.load_all_sources()
             
             # Log loading summary
             total_records = 0
-            for entity_type, df in entity_dataframes.items():
-                if df is not None:
-                    count = df.count()
-                    total_records += count
-                    logger.info(f"   Loaded {count:,} {entity_type} records")
+            if loaded_data.properties is not None:
+                count = loaded_data.properties.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} properties records")
+            if loaded_data.neighborhoods is not None:
+                count = loaded_data.neighborhoods.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} neighborhoods records")
+            if loaded_data.wikipedia is not None:
+                count = loaded_data.wikipedia.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} wikipedia records")
+            if loaded_data.locations is not None:
+                count = loaded_data.locations.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} locations records")
             
             if total_records == 0:
                 logger.warning("No data loaded. Pipeline terminating.")
-                return entity_dataframes
+                return {}
             
             logger.info(f"   Total: {total_records:,} records across all entities")
             
@@ -188,24 +199,24 @@ class DataPipelineRunner:
             processed_entities = {}
             
             # Process properties
-            if entity_dataframes.get('properties') is not None:
+            if loaded_data.properties is not None:
                 logger.info("\n🏠 Processing properties...")
                 processed_entities['properties'] = self._process_properties(
-                    entity_dataframes['properties']
+                    loaded_data.properties
                 )
             
             # Process neighborhoods
-            if entity_dataframes.get('neighborhoods') is not None:
+            if loaded_data.neighborhoods is not None:
                 logger.info("\n🏘️ Processing neighborhoods...")
                 processed_entities['neighborhoods'] = self._process_neighborhoods(
-                    entity_dataframes['neighborhoods']
+                    loaded_data.neighborhoods
                 )
             
             # Process Wikipedia articles
-            if entity_dataframes.get('wikipedia') is not None:
+            if loaded_data.wikipedia is not None:
                 logger.info("\n📚 Processing Wikipedia articles...")
                 processed_entities['wikipedia'] = self._process_wikipedia(
-                    entity_dataframes['wikipedia']
+                    loaded_data.wikipedia
                 )
             
             # Store cached references
@@ -328,19 +339,30 @@ class DataPipelineRunner:
         try:
             # Step 1: Load all data sources as separate DataFrames
             logger.info("📥 Loading data from all sources...")
-            entity_dataframes = self.loader.load_all_sources()
+            loaded_data = self.loader.load_all_sources()
             
             # Log loading summary
             total_records = 0
-            for entity_type, df in entity_dataframes.items():
-                if df is not None:
-                    count = df.count()
-                    total_records += count
-                    logger.info(f"   Loaded {count:,} {entity_type} records")
+            if loaded_data.properties is not None:
+                count = loaded_data.properties.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} properties records")
+            if loaded_data.neighborhoods is not None:
+                count = loaded_data.neighborhoods.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} neighborhoods records")
+            if loaded_data.wikipedia is not None:
+                count = loaded_data.wikipedia.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} wikipedia records")
+            if loaded_data.locations is not None:
+                count = loaded_data.locations.count()
+                total_records += count
+                logger.info(f"   Loaded {count:,} locations records")
             
             if total_records == 0:
                 logger.warning("No data loaded. Pipeline terminating.")
-                return entity_dataframes
+                return {}
             
             logger.info(f"   Total: {total_records:,} records across all entities")
             
@@ -355,9 +377,9 @@ class DataPipelineRunner:
             )
             
             # Process properties with embeddings
-            if entity_dataframes.get('properties') is not None:
+            if loaded_data.properties is not None:
                 logger.info("\n🏠 Processing properties with embeddings...")
-                processed_df = self._process_properties(entity_dataframes['properties'])
+                processed_df = self._process_properties(loaded_data.properties)
                 
                 # Generate property-specific embeddings
                 logger.info("   🔮 Generating property embeddings...")
@@ -365,9 +387,9 @@ class DataPipelineRunner:
                 processed_entities['properties'] = property_embedder.generate_embeddings(processed_df)
             
             # Process neighborhoods with embeddings
-            if entity_dataframes.get('neighborhoods') is not None:
+            if loaded_data.neighborhoods is not None:
                 logger.info("\n🏘️ Processing neighborhoods with embeddings...")
-                processed_df = self._process_neighborhoods(entity_dataframes['neighborhoods'])
+                processed_df = self._process_neighborhoods(loaded_data.neighborhoods)
                 
                 # Generate neighborhood-specific embeddings
                 logger.info("   🔮 Generating neighborhood embeddings...")
@@ -375,9 +397,9 @@ class DataPipelineRunner:
                 processed_entities['neighborhoods'] = neighborhood_embedder.generate_embeddings(processed_df)
             
             # Process Wikipedia articles with embeddings
-            if entity_dataframes.get('wikipedia') is not None:
+            if loaded_data.wikipedia is not None:
                 logger.info("\n📚 Processing Wikipedia articles with embeddings...")
-                processed_df = self._process_wikipedia(entity_dataframes['wikipedia'])
+                processed_df = self._process_wikipedia(loaded_data.wikipedia)
                 
                 # Generate Wikipedia-specific embeddings
                 logger.info("   🔮 Generating Wikipedia embeddings...")

@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from pyspark.sql import DataFrame, SparkSession
 
-from .base_enricher import BaseEnricher, BaseEnrichmentConfig
+from .base_enricher import BaseEnricher
 from pyspark.sql.functions import (
     broadcast,
     coalesce,
@@ -32,34 +32,24 @@ class PropertyEnricher(BaseEnricher):
     and quality metrics specific to real estate listings.
     """
     
-    def __init__(self, spark: SparkSession, config: Optional[BaseEnrichmentConfig] = None,
-                 location_broadcast: Optional[Any] = None):
+    def __init__(self, spark: SparkSession, location_broadcast: Optional[Any] = None):
         """
         Initialize the property enricher.
         
         Args:
             spark: Active SparkSession
-            config: Property enrichment configuration
             location_broadcast: Broadcast variable containing location reference data
         """
-        super().__init__(spark, config, location_broadcast)
+        super().__init__(spark, location_broadcast)
         
-        # Create broadcast variables for location lookups
-        if getattr(self.config, "enable_address_normalization", True):
-            self._create_location_broadcasts()
+        # Create broadcast variables for location lookups - always enabled
+        self._create_location_broadcasts()
         
-        # Override location enricher initialization with property-specific config
-        if self.location_broadcast and getattr(self.config, "enable_location_enhancement", False):
-            from .location_enricher import LocationEnricher, LocationEnrichmentConfig
-            location_config = LocationEnrichmentConfig(
-                enable_hierarchy_resolution=True,
-                enable_neighborhood_linking=getattr(self.config, "enable_neighborhood_linking", False)
-            )
+        # Override location enricher initialization - always enabled if location broadcast available
+        if self.location_broadcast:
+            from .location_enricher import LocationEnricher
             self.location_enricher = LocationEnricher(spark, location_broadcast)
     
-    def _get_default_config(self) -> BaseEnrichmentConfig:
-        """Get the default configuration for property enricher."""
-        return BaseEnrichmentConfig()
 
     def set_location_data(self, location_broadcast: Any):
         """
@@ -100,28 +90,17 @@ class PropertyEnricher(BaseEnricher):
         enriched_df = self.add_correlation_ids(enriched_df, "property_correlation_id")
         logger.info("Added correlation IDs to properties")
         
-        # Normalize addresses and locations
-        if getattr(self.config, "enable_address_normalization", True):
-            enriched_df = self._normalize_addresses(enriched_df)
-            logger.info("Normalized property addresses")
+        # Normalize addresses and locations - always enabled
+        enriched_df = self._normalize_addresses(enriched_df)
+        logger.info("Normalized property addresses")
         
-        # Enhance with location hierarchy and neighborhood linking
-        if self.location_enricher and getattr(self.config, "enable_location_enhancement", False):
+        # Enhance with location hierarchy and neighborhood linking - always enabled if location enricher available
+        if self.location_enricher:
             enriched_df = self._enhance_with_location_data(enriched_df)
             logger.info("Enhanced properties with location hierarchy")
 
-        # Extract property details if nested
-        if "property_details" in enriched_df.columns:
-            enriched_df = enriched_df.withColumn("square_feet", col("property_details.square_feet"))
-            enriched_df = enriched_df.withColumn("bedrooms", col("property_details.bedrooms"))
-            enriched_df = enriched_df.withColumn("bathrooms", col("property_details.bathrooms"))
-            enriched_df = enriched_df.withColumn("year_built", col("property_details.year_built"))
-            enriched_df = enriched_df.withColumn("lot_size", col("property_details.lot_size"))
-            enriched_df = enriched_df.withColumn("stories", col("property_details.stories"))
-            enriched_df = enriched_df.withColumn("garage_spaces", col("property_details.garage_spaces"))
-            logger.info("Extracted property details from nested structure")
-        else:
-            logger.warning(f"Property details not found in nested structure. Available columns: {enriched_df.columns}")
+        # Property details are already flattened - square_feet, bedrooms, etc. are top-level columns
+        logger.info("Property details are already flattened in the input data")
 
         # Show sample data with listing_id and extracted fields
         logger.info("Sample of enriched property data:")
@@ -135,10 +114,7 @@ class PropertyEnricher(BaseEnricher):
         logger.info("Calculated price-related fields")
         enriched_df = self._calculate_quality_scores(enriched_df)
         logger.info("Calculated property quality scores")
-        # Extract coordinates if present
-        if "coordinates.latitude" in enriched_df.columns:
-            enriched_df = enriched_df.withColumn("latitude", col("coordinates.latitude"))
-            enriched_df = enriched_df.withColumn("longitude", col("coordinates.longitude"))
+        # Coordinates are already flattened - latitude and longitude are top-level columns
         
 
         
@@ -171,11 +147,8 @@ class PropertyEnricher(BaseEnricher):
         Returns:
             DataFrame with normalized address fields
         """
-        # Extract city, state, county, and zip_code from nested address structure
-        df_with_location = df.withColumn("city", col("address.city"))\
-            .withColumn("state", col("address.state"))\
-            .withColumn("county", col("address.county"))\
-            .withColumn("zip_code", col("address.zip"))
+        # The data is already flattened - city, state, county, zip_code are top-level columns
+        df_with_location = df
         
         # Normalize cities
         df_with_city = df_with_location.join(
@@ -200,8 +173,8 @@ class PropertyEnricher(BaseEnricher):
         # Normalize street address (extract from nested structure)
         df_with_address = df_with_state.withColumn(
             "address_normalized",
-            when(col("address.street").isNotNull(),
-                 trim(lower(col("address.street"))))
+            when(col("street").isNotNull(),
+                 trim(lower(col("street"))))
             .otherwise(lit(None))
         )
         
@@ -217,11 +190,7 @@ class PropertyEnricher(BaseEnricher):
         Returns:
             DataFrame with calculated price fields
         """
-        # Extract property details fields if nested, or use direct fields
-        if "property_details.square_feet" in df.columns:
-            df = df.withColumn("square_feet", col("property_details.square_feet"))
-            df = df.withColumn("bedrooms", col("property_details.bedrooms"))
-            df = df.withColumn("bathrooms", col("property_details.bathrooms"))
+        # Property details are already flattened - square_feet, bedrooms, etc. are top-level columns
         
         # Handle both 'price' and 'listing_price' field names
         price_col = "listing_price" if "listing_price" in df.columns else "price"
@@ -251,13 +220,7 @@ class PropertyEnricher(BaseEnricher):
             DataFrame with quality scores
         """
 
-        # Extract property details if nested
-        if "property_details.square_feet" in df.columns:
-            df = df.withColumn("square_feet", col("property_details.square_feet"))
-            df = df.withColumn("bedrooms", col("property_details.bedrooms"))
-            df = df.withColumn("bathrooms", col("property_details.bathrooms"))
-            df = df.withColumn("year_built", col("property_details.year_built"))
-            df = df.withColumn("property_type", col("property_details.property_type"))
+        # Property details are already flattened - these are top-level columns
         
         # Handle both 'price' and 'listing_price' field names
         price_col = "listing_price" if "listing_price" in df.columns else "price"
@@ -271,8 +234,8 @@ class PropertyEnricher(BaseEnricher):
             (when(col("bathrooms").isNotNull() & (col("bathrooms") >= 0), 0.05).otherwise(0.0)) +
             (when(col("square_feet").isNotNull() & (col("square_feet") > 0), 0.1).otherwise(0.0)) +
             
-            # Location fields (25% weight)
-            (when(col("address").isNotNull(), 0.05).otherwise(0.0)) +
+            # Location fields (25% weight) - address is flattened to street
+            (when(col("street").isNotNull(), 0.05).otherwise(0.0)) +
             (when(col("city").isNotNull(), 0.1).otherwise(0.0)) +
             (when(col("state").isNotNull(), 0.05).otherwise(0.0)) +
             (when(col("zip_code").isNotNull(), 0.05).otherwise(0.0)) +
@@ -296,10 +259,10 @@ class PropertyEnricher(BaseEnricher):
         df_with_validation = df_with_quality.withColumn(
             "property_validation_status",
             when(
-                col("property_quality_score") >= getattr(self.config, "min_quality_score", 0.5),
+                col("property_quality_score") >= 0.5,
                 lit("validated")
             ).when(
-                col("property_quality_score") < getattr(self.config, "min_quality_score", 0.5),
+                col("property_quality_score") < 0.5,
                 lit("low_quality")
             ).otherwise(lit("pending"))
         )
@@ -317,13 +280,7 @@ class PropertyEnricher(BaseEnricher):
             DataFrame with location enhancements
         """
         try:
-            # Extract city, state, and county from address if not already extracted
-            if "city" not in df.columns:
-                df = df.withColumn("city", col("address.city"))
-            if "state" not in df.columns:
-                df = df.withColumn("state", col("address.state"))
-            if "county" not in df.columns and "address.county" in df.columns:
-                df = df.withColumn("county", col("address.county"))
+            # Address fields are already flattened - city, state, county are top-level columns
             
             # Enhance with hierarchy (adds county information)
             enhanced_df = self.location_enricher.enhance_with_hierarchy(df, "city", "state")
@@ -498,9 +455,7 @@ class PropertyEnricher(BaseEnricher):
         """
         from pyspark.sql.functions import regexp_replace, lower, trim
         
-        # Extract property type from nested structure if needed
-        if "property_details.property_type" in df.columns:
-            df = df.withColumn("property_type", col("property_details.property_type"))
+        # Property type is already a top-level column
         
         # Normalize property type if it exists
         if "property_type" in df.columns:

@@ -20,7 +20,7 @@ from data_pipeline.models.writer_models import (
     WriteResult,
     WriteSessionResult,
 )
-from data_pipeline.writers.base import DataWriter
+from data_pipeline.writers.base import EntityWriter
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +33,12 @@ class WriterOrchestrator:
     type safety and validation throughout the write process.
     """
     
-    def __init__(self, writers: List[DataWriter]):
+    def __init__(self, writers: List[EntityWriter]):
         """
         Initialize the orchestrator with a list of writers.
         
         Args:
-            writers: List of DataWriter instances to manage
+            writers: List of EntityWriter instances to manage
         """
         self.writers = writers
         self.logger = logging.getLogger(__name__)
@@ -112,7 +112,15 @@ class WriterOrchestrator:
             self.logger.info(f"Writing {entity_type} to {writer_name}...")
             
             try:
-                success = writer.write(df, metadata)
+                # Call entity-specific write method
+                if entity_type == EntityType.PROPERTY:
+                    success = writer.write_properties(df)
+                elif entity_type == EntityType.NEIGHBORHOOD:
+                    success = writer.write_neighborhoods(df)
+                elif entity_type == EntityType.WIKIPEDIA:
+                    success = writer.write_wikipedia(df)
+                else:
+                    raise RuntimeError(f"Unknown entity type: {entity_type}")
                 
                 if not success:
                     raise RuntimeError(f"Write operation returned False")
