@@ -1,4 +1,4 @@
-# Configuration for unified ingestion pipeline
+# Configuration for multi-entity ingestion pipeline
 # Reuses wiki_embed configuration structure
 
 embedding:

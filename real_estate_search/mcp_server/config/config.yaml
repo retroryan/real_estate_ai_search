@@ -1,0 +1,38 @@
+# MCP Server Configuration
+server:
+  name: real-estate-search
+  version: 1.0.0
+  description: AI-powered real estate search with Wikipedia enrichment and market analysis
+
+elasticsearch:
+  hosts:
+    - http://localhost:9200
+  index: properties_demo
+  refresh_on_write: true  # Demo mode - immediate consistency
+  request_timeout: 30
+  
+search:
+  default_size: 20
+  max_size: 100
+  enable_fuzzy: true
+  boost_factors:
+    description: 2.0
+    features: 1.5
+    amenities: 1.5
+    location: 1.8
+    
+enrichment:
+  wikipedia:
+    enabled: true
+    cache_ttl: 3600
+  market_data:
+    enabled: true
+  poi:
+    max_results: 10
+    default_radius_miles: 2.0
+    
+demo:
+  reset_on_startup: true
+  sample_data_path: ./data/demo_properties.json
+  enrich_on_load: true
+  max_properties: 100

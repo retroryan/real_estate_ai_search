@@ -1,59 +1,43 @@
-# Configuration for property vector embeddings
-# Adapted from wiki_embed patterns for consistency
+# Configuration for graph-real-estate
 
+# Database configuration
+database:
+  uri: ${NEO4J_URI:-bolt://localhost:7687}
+  user: ${NEO4J_USERNAME:-neo4j}
+  password: ${NEO4J_PASSWORD:-password}
+  database: ${NEO4J_DATABASE:-neo4j}
+
+# API configuration for common-ingest integration
+api:
+  base_url: ${API_BASE_URL:-http://localhost:8000}
+  timeout: ${API_TIMEOUT:-30}
+  api_key: ${API_KEY}
+  max_retries: 3
+  retry_delay: 1.0
+
+# Embedding configuration
 embedding:
-  provider: ollama  # Options: ollama, openai, gemini
-  
-  # Ollama settings
-  ollama_base_url: "http://localhost:11434"
-  ollama_model: "nomic-embed-text"  # or mxbai-embed-large
-  
-  # OpenAI settings (if using)
-  openai_api_key: null  # Set via OPENAI_API_KEY env var
-  openai_model: "text-embedding-3-small"
-  
-  # Gemini settings (if using)
-  gemini_api_key: null  # Set via GEMINI_API_KEY env var
-  gemini_model: "models/embedding-001"
-  
-  # Processing settings
-  batch_size: 100
-  show_progress: true
+  provider: "voyage"  # Options: voyage | ollama | openai | gemini
+  models:
+    voyage:
+      model: "voyage-3"
+      api_key: "${VOYAGE_API_KEY}"
+      dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
 
-# Graph database batch processing settings
-graph_loading:
-  # Batch sizes for different entity types
-  state_batch_size: 500      # Was 10
-  county_batch_size: 1000    # Was 50
-  city_batch_size: 1000      # Was 100
-  feature_batch_size: 1000   # Was 50
-  property_batch_size: 1000  # Was 100
-  wikipedia_batch_size: 1000 # Was 100
-  neighborhood_batch_size: 500  # Was 50
-  
-  # Default batch size for operations not specified above
-  default_batch_size: 1000
-
+# Vector index configuration
 vector_index:
   index_name: "property_embeddings"
-  vector_dimensions: 768  # Auto-set based on model
-  similarity_function: "cosine"  # or euclidean
+  vector_dimensions: 1024  # For voyage-3
+  similarity_function: "cosine"
   node_label: "Property"
-  embedding_property: "descriptionEmbedding"
+  embedding_property: "embedding"
   source_property: "description"
 
+# Search configuration
 search:
   default_top_k: 10
   use_graph_boost: true
   vector_weight: 0.6
   graph_weight: 0.2
   features_weight: 0.2
-  min_similarity: 0.3
-
-# Text generation settings for property embeddings
-property_text:
-  include_address: true
-  include_details: true
-  include_features: true
-  include_neighborhood_context: true
-  max_features: 10  # Limit number of features to include
+  min_similarity: 0.01  # Lowered for Voyage embeddings which have lower similarity scores

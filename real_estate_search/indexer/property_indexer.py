@@ -11,11 +11,15 @@ from datetime import datetime
 from elasticsearch import Elasticsearch, helpers
 from elasticsearch.exceptions import ApiError
 
-from ..config.settings import Settings
-from ..wikipedia.enricher import PropertyEnricher
-from ..wikipedia.extractor import WikipediaExtractor
-from .mappings import get_property_mappings
-from .models import IndexStats, Property
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from config.config import Config
+from wikipedia.enricher import PropertyEnricher
+from wikipedia.extractor import WikipediaExtractor
+from indexer.mappings import get_property_mappings
+from indexer.models import IndexStats, Property
 
 logger = logging.getLogger(__name__)
 
@@ -26,33 +30,21 @@ class PropertyIndexer:
     def __init__(
         self,
         es_client: Optional[Elasticsearch] = None,
-        index_name: str = "properties",
-        settings: Optional[Settings] = None
+        index_name: Optional[str] = None,
+        config: Optional[Config] = None,
+        settings: Optional[Any] = None  # Backward compatibility
     ):
         """Initialize the indexer."""
-        self.settings = settings or Settings.load()
+        # Use config, fallback to loading from yaml
+        self.config = config or Config.from_yaml()
         self.es_client = es_client or self._create_es_client()
-        self.index_name = index_name
+        self.index_name = index_name or self.config.elasticsearch.property_index
         self.enricher = PropertyEnricher()
     
     def _create_es_client(self) -> Elasticsearch:
         """Create Elasticsearch client."""
-        # Build proper URL with scheme from settings
-        url = f"{self.settings.elasticsearch.scheme}://{self.settings.elasticsearch.host}:{self.settings.elasticsearch.port}"
-        
-        es_config = {
-            "hosts": [url],
-            "verify_certs": self.settings.elasticsearch.verify_certs,
-            "request_timeout": self.settings.elasticsearch.timeout
-        }
-        
-        if self.settings.elasticsearch.has_auth:
-            es_config["basic_auth"] = (
-                self.settings.elasticsearch.username,
-                self.settings.elasticsearch.password
-            )
-        
-        return Elasticsearch(**es_config)
+        client_config = self.config.get_es_client_config()
+        return Elasticsearch(**client_config)
     
     def create_index(self, force_recreate: bool = False) -> bool:
         """Create index with settings for demo."""

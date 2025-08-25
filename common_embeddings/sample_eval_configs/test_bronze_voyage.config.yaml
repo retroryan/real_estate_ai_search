@@ -1,0 +1,35 @@
+# Model Comparison Configuration for Bronze Dataset including Voyage
+# Testing all three embedding providers
+
+version: "1.0"
+
+# Base configuration file for embedding settings
+base_config: common_embeddings/eval.config.yaml
+
+# Evaluation settings (using bronze dataset for quick testing)
+evaluation:
+  dataset: bronze  # Use bronze test dataset
+  top_k: 5        # Retrieve top 5 results for each query (bronze has only 3 articles)
+
+# Models to compare (sequential evaluation)
+models:
+  - name: nomic-embed-text
+    provider: ollama
+    collection_name: bronze_ollama_nomic
+    
+  - name: mxbai-embed-large
+    provider: ollama
+    collection_name: bronze_ollama_mxbai
+    
+  - name: voyage-3
+    provider: voyage
+    collection_name: bronze_voyage_voyage_3
+
+# Comparison settings (simple winner determination)
+comparison:
+  primary_metric: f1_score  # Main metric for determining winner
+
+# Reporting configuration (simple HTML report)
+reporting:
+  format: html
+  output_directory: ./common_embeddings/evaluate_results/bronze_test_voyage

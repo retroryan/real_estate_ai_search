@@ -1,0 +1,38 @@
+# Single YAML configuration for real estate search system
+# This replaces dual configuration and provides single source of truth
+
+elasticsearch:
+  host: localhost
+  port: 9200
+  # Authentication - uncomment and fill in if needed
+  username: elastic
+  password: 2GJXncaV
+  # api_key: your-api-key-here
+  # cloud_id: your-cloud-id-here
+  property_index: properties
+  wiki_chunks_index_prefix: wiki_chunks
+  wiki_summaries_index_prefix: wiki_summaries
+  batch_size: 100
+  request_timeout: 30
+
+embedding:
+  provider: ollama
+  model_name: nomic-embed-text
+  ollama_host: http://localhost:11434
+  dimension: 768
+
+data:
+  wikipedia_db: ../data/wikipedia/wikipedia.db
+  wikipedia_pages_dir: ../data/wikipedia/pages
+  properties_dir: ../real_estate_data
+
+chunking:
+  chunk_size: 512
+  chunk_overlap: 50
+
+# Demo settings - always recreate for clean demo
+demo_mode: true
+force_recreate: true
+
+# Logging
+log_level: INFO

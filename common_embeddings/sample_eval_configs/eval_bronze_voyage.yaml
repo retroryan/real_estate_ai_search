@@ -1,0 +1,25 @@
+# Bronze evaluation config for Voyage AI - using smaller dataset for testing
+embedding:
+  provider: voyage
+  voyage_model: voyage-3  # 1024 dimensions, optimized for semantic similarity
+  # voyage_api_key is loaded from VOYAGE_API_KEY environment variable
+
+chromadb:
+  persist_directory: ./data/wiki_chroma_db
+  collection_name: bronze_voyage_voyage_3
+
+chunking:
+  method: simple
+  chunk_size: 1000
+  chunk_overlap: 100
+  
+processing:
+  batch_size: 32
+  max_workers: 4
+  verbose: true
+  rate_limit_delay: 0.1  # Small delay to respect API rate limits
+
+evaluation_data:
+  articles_path: common_embeddings/evaluate_data/bronze_articles.json
+  queries_path: common_embeddings/evaluate_data/bronze_queries.json
+  dataset_type: bronze

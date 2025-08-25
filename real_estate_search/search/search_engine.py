@@ -9,7 +9,7 @@ import logging
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ApiError
 
-from ..config.settings import Settings
+from config.settings import Settings
 from .models import SearchRequest, SearchResponse, Aggregation
 from .enums import QueryType
 
@@ -21,7 +21,6 @@ class SearchMode(str, Enum):
     STANDARD = "standard"
     LIFESTYLE = "lifestyle"
     POI_PROXIMITY = "poi_proximity"
-    HISTORICAL = "historical"
     CULTURAL = "cultural"
     INVESTMENT = "investment"
 
@@ -71,7 +70,7 @@ class SearchEngine:
         """
         import time
         from .models import SearchResponse, PropertyHit
-        from ..indexer.models import Property, Address, Neighborhood
+        from indexer.models import Property, Address, Neighborhood
         
         start_time = time.time()
         
@@ -91,11 +90,6 @@ class SearchEngine:
                 )
             elif request.search_mode == SearchMode.POI_PROXIMITY:
                 es_query = self._build_poi_proximity_query(
-                    request.query_text,
-                    self._convert_filters_to_dict(request.filters) if request.filters else None
-                )
-            elif request.search_mode == SearchMode.HISTORICAL:
-                es_query = self._build_historical_query(
                     request.query_text,
                     self._convert_filters_to_dict(request.filters) if request.filters else None
                 )
@@ -350,7 +344,7 @@ class SearchEngine:
     def _build_response(self, es_response: Dict[str, Any], request: SearchRequest, took_ms: int) -> SearchResponse:
         """Convert ES response to SearchResponse. NO VARIATIONS."""
         from .models import SearchResponse, PropertyHit
-        from ..indexer.models import Property, Address, Neighborhood
+        from indexer.models import Property, Address, Neighborhood
         
         hits = []
         for hit in es_response.get('hits', {}).get('hits', []):
@@ -362,7 +356,7 @@ class SearchEngine:
             if address_data:
                 # Handle nested location data
                 if 'location' in address_data and isinstance(address_data['location'], dict):
-                    from ..indexer.models import GeoLocation
+                    from indexer.models import GeoLocation
                     address_data['location'] = GeoLocation(**address_data['location'])
                 address = Address(**address_data)
                 property_data['address'] = address
@@ -394,13 +388,14 @@ class SearchEngine:
                         distance = sort_value
                         break
             
-            # Create PropertyHit
+            # Create PropertyHit with raw hit for Wikipedia data access
             property_hit = PropertyHit(
                 doc_id=hit['_id'],
                 score=hit.get('_score', 0),
                 property=property_obj,
                 distance=distance,
-                highlights=hit.get('highlight', {}) if request.include_highlights else {}
+                highlights=hit.get('highlight', {}) if request.include_highlights else {},
+                raw_hit=hit  # Store raw hit for accessing enrichment data
             )
             hits.append(property_hit)
         
@@ -550,7 +545,6 @@ class SearchEngine:
     ) -> Dict[str, Any]:
         """Build POI proximity search query."""
         poi_name = query
-        max_distance = filters.get("max_distance_miles", 2.0) if filters else 2.0
         
         return {
             "query": {
@@ -558,67 +552,39 @@ class SearchEngine:
                     "path": "nearby_poi",
                     "query": {
                         "bool": {
-                            "must": [
-                                {"match": {"nearby_poi.name": poi_name}},
-                                {"range": {"nearby_poi.distance_miles": {"lte": max_distance}}}
-                            ]
+                            "should": [
+                                {"match": {"nearby_poi.name": {"query": poi_name, "boost": 2.0}}},
+                                {"match": {"nearby_poi.description": poi_name}},
+                                {"match": {"nearby_poi.category": poi_name}}
+                            ],
+                            "minimum_should_match": 1
                         }
                     },
+                    "score_mode": "max",
                     "inner_hits": {
                         "size": 5,
-                        "sort": [
-                            {"nearby_poi.distance_miles": {"order": "asc"}}
-                        ]
+                        "_source": ["nearby_poi.name", "nearby_poi.category", "nearby_poi.significance_score"]
                     }
                 }
             },
             "sort": [
                 {
-                    "nearby_poi.distance_miles": {
-                        "order": "asc",
+                    "nearby_poi.significance_score": {
+                        "order": "desc",
                         "nested": {
                             "path": "nearby_poi",
                             "filter": {
-                                "match": {"nearby_poi.name": poi_name}
+                                "bool": {
+                                    "should": [
+                                        {"match": {"nearby_poi.name": poi_name}},
+                                        {"match": {"nearby_poi.description": poi_name}},
+                                        {"match": {"nearby_poi.category": poi_name}}
+                                    ]
+                                }
                             }
                         }
                     }
                 }
-            ]
-        }
-    
-    def _build_historical_query(
-        self,
-        query: str,
-        filters: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Build historical property search query."""
-        historical_keywords = ["historic", "heritage", "landmark", "victorian", "established"]
-        
-        return {
-            "query": {
-                "bool": {
-                    "should": [
-                        {"terms": {"location_context.key_topics": historical_keywords}},
-                        {"terms": {"neighborhood_context.key_topics": historical_keywords}},
-                        {"match": {"neighborhood_context.history": query}},
-                        {"range": {"neighborhood_context.establishment_year": {"lt": 1950}}},
-                        {
-                            "nested": {
-                                "path": "nearby_poi",
-                                "query": {
-                                    "term": {"nearby_poi.category": "landmark"}
-                                }
-                            }
-                        }
-                    ],
-                    "minimum_should_match": 2,
-                    "filter": self._build_filter_clauses(filters) if filters else []
-                }
-            },
-            "sort": [
-                {"location_scores.historical_importance": {"order": "desc"}},
-                "_score"
             ]
         }
     

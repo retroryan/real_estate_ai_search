@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Minimal CLI for unified ingestion.
+Minimal CLI for multi-entity ingestion.
 Usage: python -m real_estate_search.ingestion.main [--force-recreate]
 """
 
@@ -10,9 +10,9 @@ from pathlib import Path
 
 # Support both module and direct execution
 try:
-    from .orchestrator import UnifiedIngestionPipeline
+    from .orchestrator import IngestionOrchestrator
 except ImportError:
-    from orchestrator import UnifiedIngestionPipeline
+    from orchestrator import IngestionOrchestrator
 
 
 @click.command()
@@ -22,7 +22,7 @@ except ImportError:
 @click.option('--wiki-only', is_flag=True, help='Ingest only Wikipedia data')
 def main(config: str, force_recreate: bool, properties_only: bool, wiki_only: bool):
     """
-    Unified ingestion for Elasticsearch.
+    Multi-entity ingestion for Elasticsearch.
     
     This orchestrates existing components:
     - PropertyIndexer from real_estate_search
@@ -34,13 +34,13 @@ def main(config: str, force_recreate: bool, properties_only: bool, wiki_only: bo
         click.echo(f"❌ Config file not found: {config}")
         sys.exit(1)
     
-    click.echo(f"🚀 Starting unified ingestion")
+    click.echo(f"🚀 Starting multi-entity ingestion")
     click.echo(f"   Config: {config}")
     click.echo(f"   Force recreate: {force_recreate}")
     
     # Initialize pipeline
     try:
-        pipeline = UnifiedIngestionPipeline(config_path=config)
+        pipeline = IngestionOrchestrator(config_path=config)
     except Exception as e:
         click.echo(f"❌ Failed to initialize pipeline: {e}")
         sys.exit(1)
