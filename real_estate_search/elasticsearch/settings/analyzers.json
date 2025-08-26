@@ -1,0 +1,59 @@
+{
+  "number_of_shards": 1,
+  "number_of_replicas": 0,
+  "refresh_interval": "1s",
+  "analysis": {
+    "analyzer": {
+      "property_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "stop",
+          "snowball"
+        ]
+      },
+      "address_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      },
+      "feature_analyzer": {
+        "type": "custom",
+        "tokenizer": "keyword",
+        "filter": [
+          "lowercase"
+        ]
+      },
+      "wikipedia_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "stop",
+          "snowball",
+          "shingle"
+        ]
+      }
+    },
+    "normalizer": {
+      "lowercase_normalizer": {
+        "type": "custom",
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      }
+    },
+    "filter": {
+      "shingle": {
+        "type": "shingle",
+        "min_shingle_size": 2,
+        "max_shingle_size": 3
+      }
+    }
+  }
+}

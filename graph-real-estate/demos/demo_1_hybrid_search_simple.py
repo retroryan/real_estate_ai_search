@@ -98,8 +98,10 @@ def test_hybrid_search():
         
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
-        import traceback
-        traceback.print_exc()
+        print("\nPlease ensure:")
+        print("  1. Neo4j is running and accessible")
+        print("  2. Data has been loaded with data_pipeline")
+        print("  3. Relationships have been built")
     finally:
         close_neo4j_driver()
 

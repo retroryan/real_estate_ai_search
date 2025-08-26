@@ -3,7 +3,7 @@ import atexit
 import logging
 from typing import Optional
 from neo4j import GraphDatabase
-from config.settings import get_settings
+from ..config.settings import get_settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

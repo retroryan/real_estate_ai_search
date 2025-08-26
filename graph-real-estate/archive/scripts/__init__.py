@@ -1,1 +1,0 @@
-"""Scripts module for graph-real-estate system"""

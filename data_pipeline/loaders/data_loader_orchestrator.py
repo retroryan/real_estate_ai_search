@@ -8,7 +8,7 @@ and returns them as separate DataFrames for each entity type.
 import logging
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pyspark.sql import DataFrame, SparkSession
 
 from data_pipeline.config.models import PipelineConfig, DataSourceConfig
@@ -23,8 +23,7 @@ logger = logging.getLogger(__name__)
 class LoadedData(BaseModel):
     """Container for all loaded DataFrames."""
     
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     properties: Optional[DataFrame] = None
     neighborhoods: Optional[DataFrame] = None

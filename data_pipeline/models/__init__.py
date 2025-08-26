@@ -39,6 +39,16 @@ from data_pipeline.models.spark_models import (
     Relationship,
 )
 
+# Enrichment models
+from data_pipeline.models.enrichment import (
+    Landmark,
+    NearbyPOI,
+    LocationContext,
+    NeighborhoodContext,
+    EnrichmentData,
+    WikipediaEnrichmentResult,
+)
+
 __all__ = [
     # Statistics models
     "ValidationStats",
@@ -72,4 +82,12 @@ __all__ = [
     "Location",
     "WikipediaArticle",
     "Relationship",
+    
+    # Enrichment models
+    "Landmark",
+    "NearbyPOI",
+    "LocationContext",
+    "NeighborhoodContext",
+    "EnrichmentData",
+    "WikipediaEnrichmentResult",
 ]

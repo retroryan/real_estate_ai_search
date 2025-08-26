@@ -6,8 +6,8 @@ import logging
 from typing import Optional
 from neo4j import Driver
 
-from utils.database import run_query
-from relationships.config import RelationshipConfig
+from ..utils.database import run_query
+from .config import RelationshipConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,8 @@ class ClassificationRelationshipBuilder:
         MATCH (p:Property)
         WHERE p.features IS NOT NULL
         UNWIND p.features AS feature_name
-        MATCH (f:Feature {name: feature_name})
+        MATCH (f:Feature)
+        WHERE toLower(f.name) = toLower(feature_name)
         MERGE (p)-[:HAS_FEATURE]->(f)
         RETURN count(*) as count
         """
@@ -53,19 +54,26 @@ class ClassificationRelationshipBuilder:
         """
         Create TYPE_OF relationships between Properties and PropertyTypes.
         
+        Note: Properties have property_type field that should match PropertyType.id
+        after normalization (e.g., "single-family" -> "single_family").
+        
         Returns:
             Number of relationships created
         """
         query = """
         MATCH (p:Property)
-        WHERE p.property_type IS NOT NULL
-        MATCH (pt:PropertyType {name: p.property_type})
+        WHERE p.property_type_id IS NOT NULL OR p.property_type_cleaned IS NOT NULL
+        MATCH (pt:PropertyType)
+        WHERE pt.id = ('property_type:' + p.property_type_cleaned) 
+           OR pt.id = p.property_type_id 
+           OR pt.name = p.property_type_cleaned
+           OR pt.name = p.property_type_normalized
         MERGE (p)-[:TYPE_OF]->(pt)
         RETURN count(*) as count
         """
         
         if self.config.verbose:
-            logger.debug("Creating TYPE_OF relationships...")
+            logger.debug("Creating Property -> PropertyType TYPE_OF relationships...")
         
         result = run_query(self.driver, query)
         return result[0]["count"] if result else 0

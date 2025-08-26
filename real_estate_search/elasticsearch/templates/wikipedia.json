@@ -1,0 +1,70 @@
+{
+  "properties": {
+    "page_id": {
+      "type": "keyword"
+    },
+    "title": {
+      "type": "text",
+      "analyzer": "wikipedia_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "url": {
+      "type": "keyword",
+      "index": false,
+      "doc_values": false
+    },
+    "long_summary": {
+      "type": "text",
+      "analyzer": "wikipedia_analyzer"
+    },
+    "short_summary": {
+      "type": "text",
+      "analyzer": "wikipedia_analyzer"
+    },
+    "best_city": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "best_state": {
+      "type": "keyword"
+    },
+    "location": {
+      "type": "geo_point"
+    },
+    "key_topics": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "categories": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "article_quality": {
+      "type": "keyword"
+    },
+    "last_updated": {
+      "type": "date"
+    },
+    "relevance_score": {
+      "type": "float"
+    },
+    "embedding": {
+      "type": "dense_vector",
+      "dims": 1536,
+      "similarity": "cosine"
+    },
+    "embedding_model": {
+      "type": "keyword"
+    },
+    "embedding_dimension": {
+      "type": "integer"
+    },
+    "embedded_at": {
+      "type": "date"
+    }
+  }
+}
