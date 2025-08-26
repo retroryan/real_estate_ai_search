@@ -10,16 +10,17 @@ This package provides modular writers for different destinations:
 
 # Import orchestrators
 from .neo4j import Neo4jOrchestrator
-from .archive_elasticsearch import ElasticsearchOrchestrator
 from .orchestrator import WriterOrchestrator
 from .parquet_writer import ParquetWriter
 
 # Import base classes
 from .base import EntityWriter
 
+# Note: ElasticsearchOrchestrator moved to archive_elasticsearch
+# and will be replaced by search_pipeline module
+
 __all__ = [
     "Neo4jOrchestrator",
-    "ElasticsearchOrchestrator", 
     "WriterOrchestrator",
     "ParquetWriter",
     "EntityWriter",
