@@ -22,6 +22,23 @@ from squack_pipeline.models.property import (
     PropertyDetails,
 )
 from squack_pipeline.models.wikipedia import WikipediaArticle
+from squack_pipeline.models.embedding_models import (
+    EmbeddingMetadata,
+    EmbeddingNodeData,
+    EmbeddingBatch,
+)
+from squack_pipeline.models.processing_models import (
+    EntityType,
+    MedallionTier,
+    ProcessingStage,
+    TableIdentifier,
+    ProcessingContext,
+    ProcessingResult,
+    EntityProcessorConfig,
+    ProcessingPipeline,
+    create_property_processing_context,
+    create_standard_property_pipeline,
+)
 
 __all__ = [
     # Property models
@@ -44,4 +61,19 @@ __all__ = [
     "EnrichedProperty",
     "EnrichedNeighborhood",
     "PipelineOutput",
+    # Embedding models
+    "EmbeddingMetadata",
+    "EmbeddingNodeData", 
+    "EmbeddingBatch",
+    # Processing models
+    "EntityType",
+    "MedallionTier",
+    "ProcessingStage",
+    "TableIdentifier",
+    "ProcessingContext",
+    "ProcessingResult",
+    "EntityProcessorConfig",
+    "ProcessingPipeline",
+    "create_property_processing_context",
+    "create_standard_property_pipeline",
 ]

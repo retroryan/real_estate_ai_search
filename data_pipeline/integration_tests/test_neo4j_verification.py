@@ -250,7 +250,7 @@ class TestNeo4jVerification:
             assert counts[entity] > 0, f"Missing {entity} nodes - core data processing failed"
         
         print("\n✅ Database completeness verified")
-        print("   Relationships will be created separately with: python -m graph-real-estate build-relationships")
+        print("   Relationships will be created separately with: python -m graph_real_estate build-relationships")
     
     def print_database_summary(self):
         """Print a comprehensive summary of the database state."""
@@ -279,7 +279,7 @@ class TestNeo4jVerification:
         # Pipeline status
         print(f"\n🏗️ Pipeline Status: Nodes created successfully")
         print("   ✅ Ready for relationship creation")
-        print("   Next: python -m graph-real-estate build-relationships")
+        print("   Next: python -m graph_real_estate build-relationships")
         
         print("="*60)
 

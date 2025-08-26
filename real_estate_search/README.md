@@ -77,26 +77,6 @@ The `validate-embeddings` command is essential for semantic search functionality
 python -m real_estate_search.management validate-embeddings
 ```
 
-**Example output:**
-```
-Vector Embedding Validation Results:
-================================================================================
-Entity Type     Total Docs   With Embeddings   Percentage   Dimension   Model
---------------------------------------------------------------------------------
-properties           1,234            1,201        97.3%        1536   openai
-neighborhoods           87               84        96.6%        1536   openai
-wikipedia              456              456       100.0%        1536   openai
---------------------------------------------------------------------------------
-TOTAL                1,777            1,741        97.9%
-================================================================================
-✓ Vector embedding validation PASSED - All entity types have sufficient embeddings
-```
-
-**Success Criteria:**
-- ✅ **PASSED**: ≥95% embedding coverage
-- ⚠️ **PARTIAL**: 80-94% embedding coverage  
-- ❌ **FAILED**: <80% embedding coverage
-
 ### Required Environment Variables
 
 ```bash

@@ -8,6 +8,7 @@ from llama_index.core.schema import TextNode
 
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.writers.parquet_writer import ParquetWriter
+from squack_pipeline.models import EmbeddingBatch, EmbeddingMetadata
 from squack_pipeline.utils.logging import PipelineLogger, log_execution_time
 
 
@@ -279,3 +280,123 @@ class EmbeddingWriter(ParquetWriter):
         """
         # Partition embeddings by city for locality
         return ["city"]
+    
+    @log_execution_time
+    def write_embedding_batch(
+        self,
+        nodes: List[TextNode],
+        output_path: Path,
+        provider: str,
+        model: str,
+        processing_time: float,
+        chunk_method: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        batch_size: int = 50
+    ) -> Path:
+        """Write embedded nodes using Pydantic models for validation.
+        
+        Args:
+            nodes: List of TextNodes with embeddings
+            output_path: Path where the Parquet file should be written  
+            provider: Embedding provider name
+            model: Model name used
+            processing_time: Processing time in seconds
+            chunk_method: Text chunking method used
+            chunk_size: Chunk size if chunking was used
+            batch_size: Batch size used for processing
+            
+        Returns:
+            Path to the written Parquet file
+        """
+        if not self.connection:
+            raise RuntimeError("No DuckDB connection available")
+            
+        if not nodes:
+            self.logger.warning("No nodes to write")
+            return output_path
+        
+        # Create Pydantic embedding batch
+        embedding_batch = EmbeddingBatch.from_text_nodes(
+            nodes=nodes,
+            provider=provider,
+            model=model,
+            processing_time=processing_time,
+            chunk_method=chunk_method,
+            chunk_size=chunk_size,
+            batch_size=batch_size
+        )
+        
+        # Ensure output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Convert to Parquet-ready data
+        parquet_data = embedding_batch.to_parquet_data()
+        
+        # Create temporary table
+        temp_table = f"temp_embeddings_{int(np.random.rand() * 1e9)}"
+        
+        try:
+            # Create table with proper schema
+            create_sql = f"""
+            CREATE TABLE {temp_table} (
+                node_id VARCHAR,
+                text VARCHAR,
+                embedding JSON,
+                source_id VARCHAR,
+                source_type VARCHAR,
+                chunk_index INTEGER,
+                created_at VARCHAR,
+                metadata VARCHAR
+            )
+            """
+            self.connection.execute(create_sql)
+            
+            # Insert data
+            for i in range(len(parquet_data['node_id'])):
+                insert_sql = f"""
+                INSERT INTO {temp_table} VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                )
+                """
+                self.connection.execute(insert_sql, [
+                    parquet_data['node_id'][i],
+                    parquet_data['text'][i],
+                    json.dumps(parquet_data['embedding'][i]) if parquet_data['embedding'][i] else None,
+                    parquet_data['source_id'][i],
+                    parquet_data['source_type'][i],
+                    parquet_data['chunk_index'][i],
+                    parquet_data['created_at'][i],
+                    parquet_data['metadata'][i]
+                ])
+            
+            # Write to Parquet
+            compression = self.settings.parquet.compression.value if hasattr(self.settings.parquet.compression, 'value') else str(self.settings.parquet.compression)
+            copy_sql = f"""
+            COPY (SELECT * FROM {temp_table})
+            TO '{output_path}' 
+            (FORMAT PARQUET, COMPRESSION '{compression}')
+            """
+            self.connection.execute(copy_sql)
+            
+            # Update metadata with file info
+            file_size = output_path.stat().st_size if output_path.exists() else 0
+            embedding_batch.metadata.output_file_path = str(output_path)
+            embedding_batch.metadata.file_size_bytes = file_size
+            
+            # Write metadata file
+            metadata_path = output_path.with_suffix('.metadata.json')
+            embedding_batch.save_metadata(metadata_path)
+            
+            self.logger.success(f"Wrote {len(nodes)} embedded nodes to {output_path}")
+            self.logger.info(f"File size: {file_size / (1024*1024):.2f} MB")
+            self.logger.info(f"Embedding dimensions: {embedding_batch.metadata.dimension}")
+            self.logger.info(f"Success rate: {embedding_batch.metadata.success_rate:.2%}")
+            
+            return output_path
+            
+        finally:
+            # Clean up temporary table
+            try:
+                self.connection.execute(f"DROP TABLE IF EXISTS {temp_table}")
+            except Exception as e:
+                self.logger.warning(f"Failed to cleanup temporary table: {e}")

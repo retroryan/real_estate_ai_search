@@ -77,7 +77,7 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 
 ---
 
-### [3. Neo4j GraphRAG Real Estate Search](./graph-real-estate/)
+### [3. Neo4j GraphRAG Real Estate Search](./graph_real_estate/)
 **Purpose**: Neo4j-based GraphRAG system for intelligent property and Wikipedia search with knowledge graph relationships  
 **Key Features**:
 - **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
@@ -126,7 +126,7 @@ This project leverages an extensive suite of cutting-edge generative AI framewor
 
 | System | Purpose | Modules Using It |
 |--------|---------|-----------------|
-| **Neo4j** | Graph database with native vector indexing for GraphRAG, hybrid search, and relationship-aware retrieval | `graph-real-estate` |
+| **Neo4j** | Graph database with native vector indexing for GraphRAG, hybrid search, and relationship-aware retrieval | `graph_real_estate` |
 | **Elasticsearch** | Hybrid text/vector search, RAG retrieval layer | `real_estate_search`, `wiki_embed` |
 | **ChromaDB** | Vector database for embedding storage and similarity search | `real_estate_embed`, `wiki_embed` |
 | **SQLite** | Lightweight relational database for article metadata | `wiki_crawl`, `wiki_summary` |
@@ -247,7 +247,7 @@ real_estate_ai_search/
 │   ├── enrichment/         # Enrichment processors
 │   └── outputs/            # Output writers
 │
-├── graph-real-estate/        # Neo4j GraphRAG module
+├── graph_real_estate/        # Neo4j GraphRAG module
 │   ├── src/                # Source code
 │   │   ├── models/        # Pydantic models
 │   │   ├── vectors/       # Embedding pipeline
@@ -296,7 +296,7 @@ docker-compose up -d
 python -m data_pipeline --output-destination neo4j
 
 # 3. Test hybrid search
-python graph-real-estate/search_properties.py "modern condo with city views" --demo
+python graph_real_estate/search_properties.py "modern condo with city views" --demo
 ```
 
 ### Elasticsearch RAG Pipeline

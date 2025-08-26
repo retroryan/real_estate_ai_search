@@ -5,12 +5,17 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 from squack_pipeline.config.settings import PipelineSettings
-from squack_pipeline.config.schemas import MedallionTier
+# from squack_pipeline.config.schemas import MedallionTier  # Using MedallionTier from processing_models instead
 from squack_pipeline.loaders.connection import DuckDBConnectionManager
 from squack_pipeline.loaders.property_loader import PropertyLoader
 from squack_pipeline.processors.silver_processor import SilverProcessor
 from squack_pipeline.processors.gold_processor import GoldProcessor
 from squack_pipeline.processors.geographic_enrichment import GeographicEnrichmentProcessor
+from squack_pipeline.processors.entity_processor import PropertyProcessor
+from squack_pipeline.models import (
+    EntityType, MedallionTier, ProcessingStage, ProcessingContext,
+    TableIdentifier, create_standard_property_pipeline, ProcessingResult
+)
 from squack_pipeline.embeddings.pipeline import EmbeddingPipeline
 from squack_pipeline.writers.parquet_writer import ParquetWriter
 from squack_pipeline.writers.embedding_writer import EmbeddingWriter
@@ -46,6 +51,10 @@ class PipelineOrchestrator:
         self.gold_processor: Optional[GoldProcessor] = None
         self.geo_enrichment: Optional[GeographicEnrichmentProcessor] = None
         self.embedding_pipeline: Optional[EmbeddingPipeline] = None
+        
+        # Initialize type-safe entity processors
+        self.property_processor: Optional[PropertyProcessor] = None
+        self.processing_pipeline = create_standard_property_pipeline()
         
         # Initialize writers
         self.parquet_writer: Optional[ParquetWriter] = None
@@ -120,6 +129,10 @@ class PipelineOrchestrator:
         
         self.geo_enrichment = GeographicEnrichmentProcessor(self.settings)
         self.geo_enrichment.set_connection(connection)
+        
+        # Initialize type-safe property processor
+        self.property_processor = PropertyProcessor(self.settings)
+        self.property_processor.set_connection(connection)
         
         # Initialize embedding pipeline if enabled
         if self.settings.processing.generate_embeddings:
@@ -207,26 +220,65 @@ class PipelineOrchestrator:
             return
         
         try:
-            # Process properties from bronze to silver
-            bronze_table = "raw_properties"
-            silver_table = f"properties_silver_{int(time.time())}"
+            # Type-safe processing from Bronze to Silver
+            timestamp = int(time.time())
+            batch_id = f"property_batch_{timestamp}"
             
-            if self.silver_processor.process(bronze_table, silver_table):
-                record_count = self.silver_processor.count_records(silver_table)
-                self.metrics["silver_records"] = record_count
+            # Create type-safe processing context
+            context = ProcessingContext(
+                entity_type=EntityType.PROPERTY,
+                source_tier=self.processing_pipeline.processing_stages[0].source_tier,
+                target_tier=self.processing_pipeline.processing_stages[0].target_tier,
+                processing_stage=ProcessingStage.CLEANING,
+                source_table=TableIdentifier(
+                    entity_type=EntityType.PROPERTY,
+                    tier=self.processing_pipeline.processing_stages[0].source_tier,
+                    timestamp=timestamp
+                ),
+                target_table=TableIdentifier(
+                    entity_type=EntityType.PROPERTY,
+                    tier=self.processing_pipeline.processing_stages[0].target_tier,
+                    timestamp=timestamp
+                ),
+                batch_id=batch_id,
+                record_limit=self.settings.data.sample_size
+            )
+            
+            # Create a custom source table identifier for compatibility with existing bronze loader
+            # We need to bypass the property-generated table_name for the raw table
+            source_table_id = TableIdentifier(
+                entity_type=EntityType.PROPERTY,
+                tier=MedallionTier.BRONZE,
+                timestamp=0  # Special timestamp for raw table
+            )
+            
+            # Update context with the custom source table identifier
+            context.source_table = source_table_id
+            
+            # Execute type-safe processing
+            result = self.property_processor.process_entity(context)
+            
+            if result.success:
+                self.metrics["silver_records"] = result.records_created
                 self.metrics["tables_created"] += 1
                 
                 # Track table for recovery
-                self.state_manager.record_table("silver", silver_table)
+                self.state_manager.record_table("silver", context.target_table.table_name)
                 
-                # Merge metrics from processor
-                processor_metrics = self.silver_processor.get_metrics()
-                quality_score = processor_metrics.get("data_quality_score", 0.0)
+                self.logger.success(
+                    f"Type-safe processing: {result.records_processed} → {result.records_created} records "
+                    f"(Quality: {result.data_quality_score:.2%}, "
+                    f"Completeness: {result.completeness_score:.2%})"
+                )
                 
-                self.logger.success(f"Processed {record_count} records to Silver tier")
-                self.logger.info(f"Data quality score: {quality_score:.2%}")
+                # Log warnings if any
+                for warning in result.warnings:
+                    self.logger.warning(warning)
             else:
-                self.logger.error("Silver tier processing failed")
+                self.logger.error(f"Type-safe Silver processing failed: {result.error_message}")
+                if result.validation_errors:
+                    for error in result.validation_errors:
+                        self.logger.error(f"Validation error: {error}")
                 
         except Exception as e:
             self.logger.error(f"Silver tier processing error: {e}")
@@ -240,41 +292,79 @@ class PipelineOrchestrator:
         
         self.logger.info("Processing Gold tier (data enrichment)")
         
-        if not self.gold_processor:
-            self.logger.error("Gold processor not initialized")
+        if not hasattr(self, 'property_processor') or not self.property_processor:
+            self.logger.error("Property processor not initialized")
             return
         
         try:
-            # Get the latest Silver table
+            # Get the latest Silver table using type-safe naming
             connection = self.connection_manager.get_connection()
             result = connection.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_silver_%' ORDER BY table_name DESC LIMIT 1"
+                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_silver_%' ORDER BY table_name DESC LIMIT 1"
             ).fetchone()
             
             if not result:
                 self.logger.error("No Silver tier table found")
                 return
             
-            silver_table = result[0]
-            gold_table = f"properties_gold_{int(time.time())}"
+            silver_table_name = result[0]
             
-            if self.gold_processor.process(silver_table, gold_table):
-                record_count = self.gold_processor.count_records(gold_table)
-                self.metrics["gold_records"] = record_count
+            # Parse the table name to get timestamp
+            try:
+                # Extract timestamp from property_silver_{timestamp}
+                timestamp_str = silver_table_name.split('_')[-1]
+                timestamp = int(timestamp_str)
+            except (IndexError, ValueError):
+                timestamp = int(time.time())
+            
+            # Create type-safe processing context for Silver -> Gold
+            batch_id = f"property_batch_{timestamp}"
+            context = ProcessingContext(
+                entity_type=EntityType.PROPERTY,
+                source_tier=MedallionTier.SILVER,
+                target_tier=MedallionTier.GOLD,
+                processing_stage=ProcessingStage.ENRICHMENT,
+                source_table=TableIdentifier(
+                    entity_type=EntityType.PROPERTY,
+                    tier=MedallionTier.SILVER,
+                    timestamp=timestamp
+                ),
+                target_table=TableIdentifier(
+                    entity_type=EntityType.PROPERTY,
+                    tier=MedallionTier.GOLD,
+                    timestamp=timestamp
+                ),
+                batch_id=batch_id,
+                record_limit=self.settings.data.sample_size
+            )
+            
+            # Execute type-safe processing
+            result = self.property_processor.process_entity(context)
+            
+            if result.success:
+                self.metrics["gold_records"] = result.records_created
                 self.metrics["tables_created"] += 1
                 
                 # Track table for recovery
-                self.state_manager.record_table("gold", gold_table)
+                self.state_manager.record_table("gold", context.target_table.table_name)
                 
-                # Merge metrics from processor
-                processor_metrics = self.gold_processor.get_metrics()
-                enrichment_completeness = processor_metrics.get("enrichment_completeness", 0.0)
-                self.metrics["enrichment_completeness"] = enrichment_completeness
+                # Calculate enrichment completeness from result
+                self.metrics["enrichment_completeness"] = result.completeness_score
                 
-                self.logger.success(f"Processed {record_count} records to Gold tier")
-                self.logger.info(f"Enrichment completeness: {enrichment_completeness:.2%}")
+                self.logger.success(
+                    f"Type-safe Gold processing: {result.records_processed} → {result.records_created} records "
+                    f"(Quality: {result.data_quality_score:.2%}, "
+                    f"Completeness: {result.completeness_score:.2%})"
+                )
+                
+                # Log warnings if any
+                for warning in result.warnings:
+                    self.logger.warning(warning)
             else:
-                self.logger.error("Gold tier processing failed")
+                self.logger.error(f"Type-safe Gold processing failed: {result.error_message}")
+                if result.validation_errors:
+                    for error in result.validation_errors:
+                        self.logger.error(f"Validation error: {error}")
                 
         except Exception as e:
             self.logger.error(f"Gold tier processing error: {e}")
@@ -475,25 +565,30 @@ class PipelineOrchestrator:
                 else:
                     self.logger.warning("Output validation failed")
             
-            # Write embeddings if available
+            # Write embeddings if available using Pydantic models
             if self.embedded_nodes and self.embedding_writer:
                 embeddings_filename = f"embeddings_{self.settings.environment}_{timestamp}.parquet"
                 embeddings_path = self.settings.data.output_path / embeddings_filename
                 
-                self.embedding_writer.write_embedded_nodes(
-                    self.embedded_nodes,
-                    embeddings_path,
-                    include_embeddings=True
+                # Get embedding pipeline metrics for Pydantic model
+                embedding_metrics = self.embedding_pipeline.get_pipeline_metrics() if self.embedding_pipeline else {}
+                
+                provider_name = self.settings.embedding.provider.value if hasattr(self.settings.embedding.provider, 'value') else str(self.settings.embedding.provider)
+                chunk_method_name = self.settings.processing.chunk_method.value if hasattr(self.settings.processing.chunk_method, 'value') else str(self.settings.processing.chunk_method)
+                model_name = getattr(self.settings.embedding, f"{provider_name}_model", "unknown")
+                
+                self.embedding_writer.write_embedding_batch(
+                    nodes=self.embedded_nodes,
+                    output_path=embeddings_path,
+                    provider=provider_name,
+                    model=model_name,
+                    processing_time=embedding_metrics.get("processing_time", 0.0),
+                    chunk_method=chunk_method_name,
+                    chunk_size=self.settings.processing.chunk_size,
+                    batch_size=self.settings.processing.batch_size
                 )
                 
-                # Write embedding metadata
-                metadata_path = embeddings_path.with_suffix('.metadata.json')
-                self.embedding_writer.write_embedding_metadata(
-                    self.embedded_nodes,
-                    metadata_path
-                )
-                
-                self.logger.success(f"Wrote embeddings to {embeddings_path}")
+                self.logger.success(f"Wrote embeddings with Pydantic validation to {embeddings_path}")
                 self.metrics["embedding_files"] = 1
             
             # Get output statistics

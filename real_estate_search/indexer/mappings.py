@@ -11,14 +11,40 @@ from pathlib import Path
 
 def get_property_mappings() -> Dict[str, Any]:
     """
-    Get index mappings including Wikipedia enrichment fields.
+    Get property index mappings including Wikipedia enrichment fields.
     
     Returns:
-        Dictionary containing settings and mappings for Wikipedia-enriched index.
+        Dictionary containing settings and mappings for property index.
     """
     return {
         "settings": _load_index_settings(),
-        "mappings": _load_field_mappings()
+        "mappings": _load_field_mappings("properties.json")
+    }
+
+
+def get_neighborhood_mappings() -> Dict[str, Any]:
+    """
+    Get neighborhood index mappings.
+    
+    Returns:
+        Dictionary containing settings and mappings for neighborhood index.
+    """
+    return {
+        "settings": _load_index_settings(),
+        "mappings": _load_field_mappings("neighborhoods.json")
+    }
+
+
+def get_wikipedia_mappings() -> Dict[str, Any]:
+    """
+    Get Wikipedia index mappings.
+    
+    Returns:
+        Dictionary containing settings and mappings for Wikipedia index.
+    """
+    return {
+        "settings": _load_index_settings(),
+        "mappings": _load_field_mappings("wikipedia.json")
     }
 
 
@@ -33,14 +59,17 @@ def _load_index_settings() -> Dict[str, Any]:
     return _load_json_file(settings_path)
 
 
-def _load_field_mappings() -> Dict[str, Any]:
+def _load_field_mappings(template_file: str) -> Dict[str, Any]:
     """
     Load field mappings from JSON file.
+    
+    Args:
+        template_file: Name of the template file (e.g., "properties.json")
     
     Returns:
         Dictionary of field mappings.
     """
-    mappings_path = _get_templates_path("properties.json")
+    mappings_path = _get_templates_path(template_file)
     return _load_json_file(mappings_path)
 
 

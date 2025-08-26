@@ -75,7 +75,11 @@ class IndexManagementCLI:
             print("\n🗑️  Clearing existing indices for demo reset...")
             
             # Delete all managed indices
-            indices_to_delete = [IndexName.PROPERTIES, IndexName.TEST_PROPERTIES]
+            indices_to_delete = [
+                IndexName.PROPERTIES, IndexName.TEST_PROPERTIES,
+                IndexName.NEIGHBORHOODS, IndexName.TEST_NEIGHBORHOODS,
+                IndexName.WIKIPEDIA, IndexName.TEST_WIKIPEDIA
+            ]
             for index_name in indices_to_delete:
                 try:
                     if self.es_client.client.indices.exists(index=index_name):

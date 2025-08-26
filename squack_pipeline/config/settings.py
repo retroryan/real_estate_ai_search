@@ -5,9 +5,15 @@ import yaml
 from enum import Enum
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load environment variables from parent .env file if it exists
+parent_env = Path(__file__).parent.parent.parent / '.env'
+if parent_env.exists():
+    load_dotenv(parent_env)
 
 
 class EmbeddingProvider(str, Enum):
@@ -59,7 +65,7 @@ class ParquetConfig(BaseSettings):
 class EmbeddingConfig(BaseModel):
     """Embedding generation configuration following common_embeddings patterns."""
     
-    provider: EmbeddingProvider = Field(default=EmbeddingProvider.MOCK, description="Embedding provider")
+    provider: EmbeddingProvider = Field(default=EmbeddingProvider.VOYAGE, description="Embedding provider")
     
     # Voyage AI settings
     voyage_api_key: Optional[str] = Field(default=None, description="Voyage API key (from env var)")
@@ -120,7 +126,7 @@ class DataConfig(BaseSettings):
     )
     
     input_path: Path = Field(default=Path("real_estate_data"), description="Input data directory")
-    output_path: Path = Field(default=Path("output"), description="Output directory")
+    output_path: Path = Field(default=Path("squack_pipeline_output"), description="Output directory")
     properties_file: str = Field(default="properties_sf.json", description="Properties JSON file")
     neighborhoods_file: str = Field(default="neighborhoods_sf.json", description="Neighborhoods JSON file")
     locations_file: str = Field(default="locations.json", description="Locations JSON file")
