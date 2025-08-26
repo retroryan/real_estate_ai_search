@@ -34,7 +34,7 @@ embedding:
 output:
   enabled_destinations:
     - parquet
-    # - neo4j  # Uncomment when Neo4j Spark connector is installed
+    - neo4j
     # - elasticsearch
   
   parquet:

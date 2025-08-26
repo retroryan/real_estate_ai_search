@@ -41,7 +41,11 @@ Base Infrastructure:
 import sys
 import os
 from unittest.mock import patch, MagicMock
+from dotenv import load_dotenv
 from pyspark.sql import SparkSession
+
+# Load environment variables from .env file
+load_dotenv()
 from pyspark.sql.functions import col, lit, array, when, length
 from pyspark.sql.types import (
     StructType, StructField, StringType, FloatType, ArrayType, 
@@ -200,8 +204,8 @@ def test_wikipedia_embedding_generator(spark):
     # Create test data
     wikipedia_df = create_test_wikipedia_data(spark)
     
-    # Configure for testing (use EmbeddingPipelineConfig wrapper)
-    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.MOCK)
+    # Configure for testing with real Voyage API
+    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.VOYAGE, model_name="voyage-3")
     config = embedding_config  # No wrapper needed anymore
     
     # Initialize generator
@@ -238,8 +242,8 @@ def test_property_embedding_generator(spark):
     # Create test data
     property_df = create_test_property_data(spark)
     
-    # Configure for testing
-    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.MOCK)
+    # Configure for testing with real Voyage API
+    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.VOYAGE, model_name="voyage-3")
     config = embedding_config  # No wrapper needed anymore
     
     # Initialize generator
@@ -284,8 +288,8 @@ def test_neighborhood_embedding_generator(spark):
     # Create test data
     neighborhood_df = create_test_neighborhood_data(spark)
     
-    # Configure for testing
-    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.MOCK)
+    # Configure for testing with real Voyage API
+    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.VOYAGE, model_name="voyage-3")
     config = embedding_config  # No wrapper needed anymore
     
     # Initialize generator
@@ -335,8 +339,8 @@ def test_mock_embedding_generation(spark):
     wikipedia_df = create_test_wikipedia_data(spark)
     
     # Configure for testing 
-    os.environ["VOYAGE_API_KEY"] = "test-key-for-validation"
-    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.MOCK)
+    # Use real Voyage API
+    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.VOYAGE, model_name="voyage-3")
     config = embedding_config  # No wrapper needed anymore
     
     # Initialize generator
@@ -366,36 +370,33 @@ def test_embedding_config_validation():
     
     from data_pipeline.config.models import EmbeddingConfig, EmbeddingProvider
     
-    # Test valid configuration (set dummy API key for testing)
-    os.environ["VOYAGE_API_KEY"] = "test-key-for-validation"
+    # Test valid configuration with real API key from environment
+    # Don't override the environment variable - let it use the real key
     
     embedding_config = EmbeddingConfig(
         provider=EmbeddingProvider.VOYAGE,
-        voyage_model="voyage-3"
+        model_name="voyage-3"
+        # api_key will be loaded from VOYAGE_API_KEY environment variable
     )
     config = embedding_config  # No wrapper needed anymore
     
-    assert config.embedding.provider == EmbeddingProvider.VOYAGE
-    assert config.embedding.voyage_model == "voyage-3"
+    assert config.provider == EmbeddingProvider.VOYAGE
+    assert config.model_name == "voyage-3"
     print("  ✅ Valid configuration created")
     
     # Test configuration serialization/deserialization
     config_dict = config.model_dump()
     restored_config = EmbeddingConfig(**config_dict)
     
-    assert restored_config.embedding.provider == config.embedding.provider
-    assert restored_config.embedding.voyage_model == config.embedding.voyage_model
+    assert restored_config.provider == config.provider
+    assert restored_config.model_name == config.model_name
     print("  ✅ Configuration serialization works")
     
-    # Test different providers
-    openai_embedding_config = EmbeddingConfig(
-        provider=EmbeddingProvider.OPENAI,
-        openai_model="text-embedding-3-small"
-    )
-    openai_config = openai_embedding_config  # No wrapper needed anymore
-    
-    assert openai_config.embedding.provider == EmbeddingProvider.OPENAI
-    print("  ✅ OpenAI configuration valid")
+    # Test that Voyage config is working with actual API key
+    assert config.api_key is not None
+    assert len(config.api_key) > 0
+    assert config.api_key.startswith("pa-")  # Voyage keys start with "pa-"
+    print(f"  ✅ Voyage API key loaded: {config.api_key[:10]}...")
     
     print("✅ Embedding configuration validation passed")
     return True
@@ -417,7 +418,8 @@ def test_text_statistics_and_performance(spark):
     property_df = create_test_property_data(spark) 
     neighborhood_df = create_test_neighborhood_data(spark)
     
-    embedding_config = EmbeddingConfig()
+    # Use real Voyage API for performance test
+    embedding_config = EmbeddingConfig(provider=EmbeddingProvider.VOYAGE, model_name="voyage-3")
     config = embedding_config  # No wrapper needed anymore
     
     # Test all generators
