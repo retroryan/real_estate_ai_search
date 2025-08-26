@@ -275,21 +275,51 @@ class ElasticsearchIndexManager:
             # Get current mappings
             current_mappings = self.client.indices.get_mapping(index=index_name)
             index_mapping = current_mappings[index_name]["mappings"]
-            
-            # Get expected mappings
-            expected_config = get_property_mappings()
-            expected_mappings = expected_config["mappings"]
-            
-            # Compare key fields (simplified validation)
-            expected_properties = expected_mappings.get("properties", {})
             current_properties = index_mapping.get("properties", {})
             
+            # Determine which type of index and validate accordingly
+            if "properties" in index_name.lower():
+                # Properties index validation
+                expected_config = get_property_mappings()
+                expected_mappings = expected_config["mappings"]
+                core_fields = ["listing_id", "property_type", "price"]
+                
+            elif "neighborhoods" in index_name.lower():
+                # Neighborhoods index validation  
+                expected_config = get_neighborhood_mappings()
+                expected_mappings = expected_config["mappings"]
+                core_fields = ["id", "name", "city"]
+                
+            elif "wikipedia" in index_name.lower():
+                # Wikipedia index validation
+                expected_config = get_wikipedia_mappings()
+                expected_mappings = expected_config["mappings"]
+                core_fields = ["page_id", "title", "url"]
+                
+            else:
+                self.logger.warning(f"Unknown index type for {index_name}, skipping validation")
+                return True
+            
             # Check that all expected core fields exist
-            core_fields = ["listing_id", "property_type", "price", "address"]
             for field in core_fields:
                 if field not in current_properties:
                     self.logger.error(f"Missing core field {field} in index {index_name}")
                     return False
+            
+            # Check that embedding field exists (all indices should have this)
+            if "embedding" not in current_properties:
+                self.logger.error(f"Missing embedding field in index {index_name}")
+                return False
+                
+            # Validate embedding field configuration
+            embedding_field = current_properties.get("embedding", {})
+            if embedding_field.get("type") != "dense_vector":
+                self.logger.error(f"Embedding field type incorrect in index {index_name}")
+                return False
+                
+            if embedding_field.get("dims") != 1536:
+                self.logger.error(f"Embedding dimensions incorrect in index {index_name}")
+                return False
             
             self.logger.info(f"Index {index_name} mappings validation passed")
             return True
