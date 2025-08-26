@@ -30,12 +30,18 @@ embedding:
   batch_size: 10  # Smaller batch size for API rate limits
   dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
 
+# Pipeline Fork Configuration
+fork:
+  enabled_paths:
+    # - graph
+    - search  # Uncomment to enable search path
+
 # Output Configuration
 output:
   enabled_destinations:
     - parquet
-    - neo4j
-    # - elasticsearch
+    # - neo4j
+    - elasticsearch
   
   parquet:
     base_path: data/processed

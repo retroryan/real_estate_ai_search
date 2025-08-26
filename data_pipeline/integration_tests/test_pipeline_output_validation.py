@@ -31,12 +31,15 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class") 
     def pipeline_settings(self, temp_output_dir):
         """Create test settings with temporary output directory."""
+        from data_pipeline.config.models import EmbeddingProvider
+        
         # Load configuration with test settings
         config = load_configuration(sample_size=10)
         
-        # Override output path to use temporary directory
+        # Override for testing
         config.output.enabled_destinations = ["parquet"]
         config.output.parquet.base_path = temp_output_dir
+        config.embedding.provider = EmbeddingProvider.MOCK  # Use mock for tests
         
         return config
     
@@ -67,9 +70,9 @@ class TestPipelineOutputValidation:
         return {
             "output_dir": output_dir,
             "expected_files": {
-                "properties": output_dir / "properties.parquet",
-                "neighborhoods": output_dir / "neighborhoods.parquet", 
-                "wikipedia": output_dir / "wikipedia.parquet"
+                "properties": output_dir / "properties",
+                "neighborhoods": output_dir / "neighborhoods", 
+                "wikipedia": output_dir / "wikipedia"
             }
         }
     
@@ -84,11 +87,12 @@ class TestPipelineOutputValidation:
         expected_files = pipeline_output["expected_files"]
         
         for entity_type, file_path in expected_files.items():
-            assert file_path.exists(), f"Parquet file not created for {entity_type}: {file_path}"
-            assert file_path.is_file(), f"Path exists but is not a file: {file_path}"
+            assert file_path.exists(), f"Parquet directory not created for {entity_type}: {file_path}"
+            assert file_path.is_dir(), f"Path exists but is not a directory: {file_path}"
             
-            # Check that file is not empty
-            assert file_path.stat().st_size > 0, f"Parquet file is empty: {file_path}"
+            # Check that directory has parquet files
+            parquet_files = list(file_path.glob("*.parquet"))
+            assert len(parquet_files) > 0, f"No parquet files in directory: {file_path}"
     
     def test_parquet_files_readable(self, pipeline_output, spark_session):
         """Test that all Parquet files can be read successfully."""
@@ -215,7 +219,8 @@ class TestPipelineOutputValidation:
                 "null_embedding_text": df.filter(df.embedding_text.isNull()).count(),
                 "empty_embedding_text": df.filter((df.embedding_text == "") | (df.embedding_text.isNull())).count(),
                 "null_embeddings": df.filter(df.embedding.isNull()).count(),
-                "has_correlation_id": df.filter(df[f"{entity_type.rstrip('s')}_correlation_id"].isNotNull()).count()
+                # Handle different entity types for correlation ID column names
+                "has_correlation_id": df.filter(df[f"{entity_type[:-1] if entity_type.endswith('s') else entity_type}_correlation_id"].isNotNull()).count() if entity_type != "wikipedia" else df.filter(df["article_correlation_id"].isNotNull()).count()
             }
             
             # Calculate quality percentages
