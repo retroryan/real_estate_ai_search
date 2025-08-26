@@ -22,6 +22,7 @@ class EntityType(str, Enum):
     FEATURE = "feature"
     PROPERTY_TYPE = "property_type"
     PRICE_RANGE = "price_range"
+    ZIP_CODE = "zip_code"
     COUNTY = "county"
     CITY = "city"
     STATE = "state"

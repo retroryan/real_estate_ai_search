@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class SearchResult:
     """Hybrid search result combining vector and graph data"""
     listing_id: str
-    address: Optional[str]
+    street: Optional[str]
     listing_price: float
     vector_score: float
     graph_score: float
@@ -28,7 +28,7 @@ class SearchResult:
 class PropertyResult(BaseModel):
     """Property search result model"""
     listing_id: str = Field(..., description="Property listing ID")
-    address: Optional[str] = Field(None, description="Street address")
+    street: Optional[str] = Field(None, description="Street address")
     listing_price: float = Field(..., description="Property listing price")
     neighborhood: str = Field(..., description="Neighborhood name")
     city: str = Field(..., description="City name")
@@ -46,7 +46,7 @@ class PropertyResult(BaseModel):
 class SearchResult(BaseModel):
     """Hybrid search result with scoring"""
     listing_id: str = Field(..., description="Property listing ID")
-    address: Optional[str] = Field(None, description="Street address")
+    street: Optional[str] = Field(None, description="Street address")
     listing_price: float = Field(..., description="Property listing price")
     vector_score: float = Field(0.0, description="Vector similarity score")
     graph_score: float = Field(0.0, description="Graph-based score")

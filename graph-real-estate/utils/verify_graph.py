@@ -1,5 +1,5 @@
 """Verify the graph after Phases 1-3"""
-from database import get_neo4j_driver, run_query, close_neo4j_driver
+from ..database import get_neo4j_driver, run_query, close_neo4j_driver
 
 def verify_graph():
     """Verify the complete graph state"""

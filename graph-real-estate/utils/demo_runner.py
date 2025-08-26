@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from .models import DemoConfig
 from .database import run_query
 from .demo_registry import DEMO_REGISTRY, DemoType, DemoEntryPoint
-from demos.models import (
+from ..demos.models import (
     RelationshipCount,
     GeographicHierarchy, 
     FeatureCount,
@@ -25,7 +25,7 @@ from demos.models import (
 
 class PropertySample(BaseModel):
     """Sample property data model"""
-    address: Optional[str] = Field(None, description="Property address")
+    street: Optional[str] = Field(None, description="Street address")
     price: float = Field(0.0, description="Listing price")
     beds: int = Field(0, description="Number of bedrooms")
     baths: float = Field(0.0, description="Number of bathrooms")
@@ -189,7 +189,7 @@ class SimpleDemoRunner:
         print("\nSample Properties:")
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
-        RETURN p.address as address, 
+        RETURN p.street as address, 
                p.listing_price as price,
                p.bedrooms as beds,
                p.bathrooms as baths,
@@ -324,7 +324,7 @@ class SimpleDemoRunner:
         """Section 4: Wikipedia integration"""
         print("📊 SECTION 4: WIKIPEDIA INTEGRATION\n")
         
-        query = "MATCH (w:Wikipedia) RETURN count(w) as count"
+        query = "MATCH (w:WikipediaArticle) RETURN count(w) as count"
         result = run_query(self.driver, query)
         wiki_count = result[0]['count'] if result else 0
         
@@ -333,9 +333,9 @@ class SimpleDemoRunner:
             
             print("\nWikipedia Article Types:")
             query = """
-            MATCH (w:Wikipedia)
-            WHERE w.relationship_type IS NOT NULL
-            RETURN w.relationship_type as type, count(w) as count
+            MATCH (w:WikipediaArticle)
+            WHERE w.content_category IS NOT NULL
+            RETURN w.content_category as type, count(w) as count
             ORDER BY count DESC
             LIMIT 3
             """
@@ -351,7 +351,7 @@ class SimpleDemoRunner:
             
             print("\nTop Neighborhoods with Wikipedia:")
             query = """
-            MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:Wikipedia)
+            MATCH (n:Neighborhood)<-[:DESCRIBES]-(w:WikipediaArticle)
             RETURN n.name as neighborhood, count(w) as articles
             ORDER BY articles DESC
             LIMIT 3
@@ -395,7 +395,7 @@ class SimpleDemoRunner:
         MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)
         WITH p, count(f) as feature_count
         WHERE feature_count >= 5
-        RETURN p.address as address, p.listing_price as price, feature_count
+        RETURN p.street as address, p.listing_price as price, feature_count
         ORDER BY feature_count DESC
         LIMIT 3
         """

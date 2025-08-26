@@ -9,6 +9,9 @@ import os
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
+# Import existing embedding configuration - this MUST be available for embeddings to work
+from data_pipeline.config.models import EmbeddingConfig
+
 
 class BulkWriteConfig(BaseModel):
     """
@@ -208,6 +211,10 @@ class SearchPipelineConfig(BaseModel):
     validate_connection: bool = Field(
         default=True,
         description="Validate Elasticsearch connection before processing"
+    )
+    embedding_config: Optional[EmbeddingConfig] = Field(
+        default=None,
+        description="Embedding generation configuration (optional)"
     )
     
     @field_validator("enabled")

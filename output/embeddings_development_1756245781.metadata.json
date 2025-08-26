@@ -1,0 +1,11 @@
+{
+  "total_nodes": 5,
+  "embedded_nodes": 5,
+  "embedding_rate": 1.0,
+  "unique_properties": 5,
+  "average_dimension": 1024.0,
+  "embedding_provider": "mock",
+  "chunk_method": "semantic",
+  "chunk_size": 800,
+  "metadata_version": "1.0"
+}

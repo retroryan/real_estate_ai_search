@@ -1,0 +1,159 @@
+{
+  "property_mappings": {
+    "field_mappings": {
+      "zip": "zip_code",
+      "listing_price": "price",
+      "garage_spaces": "parking_spaces"
+    },
+    "nested_object_mappings": {
+      "address": {
+        "street": "address.street",
+        "city": "address.city",
+        "state": "address.state",
+        "zip": "address.zip_code",
+        "county": "address.county",
+        "latitude": "address.location[1]",
+        "longitude": "address.location[0]"
+      },
+      "neighborhood": {
+        "neighborhood_id": "neighborhood.id",
+        "neighborhood": "neighborhood.name"
+      },
+      "parking": {
+        "garage_spaces": "parking.spaces",
+        "parking_type": "parking.type"
+      }
+    },
+    "type_conversions": {
+      "price": "float",
+      "listing_price": "float",
+      "bedrooms": "int",
+      "bathrooms": "float",
+      "square_feet": "int",
+      "lot_size": "float",
+      "year_built": "int",
+      "days_on_market": "int",
+      "price_per_sqft": "float",
+      "walkability_score": "int",
+      "school_rating": "float",
+      "latitude": "float",
+      "longitude": "float"
+    },
+    "list_fields": [
+      "features",
+      "amenities",
+      "images",
+      "key_topics",
+      "cultural_features",
+      "recreational_features",
+      "transportation_features",
+      "notable_residents",
+      "architectural_style"
+    ],
+    "required_fields": [
+      "listing_id"
+    ]
+  },
+  "neighborhood_mappings": {
+    "field_mappings": {
+      "zip": "zip_code"
+    },
+    "nested_object_mappings": {
+      "address": {
+        "street": "address.street",
+        "city": "address.city",
+        "state": "address.state",
+        "zip": "address.zip_code",
+        "county": "address.county",
+        "latitude": "address.location[1]",
+        "longitude": "address.location[0]"
+      }
+    },
+    "type_conversions": {
+      "walkability_score": "int",
+      "transit_score": "int",
+      "school_rating": "float",
+      "population": "int",
+      "median_income": "float",
+      "median_age": "float",
+      "latitude": "float",
+      "longitude": "float"
+    },
+    "list_fields": [
+      "amenities",
+      "key_topics",
+      "cultural_features",
+      "recreational_features",
+      "transportation_features",
+      "notable_residents",
+      "architectural_style"
+    ],
+    "required_fields": [
+      "neighborhood_id"
+    ]
+  },
+  "wikipedia_mappings": {
+    "field_mappings": {
+      "zip": "zip_code"
+    },
+    "nested_object_mappings": {
+      "address": {
+        "latitude": "address.location[1]",
+        "longitude": "address.location[0]"
+      }
+    },
+    "type_conversions": {
+      "page_id": "int",
+      "latitude": "float",
+      "longitude": "float",
+      "relevance_score": "float",
+      "embedding_dimension": "int"
+    },
+    "list_fields": [
+      "topics",
+      "key_topics",
+      "cultural_features",
+      "recreational_features",
+      "transportation_features",
+      "embedding"
+    ],
+    "required_fields": [
+      "page_id",
+      "title"
+    ]
+  },
+  "wikipedia_enrichment_mappings": {
+    "location_context": {
+      "location_wikipedia_page_id": "location_context.wikipedia_page_id",
+      "location_wikipedia_title": "location_context.wikipedia_title",
+      "location_summary": "location_context.location_summary",
+      "historical_significance": "location_context.historical_significance",
+      "location_key_topics": "location_context.key_topics",
+      "cultural_features": "location_context.cultural_features",
+      "recreational_features": "location_context.recreational_features",
+      "transportation_features": "location_context.transportation",
+      "location_type": "location_context.location_type",
+      "location_confidence": "location_context.confidence_score"
+    },
+    "neighborhood_context": {
+      "neighborhood_wikipedia_page_id": "neighborhood_context.wikipedia_page_id",
+      "neighborhood_wikipedia_title": "neighborhood_context.wikipedia_title",
+      "neighborhood_description": "neighborhood_context.description",
+      "neighborhood_history": "neighborhood_context.history",
+      "neighborhood_character": "neighborhood_context.character",
+      "notable_residents": "neighborhood_context.notable_residents",
+      "architectural_style": "neighborhood_context.architectural_style",
+      "establishment_year": "neighborhood_context.establishment_year",
+      "gentrification_index": "neighborhood_context.gentrification_index",
+      "diversity_score": "neighborhood_context.diversity_score",
+      "neighborhood_key_topics": "neighborhood_context.key_topics"
+    },
+    "location_scores": {
+      "cultural_richness": "location_scores.cultural_richness",
+      "historical_importance": "location_scores.historical_importance",
+      "tourist_appeal": "location_scores.tourist_appeal",
+      "local_amenities": "location_scores.local_amenities",
+      "overall_desirability": "location_scores.overall_desirability"
+    }
+  }
+}

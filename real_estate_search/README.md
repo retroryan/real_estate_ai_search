@@ -43,6 +43,72 @@ pip install -r requirements.txt
 curl -u elastic:elasticpassword localhost:9200
 ```
 
+## Index Management Commands
+
+Before using the search system, you must set up Elasticsearch indices. The management system provides comprehensive tools for index operations.
+
+### Available Commands
+
+```bash
+# Set up all indices (first time setup)
+python -m real_estate_search.management setup-indices
+
+# Reset everything for clean demo 
+python -m real_estate_search.management setup-indices --clear
+
+# Validate index health and mappings
+python -m real_estate_search.management validate-indices
+
+# Check vector embedding coverage (after data pipeline)
+python -m real_estate_search.management validate-embeddings
+
+# List detailed index status
+python -m real_estate_search.management list-indices
+
+# Clean up test indices
+python -m real_estate_search.management delete-test-indices
+```
+
+### Embedding Validation
+
+The `validate-embeddings` command is essential for semantic search functionality:
+
+```bash
+python -m real_estate_search.management validate-embeddings
+```
+
+**Example output:**
+```
+Vector Embedding Validation Results:
+================================================================================
+Entity Type     Total Docs   With Embeddings   Percentage   Dimension   Model
+--------------------------------------------------------------------------------
+properties           1,234            1,201        97.3%        1536   openai
+neighborhoods           87               84        96.6%        1536   openai
+wikipedia              456              456       100.0%        1536   openai
+--------------------------------------------------------------------------------
+TOTAL                1,777            1,741        97.9%
+================================================================================
+✓ Vector embedding validation PASSED - All entity types have sufficient embeddings
+```
+
+**Success Criteria:**
+- ✅ **PASSED**: ≥95% embedding coverage
+- ⚠️ **PARTIAL**: 80-94% embedding coverage  
+- ❌ **FAILED**: <80% embedding coverage
+
+### Required Environment Variables
+
+```bash
+# Elasticsearch authentication
+export ELASTIC_PASSWORD="your-elasticsearch-password"
+
+# Embedding providers (choose one)
+export OPENAI_API_KEY="your-openai-key"        # For OpenAI embeddings
+export VOYAGE_API_KEY="your-voyage-key"        # For Voyage AI embeddings  
+export GEMINI_API_KEY="your-gemini-key"        # For Google Gemini embeddings
+```
+
 ## Usage
 
 The application now uses a unified `main.py` entry point with three operation modes:

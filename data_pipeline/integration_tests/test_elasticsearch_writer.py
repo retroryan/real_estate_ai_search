@@ -270,8 +270,8 @@ class TestElasticsearchPipelineIntegration:
         config.output.elasticsearch.index_prefix = "integration_test"
         
         # Run pipeline
-        runner = DataPipelineRunner()
-        result = runner.run_pipeline_with_config(config)
+        runner = DataPipelineRunner(config)
+        result = runner.run_full_pipeline()
         
         # Verify results
         assert result is not None, "Pipeline should complete successfully"
@@ -288,8 +288,8 @@ class TestElasticsearchPipelineIntegration:
         config.output.elasticsearch.index_prefix = "elasticsearch_only_test"
         
         # Run pipeline
-        runner = DataPipelineRunner()
-        result = runner.run_pipeline_with_config(config)
+        runner = DataPipelineRunner(config)
+        result = runner.run_full_pipeline()
         
         # Verify pipeline completed
         assert result is not None, "Elasticsearch-only pipeline should complete successfully"

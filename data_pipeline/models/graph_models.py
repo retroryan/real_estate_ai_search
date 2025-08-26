@@ -160,10 +160,6 @@ class CityNode(SparkModel):
     state: str = Field(..., description="State abbreviation")
     county: Optional[str] = Field(None, description="County name")
     
-    # Location (city center or average)
-    latitude: float = Field(..., description="City center latitude")
-    longitude: float = Field(..., description="City center longitude")
-    
     # Statistics
     population: Optional[int] = Field(None, description="City population")
     median_home_price: Optional[int] = Field(None, description="Median home price")
@@ -186,10 +182,6 @@ class StateNode(SparkModel):
     # Basic information
     name: str = Field(..., description="Full state name")
     abbreviation: str = Field(..., description="State abbreviation")
-    
-    # Location (geographic center)
-    latitude: Optional[float] = Field(None, description="State center latitude")
-    longitude: Optional[float] = Field(None, description="State center longitude")
 
 
 class WikipediaArticleNode(SparkModel):
@@ -251,6 +243,19 @@ class FeatureNode(SparkModel):
     )
 
 
+class ZipCodeNode(SparkModel):
+    """ZIP code node for geographic hierarchy."""
+    
+    # Unique identifier
+    id: str = Field(..., description="ZIP code (e.g., '94103')")
+    
+    # Basic information
+    code: str = Field(..., description="ZIP code")
+    
+    # Metadata
+    property_count: int = Field(0, description="Number of properties in this ZIP code")
+
+
 class PropertyTypeNode(SparkModel):
     """Property type node for categorizing properties."""
     
@@ -259,7 +264,7 @@ class PropertyTypeNode(SparkModel):
     
     # Basic information
     name: str = Field(..., description="Property type name")
-    label: str = Field(..., description="Display label")
+    category: str = Field("residential", description="Property type category (residential, commercial, etc.)")
     
     # Description
     description: Optional[str] = Field(None, description="Property type description")
@@ -295,10 +300,6 @@ class CountyNode(SparkModel):
     # Basic information
     name: str = Field(..., description="County name")
     state: str = Field(..., description="State abbreviation")
-    
-    # Location
-    latitude: Optional[float] = Field(None, description="County center latitude")
-    longitude: Optional[float] = Field(None, description="County center longitude")
     
     # Statistics
     population: Optional[int] = Field(None, description="County population")

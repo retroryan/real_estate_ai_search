@@ -7,7 +7,7 @@ graph structure with proper dependencies between entity types.
 
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
@@ -86,6 +86,7 @@ class Neo4jOrchestrator(EntityWriter):
             EntityType.FEATURE: Neo4jEntityConfig(label="Feature", key_field="id"),
             EntityType.PROPERTY_TYPE: Neo4jEntityConfig(label="PropertyType", key_field="id"),
             EntityType.PRICE_RANGE: Neo4jEntityConfig(label="PriceRange", key_field="id"),
+            EntityType.ZIP_CODE: Neo4jEntityConfig(label="ZipCode", key_field="id"),
             EntityType.COUNTY: Neo4jEntityConfig(label="County", key_field="id"),
             EntityType.CITY: Neo4jEntityConfig(label="City", key_field="id"),
             EntityType.STATE: Neo4jEntityConfig(label="State", key_field="id"),
@@ -94,7 +95,7 @@ class Neo4jOrchestrator(EntityWriter):
     
     def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
-        Write entity-specific DataFrame to Neo4j.
+        Write entity-specific DataFrame to Neo4j with complete node data.
         
         Args:
             df: DataFrame to write
@@ -108,10 +109,16 @@ class Neo4jOrchestrator(EntityWriter):
         # Get the configuration for this entity type
         if metadata.entity_type in entity_configs:
             config = entity_configs[metadata.entity_type]
+            
+            # Create nodes with complete data for relationship creation
+            # Denormalized field cleanup will happen after relationships are established
+            self.logger.info(f"Writing {metadata.entity_type} nodes with complete data for relationship creation")
+            
             return self._write_nodes(df, config.label, config.key_field)
         else:
             self.logger.error(f"Unknown entity type: {metadata.entity_type}")
             return False
+    
     
     def _convert_decimal_columns(self, df: DataFrame) -> DataFrame:
         """
@@ -143,9 +150,14 @@ class Neo4jOrchestrator(EntityWriter):
                         df = df.withColumn(field.name, F.col(field.name).cast(ArrayType(DoubleType())))
                         self.logger.debug(f"Converted embedding column {field.name} to Double array for Neo4j compatibility")
                 else:
-                    # Convert non-embedding arrays to string representation
-                    df = df.withColumn(field.name, F.col(field.name).cast(StringType()))
-                    self.logger.debug(f"Converted Array column {field.name} to String for Neo4j compatibility")
+                    # Keep string arrays as-is for Neo4j (features, images, etc.)
+                    if isinstance(field.dataType.elementType, StringType):
+                        # Neo4j can handle string arrays natively
+                        self.logger.debug(f"Keeping string array column {field.name} as-is for Neo4j")
+                    else:
+                        # Convert other array types to string representation
+                        df = df.withColumn(field.name, F.col(field.name).cast(StringType()))
+                        self.logger.debug(f"Converted Array column {field.name} to String for Neo4j compatibility")
         return df
     
     def _write_nodes(self, df: DataFrame, label: str, key_field: str) -> bool:

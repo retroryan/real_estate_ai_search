@@ -1,6 +1,6 @@
 """Neo4j database client and utilities"""
 from typing import Dict, List, Any, Optional
-from config.settings import get_settings
+from ..config.settings import get_settings
 
 # Import from new connection module
 from .connection import get_neo4j_driver, close_neo4j_driver

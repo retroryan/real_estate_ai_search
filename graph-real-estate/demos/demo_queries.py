@@ -1,7 +1,7 @@
 """Demo queries for showcasing the real estate graph database"""
 from typing import Dict, List, Any
 from neo4j import Driver
-from queries import QueryRunner
+from ..queries import QueryRunner
 
 class QueryDemonstrator:
     """Handles demonstration queries for the real estate graph"""
@@ -297,7 +297,7 @@ class QueryDemonstrator:
     
     def _check_interactive(self):
         """Check if interactive components exist"""
-        from queries import QueryRunner
+        from ..queries import QueryRunner
         assert hasattr(QueryRunner, 'run_interactive'), "Interactive mode not implemented"
     
     def _check_performance(self):
