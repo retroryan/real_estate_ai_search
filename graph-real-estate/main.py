@@ -3,9 +3,9 @@
 import argparse
 import sys
 import logging
-from utils.graph_builder import GraphDatabaseInitializer
-from utils.demo_runner import DemoRunner
-from utils.models import DemoConfig
+from .utils.graph_builder import GraphDatabaseInitializer
+from .utils.demo_runner import DemoRunner
+from .utils.models import DemoConfig
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -136,7 +136,7 @@ def main():
         elif args.action == "build-relationships":
             # Build relationships
             logger.info("Building relationships in Neo4j...")
-            from relationships import RelationshipOrchestrator, RelationshipConfig
+            from .relationships import RelationshipOrchestrator, RelationshipConfig
             
             # Create config (uses defaults)
             config = RelationshipConfig()
@@ -173,7 +173,7 @@ def main():
             )
             
             # Run the demo
-            from utils.demo_runner import DemoRunner
+            from .utils.demo_runner import DemoRunner
             demo_runner = DemoRunner(initializer.driver, demo_config)
             demo_runner.run_demo()
             

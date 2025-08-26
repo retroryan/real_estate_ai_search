@@ -26,8 +26,8 @@ from data_pipeline.enrichment.property_enricher import PropertyEnricher
 from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher
 from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher
 from data_pipeline.enrichment.feature_extractor import FeatureExtractor
-from data_pipeline.enrichment.county_extractor import CountyExtractor
-from data_pipeline.enrichment.entity_extractors import PropertyTypeExtractor, PriceRangeExtractor
+from data_pipeline.enrichment.geographic_extractors import CityExtractor, CountyExtractor, StateExtractor
+from data_pipeline.enrichment.entity_extractors import PropertyTypeExtractor, PriceRangeExtractor, ZipCodeExtractor
 from data_pipeline.enrichment.topic_extractor import TopicExtractor
 from data_pipeline.writers.orchestrator import WriterOrchestrator
 from data_pipeline.models.writer_models import (
@@ -112,8 +112,11 @@ class DataPipelineRunner:
         # Entity extractors - always enabled
         self.feature_extractor = FeatureExtractor(self.spark)
         self.county_extractor = CountyExtractor(self.spark)
+        self.city_extractor = CityExtractor(self.spark)
+        self.state_extractor = StateExtractor(self.spark)
         self.property_type_extractor = PropertyTypeExtractor(self.spark)
         self.price_range_extractor = PriceRangeExtractor(self.spark)
+        self.zip_code_extractor = ZipCodeExtractor(self.spark)
         self.topic_extractor = TopicExtractor(self.spark)
     
     def _init_embedding_config(self):
@@ -237,7 +240,10 @@ class DataPipelineRunner:
                     "feature_extractor": self.feature_extractor,
                     "property_type_extractor": self.property_type_extractor,
                     "price_range_extractor": self.price_range_extractor,
+                    "zip_code_extractor": self.zip_code_extractor,
+                    "city_extractor": self.city_extractor,
                     "county_extractor": self.county_extractor,
+                    "state_extractor": self.state_extractor,
                     "topic_extractor": self.topic_extractor,
                     "locations_data": loaded_data.locations
                 }
@@ -524,7 +530,10 @@ class DataPipelineRunner:
                     "feature_extractor": self.feature_extractor,
                     "property_type_extractor": self.property_type_extractor,
                     "price_range_extractor": self.price_range_extractor,
+                    "zip_code_extractor": self.zip_code_extractor,
+                    "city_extractor": self.city_extractor,
                     "county_extractor": self.county_extractor,
+                    "state_extractor": self.state_extractor,
                     "topic_extractor": self.topic_extractor,
                     "locations_data": loaded_data.locations
                 }
@@ -704,17 +713,42 @@ class DataPipelineRunner:
                 'features': EntityType.FEATURE,
                 'property_types': EntityType.PROPERTY_TYPE,
                 'price_ranges': EntityType.PRICE_RANGE,
+                'zip_codes': EntityType.ZIP_CODE,
                 'counties': EntityType.COUNTY,
                 'cities': EntityType.CITY,
                 'states': EntityType.STATE,
                 'topic_clusters': EntityType.TOPIC_CLUSTER
             }
             
+            # Define write order according to Phase 5.3 requirements
+            # 1. Geographic hierarchy first (State, County, City, ZipCode)
+            # 2. Classification nodes next (PropertyType, Feature, PriceRange)
+            # 3. Entity nodes (Neighborhood, Property, Wikipedia)
+            # 4. Topic clusters last
+            write_order = [
+                'states',           # Geographic hierarchy
+                'counties',         # Geographic hierarchy
+                'cities',           # Geographic hierarchy
+                'zip_codes',        # Geographic hierarchy
+                'property_types',   # Classification nodes
+                'features',         # Classification nodes
+                'price_ranges',     # Classification nodes
+                'neighborhoods',    # Entity nodes
+                'properties',       # Entity nodes
+                'wikipedia',        # Entity nodes
+                'topic_clusters'    # Knowledge nodes
+            ]
+            
             total_written = 0
             failed_entities = []
             
-            # Write each entity type
-            for entity_name, df in output_dataframes.items():
+            # Write entities in the defined order
+            for entity_name in write_order:
+                # Skip if entity not in output
+                if entity_name not in output_dataframes:
+                    continue
+                    
+                df = output_dataframes[entity_name]
                 if df is None:
                     continue
                 

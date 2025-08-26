@@ -1,0 +1,66 @@
+# Test configuration for data pipeline with mock embeddings and search pipeline
+spark:
+  app_name: "TestPipeline"
+  master: "local[2]"
+  driver_memory: "2g"
+
+data_source:
+  properties_files:
+    - "real_estate_data/properties_sf.json"
+  neighborhoods_files: 
+    - "real_estate_data/neighborhoods_sf.json"
+  wikipedia_db_path: "data/wikipedia/wikipedia.db"
+
+processing:
+  enable_wikipedia_enrichment: true
+  enable_field_mapping: true
+  enable_embeddings: true
+
+embedding:
+  provider: "mock"
+  model_name: "test-model"
+  dimension: 1536  # Match OpenAI dimension for consistency
+  batch_size: 100
+
+output:
+  enabled_destinations:
+    - "parquet"
+    - "elasticsearch"
+  parquet:
+    base_path: "test_output"
+    format: "parquet"
+    mode: "overwrite"
+    partitioned: false
+  elasticsearch:
+    hosts:
+      - "localhost:9200"
+    index_prefix: "real_estate"
+    bulk_size: 1000
+    username: "elastic"
+    # Password will be read from ELASTICSEARCH_PASSWORD env variable
+
+# Search pipeline configuration
+search_pipeline:
+  enabled: true
+  elasticsearch:
+    nodes:
+      - "localhost:9200"
+    index_prefix: "real_estate"
+    index_auto_create: false  # We created them manually
+  process_properties: true
+  process_neighborhoods: true  
+  process_wikipedia: true
+  validate_connection: true
+  embedding_config:
+    provider: "mock"
+    model_name: "test-model"
+    dimension: 1536
+    batch_size: 100
+
+# Neo4j configuration (disabled for this test)
+neo4j:
+  enabled: false
+
+# Pipeline settings  
+sample_size: 10  # Small sample for quick testing
+test_mode: true

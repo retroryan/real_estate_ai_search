@@ -1,24 +1,31 @@
 """
 Search pipeline runner for processing and indexing documents to Elasticsearch.
 
-This module receives DataFrames from the pipeline fork and processes them
-for Elasticsearch indexing using the Spark connector with best practices.
+This module receives DataFrames from the pipeline fork and transforms them
+into search documents using document builders before indexing to Elasticsearch.
 """
 
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Any
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, lit, current_timestamp
 
 from search_pipeline.models.config import SearchPipelineConfig
 from search_pipeline.models.results import SearchIndexResult, SearchPipelineResult
-from data_pipeline.writers.elasticsearch.transformations import DataFrameTransformer
-from data_pipeline.writers.elasticsearch.models import SchemaTransformation
+from search_pipeline.builders.property_builder import PropertyDocumentBuilder
+from search_pipeline.builders.neighborhood_builder import NeighborhoodDocumentBuilder
+from search_pipeline.builders.wikipedia_builder import WikipediaDocumentBuilder
 
 logger = logging.getLogger(__name__)
+
+# Import existing embedding generators - these MUST be available for embeddings to work
+from data_pipeline.processing.entity_embeddings import (
+    PropertyEmbeddingGenerator,
+    NeighborhoodEmbeddingGenerator, 
+    WikipediaEmbeddingGenerator
+)
 
 
 def truncate_message(msg: str, max_length: int = 200) -> str:
@@ -42,9 +49,8 @@ class SearchPipelineRunner:
     """
     Runs the search pipeline to process and index documents to Elasticsearch.
     
-    This class receives DataFrames from the pipeline fork after text processing
-    and prepares them for Elasticsearch indexing. It follows current best practices
-    for Spark-Elasticsearch integration.
+    This class receives DataFrames from the pipeline fork, transforms them
+    into search documents using document builders, and indexes them to Elasticsearch.
     """
     
     def __init__(self, spark: SparkSession, config: SearchPipelineConfig):
@@ -59,8 +65,24 @@ class SearchPipelineRunner:
         self.config = config
         self.pipeline_id = str(uuid.uuid4())
         
-        # Initialize DataFrame transformer for Elasticsearch compatibility
-        self.transformer = DataFrameTransformer(spark)
+        # Initialize document builders
+        self.builders = {
+            "properties": PropertyDocumentBuilder(),
+            "neighborhoods": NeighborhoodDocumentBuilder(),
+            "wikipedia": WikipediaDocumentBuilder(),
+        }
+        
+        # Initialize embedding generators if configured
+        self.embedding_generators = {}
+        if self.config.embedding_config:
+            self.embedding_generators = {
+                "properties": PropertyEmbeddingGenerator(spark, self.config.embedding_config),
+                "neighborhoods": NeighborhoodEmbeddingGenerator(spark, self.config.embedding_config),
+                "wikipedia": WikipediaEmbeddingGenerator(spark, self.config.embedding_config),
+            }
+            logger.info(f"Embedding generators initialized with {self.config.embedding_config.provider.value} provider")
+        else:
+            logger.info("Embedding generation disabled - no embedding config provided")
         
         logger.info(f"Search pipeline runner initialized (ID: {self.pipeline_id})")
         
@@ -158,22 +180,48 @@ class SearchPipelineRunner:
         )
         
         try:
-            # Prepare DataFrame for indexing
-            prepared_df = self._prepare_dataframe(entity_type, df)
+            # Get the appropriate builder
+            builder = self.builders.get(entity_type)
+            if not builder:
+                raise ValueError(f"No document builder found for entity type: {entity_type}")
             
-            # Get row count before indexing
-            doc_count = prepared_df.count()
-            logger.info(f"Indexing {doc_count:,} {entity_type} documents")
+            # Generate embeddings if configured and available
+            processed_df = df
+            if entity_type in self.embedding_generators:
+                logger.info(f"Generating embeddings for {entity_type}")
+                embedding_generator = self.embedding_generators[entity_type]
+                
+                # Prepare embedding text using existing logic
+                df_with_text = embedding_generator.prepare_embedding_text(processed_df)
+                
+                # Generate embeddings
+                processed_df = embedding_generator.generate_embeddings(df_with_text)
+                
+                logger.info(f"Embedding generation completed for {entity_type}")
+            else:
+                logger.info(f"Embedding generation skipped for {entity_type} - no generator available")
             
-            # Write to Elasticsearch using Spark connector
-            self._write_to_elasticsearch(prepared_df, index_name)
+            # Transform DataFrame to documents using builder
+            logger.info(f"Transforming {entity_type} DataFrame to documents")
+            documents = builder.transform(processed_df)
+            
+            if not documents:
+                logger.warning(f"No documents generated for {entity_type}")
+                result.documents_indexed = 0
+                result.duration_seconds = (datetime.now() - start_time).total_seconds()
+                return result
+            
+            logger.info(f"Generated {len(documents)} {entity_type} documents")
+            
+            # Write documents to Elasticsearch
+            self._write_documents_to_elasticsearch(documents, index_name)
             
             # Record success
-            result.documents_indexed = doc_count
+            result.documents_indexed = len(documents)
             result.duration_seconds = (datetime.now() - start_time).total_seconds()
             
             logger.info(
-                f"Successfully indexed {doc_count:,} {entity_type} documents "
+                f"Successfully indexed {len(documents):,} {entity_type} documents "
                 f"in {result.duration_seconds:.2f} seconds "
                 f"({result.documents_per_second:.0f} docs/sec)"
             )
@@ -191,117 +239,36 @@ class SearchPipelineRunner:
         
         return result
     
-    def _prepare_dataframe(self, entity_type: str, df: DataFrame) -> DataFrame:
+    def _write_documents_to_elasticsearch(self, documents: List[Any], index_name: str) -> None:
         """
-        Prepare DataFrame for Elasticsearch indexing.
+        Write documents to Elasticsearch.
         
         Args:
-            entity_type: Type of entity
-            df: Raw DataFrame from pipeline
-        
-        Returns:
-            DataFrame ready for indexing
-        """
-        # Add metadata fields
-        prepared_df = df.withColumn("_entity_type", lit(entity_type)) \
-                       .withColumn("_indexed_at", current_timestamp()) \
-                       .withColumn("_pipeline_id", lit(self.pipeline_id))
-        
-        # Apply Elasticsearch compatibility transformations (decimal conversion, geo_point, etc.)
-        transform_config = SchemaTransformation(
-            convert_decimals=True,
-            add_geo_point=True,
-        )
-        
-        # Determine ID field based on entity type
-        id_field_mapping = {
-            "properties": "listing_id",
-            "neighborhoods": "neighborhood_id", 
-            "wikipedia": "page_id"
-        }
-        id_field = id_field_mapping.get(entity_type, "id")
-        
-        # Apply transformations for Elasticsearch compatibility
-        prepared_df = self.transformer.transform_for_elasticsearch(
-            prepared_df, transform_config, id_field
-        )
-        
-        # Entity-specific preparation (after ES transformations)
-        if entity_type == "properties":
-            prepared_df = self._prepare_properties(prepared_df)
-        elif entity_type == "neighborhoods":
-            prepared_df = self._prepare_neighborhoods(prepared_df)
-        elif entity_type == "wikipedia":
-            prepared_df = self._prepare_wikipedia(prepared_df)
-        
-        return prepared_df
-    
-    def _prepare_properties(self, df: DataFrame) -> DataFrame:
-        """
-        Prepare property documents for indexing.
-        
-        Args:
-            df: Property DataFrame
-        
-        Returns:
-            Prepared DataFrame
-        """
-        # Ensure required fields exist
-        required_fields = ["listing_id", "price", "embedding_text"]
-        existing_fields = df.columns
-        
-        for field in required_fields:
-            if field not in existing_fields:
-                logger.warning(f"Property field '{field}' not found in DataFrame")
-        
-        # ID field is already set by transformer as "id" - no need to override
-        
-        return df
-    
-    def _prepare_neighborhoods(self, df: DataFrame) -> DataFrame:
-        """
-        Prepare neighborhood documents for indexing.
-        
-        Args:
-            df: Neighborhood DataFrame
-        
-        Returns:
-            Prepared DataFrame
-        """
-        # ID field is already set by transformer as "id" - no need to override
-        
-        return df
-    
-    def _prepare_wikipedia(self, df: DataFrame) -> DataFrame:
-        """
-        Prepare Wikipedia documents for indexing.
-        
-        Args:
-            df: Wikipedia DataFrame
-        
-        Returns:
-            Prepared DataFrame
-        """
-        # ID field is already set by transformer as "id" - no need to override
-        
-        return df
-    
-    def _write_to_elasticsearch(self, df: DataFrame, index_name: str) -> None:
-        """
-        Write DataFrame to Elasticsearch using Spark connector.
-        
-        Args:
-            df: Prepared DataFrame
+            documents: List of document models (PropertyDocument, NeighborhoodDocument, etc.)
             index_name: Target Elasticsearch index
         """
-        # Get Spark configuration for Elasticsearch
+        # Convert documents to dictionaries
+        doc_dicts = []
+        for doc in documents:
+            try:
+                # Use Pydantic's model_dump to get dictionary representation
+                doc_dict = doc.model_dump(exclude_none=True)
+                doc_dicts.append(doc_dict)
+            except Exception as e:
+                logger.error(f"Error converting document to dict: {e}")
+                continue
+        
+        if not doc_dicts:
+            logger.warning("No valid documents to index")
+            return
+        
+        # Create DataFrame from document dictionaries
+        documents_df = self.spark.createDataFrame(doc_dicts)
+        
+        # Write to Elasticsearch using Spark connector
         es_conf = self.config.elasticsearch.get_spark_conf()
-        
-        # Add index-specific configuration
         es_conf["es.resource"] = index_name
-        
-        # Use "id" field for document mapping (set by transformer)
-        es_conf["es.mapping.id"] = "id"
+        es_conf["es.mapping.id"] = "listing_id"  # Use the 'listing_id' field from documents
         
         # Log configuration for debugging (but truncate long values)
         debug_conf = {k: str(v)[:200] + "..." if len(str(v)) > 200 else v 
@@ -309,11 +276,11 @@ class SearchPipelineRunner:
         logger.debug(f"Elasticsearch write configuration: {debug_conf}")
         
         # Write DataFrame to Elasticsearch
-        df.write \
-          .format("org.elasticsearch.spark.sql") \
-          .options(**es_conf) \
-          .mode("append") \
-          .save()
+        documents_df.write \
+            .format("org.elasticsearch.spark.sql") \
+            .options(**es_conf) \
+            .mode("append") \
+            .save()
     
     def validate_connection(self) -> bool:
         """
@@ -325,8 +292,7 @@ class SearchPipelineRunner:
         try:
             # Create a simple test DataFrame
             test_df = self.spark.createDataFrame(
-                [("test", datetime.now())],
-                ["message", "timestamp"]
+                [{"listing_id": "test-1", "message": "test", "timestamp": datetime.now()}]
             )
             
             # Try to write to a test index
@@ -334,6 +300,7 @@ class SearchPipelineRunner:
             
             es_conf = self.config.elasticsearch.get_spark_conf()
             es_conf["es.resource"] = test_index
+            es_conf["es.mapping.id"] = "listing_id"
             
             # Attempt write with single document
             test_df.write \
@@ -382,3 +349,7 @@ class SearchPipelineRunner:
         except Exception as e:
             logger.error(f"Failed to get index stats for {entity_type}: {e}")
             return None
+
+
+# Alias for backward compatibility
+SearchRunner = SearchPipelineRunner

@@ -264,18 +264,47 @@ class PipelineFork:
             logger.info("   Extracting property types...")
             extracted["property_types"] = extractors["property_type_extractor"].extract_property_types(processed_entities["properties"])
         
+        # Extract ZIP codes
+        if "properties" in processed_entities and "zip_code_extractor" in extractors:
+            logger.info("   Extracting ZIP codes...")
+            locations_data = extractors.get("locations_data")
+            extracted["zip_codes"] = extractors["zip_code_extractor"].extract_zip_codes(
+                processed_entities["properties"], 
+                locations_data
+            )
+        
         # Extract price ranges
         if "properties" in processed_entities and "price_range_extractor" in extractors:
             logger.info("   Extracting price ranges...")
             extracted["price_ranges"] = extractors["price_range_extractor"].extract_price_ranges(processed_entities["properties"])
         
+        # Extract geographic entities from locations data
+        locations_data = extractors.get("locations_data")
+        properties_data = processed_entities.get("properties")
+        
+        # Extract cities
+        if "city_extractor" in extractors and locations_data is not None:
+            logger.info("   Extracting cities...")
+            extracted["cities"] = extractors["city_extractor"].extract_cities(
+                locations_data,
+                properties_data
+            )
+        
         # Extract counties
-        if "county_extractor" in extractors:
+        if "county_extractor" in extractors and locations_data is not None:
             logger.info("   Extracting counties...")
             extracted["counties"] = extractors["county_extractor"].extract_counties(
-                extractors.get("locations_data"),
-                processed_entities.get("properties"),
+                locations_data,
+                properties_data,
                 processed_entities.get("neighborhoods")
+            )
+        
+        # Extract states
+        if "state_extractor" in extractors and locations_data is not None:
+            logger.info("   Extracting states...")
+            extracted["states"] = extractors["state_extractor"].extract_states(
+                locations_data,
+                properties_data
             )
         
         # Extract topic clusters from Wikipedia

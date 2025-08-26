@@ -3,11 +3,11 @@
 import logging
 from typing import List, Dict, Any, Optional
 
-from core.query_executor import QueryExecutor
-from core.config import SearchConfig
-from vectors.embedding_pipeline import PropertyEmbeddingPipeline
-from vectors.vector_manager import PropertyVectorManager
-from demos.models import SearchResult
+from ..core.query_executor import QueryExecutor
+from ..core.config import SearchConfig
+from .embedding_pipeline import PropertyEmbeddingPipeline
+from .vector_manager import PropertyVectorManager
+from ..demos.models import SearchResult
 
 
 class HybridPropertySearch:

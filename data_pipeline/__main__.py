@@ -10,15 +10,8 @@ import logging
 import sys
 from pathlib import Path
 
-# Ensure project root is in Python path for imports when running as module
-if __name__ == "__main__":
-    # When running as python -m data_pipeline from parent directory
-    project_root = Path(__file__).parent.parent
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
-
-from data_pipeline.config.loader import load_configuration
-from data_pipeline.core.pipeline_runner import DataPipelineRunner
+from .config.loader import load_configuration
+from .core.pipeline_runner import DataPipelineRunner
 
 
 def setup_logging() -> None:

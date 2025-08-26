@@ -2,8 +2,8 @@
 from pathlib import Path
 from typing import Optional
 
-from config.settings import get_settings
-from config.models import EmbeddingConfig, VectorIndexConfig, SearchConfig
+from ..config.settings import get_settings
+from ..config.models import EmbeddingConfig, VectorIndexConfig, SearchConfig
 
 
 def get_embedding_config(config_path: Optional[str] = None) -> EmbeddingConfig:

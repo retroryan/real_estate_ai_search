@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 from neo4j import Driver
 
-from core.query_executor import QueryExecutor
+from ..core.query_executor import QueryExecutor
 
 
 class PropertyVectorManager:
