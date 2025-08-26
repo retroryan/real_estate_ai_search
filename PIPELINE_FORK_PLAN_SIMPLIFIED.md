@@ -1,5 +1,33 @@
 # Simplified Pipeline Fork Implementation Plan
 
+## Implementation Decisions
+
+Based on the PIPELINE_DESIGN.md architecture and user feedback, the following decisions have been made:
+
+### Architecture Decisions
+
+1. **PipelineFork Class**: Standalone component (not integrated into PipelineRunner) for clean separation of concerns
+2. **Fork Location**: After text processing completion (Stage 3) to maximize shared computation before divergence
+3. **Configuration**: Fork configuration will be part of the main config.yaml for simplicity
+4. **Module Structure**: search_pipeline module at root level, parallel to data_pipeline
+
+### Communication & Processing
+
+5. **Data Flow**: One-way flow from PipelineRunner → PipelineFork → SearchPipelineRunner (no bidirectional communication needed)
+6. **Document Models**: Inherit from a common base class for consistency
+7. **Elasticsearch Writer**: Use existing Spark Elasticsearch connector from archive_elasticsearch
+8. **Execution Mode**: Synchronous (wait for both paths to complete)
+9. **Error Handling**: Independent - errors in search path don't affect graph path
+10. **Logging Level**: INFO level for Phase 1 implementation
+
+### Additional Clarifications
+
+**Q: Do we need any additional configuration for the fork beyond enabled paths?**
+ANSWER:  no - keep it simple
+
+**Q: Should cached DataFrames at the fork point use MEMORY_AND_DISK or MEMORY_ONLY storage level?**
+ANSWER:  Caching is in a later phase do not implement it in this phase.  Then it will be  MEMORY_AND_DISK for safety
+
 ## Complete Cut-Over Requirements
 
 * **COMPLETE CHANGE**: All occurrences must be changed in a single, atomic update

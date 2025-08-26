@@ -16,7 +16,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import ArrayType
 
 from data_pipeline.core.pipeline_runner import DataPipelineRunner
-from data_pipeline.config.settings import ConfigurationManager
+from data_pipeline.config.loader import load_configuration
 
 
 class TestPipelineOutputValidation:
@@ -31,15 +31,12 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class") 
     def pipeline_settings(self, temp_output_dir):
         """Create test settings with temporary output directory."""
-        # Create configuration manager with test settings
-        config_manager = ConfigurationManager(environment="test", sample_size=10)
-        config = config_manager.load_config()
+        # Load configuration with test settings
+        config = load_configuration(sample_size=10)
         
         # Override output path to use temporary directory
-        config.output.path = temp_output_dir
-        config.output_destinations.enabled_destinations = ["parquet"]
-        config.output_destinations.parquet.path = temp_output_dir
-        config.output_destinations.parquet.enabled = True
+        config.output.enabled_destinations = ["parquet"]
+        config.output.parquet.base_path = temp_output_dir
         
         return config
     
@@ -59,16 +56,14 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class")
     def pipeline_output(self, pipeline_settings, spark_session):
         """Run the complete pipeline and return output information."""
-        runner = DataPipelineRunner(
-            settings=pipeline_settings,
-            spark_session=spark_session
-        )
+        runner = DataPipelineRunner(pipeline_settings)
         
         # Run the complete pipeline
-        runner.run()
+        entity_dataframes = runner.run_full_pipeline_with_embeddings()
+        runner.write_entity_outputs(entity_dataframes)
         
         # Return output directory and expected files
-        output_dir = Path(pipeline_settings.destinations["parquet"]["output_path"])
+        output_dir = Path(pipeline_settings.output.parquet.base_path)
         return {
             "output_dir": output_dir,
             "expected_files": {
@@ -308,14 +303,11 @@ def test_pipeline_integration_smoke():
     """Smoke test that can be run independently to verify basic pipeline functionality."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create minimal settings for smoke test
-        config_manager = ConfigurationManager(environment="test", sample_size=5)
-        config = config_manager.load_config()
+        config = load_configuration(sample_size=5)
         
         # Override output path to use temporary directory
-        config.output.path = temp_dir
-        config.output_destinations.enabled_destinations = ["parquet"]
-        config.output_destinations.parquet.path = temp_dir
-        config.output_destinations.parquet.enabled = True
+        config.output.enabled_destinations = ["parquet"]
+        config.output.parquet.base_path = temp_dir
         
         # Create Spark session
         spark = SparkSession.builder \
@@ -325,8 +317,9 @@ def test_pipeline_integration_smoke():
         
         try:
             # Run pipeline
-            runner = DataPipelineRunner(settings=settings, spark_session=spark)
-            runner.run()
+            runner = DataPipelineRunner(config)
+            entity_dataframes = runner.run_full_pipeline_with_embeddings()
+            runner.write_entity_outputs(entity_dataframes)
             
             # Verify output
             output_file = Path(temp_dir) / "properties.parquet"

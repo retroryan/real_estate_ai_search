@@ -11,7 +11,7 @@ from typing import Optional
 from pydantic import BaseModel
 from pyspark.sql import DataFrame, SparkSession
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import PipelineConfig, DataSourceConfig
 from data_pipeline.loaders.location_loader import LocationLoader
 from data_pipeline.loaders.neighborhood_loader import NeighborhoodLoader
 from data_pipeline.loaders.property_loader import PropertyLoader
@@ -35,16 +35,16 @@ class LoadedData(BaseModel):
 class DataLoaderOrchestrator:
     """Orchestrates loading from all data sources."""
     
-    def __init__(self, spark: SparkSession, config: PipelineConfig):
+    def __init__(self, spark: SparkSession, data_config: DataSourceConfig):
         """
         Initialize the data loader orchestrator.
         
         Args:
             spark: Active SparkSession
-            config: Pipeline configuration
+            data_config: Data source configuration
         """
         self.spark = spark
-        self.config = config
+        self.data_config = data_config
         
         # Initialize individual loaders
         self.location_loader = LocationLoader(spark)
@@ -95,12 +95,12 @@ class DataLoaderOrchestrator:
         Returns:
             Combined property DataFrame or None if no data
         """
-        if not self.config.properties:
+        if not self.data_config.properties_files:
             logger.info("No property files configured")
             return None
         
         dataframes = []
-        for path in self.config.properties:
+        for path in self.data_config.properties_files:
             try:
                 logger.info(f"Loading properties from: {path}")
                 df = self.property_loader.load(path)
@@ -133,12 +133,12 @@ class DataLoaderOrchestrator:
         Returns:
             Combined neighborhood DataFrame or None if no data
         """
-        if not self.config.neighborhoods:
+        if not self.data_config.neighborhoods_files:
             logger.info("No neighborhood files configured")
             return None
         
         dataframes = []
-        for path in self.config.neighborhoods:
+        for path in self.data_config.neighborhoods_files:
             try:
                 logger.info(f"Loading neighborhoods from: {path}")
                 df = self.neighborhood_loader.load(path)
@@ -171,13 +171,13 @@ class DataLoaderOrchestrator:
         Returns:
             Wikipedia DataFrame or None
         """
-        if not self.config.wikipedia.enabled:
-            logger.info("Wikipedia loading disabled")
+        if not self.data_config.wikipedia_db_path:
+            logger.info("No Wikipedia database path configured")
             return None
         
         try:
-            logger.info(f"Loading Wikipedia from: {self.config.wikipedia.path}")
-            df = self.wikipedia_loader.load(self.config.wikipedia.path)
+            logger.info(f"Loading Wikipedia from: {self.data_config.wikipedia_db_path}")
+            df = self.wikipedia_loader.load(self.data_config.wikipedia_db_path)
             
             if self.wikipedia_loader.validate(df):
                 logger.info("✓ Successfully loaded Wikipedia data")
@@ -197,13 +197,13 @@ class DataLoaderOrchestrator:
         Returns:
             Location DataFrame or None
         """
-        if not self.config.locations.enabled:
-            logger.info("Location loading disabled")
+        if not self.data_config.locations_file:
+            logger.info("No locations file configured")
             return None
         
         try:
-            logger.info(f"Loading locations from: {self.config.locations.path}")
-            df = self.location_loader.load(self.config.locations.path)
+            logger.info(f"Loading locations from: {self.data_config.locations_file}")
+            df = self.location_loader.load(self.data_config.locations_file)
             
             if self.location_loader.validate(df):
                 logger.info("✓ Successfully loaded location data")

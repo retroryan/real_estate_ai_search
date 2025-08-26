@@ -20,7 +20,7 @@ from data_pipeline.core.pipeline_runner import DataPipelineRunner
 def run_pipeline_with_test_config(test_settings_with_temp_output):
     """Helper function to run pipeline with test configuration."""
     import os
-    from data_pipeline.config.settings import ConfigurationManager
+    from data_pipeline.config.loader import load_configuration
     
     original_env = {}
     test_env = {
@@ -35,7 +35,7 @@ def run_pipeline_with_test_config(test_settings_with_temp_output):
     
     try:
         # Create runner with test configuration that uses the temp directory
-        runner = DataPipelineRunner(config_override=test_settings_with_temp_output)
+        runner = DataPipelineRunner(test_settings_with_temp_output)
         entity_dataframes = runner.run_full_pipeline_with_embeddings()
         runner.write_entity_outputs(entity_dataframes)
         return entity_dataframes
@@ -58,7 +58,7 @@ class TestParquetValidation:
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
         # The pipeline creates entity-specific Parquet files under the configured base path
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         expected_files = {
             "properties": output_dir / "properties",
             "neighborhoods": output_dir / "neighborhoods", 
@@ -88,7 +88,7 @@ class TestParquetValidation:
         # Run pipeline
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         
         # Test Properties schema
         props_df = spark_session.read.parquet(str(output_dir / "properties"))
@@ -171,7 +171,7 @@ class TestParquetValidation:
         # Run pipeline
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         
         entity_files = {
             "properties": output_dir / "properties",
@@ -201,7 +201,7 @@ class TestParquetValidation:
         # Run pipeline
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         wiki_df = spark_session.read.parquet(str(output_dir / "wikipedia"))
         
         total_count = wiki_df.count()
@@ -231,7 +231,7 @@ class TestParquetValidation:
         # Run pipeline
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         
         entity_files = {
             "properties": output_dir / "properties",
@@ -263,7 +263,7 @@ class TestParquetValidation:
         # Run pipeline
         run_pipeline_with_test_config(test_settings_with_temp_output)
         
-        output_dir = Path(test_settings_with_temp_output.output_destinations.parquet.base_path)
+        output_dir = Path(test_settings_with_temp_output.output.parquet.base_path)
         
         entity_files = {
             "properties": output_dir / "properties",
@@ -294,7 +294,7 @@ def test_quick_parquet_smoke():
     """Quick smoke test for Parquet output - can be run independently."""
     with tempfile.TemporaryDirectory() as temp_dir:
         import os
-        from data_pipeline.config.settings import ConfigurationManager
+        from data_pipeline.config.loader import load_configuration
         
         # Set environment variables for test configuration
         original_env = {}
@@ -316,12 +316,12 @@ def test_quick_parquet_smoke():
             
             try:
                 # Load test configuration with sample size of 3 and override the Parquet output path
-                config_manager = ConfigurationManager(environment="test", sample_size=3)
-                config = config_manager.load_config()
-                config.output_destinations.parquet.base_path = temp_dir
+                # Load test configuration with sample size
+                config = load_configuration(sample_size=3)
+                config.output.parquet.base_path = temp_dir
                 
                 # Run pipeline with the modified config
-                runner = DataPipelineRunner(config_override=config)
+                runner = DataPipelineRunner(config)
                 # Run pipeline with embeddings and write output
                 entity_dataframes = runner.run_full_pipeline_with_embeddings()
                 runner.write_entity_outputs(entity_dataframes)

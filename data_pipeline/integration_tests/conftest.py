@@ -31,11 +31,32 @@ def spark_session():
 
 
 @pytest.fixture(scope="session")
+def spark():
+    """Alias for spark_session to match test expectations."""
+    spark = SparkSession.builder \
+        .appName("DataPipelineIntegrationTests") \
+        .master("local[2]") \
+        .config("spark.sql.adaptive.enabled", "true") \
+        .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+        .config("spark.sql.execution.arrow.pyspark.enabled", "false") \
+        .getOrCreate()
+    
+    # Set log level to reduce noise during testing
+    spark.sparkContext.setLogLevel("WARN")
+    
+    yield spark
+    
+    spark.stop()
+
+
+@pytest.fixture(scope="session")
 def test_settings():
     """Create test settings with appropriate overrides.""" 
-    from data_pipeline.config.settings import ConfigurationManager
-    config_manager = ConfigurationManager(environment="test")
-    settings = config_manager.load_config()
+    from data_pipeline.config.loader import load_configuration
+    # Load configuration with mock embeddings for testing
+    settings = load_configuration(sample_size=None)
+    settings.embedding.provider = "mock"  # Use mock for tests
     
     # Settings for testing loaded directly from config
     
@@ -56,15 +77,13 @@ def test_settings_with_temp_output(test_settings, temp_output_directory):
     import copy
     settings_copy = copy.deepcopy(test_settings)
     
-    # Override output_destinations to use temporary directory for Parquet output
+    # Override output to use temporary directory for Parquet output
     # Enable only Parquet output for testing
-    settings_copy.output_destinations.enabled_destinations = ["parquet"]
+    settings_copy.output.enabled_destinations = ["parquet"]
     
     # Configure Parquet destination with temporary directory
-    settings_copy.output_destinations.parquet.enabled = True
-    settings_copy.output_destinations.parquet.base_path = str(temp_output_directory)
-    settings_copy.output_destinations.parquet.mode = "overwrite"
-    settings_copy.output_destinations.parquet.compression = "snappy"
+    settings_copy.output.parquet.base_path = str(temp_output_directory)
+    settings_copy.output.parquet.compression = "snappy"
     
     return settings_copy
 

@@ -6,12 +6,13 @@ including configuration-driven setup and proper resource cleanup.
 """
 
 import logging
+import os
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, Optional
 
 from pyspark.sql import SparkSession
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import SparkConfig
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +33,15 @@ class SparkSessionManager:
         """Initialize the session manager."""
         if not hasattr(self, "_initialized"):
             self._initialized = True
-            self._config: Optional[PipelineConfig] = None
+            self._config: Optional[SparkConfig] = None
     
-    def create_session(self, config: PipelineConfig) -> SparkSession:
+    def create_session(self, config: SparkConfig, extra_configs: Optional[Dict[str, str]] = None) -> SparkSession:
         """
         Create or get existing Spark session.
         
         Args:
             config: Spark configuration object
+            extra_configs: Optional additional Spark configurations (e.g., Neo4j, Elasticsearch)
             
         Returns:
             Configured SparkSession
@@ -58,12 +60,13 @@ class SparkSessionManager:
             
             # Set driver memory if not in local mode
             if not config.master.startswith("local"):
-                builder = builder.config("spark.driver.memory", config.memory)
+                builder = builder.config("spark.driver.memory", config.driver_memory)
                 builder = builder.config("spark.executor.memory", config.executor_memory)
             
-            # Apply additional configuration
-            for key, value in config.config.items():
-                builder = builder.config(key, value)
+            # Apply extra configurations (Neo4j, Elasticsearch, etc.)
+            if extra_configs:
+                for key, value in extra_configs.items():
+                    builder = builder.config(key, value)
             
             # Create session
             self._spark_session = builder.getOrCreate()
@@ -109,7 +112,7 @@ class SparkSessionManager:
                 logger.error(f"Error stopping Spark session: {e}")
                 raise
     
-    def restart_session(self, config: Optional[PipelineConfig] = None) -> SparkSession:
+    def restart_session(self, config: Optional[SparkConfig] = None) -> SparkSession:
         """
         Restart Spark session with new or existing configuration.
         
@@ -204,101 +207,10 @@ class SparkSessionManager:
         logger.info(f"Shuffle partitions set to: {num_partitions}")
 
 
-def _add_neo4j_config_if_enabled(spark_config: PipelineConfig, pipeline_config: Any) -> PipelineConfig:
-    """
-    Add Neo4j configuration to Spark config if Neo4j writer is enabled.
-    
-    Args:
-        spark_config: Base Spark configuration
-        pipeline_config: Pipeline configuration to check for Neo4j settings
-        
-    Returns:
-        Updated PipelineConfig with Neo4j settings if enabled
-    """
-    # Check if neo4j is enabled in the destinations list
-    if hasattr(pipeline_config, 'enabled_destinations') and 'neo4j' in pipeline_config.enabled_destinations:
-        logger.info("Neo4j in enabled destinations - checking for Neo4j configuration")
-        
-        # Try to get Neo4j config from raw config if available
-        if hasattr(pipeline_config, 'output_destinations_neo4j'):
-            # If it's in the model
-            neo4j_cfg = pipeline_config.output_destinations_neo4j
-        else:
-            # Fall back to hardcoded values from environment (already loaded via dotenv)
-            import os
-            neo4j_cfg = {
-                'uri': os.getenv('NEO4J_URI', 'bolt://localhost:7687'),
-                'username': os.getenv('NEO4J_USERNAME', 'neo4j'),
-                'password': os.getenv('NEO4J_PASSWORD', ''),
-                'database': os.getenv('NEO4J_DATABASE', 'neo4j')
-            }
-            
-        logger.info("Neo4j writer enabled - adding connection configuration to SparkSession")
-        
-        # Add Neo4j connection settings to Spark config
-        spark_config.config["neo4j.url"] = neo4j_cfg.get('uri') if isinstance(neo4j_cfg, dict) else neo4j_cfg.uri
-        spark_config.config["neo4j.authentication.basic.username"] = neo4j_cfg.get('username') if isinstance(neo4j_cfg, dict) else neo4j_cfg.username
-        spark_config.config["neo4j.authentication.basic.password"] = neo4j_cfg.get('password', '') if isinstance(neo4j_cfg, dict) else (neo4j_cfg.get_password() or "")
-        spark_config.config["neo4j.database"] = neo4j_cfg.get('database') if isinstance(neo4j_cfg, dict) else neo4j_cfg.database
-        
-        logger.debug(f"Added Neo4j config for database: {spark_config.config['neo4j.database']}")
-    
-    return spark_config
-
-
-def _add_elasticsearch_config_if_enabled(spark_config: PipelineConfig, pipeline_config: Any) -> PipelineConfig:
-    """
-    Add Elasticsearch configuration to Spark config if Elasticsearch writer is enabled.
-    
-    Args:
-        spark_config: Base Spark configuration
-        pipeline_config: Pipeline configuration to check for Elasticsearch settings
-        
-    Returns:
-        Updated PipelineConfig with Elasticsearch settings if enabled
-    """
-    # Check if Elasticsearch writer is enabled in the pipeline configuration
-    if (hasattr(pipeline_config, 'output_destinations') and 
-        hasattr(pipeline_config.output_destinations, 'archive_elasticsearch') and
-        pipeline_config.output_destinations.elasticsearch.enabled):
-        
-        es_cfg = pipeline_config.output_destinations.elasticsearch
-        logger.info("Elasticsearch writer enabled - adding connection configuration to SparkSession")
-        
-        # Add Elasticsearch connection settings using official es.* namespace
-        spark_config.config["es.nodes"] = ",".join(es_cfg.hosts)
-        
-        # Add authentication if provided
-        if es_cfg.username:
-            spark_config.config["es.net.http.auth.user"] = es_cfg.username
-        if es_cfg.password:
-            spark_config.config["es.net.http.auth.pass"] = es_cfg.get_password() or ""
-            
-        # Add batch and write settings
-        spark_config.config["es.batch.size.entries"] = str(es_cfg.bulk_size)
-        spark_config.config["es.write.operation"] = "upsert"
-        spark_config.config["es.mapping.id"] = "id"  # Default ID field
-        
-        # Add retry settings for resilience
-        spark_config.config["es.batch.write.retry.count"] = "3"
-        spark_config.config["es.batch.write.retry.wait"] = "10s"
-        
-        # Add timeout settings for demo environment
-        spark_config.config["es.http.timeout"] = "2m"
-        spark_config.config["es.http.retries"] = "3"
-        spark_config.config["es.scroll.keepalive"] = "10m"
-        
-        # Enable error logging
-        spark_config.config["es.error.handler.log.error.message"] = "true"
-        spark_config.config["es.error.handler.log.error.reason"] = "true"
-        
-        logger.debug(f"Added Elasticsearch config for nodes: {es_cfg.hosts}")
-    
-    return spark_config
 
 
 @contextmanager
-def spark_session_context(config: PipelineConfig) -> Generator[SparkSession, None, None]:
+def spark_session_context(config: SparkConfig) -> Generator[SparkSession, None, None]:
     """
     Context manager for Spark session lifecycle.
     
@@ -327,13 +239,13 @@ def spark_session_context(config: PipelineConfig) -> Generator[SparkSession, Non
             manager.stop_session()
 
 
-def get_or_create_spark_session(config: PipelineConfig, pipeline_config: Optional[Any] = None) -> SparkSession:
+def get_or_create_spark_session(spark_config: SparkConfig, pipeline_config: Optional[Any] = None) -> SparkSession:
     """
     Get existing or create new Spark session.
     
     Args:
-        config: Spark configuration
-        pipeline_config: Optional pipeline configuration to check for Neo4j and Elasticsearch settings
+        spark_config: Spark configuration
+        pipeline_config: Optional full pipeline configuration with output settings
         
     Returns:
         SparkSession instance
@@ -344,12 +256,14 @@ def get_or_create_spark_session(config: PipelineConfig, pipeline_config: Optiona
     if existing is not None:
         return existing
     
-    # Check if Neo4j or Elasticsearch should be configured at session level
+    # Get all configs from pipeline config if provided (includes Neo4j, Elasticsearch)
+    extra_configs = {}
     if pipeline_config is not None:
-        config = _add_neo4j_config_if_enabled(config, pipeline_config)
-        config = _add_elasticsearch_config_if_enabled(config, pipeline_config)
+        # Use Pydantic method to get all Spark configs
+        extra_configs = pipeline_config.get_spark_configs()
     
-    return manager.create_session(config)
+    # Create session with all configs
+    return manager.create_session(spark_config, extra_configs)
 
 
 def stop_spark_session() -> None:
