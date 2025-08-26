@@ -22,7 +22,7 @@ def test_real_voyage_embeddings():
         print("❌ VOYAGE_API_KEY not found in environment")
         return False
     
-    print(f"✅ VOYAGE_API_KEY loaded: {api_key[:10]}...")
+    print("✅ VOYAGE_API_KEY loaded successfully.")
     
     # Import after env is loaded
     from data_pipeline.config.models import EmbeddingConfig, EmbeddingProvider
