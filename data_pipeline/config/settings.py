@@ -255,7 +255,7 @@ class ConfigurationManager:
             issues.append("Spark is configured for local mode")
         
         # Check data sources
-        if not self._config.data_sources:
+        if not self._config.properties and not self._config.neighborhoods:
             issues.append("No data sources configured")
         
         # Check output configuration

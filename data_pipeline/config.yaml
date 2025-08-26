@@ -119,11 +119,11 @@ output:
 
 # Multi-destination output configuration
 output_destinations:
-  # List of enabled destinations (parquet, neo4j, elasticsearch)
+  # List of enabled destinations (parquet, neo4j, archive_elasticsearch)
   enabled_destinations:
     - "parquet"
     - "neo4j"  # Enable Neo4j
-    # - "elasticsearch"  # Uncomment to enable
+    # - "archive_elasticsearch"  # Uncomment to enable
   
   # Parquet writer configuration
   parquet:

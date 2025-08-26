@@ -16,6 +16,7 @@ from pyspark.sql.functions import (
 )
 
 from data_pipeline.models.graph_models import PropertyTypeNode, PriceRangeNode
+from data_pipeline.enrichment.id_generator import generate_property_type_id, generate_price_range_id
 
 logger = logging.getLogger(__name__)
 
@@ -63,25 +64,25 @@ class PropertyTypeExtractor:
         type_nodes = []
         try:
             for row in type_counts.collect():
-                prop_type = row.get("property_type")
+                prop_type = row["property_type"]
                 if not prop_type:
                     logger.warning("Skipping property type with no value")
                     continue
                 
                 type_node = PropertyTypeNode(
-                    id=f"property_type:{prop_type}",
+                    id=generate_property_type_id(prop_type),
                     name=prop_type,
                     label=prop_type.replace("_", " ").title(),
                     description=self.type_descriptions.get(prop_type, f"{prop_type} property"),
-                    property_count=row.get("property_count", 0)
+                    property_count=row["property_count"]
                 )
                 type_nodes.append(type_node.model_dump())
         except Exception as e:
             logger.error(f"Error creating property type nodes: {e}")
         
-        # Convert to DataFrame
+        # Convert to DataFrame with proper schema
         if type_nodes:
-            return self.spark.createDataFrame(type_nodes)
+            return self.spark.createDataFrame(type_nodes, schema=PropertyTypeNode.spark_schema())
         else:
             return self.spark.createDataFrame([], PropertyTypeNode.spark_schema())
     
@@ -101,6 +102,7 @@ class PropertyTypeExtractor:
             col("property_type").isNotNull()
         ).select(
             col("listing_id").alias("from_id"),
+            # Note: Can't use generate_property_type_id in Spark SQL, so we replicate its logic
             concat(lit("property_type:"), col("property_type")).alias("to_id"),
             lit("OF_TYPE").alias("relationship_type")
         )
@@ -152,10 +154,8 @@ class PriceRangeExtractor:
             
             count_in_range = properties_df.filter(condition).count()
             
-            range_id = range_def["label"].lower().replace(" ", "_").replace("+", "plus")
-            
             range_node = PriceRangeNode(
-                id=f"price_range:{range_id}",
+                id=generate_price_range_id(range_def["label"]),
                 label=range_def["label"],
                 min_price=range_def["min"],
                 max_price=range_def["max"],
@@ -164,8 +164,8 @@ class PriceRangeExtractor:
             )
             range_nodes.append(range_node.model_dump())
         
-        # Convert to DataFrame
-        return self.spark.createDataFrame(range_nodes)
+        # Convert to DataFrame with proper schema
+        return self.spark.createDataFrame(range_nodes, schema=PriceRangeNode.spark_schema())
     
     def create_price_range_relationships(self, properties_df: DataFrame) -> DataFrame:
         """
@@ -185,13 +185,14 @@ class PriceRangeExtractor:
         # Determine price range for each property
         df = df.withColumn(
             "price_range_id",
+            # Note: Can't use generate_price_range_id in Spark SQL, so we replicate its logic
             when(col("listing_price") < 500000, "price_range:under_500k")
             .when((col("listing_price") >= 500000) & (col("listing_price") < 1000000), 
-                  "price_range:500k-1m")
+                  "price_range:500k_1m")
             .when((col("listing_price") >= 1000000) & (col("listing_price") < 2000000), 
-                  "price_range:1m-2m")
+                  "price_range:1m_2m")
             .when((col("listing_price") >= 2000000) & (col("listing_price") < 5000000), 
-                  "price_range:2m-5m")
+                  "price_range:2m_5m")
             .otherwise("price_range:5mplus")
         )
         

@@ -299,8 +299,7 @@ def test_quick_parquet_smoke():
         # Set environment variables for test configuration
         original_env = {}
         test_env = {
-            "PIPELINE_ENV": "test",
-            "DATA_SUBSET_SAMPLE_SIZE": "3"
+            "PIPELINE_ENV": "test"
         }
         
         # Save original environment and set test values
@@ -316,8 +315,8 @@ def test_quick_parquet_smoke():
                 .getOrCreate()
             
             try:
-                # Load test configuration and override the Parquet output path
-                config_manager = ConfigurationManager(environment="test")
+                # Load test configuration with sample size of 3 and override the Parquet output path
+                config_manager = ConfigurationManager(environment="test", sample_size=3)
                 config = config_manager.load_config()
                 config.output_destinations.parquet.base_path = temp_dir
                 

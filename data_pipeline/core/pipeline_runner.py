@@ -155,9 +155,9 @@ class DataPipelineRunner:
                 writers.append(Neo4jOrchestrator(self.config, self.spark))
             
             # Add Elasticsearch writer if enabled
-            if "elasticsearch" in self.config.enabled_destinations:
+            if "archive_elasticsearch" in self.config.enabled_destinations:
                 logger.info("Initializing Elasticsearch writer")
-                from data_pipeline.writers.elasticsearch import ElasticsearchOrchestrator
+                from data_pipeline.writers.archive_elasticsearch import ElasticsearchOrchestrator
                 writers.append(ElasticsearchOrchestrator(self.config, self.spark))
         
         
@@ -479,6 +479,13 @@ class DataPipelineRunner:
                 wikipedia_embedder = WikipediaEmbeddingGenerator(self.spark, self.embedding_config)
                 processed_entities['wikipedia'] = wikipedia_embedder.generate_embeddings(processed_df)
             
+            # Extract additional entity nodes from the processed data
+            logger.info("\n🔍 Extracting entity nodes from processed data...")
+            entity_nodes = self._extract_entity_nodes(loaded_data, processed_entities)
+            
+            # Merge extracted entities into processed_entities
+            processed_entities.update(entity_nodes)
+            
             # Store cached references
             self._cached_dataframes = processed_entities
             
@@ -656,7 +663,7 @@ class DataPipelineRunner:
         
         relationships = {}
         
-        # Build all relationships using the RelationshipBuilder
+        # Build existing relationships using the RelationshipBuilder
         try:
             all_relationships = self.relationship_builder.build_all_relationships(
                 properties_df=entity_dataframes.get('properties'),
@@ -670,12 +677,36 @@ class DataPipelineRunner:
                     logger.info(f"   ✓ Built {rel_name} relationships")
                     relationships[rel_name] = rel_df
             
-            if not relationships:
-                logger.warning("   No relationships built")
-            
         except Exception as e:
-            logger.error(f"Failed to build relationships: {e}")
+            logger.error(f"Failed to build base relationships: {e}")
             # Continue without relationships rather than failing pipeline
+        
+        # Build extended relationships
+        try:
+            logger.info("\n📍 Building Extended Relationships...")
+            extended_relationships = self.relationship_builder.build_extended_relationships(
+                properties_df=entity_dataframes.get('properties'),
+                neighborhoods_df=entity_dataframes.get('neighborhoods'),
+                wikipedia_df=entity_dataframes.get('wikipedia'),
+                features_df=entity_dataframes.get('features'),
+                property_types_df=entity_dataframes.get('property_types'),
+                price_ranges_df=entity_dataframes.get('price_ranges'),
+                counties_df=entity_dataframes.get('counties'),
+                topic_clusters_df=entity_dataframes.get('topic_clusters')
+            )
+            
+            # Add extended relationships
+            for rel_name, rel_df in extended_relationships.items():
+                if rel_df is not None:
+                    logger.info(f"   ✓ Built {rel_name} relationships")
+                    relationships[rel_name] = rel_df
+                    
+        except Exception as e:
+            logger.error(f"Failed to build extended relationships: {e}")
+            # Continue without extended relationships
+        
+        if not relationships:
+            logger.warning("   No relationships built")
         
         return relationships
     
@@ -712,27 +743,77 @@ class DataPipelineRunner:
             self.writer_orchestrator.validate_all_connections()
             
             # Step 1: Write all entity nodes first
-            properties_df = output_dataframes.get('properties')
-            neighborhoods_df = output_dataframes.get('neighborhoods')
-            wikipedia_df = output_dataframes.get('wikipedia')
-            
             logger.info("📝 Writing entity nodes...")
-            result = self.writer_orchestrator.write_dataframes(
-                properties_df=properties_df,
-                neighborhoods_df=neighborhoods_df,
-                wikipedia_df=wikipedia_df,
-                pipeline_name=self.config.name,
-                pipeline_version=self.config.version,
-                environment=self.config_manager.environment if self.config_manager else "test"
-            )
             
-            # Log node write results
-            if result.all_successful():
-                logger.info(f"✅ Entity nodes written successfully")
-                logger.info(f"   Total records written: {result.total_records_written:,}")
+            # Import required types
+            from data_pipeline.models.writer_models import EntityType, WriteMetadata, WriteRequest
+            
+            # Map entity names to EntityType enum
+            entity_type_map = {
+                'properties': EntityType.PROPERTY,
+                'neighborhoods': EntityType.NEIGHBORHOOD,
+                'wikipedia': EntityType.WIKIPEDIA,
+                'features': EntityType.FEATURE,
+                'property_types': EntityType.PROPERTY_TYPE,
+                'price_ranges': EntityType.PRICE_RANGE,
+                'counties': EntityType.COUNTY,
+                'cities': EntityType.CITY,
+                'states': EntityType.STATE,
+                'topic_clusters': EntityType.TOPIC_CLUSTER
+            }
+            
+            total_written = 0
+            failed_entities = []
+            
+            # Write each entity type
+            for entity_name, df in output_dataframes.items():
+                if df is None:
+                    continue
+                    
+                # Skip relationship DataFrames (they have different structure)
+                if "relationship" in entity_name.lower():
+                    continue
+                
+                # Get the entity type
+                entity_type = entity_type_map.get(entity_name)
+                if not entity_type:
+                    logger.warning(f"Skipping unknown entity type: {entity_name}")
+                    continue
+                
+                # Create metadata for this entity
+                metadata = WriteMetadata(
+                    pipeline_name=self.config.name,
+                    pipeline_version=self.config.version,
+                    entity_type=entity_type,
+                    record_count=df.count(),
+                    environment=self.config_manager.environment if self.config_manager else "test"
+                )
+                
+                # Create write request
+                request = WriteRequest(
+                    entity_type=entity_type,
+                    dataframe=df,
+                    metadata=metadata
+                )
+                
+                # Write the entity
+                logger.info(f"   Writing {entity_name}: {metadata.record_count:,} records...")
+                results = self.writer_orchestrator.write_entity(request)
+                
+                # Check results
+                if all(r.success for r in results):
+                    total_written += metadata.record_count
+                    logger.info(f"     ✓ {entity_name} written successfully")
+                else:
+                    failed_entities.append(entity_name)
+                    logger.error(f"     ✗ {entity_name} write failed")
+            
+            # Log overall results
+            if not failed_entities:
+                logger.info(f"✅ All entity nodes written successfully")
+                logger.info(f"   Total records written: {total_written:,}")
             else:
-                logger.error(f"⚠️ Entity node write had failures")
-                logger.error(f"   Failed writes: {result.failed_writes}")
+                logger.error(f"⚠️ Entity node write had failures: {failed_entities}")
                 # Continue to try relationships even if some writes failed
             
             # Step 2: Build and write relationships (if any writers support them)
@@ -748,7 +829,7 @@ class DataPipelineRunner:
                     logger.warning("⚠️ Some relationships failed to write")
             
             # Step 3: Generate and log summary statistics
-            self._log_write_summary(output_dataframes, relationships, result)
+            self._log_write_summary(output_dataframes, relationships, None)
             
             logger.info("="*60)
             logger.info("✅ Pipeline write completed")
@@ -780,42 +861,6 @@ class DataPipelineRunner:
             
             logger.info(f"✅ Results written successfully to {path}")
     
-    def validate_pipeline(self) -> Dict[str, Any]:
-        """
-        Validate pipeline configuration and environment.
-        
-        Returns:
-            Dictionary with validation results
-        """
-        validation_results = {
-            "configuration": {},
-            "environment": {},
-            "data_sources": {}
-        }
-        
-        # Validate configuration
-        validation_results["configuration"]["is_valid"] = True
-        validation_results["configuration"]["production_ready"] = \
-            self.config_manager.validate_for_production()
-        
-        # Validate Spark environment
-        spark_conf = self.spark.sparkContext.getConf()
-        validation_results["environment"]["spark_version"] = \
-            self.spark.sparkContext.version
-        validation_results["environment"]["spark_master"] = \
-            spark_conf.get("spark.master")
-        validation_results["environment"]["available_cores"] = \
-            self.spark.sparkContext.defaultParallelism
-        
-        # Validate data sources
-        for source_name, source_config in self.config.data_sources.items():
-            source_valid = Path(source_config.path).exists() if source_config.enabled else True
-            validation_results["data_sources"][source_name] = {
-                "enabled": source_config.enabled,
-                "exists": source_valid
-            }
-        
-        return validation_results
     
     def stop(self) -> None:
         """Stop the pipeline and clean up resources."""

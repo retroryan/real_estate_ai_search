@@ -18,6 +18,7 @@ from pyspark.sql.functions import (
     col,
     concat,
     count,
+    explode,
     expr,
     least,
     lit,
@@ -27,8 +28,13 @@ from pyspark.sql.functions import (
 )
 from data_pipeline.models.graph_models import (
     DescribesRelationship,
+    HasFeatureRelationship,
+    InCountyRelationship,
+    InPriceRangeRelationship,
+    InTopicClusterRelationship,
     LocatedInRelationship,
     NearRelationship,
+    OfTypeRelationship,
     PartOfRelationship,
     RelationshipType,
     SimilarToRelationship,
@@ -408,3 +414,390 @@ class RelationshipBuilder:
                     })
         
         return stats
+    
+    def build_has_feature_relationships(
+        self,
+        properties_df: DataFrame,
+        features_df: DataFrame
+    ) -> DataFrame:
+        """
+        Build HAS_FEATURE relationships between properties and features.
+        
+        Args:
+            properties_df: Property DataFrame with features array
+            features_df: Feature node DataFrame
+            
+        Returns:
+            DataFrame of HasFeatureRelationship records
+        """
+        # Extract property-feature pairs
+        property_features = properties_df.filter(
+            col("listing_id").isNotNull() &
+            col("features").isNotNull()
+        ).select(
+            col("listing_id"),
+            explode(col("features")).alias("feature_name")
+        )
+        
+        # Normalize feature names for matching
+        property_features = property_features.withColumn(
+            "feature_normalized",
+            lower(col("feature_name"))
+        )
+        
+        # Join with feature nodes (use "id" field from FeatureNode)
+        features_for_join = features_df.select(
+            col("id").alias("feature_id"),
+            lower(col("name")).alias("feature_normalized")
+        )
+        
+        matched = property_features.join(
+            broadcast(features_for_join),
+            "feature_normalized",
+            "inner"
+        )
+        
+        # Create relationship records
+        has_feature_df = matched.select(
+            col("listing_id").alias("from_id"),
+            col("feature_id").alias("to_id"),
+            lit(RelationshipType.HAS_FEATURE.value).alias("relationship_type"),
+            lit(False).alias("is_primary"),  # Could enhance with logic to determine primary features
+            lit(True).alias("verified")
+        ).distinct()
+        
+        logger.info(f"Created {has_feature_df.count()} HAS_FEATURE relationships")
+        return has_feature_df
+    
+    def build_of_type_relationships(
+        self,
+        properties_df: DataFrame,
+        property_types_df: DataFrame
+    ) -> DataFrame:
+        """
+        Build OF_TYPE relationships between properties and property types.
+        
+        Args:
+            properties_df: Property DataFrame with property_type field
+            property_types_df: PropertyType node DataFrame
+            
+        Returns:
+            DataFrame of OfTypeRelationship records
+        """
+        # Extract property types from properties
+        props_with_type = properties_df.filter(
+            col("listing_id").isNotNull() &
+            col("property_type").isNotNull()
+        ).select(
+            col("listing_id"),
+            col("property_type")
+        )
+        
+        # Join with property type nodes (use "id" field from PropertyTypeNode)
+        type_nodes = property_types_df.select(
+            col("id").alias("property_type_id"),
+            col("name").alias("type_name")
+        )
+        
+        matched = props_with_type.join(
+            broadcast(type_nodes),
+            props_with_type["property_type"] == type_nodes["type_name"],
+            "inner"
+        )
+        
+        # Create relationship records
+        of_type_df = matched.select(
+            col("listing_id").alias("from_id"),
+            col("property_type_id").alias("to_id"),
+            lit(RelationshipType.OF_TYPE.value).alias("relationship_type"),
+            lit(1.0).alias("confidence"),
+            lit(True).alias("is_primary")
+        ).distinct()
+        
+        logger.info(f"Created {of_type_df.count()} OF_TYPE relationships")
+        return of_type_df
+    
+    def build_in_price_range_relationships(
+        self,
+        properties_df: DataFrame,
+        price_ranges_df: DataFrame
+    ) -> DataFrame:
+        """
+        Build IN_PRICE_RANGE relationships between properties and price ranges.
+        
+        Args:
+            properties_df: Property DataFrame with listing_price
+            price_ranges_df: PriceRange node DataFrame
+            
+        Returns:
+            DataFrame of InPriceRangeRelationship records
+        """
+        # Filter properties with valid prices
+        props_with_price = properties_df.filter(
+            col("listing_id").isNotNull() &
+            col("listing_price").isNotNull() &
+            (col("listing_price") > 0)
+        ).select(
+            col("listing_id"),
+            col("listing_price")
+        )
+        
+        # Cross join with price ranges to find matching range
+        # Note: Using broadcast for small price_ranges_df
+        price_ranges = broadcast(price_ranges_df.select(
+            col("id").alias("price_range_id"),
+            col("min_price"),
+            col("max_price")
+        ))
+        
+        # Find matching price range for each property
+        matched = props_with_price.crossJoin(price_ranges).filter(
+            (col("listing_price") >= col("min_price")) &
+            (col("listing_price") < col("max_price"))
+        )
+        
+        # Calculate percentile within range
+        in_range_df = matched.select(
+            col("listing_id").alias("from_id"),
+            col("price_range_id").alias("to_id"),
+            lit(RelationshipType.IN_PRICE_RANGE.value).alias("relationship_type"),
+            ((col("listing_price") - col("min_price")) / 
+             (col("max_price") - col("min_price"))).alias("price_percentile"),
+            col("listing_price").alias("actual_price")
+        ).distinct()
+        
+        logger.info(f"Created {in_range_df.count()} IN_PRICE_RANGE relationships")
+        return in_range_df
+    
+    def build_in_county_relationships(
+        self,
+        entities_df: DataFrame,
+        counties_df: DataFrame,
+        entity_type: str = "neighborhood"
+    ) -> DataFrame:
+        """
+        Build IN_COUNTY relationships for geographic hierarchy.
+        
+        Args:
+            entities_df: DataFrame with county field (neighborhoods or cities)
+            counties_df: County node DataFrame
+            entity_type: Type of entity (neighborhood or city)
+            
+        Returns:
+            DataFrame of InCountyRelationship records
+        """
+        # Determine ID field based on entity type
+        id_field = "neighborhood_id" if entity_type == "neighborhood" else "city_id"
+        
+        # Filter entities with county information
+        entities_with_county = entities_df.filter(
+            col(id_field).isNotNull() &
+            col("county").isNotNull() &
+            col("state").isNotNull()
+        ).select(
+            col(id_field).alias("entity_id"),
+            col("county"),
+            col("state")
+        )
+        
+        # Join with county nodes (use "id" field from CountyNode)
+        county_nodes = counties_df.select(
+            col("id").alias("county_id"),
+            col("name").alias("county_name"),
+            col("state").alias("county_state")
+        )
+        
+        matched = entities_with_county.join(
+            broadcast(county_nodes),
+            (lower(entities_with_county["county"]) == lower(county_nodes["county_name"])) &
+            (lower(entities_with_county["state"]) == lower(county_nodes["county_state"])),
+            "inner"
+        )
+        
+        # Create relationship records
+        in_county_df = matched.select(
+            col("entity_id").alias("from_id"),
+            col("county_id").alias("to_id"),
+            lit(RelationshipType.IN_COUNTY.value).alias("relationship_type"),
+            lit(entity_type).alias("hierarchy_level")
+        ).distinct()
+        
+        logger.info(f"Created {in_county_df.count()} IN_COUNTY relationships for {entity_type}")
+        return in_county_df
+    
+    def build_in_topic_cluster_relationships(
+        self,
+        entities_df: DataFrame,
+        topic_clusters_df: DataFrame,
+        entity_type: str,
+        topic_field: str = "key_topics"
+    ) -> DataFrame:
+        """
+        Build IN_TOPIC_CLUSTER relationships between entities and topic clusters.
+        
+        Args:
+            entities_df: Entity DataFrame with topics (properties, neighborhoods, or wikipedia)
+            topic_clusters_df: TopicCluster node DataFrame
+            entity_type: Type of entity (property, neighborhood, wikipedia)
+            topic_field: Field containing topics in entity DataFrame
+            
+        Returns:
+            DataFrame of InTopicClusterRelationship records
+        """
+        # Determine ID field based on entity type
+        id_fields = {
+            "property": "listing_id",
+            "neighborhood": "neighborhood_id",
+            "wikipedia": "page_id"
+        }
+        id_field = id_fields.get(entity_type, "entity_id")
+        
+        # Filter entities with topics
+        entities_with_topics = entities_df.filter(
+            col(id_field).isNotNull() &
+            col(topic_field).isNotNull() &
+            (expr(f"size({topic_field})") > 0)
+        ).select(
+            col(id_field).alias("entity_id"),
+            col(topic_field).alias("entity_topics")
+        )
+        
+        # Get topic clusters (use "id" field from TopicClusterNode)
+        clusters = topic_clusters_df.select(
+            col("id").alias("topic_cluster_id"),
+            col("topics").alias("cluster_topics")
+        )
+        
+        # Cross join to find matching topics
+        joined = entities_with_topics.crossJoin(broadcast(clusters))
+        
+        # Calculate relevance based on topic overlap
+        matched = joined.withColumn(
+            "common_topics",
+            expr("size(array_intersect(entity_topics, cluster_topics))")
+        ).filter(
+            col("common_topics") > 0
+        )
+        
+        # Calculate relevance score
+        in_cluster_df = matched.withColumn(
+            "relevance_score",
+            col("common_topics") / expr("greatest(size(entity_topics), size(cluster_topics))")
+        ).select(
+            col("entity_id").alias("from_id"),
+            col("topic_cluster_id").alias("to_id"),
+            lit(RelationshipType.IN_TOPIC_CLUSTER.value).alias("relationship_type"),
+            col("relevance_score"),
+            lit(entity_type).alias("extraction_source"),
+            when(col("relevance_score") >= 0.5, lit(0.8))
+            .when(col("relevance_score") >= 0.3, lit(0.6))
+            .otherwise(lit(0.4)).alias("confidence")
+        ).distinct()
+        
+        logger.info(f"Created {in_cluster_df.count()} IN_TOPIC_CLUSTER relationships for {entity_type}")
+        return in_cluster_df
+    
+    def build_extended_relationships(
+        self,
+        properties_df: Optional[DataFrame] = None,
+        neighborhoods_df: Optional[DataFrame] = None,
+        wikipedia_df: Optional[DataFrame] = None,
+        features_df: Optional[DataFrame] = None,
+        property_types_df: Optional[DataFrame] = None,
+        price_ranges_df: Optional[DataFrame] = None,
+        counties_df: Optional[DataFrame] = None,
+        topic_clusters_df: Optional[DataFrame] = None
+    ) -> Dict[str, DataFrame]:
+        """
+        Build extended relationships for new entity types.
+        
+        Args:
+            properties_df: Property DataFrame
+            neighborhoods_df: Neighborhood DataFrame
+            wikipedia_df: Wikipedia DataFrame
+            features_df: Feature node DataFrame
+            property_types_df: PropertyType node DataFrame
+            price_ranges_df: PriceRange node DataFrame
+            counties_df: County node DataFrame
+            topic_clusters_df: TopicCluster node DataFrame
+            
+        Returns:
+            Dictionary of relationship DataFrames by type
+        """
+        relationships = {}
+        
+        # HAS_FEATURE relationships
+        if properties_df is not None and features_df is not None:
+            try:
+                relationships["has_feature"] = self.build_has_feature_relationships(
+                    properties_df, features_df
+                )
+                logger.info("✓ Built HAS_FEATURE relationships")
+            except Exception as e:
+                logger.error(f"Failed to build HAS_FEATURE relationships: {e}")
+        
+        # OF_TYPE relationships
+        if properties_df is not None and property_types_df is not None:
+            try:
+                relationships["of_type"] = self.build_of_type_relationships(
+                    properties_df, property_types_df
+                )
+                logger.info("✓ Built OF_TYPE relationships")
+            except Exception as e:
+                logger.error(f"Failed to build OF_TYPE relationships: {e}")
+        
+        # IN_PRICE_RANGE relationships
+        if properties_df is not None and price_ranges_df is not None:
+            try:
+                relationships["in_price_range"] = self.build_in_price_range_relationships(
+                    properties_df, price_ranges_df
+                )
+                logger.info("✓ Built IN_PRICE_RANGE relationships")
+            except Exception as e:
+                logger.error(f"Failed to build IN_PRICE_RANGE relationships: {e}")
+        
+        # IN_COUNTY relationships
+        if counties_df is not None:
+            # Neighborhoods to counties
+            if neighborhoods_df is not None:
+                try:
+                    relationships["neighborhood_in_county"] = self.build_in_county_relationships(
+                        neighborhoods_df, counties_df, "neighborhood"
+                    )
+                    logger.info("✓ Built IN_COUNTY relationships for neighborhoods")
+                except Exception as e:
+                    logger.error(f"Failed to build IN_COUNTY relationships for neighborhoods: {e}")
+        
+        # IN_TOPIC_CLUSTER relationships
+        if topic_clusters_df is not None:
+            # Properties to topic clusters
+            if properties_df is not None and "aggregated_topics" in properties_df.columns:
+                try:
+                    relationships["property_in_topic"] = self.build_in_topic_cluster_relationships(
+                        properties_df, topic_clusters_df, "property", "aggregated_topics"
+                    )
+                    logger.info("✓ Built IN_TOPIC_CLUSTER relationships for properties")
+                except Exception as e:
+                    logger.error(f"Failed to build IN_TOPIC_CLUSTER for properties: {e}")
+            
+            # Neighborhoods to topic clusters
+            if neighborhoods_df is not None and "aggregated_topics" in neighborhoods_df.columns:
+                try:
+                    relationships["neighborhood_in_topic"] = self.build_in_topic_cluster_relationships(
+                        neighborhoods_df, topic_clusters_df, "neighborhood", "aggregated_topics"
+                    )
+                    logger.info("✓ Built IN_TOPIC_CLUSTER relationships for neighborhoods")
+                except Exception as e:
+                    logger.error(f"Failed to build IN_TOPIC_CLUSTER for neighborhoods: {e}")
+            
+            # Wikipedia articles to topic clusters
+            if wikipedia_df is not None:
+                try:
+                    relationships["wikipedia_in_topic"] = self.build_in_topic_cluster_relationships(
+                        wikipedia_df, topic_clusters_df, "wikipedia", "key_topics"
+                    )
+                    logger.info("✓ Built IN_TOPIC_CLUSTER relationships for Wikipedia articles")
+                except Exception as e:
+                    logger.error(f"Failed to build IN_TOPIC_CLUSTER for Wikipedia: {e}")
+        
+        return relationships

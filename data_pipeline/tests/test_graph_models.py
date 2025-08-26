@@ -18,14 +18,12 @@ from data_pipeline.models.graph_models import (
     CityNode,
     StateNode,
     WikipediaArticleNode,
-    AmenityNode,
     LocatedInRelationship,
     PartOfRelationship,
     DescribesRelationship,
     NearRelationship,
     SimilarToRelationship,
     PropertyType,
-    AmenityType,
     GraphConfiguration,
     create_node_id,
     validate_coordinates
@@ -178,29 +176,6 @@ class TestGraphModels:
         assert node.confidence == 0.95
         assert len(node.key_topics) == 3
         print("✅ WikipediaArticleNode validation passed")
-        
-        return node
-    
-    def test_amenity_node(self):
-        """Test AmenityNode model."""
-        amenity_data = {
-            "id": "amenity_golden_gate_park",
-            "name": "Golden Gate Park",
-            "amenity_type": AmenityType.PARK,
-            "city": "San Francisco",
-            "state": "CA",
-            "latitude": 37.7694,
-            "longitude": -122.4862,
-            "description": "Large urban park",
-            "source_article_id": "wiki_123456",
-            "extraction_confidence": 0.9
-        }
-        
-        node = AmenityNode(**amenity_data)
-        assert node.name == "Golden Gate Park"
-        assert node.amenity_type == AmenityType.PARK.value
-        assert node.extraction_confidence == 0.9
-        print("✅ AmenityNode validation passed")
         
         return node
     
@@ -374,7 +349,6 @@ class TestGraphModels:
             city_node = self.test_city_node()
             state_node = self.test_state_node()
             wikipedia_node = self.test_wikipedia_article_node()
-            amenity_node = self.test_amenity_node()
             
             # Test relationships
             self.test_relationships()

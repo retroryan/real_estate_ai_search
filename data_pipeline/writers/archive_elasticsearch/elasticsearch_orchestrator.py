@@ -345,4 +345,4 @@ class ElasticsearchOrchestrator(EntityWriter):
         Returns:
             String identifier for this writer
         """
-        return "elasticsearch"
+        return "archive_elasticsearch"

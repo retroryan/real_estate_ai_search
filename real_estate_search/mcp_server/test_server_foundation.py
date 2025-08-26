@@ -297,7 +297,7 @@ def test_requirements_file():
         "fastmcp",
         "pydantic",
         "pydantic-settings",
-        "elasticsearch[async]",
+        "archive_elasticsearch[async]",
         "uvicorn",
         "httpx",
         "structlog"

@@ -133,7 +133,9 @@ class BaseExtractor(ABC):
         """
         if models:
             try:
-                return self.spark.createDataFrame(models)
+                # Use the model's spark schema for proper type inference
+                schema = model_class.spark_schema()
+                return self.spark.createDataFrame(models, schema=schema)
             except Exception as e:
                 logger.error(f"Error creating DataFrame from models: {e}")
                 return self.create_empty_dataframe(model_class)

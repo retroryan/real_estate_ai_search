@@ -19,6 +19,13 @@ class EntityType(str, Enum):
     PROPERTY = "property"
     NEIGHBORHOOD = "neighborhood"
     WIKIPEDIA = "wikipedia"
+    FEATURE = "feature"
+    PROPERTY_TYPE = "property_type"
+    PRICE_RANGE = "price_range"
+    COUNTY = "county"
+    CITY = "city"
+    STATE = "state"
+    TOPIC_CLUSTER = "topic_cluster"
 
 
 class WriteMetadata(BaseModel):
@@ -237,6 +244,57 @@ class WriteSessionResult(BaseModel):
         json_serializers={
             datetime: lambda v: v.isoformat()
         }
+    )
+
+
+class RelationshipConfig(BaseModel):
+    """Configuration for a Neo4j relationship type."""
+    
+    source_labels: str = Field(
+        description="Neo4j labels for source nodes (e.g., ':Property')"
+    )
+    source_keys: str = Field(
+        description="Mapping of DataFrame column to node property (e.g., 'from_id:listing_id')"
+    )
+    target_labels: str = Field(
+        description="Neo4j labels for target nodes (e.g., ':Neighborhood')"
+    )
+    target_keys: str = Field(
+        description="Mapping of DataFrame column to node property (e.g., 'to_id:neighborhood_id')"
+    )
+    
+    model_config = ConfigDict(
+        frozen=True  # Make immutable for use as dict values
+    )
+
+
+class RelationshipType(str, Enum):
+    """Supported relationship types in Neo4j."""
+    
+    LOCATED_IN = "LOCATED_IN"
+    PART_OF = "PART_OF"
+    DESCRIBES = "DESCRIBES"
+    SIMILAR_TO = "SIMILAR_TO"
+    NEAR = "NEAR"
+    HAS_FEATURE = "HAS_FEATURE"
+    OF_TYPE = "OF_TYPE"
+    IN_PRICE_RANGE = "IN_PRICE_RANGE"
+    IN_COUNTY = "IN_COUNTY"
+    IN_TOPIC_CLUSTER = "IN_TOPIC_CLUSTER"
+
+
+class Neo4jEntityConfig(BaseModel):
+    """Configuration for writing an entity type to Neo4j."""
+    
+    label: str = Field(
+        description="Neo4j node label (e.g., 'Property', 'Neighborhood')"
+    )
+    key_field: str = Field(
+        description="Unique identifier field in the DataFrame"
+    )
+    
+    model_config = ConfigDict(
+        frozen=True  # Make immutable for use as dict values
     )
 
 

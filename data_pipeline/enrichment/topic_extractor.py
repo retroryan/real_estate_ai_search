@@ -19,6 +19,7 @@ from pyspark.sql.functions import (
 )
 
 from data_pipeline.models.graph_models import TopicClusterNode
+from data_pipeline.enrichment.id_generator import generate_topic_cluster_id
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,7 @@ class TopicExtractor:
         # Create topic cluster nodes
         cluster_nodes = []
         for category, topics in topic_groups.items():
-            cluster_id = f"topic_cluster:{category}"
+            cluster_id = generate_topic_cluster_id(category)
             
             # Get top topics (limit to 20 most common)
             top_topics = sorted(topics)[:20]
@@ -179,7 +180,7 @@ class TopicExtractor:
         
         # Convert to DataFrame
         if cluster_nodes:
-            return self.spark.createDataFrame(cluster_nodes)
+            return self.spark.createDataFrame(cluster_nodes, schema=TopicClusterNode.spark_schema())
         else:
             return self.spark.createDataFrame([], TopicClusterNode.spark_schema())
     
@@ -206,8 +207,10 @@ class TopicExtractor:
         
         # Create Wikipedia article to topic cluster relationships
         if wikipedia_df and "key_topics" in wikipedia_df.columns:
+            # Use page_id for Wikipedia articles
+            id_col = "page_id" if "page_id" in wikipedia_df.columns else "id"
             wiki_topics = wikipedia_df.select(
-                col("id").alias("from_id"),
+                col(id_col).alias("from_id"),
                 explode(col("key_topics")).alias("topic")
             ).filter(
                 col("topic").isNotNull()
@@ -219,7 +222,7 @@ class TopicExtractor:
                 category = self.categorize_topic(row["topic"])
                 wiki_rels.append({
                     "from_id": row["from_id"],
-                    "to_id": f"topic_cluster:{category}",
+                    "to_id": generate_topic_cluster_id(category),
                     "relationship_type": "IN_TOPIC_CLUSTER"
                 })
             

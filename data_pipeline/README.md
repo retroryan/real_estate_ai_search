@@ -33,9 +33,6 @@ pip install -e .
 # Install the module (from parent directory)
 pip install -e data_pipeline/
 
-# Run test pipeline (10 records, mock embeddings)
-python -m data_pipeline --test-mode
-
 # Process with real embeddings (50 records)
 python -m data_pipeline --sample-size 50
 
@@ -43,10 +40,10 @@ python -m data_pipeline --sample-size 50
 python -m data_pipeline --sample-size 100 --output-destination neo4j
 
 # Load to Elasticsearch for search
-python -m data_pipeline --sample-size 100 --output-destination elasticsearch
+python -m data_pipeline --sample-size 100 --output-destination archive_elasticsearch
 
 # Full pipeline with all destinations
-python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
+python -m data_pipeline --output-destination parquet,neo4j,archive_elasticsearch
 ```
 
 ## Integration Testing
@@ -115,7 +112,7 @@ python -m data_pipeline --sample-size 5 --output-destination neo4j
 python -m data_pipeline --output-destination neo4j --entities properties,neighborhoods
 
 # Load to both Neo4j and Parquet
-python -m data_pipeline --output-destination neo4j,elasticsearch,parquet
+python -m data_pipeline --output-destination neo4j,archive_elasticsearch,parquet
 ```
 
 #### 4. Verify Data in Neo4j
@@ -201,13 +198,10 @@ OPENAI_API_KEY=your-key-here
 # Sample size control
 python -m data_pipeline --sample-size 100
 
-# Test mode (10 records, mock embeddings)
-python -m data_pipeline --test-mode
-
 # Output destinations
 python -m data_pipeline --output-destination neo4j
-python -m data_pipeline --output-destination elasticsearch
-python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
+python -m data_pipeline --output-destination archive_elasticsearch
+python -m data_pipeline --output-destination parquet,neo4j,archive_elasticsearch
 
 # Custom output path
 python -m data_pipeline --output /path/to/results
@@ -296,7 +290,7 @@ curl http://localhost:7474
 curl http://localhost:9200
 
 # Test with small dataset
-python -m data_pipeline --sample-size 5 --output-destination elasticsearch
+python -m data_pipeline --sample-size 5 --output-destination archive_elasticsearch
 ```
 
 ### Debug Commands
@@ -356,7 +350,7 @@ output_destinations:
   enabled_destinations:
     - parquet
     - neo4j
-    - elasticsearch
+    - archive_elasticsearch
 ```
 
 ### Environment Variables
