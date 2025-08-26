@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Test script for SQUACK Pipeline Phase 3 - Processing Pipeline."""
+"""Test script for SQUACK Pipeline Medallion Architecture - Bronze, Silver, and Gold tier processing."""
 
+import sys
 import time
 import tempfile
 from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.orchestrator.pipeline import PipelineOrchestrator
@@ -21,13 +25,21 @@ def test_medallion_architecture():
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         
-        # Configure test settings
+        # Configure test settings with mock embeddings
+        from squack_pipeline.config.settings import EmbeddingProvider
+        
         test_settings = PipelineSettings(
             data={
                 "input_path": Path("real_estate_data"),
                 "output_path": temp_path / "output",
                 "properties_file": "properties_sf.json",
                 "sample_size": 5
+            },
+            embedding={
+                "provider": EmbeddingProvider.MOCK
+            },
+            processing={
+                "generate_embeddings": False  # Disable for medallion test
             },
             dry_run=False,
             environment="test",
@@ -103,11 +115,19 @@ def test_data_quality():
     logger.info("=" * 50)
     
     # Test with minimal settings for quality check
+    from squack_pipeline.config.settings import EmbeddingProvider
+    
     test_settings = PipelineSettings(
         data={
             "input_path": Path("real_estate_data"),
             "properties_file": "properties_sf.json",
             "sample_size": 3
+        },
+        embedding={
+            "provider": EmbeddingProvider.MOCK
+        },
+        processing={
+            "generate_embeddings": False
         },
         dry_run=True,
         environment="test"

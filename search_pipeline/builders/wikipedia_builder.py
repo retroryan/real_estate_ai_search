@@ -98,9 +98,6 @@ class WikipediaDocumentBuilder(BaseDocumentBuilder):
         page_id = self._extract_page_id(row)
         title = self.clean_text(self.extract_field(row, "title", ""))
         
-        # Use page_id as listing_id for base document
-        listing_id = str(page_id)
-        
         # Extract content fields
         url = self.extract_field(row, "url")
         summary = self.clean_text(self.extract_field(row, "summary"))
@@ -139,9 +136,13 @@ class WikipediaDocumentBuilder(BaseDocumentBuilder):
         embedding_dimension = self.extract_field(row, "embedding_dimension")
         embedded_at = self._parse_date(self.extract_field(row, "embedded_at"))
         
-        # Create document
+        # Create document with new ID mapping
         return WikipediaDocument(
-            listing_id=listing_id,
+            # Base document fields
+            doc_id=str(page_id),  # Use page_id as doc_id
+            entity_id=str(page_id),
+            entity_type="wikipedia",
+            # Wikipedia-specific fields
             page_id=page_id,
             title=title,
             url=url,

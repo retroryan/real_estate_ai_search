@@ -73,7 +73,7 @@ def main():
         runner = DataPipelineRunner(config)
         
         logger.info("Starting pipeline execution...")
-        result = runner.run_full_pipeline_with_embeddings()
+        result = runner.run_full_pipeline()
         
         # Write outputs
         logger.info("Writing outputs...")

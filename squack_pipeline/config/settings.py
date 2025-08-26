@@ -59,7 +59,7 @@ class ParquetConfig(BaseSettings):
 class EmbeddingConfig(BaseModel):
     """Embedding generation configuration following common_embeddings patterns."""
     
-    provider: EmbeddingProvider = Field(default=EmbeddingProvider.VOYAGE, description="Embedding provider")
+    provider: EmbeddingProvider = Field(default=EmbeddingProvider.MOCK, description="Embedding provider")
     
     # Voyage AI settings
     voyage_api_key: Optional[str] = Field(default=None, description="Voyage API key (from env var)")

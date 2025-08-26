@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Test script for SQUACK Pipeline Phase 6 - Complete Orchestration."""
+"""Test script for SQUACK Pipeline Orchestration - State management, metrics, and end-to-end pipeline execution."""
 
 import os
+import sys
 import time
 import tempfile
 from pathlib import Path
 import json
 import subprocess
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.orchestrator.pipeline import PipelineOrchestrator

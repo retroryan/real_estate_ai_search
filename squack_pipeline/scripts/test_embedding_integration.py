@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Test script for SQUACK Pipeline Phase 4 - Embedding Integration."""
+"""Test script for SQUACK Pipeline Embedding Integration - LlamaIndex document processing and embedding generation."""
 
 import os
+import sys
 import time
 import tempfile
 from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.orchestrator.pipeline import PipelineOrchestrator

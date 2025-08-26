@@ -157,11 +157,10 @@ class DataPipelineRunner:
     
     def run_full_pipeline(self) -> Dict[str, DataFrame]:
         """
-        Execute the complete data pipeline WITHOUT embeddings.
-        Use run_full_pipeline_with_embeddings() for the complete pipeline.
+        Execute the complete data pipeline with embeddings.
         
         Returns:
-            Dictionary of processed DataFrames by entity type
+            Dictionary of processed DataFrames by entity type with embeddings
         """
         self._pipeline_start_time = datetime.now()
         
@@ -201,28 +200,45 @@ class DataPipelineRunner:
             # Process each entity type separately
             processed_entities = {}
             
+            # Import entity-specific embedding generators
+            from data_pipeline.processing.entity_embeddings import (
+                PropertyEmbeddingGenerator, 
+                NeighborhoodEmbeddingGenerator, 
+                WikipediaEmbeddingGenerator
+            )
+            
             # Process neighborhoods first (needed for property enrichment)
             if loaded_data.neighborhoods is not None:
-                logger.info("\n🏘️ Processing neighborhoods...")
-                processed_entities['neighborhoods'] = self._process_neighborhoods(
-                    loaded_data.neighborhoods
-                )
+                logger.info("\n🏘️ Processing neighborhoods with embeddings...")
+                processed_df = self._process_neighborhoods(loaded_data.neighborhoods)
+                
+                # Generate neighborhood-specific embeddings
+                logger.info("   🔮 Generating neighborhood embeddings...")
+                neighborhood_embedder = NeighborhoodEmbeddingGenerator(self.spark, self.embedding_config)
+                processed_entities['neighborhoods'] = neighborhood_embedder.generate_embeddings(processed_df)
+                
                 # Set neighborhoods data for property enricher
                 self.property_enricher.set_neighborhoods_data(processed_entities['neighborhoods'])
             
-            # Process properties
+            # Process properties with embeddings
             if loaded_data.properties is not None:
-                logger.info("\n🏠 Processing properties...")
-                processed_entities['properties'] = self._process_properties(
-                    loaded_data.properties
-                )
+                logger.info("\n🏠 Processing properties with embeddings...")
+                processed_df = self._process_properties(loaded_data.properties)
+                
+                # Generate property-specific embeddings
+                logger.info("   🔮 Generating property embeddings...")
+                property_embedder = PropertyEmbeddingGenerator(self.spark, self.embedding_config)
+                processed_entities['properties'] = property_embedder.generate_embeddings(processed_df)
             
-            # Process Wikipedia articles
+            # Process Wikipedia articles with embeddings
             if loaded_data.wikipedia is not None:
-                logger.info("\n📚 Processing Wikipedia articles...")
-                processed_entities['wikipedia'] = self._process_wikipedia(
-                    loaded_data.wikipedia
-                )
+                logger.info("\n📚 Processing Wikipedia articles with embeddings...")
+                processed_df = self._process_wikipedia(loaded_data.wikipedia)
+                
+                # Generate Wikipedia-specific embeddings
+                logger.info("   🔮 Generating Wikipedia embeddings...")
+                wikipedia_embedder = WikipediaEmbeddingGenerator(self.spark, self.embedding_config)
+                processed_entities['wikipedia'] = wikipedia_embedder.generate_embeddings(processed_df)
             
             # Fork point: Process based on output destinations
             logger.info("\n🔀 Fork point: Processing based on output destinations...")
@@ -276,7 +292,7 @@ class DataPipelineRunner:
             # Calculate and log execution time
             execution_time = (datetime.now() - self._pipeline_start_time).total_seconds()
             logger.info(f"⏱️  Pipeline completed in {execution_time:.2f} seconds")
-            logger.info("🎉 Pipeline execution successful!")
+            logger.info("✨ Pipeline with embeddings completed successfully!")
             
             return processed_entities
             
@@ -423,156 +439,6 @@ class DataPipelineRunner:
         processed_df = self.wikipedia_text_processor.process(enriched_df)
         
         return processed_df
-    
-    def run_full_pipeline_with_embeddings(self) -> Dict[str, DataFrame]:
-        """
-        Execute the complete pipeline including embedding generation.
-        
-        This follows the entity-specific approach:
-        load → process each entity → add embeddings → output
-        
-        Each entity type is processed independently with its own logic.
-        
-        Returns:
-            Dictionary of final DataFrames with embeddings by entity type
-        """
-        self._pipeline_start_time = datetime.now()
-        
-        logger.info("="*60)
-        logger.info(f"🚀 Starting {self.config.name} v{self.config.version} with Embeddings")
-        logger.info("="*60)
-        
-        try:
-            # Step 1: Load all data sources as separate DataFrames
-            logger.info("📥 Loading data from all sources...")
-            loaded_data = self.loader.load_all_sources()
-            
-            # Log loading summary without forcing evaluation
-            if loaded_data.properties is not None:
-                logger.info("   ✓ Properties data loaded")
-            if loaded_data.neighborhoods is not None:
-                logger.info("   ✓ Neighborhoods data loaded")
-            if loaded_data.wikipedia is not None:
-                logger.info("   ✓ Wikipedia data loaded")
-            if loaded_data.locations is not None:
-                logger.info("   ✓ Locations data loaded")
-            
-            # Check if any data was loaded without forcing evaluation
-            has_data = (
-                loaded_data.properties is not None or
-                loaded_data.neighborhoods is not None or
-                loaded_data.wikipedia is not None or
-                loaded_data.locations is not None
-            )
-            
-            if not has_data:
-                logger.warning("No data loaded. Pipeline terminating.")
-                return {}
-            
-            logger.info("   Data loading complete")
-            
-            # Process each entity type separately WITH embeddings
-            processed_entities = {}
-            
-            # Import entity-specific embedding generators
-            from data_pipeline.processing.entity_embeddings import (
-                PropertyEmbeddingGenerator,
-                NeighborhoodEmbeddingGenerator, 
-                WikipediaEmbeddingGenerator
-            )
-            
-            # Process neighborhoods first (needed for property enrichment)
-            if loaded_data.neighborhoods is not None:
-                logger.info("\n🏘️ Processing neighborhoods with embeddings...")
-                processed_df = self._process_neighborhoods(loaded_data.neighborhoods)
-                
-                # Generate neighborhood-specific embeddings
-                logger.info("   🔮 Generating neighborhood embeddings...")
-                neighborhood_embedder = NeighborhoodEmbeddingGenerator(self.spark, self.embedding_config)
-                processed_entities['neighborhoods'] = neighborhood_embedder.generate_embeddings(processed_df)
-                
-                # Set neighborhoods data for property enricher
-                self.property_enricher.set_neighborhoods_data(processed_entities['neighborhoods'])
-            
-            # Process properties with embeddings
-            if loaded_data.properties is not None:
-                logger.info("\n🏠 Processing properties with embeddings...")
-                processed_df = self._process_properties(loaded_data.properties)
-                
-                # Generate property-specific embeddings
-                logger.info("   🔮 Generating property embeddings...")
-                property_embedder = PropertyEmbeddingGenerator(self.spark, self.embedding_config)
-                processed_entities['properties'] = property_embedder.generate_embeddings(processed_df)
-            
-            # Process Wikipedia articles with embeddings
-            if loaded_data.wikipedia is not None:
-                logger.info("\n📚 Processing Wikipedia articles with embeddings...")
-                processed_df = self._process_wikipedia(loaded_data.wikipedia)
-                
-                # Generate Wikipedia-specific embeddings
-                logger.info("   🔮 Generating Wikipedia embeddings...")
-                wikipedia_embedder = WikipediaEmbeddingGenerator(self.spark, self.embedding_config)
-                processed_entities['wikipedia'] = wikipedia_embedder.generate_embeddings(processed_df)
-            
-            # Fork point: Process based on output destinations
-            logger.info("\n🔀 Fork point: Processing based on output destinations...")
-            logger.info(f"Enabled destinations: {self.config.output.enabled_destinations}")
-            
-            # Create search config if needed
-            search_config = None
-            if "elasticsearch" in self.config.output.enabled_destinations:
-                search_config = self._get_search_config()
-            
-            # Prepare extractors for graph processing if needed
-            entity_extractors = None
-            if "neo4j" in self.config.output.enabled_destinations:
-                entity_extractors = {
-                    "feature_extractor": self.feature_extractor,
-                    "property_type_extractor": self.property_type_extractor,
-                    "price_range_extractor": self.price_range_extractor,
-                    "zip_code_extractor": self.zip_code_extractor,
-                    "city_extractor": self.city_extractor,
-                    "county_extractor": self.county_extractor,
-                    "state_extractor": self.state_extractor,
-                    "topic_extractor": self.topic_extractor,
-                    "locations_data": loaded_data.locations
-                }
-            
-            # Process all required paths
-            processing_result, output_data = self.pipeline_fork.process_paths(
-                processed_entities,
-                spark=self.spark,
-                search_config=search_config,
-                entity_extractors=entity_extractors
-            )
-            
-            # Update processed_entities based on processing results
-            if "neo4j" in output_data:
-                processed_entities = output_data["neo4j"]
-            elif "parquet" in output_data:
-                processed_entities = output_data["parquet"]
-            
-            # Log any processing errors
-            if not processing_result.is_successful():
-                for error in processing_result.get_errors():
-                    logger.error(f"Processing error: {error}")
-            
-            # Store cached references
-            self._cached_dataframes = processed_entities
-            
-            # Generate summary statistics
-            self._print_entity_pipeline_summary(processed_entities)
-            
-            # Calculate and log execution time
-            execution_time = (datetime.now() - self._pipeline_start_time).total_seconds()
-            logger.info(f"⏱️  Pipeline completed in {execution_time:.2f} seconds")
-            logger.info("✨ Pipeline with embeddings completed successfully!")
-            
-            return processed_entities
-            
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
-            raise
     
     def _print_entity_pipeline_summary(self, entity_dataframes: Dict[str, DataFrame]) -> None:
         """

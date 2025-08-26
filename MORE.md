@@ -1,5 +1,24 @@
 # Complete Elasticsearch Data Loading and Indexing
 
+## Current Status Update (As of Implementation Phase 1)
+
+### Phase 1 Completed Tasks
+- ✅ Updated BaseDocument to use generic doc_id field instead of listing_id
+- ✅ Added entity_id and entity_type fields to BaseDocument for tracking
+- ✅ Modified PropertyDocumentBuilder to map listing_id → doc_id
+- ✅ Modified NeighborhoodDocumentBuilder to map neighborhood_id → doc_id  
+- ✅ Modified WikipediaDocumentBuilder to map page_id → doc_id
+- ✅ Fixed field mapper array handling error (replaced string parsing with proper split function)
+- ✅ Updated search runner to use doc_id for Elasticsearch document ID mapping
+- ✅ Removed listing_id from required fields for neighborhoods and Wikipedia in field_mappings.json
+- ✅ Verified Neo4j path independence from search pipeline changes
+
+### Current Issues
+- ❌ Field mapper still failing with array type mismatches
+- ❌ JSON-based field mapping is fragile and violates Spark best practices
+- ❌ Document builders using collect() which is inefficient for large datasets
+- ❌ No proper schema validation at DataFrame transformation stage
+
 ## Complete Cut-Over Requirements
 
 * COMPLETE CHANGE: All occurrences must be changed in a single, atomic update
@@ -16,35 +35,31 @@
 * if hasattr should never be used
 * If it doesn't work don't hack and mock. Fix the core issue
 * If there is questions please ask me!!!
+* NO OVER-ENGINEERING: This is a high-quality demo, not production - keep it simple
+* ARCHIVE ELASTICSEARCH REMOVED: The archive writer path has been eliminated
 
 ## Executive Summary
 
-The Elasticsearch integration is architecturally complete but data loading is failing due to field mapping mismatches between the data pipeline output and search pipeline expectations. Currently, only neighborhoods (21 documents) are successfully indexed with embeddings, while properties (0 documents) and Wikipedia articles (0 documents) fail to index due to simple field naming and requirement issues.
+The Elasticsearch integration is architecturally complete but data loading is failing due to field mapping mismatches between the data pipeline output and search pipeline expectations. The current implementation violates Spark best practices by using JSON-based field mapping and collecting DataFrames to driver memory.
 
-## Critical Architecture Discovery: Dual Elasticsearch Paths
+## Critical Architecture Discovery: Simplified Data Paths
 
-After deep analysis of the pipeline fork implementation, there are **TWO completely independent Elasticsearch writing paths** that run in parallel:
+After deep analysis of the pipeline fork implementation, there are **TWO independent data processing paths**:
 
-### Path 1: Archive Elasticsearch Writer (WORKING)
-- Location: `data_pipeline/writers/archive_elasticsearch/`
-- Function: Direct DataFrame-to-Elasticsearch writing using Spark connector
-- Status: **Successfully writes data** (neighborhoods indexed correctly)
-- Trigger: When "elasticsearch" is in output.enabled_destinations
-- Independence: Completely separate from Neo4j and search pipeline
-
-### Path 2: Search Pipeline (FAILING)
+### Path 1: Search Pipeline (NEEDS FIXING)
 - Location: `search_pipeline/`
 - Function: Transforms DataFrames → Documents → Elasticsearch
 - Status: **Fails at document building stage** 
-- Trigger: When fork detects "elasticsearch" destination
-- Independence: Completely separate from Neo4j and archive writer
+- Trigger: When "elasticsearch" is in output.enabled_destinations
+- Independence: Completely separate from Neo4j
+- **Note**: Archive Elasticsearch writer has been removed - search pipeline is the only ES path
 
-### Neo4j Path (UNAFFECTED)
+### Path 2: Neo4j Path (UNAFFECTED)
 - Location: Graph path in pipeline fork
 - Function: Entity extraction and graph building
 - Status: Working correctly
 - Trigger: When "neo4j" is in output.enabled_destinations
-- Independence: **Completely isolated from both Elasticsearch paths**
+- Independence: **Completely isolated from search pipeline**
 
 ## Current State Analysis
 
@@ -52,209 +67,362 @@ After deep analysis of the pipeline fork implementation, there are **TWO complet
 - Elasticsearch indices are properly created with correct mappings including dense_vector fields
 - Management commands function correctly for index setup, validation, and embedding verification
 - Embedding generation works perfectly using the existing data pipeline infrastructure
-- Neighborhoods successfully index with 100% embedding coverage using mock provider
 - Authentication and connection to Elasticsearch is properly configured
 
 ### What's Failing
-- **Properties**: Zero documents indexed due to field mapping errors ("'Column' object is not callable")
-- **Wikipedia Articles**: Zero documents indexed due to missing required field "listing_id"
-- **Field Name Mismatch**: Document builders expect "listing_id" for all entities, but each entity type has its own ID field (property has listing_id, neighborhood has neighborhood_id, Wikipedia has page_id)
+- **Properties**: Zero documents indexed due to field mapping errors
+- **Wikipedia Articles**: Zero documents indexed due to missing required field issues
+- **Field Mapper**: JSON-based configuration causing type mismatches and runtime errors
 
 ### Root Cause Analysis
 
-The core issue is a fundamental mismatch between how data flows from the pipeline and what the document builders expect:
+The core issue is the anti-pattern implementation:
 
-1. **ID Field Confusion**: The BaseDocument model requires "listing_id" as the primary identifier for ALL document types, but this field only exists naturally for properties. Neighborhoods use "neighborhood_id" and Wikipedia articles use "page_id".
+1. **JSON Configuration Anti-Pattern**: Using field_mappings.json for DataFrame transformations violates Spark's type safety and optimization capabilities
 
-2. **Field Mapping Execution**: The field mapper attempts to transform DataFrames but the transformation isn't being applied correctly before document building, causing the builders to receive raw field names instead of mapped ones.
+2. **Collect-Then-Transform Anti-Pattern**: Document builders call df.collect() which forces entire dataset into driver memory and will fail at scale
 
-3. **Rigid Field Requirements**: Document builders perform strict validation for required fields without considering that different entity types have different natural field names.
+3. **Dynamic Type Conversions**: Runtime type conversions based on JSON configuration lead to unpredictable schema mismatches
 
-## Pipeline Fork Deep Dive: Data Flow Architecture
+## Critical Architecture Discovery Update: Spark Anti-Pattern in Search Pipeline
 
-### How the Fork Determines Processing Paths
+After deep analysis and reviewing Spark 3.5 best practices, the current search pipeline implementation violates fundamental Spark principles:
 
-The pipeline fork (`data_pipeline/core/pipeline_fork.py`) uses a destination-driven approach:
+### Current Anti-Patterns Identified
 
-1. **Destination Analysis**: Examines `output.enabled_destinations` list from config
-2. **Path Determination**: Maps destinations to processing paths:
-   - `["parquet"]` only → lightweight path
-   - `["neo4j", ...]` → graph path (entity extraction)
-   - `["elasticsearch", ...]` → search path (document building)
-3. **Path Execution**: Processes enabled paths independently in sequence
+1. **JSON Configuration for Schema Transformation**: Using field_mappings.json to define DataFrame transformations breaks Spark's type safety and optimization capabilities
 
-### Complete Data Flow for Each Destination
+2. **Collect-Then-Transform Pattern**: Document builders call df.collect() then iterate through rows, which:
+   - Forces entire dataset into driver memory
+   - Loses distributed processing benefits
+   - Will crash on production-scale data
 
-#### Elasticsearch Data Flow (Two Parallel Paths)
+3. **Dynamic Type Conversions**: Attempting runtime type conversions based on JSON configuration leads to schema mismatches and unpredictable errors
 
-**Path A: Archive Writer (Direct DataFrame Writing)**
-```
-DataFrames with embeddings 
-→ data_pipeline/writers/archive_elasticsearch/
-→ ElasticsearchOrchestrator
-→ Direct Spark ES connector write
-→ SUCCESS: Data in Elasticsearch
-```
+4. **No Schema Validation**: Missing compile-time or runtime schema validation before transformations
 
-**Path B: Search Pipeline (Document Building)**
-```
-DataFrames with embeddings
-→ pipeline_fork.process_paths()
-→ search_pipeline/core/search_runner.py
-→ SearchPipelineRunner.process()
-→ Document builders attempt field mapping
-→ FAILURE: Field mapping errors
-```
+### Spark 3.5 Best Practices Violated
 
-#### Neo4j Data Flow (Completely Separate)
-```
-DataFrames with embeddings
-→ pipeline_fork.process_paths() 
-→ Graph path entity extraction
-→ Extract features, property types, price ranges, etc.
-→ data_pipeline/writers/neo4j_writer/
-→ Neo4jWriter with relationship building
-→ SUCCESS: Graph database populated
-```
+1. **Lazy Evaluation Lost**: Using collect() forces immediate evaluation and breaks Spark's optimization pipeline
 
-#### Critical Insight: Path Independence
+2. **Catalyst Optimizer Bypass**: Dynamic field mapping prevents Spark Catalyst from optimizing the execution plan
 
-**The three paths are completely independent:**
-- Neo4j path only activates when "neo4j" in destinations
-- Archive ES writer only activates when "elasticsearch" in destinations  
-- Search pipeline only activates when fork detects "elasticsearch"
-- **Changes to search pipeline CANNOT affect Neo4j path**
-- **Changes to search pipeline CANNOT affect archive ES writer**
+3. **Type Safety Ignored**: JSON-based configuration removes all type safety guarantees
 
-### Why Search Pipeline Is Failing But Archive Writer Works
+4. **Schema Evolution Mishandled**: No proper schema versioning or migration strategy
 
-**Archive Elasticsearch Writer Success:**
-- Receives DataFrames with all fields including embeddings
-- Uses `es.mapping.id` configuration per entity type
-- Directly maps DataFrame columns to ES fields
-- No intermediate document model conversion
-- No field name validation beyond ES requirements
+## Recommended Solution: Spark-Native Transformation Pipeline
 
-**Search Pipeline Failure:**
-- Attempts to convert DataFrames to Pydantic document models
-- Enforces strict field requirements (listing_id for all)
-- Field mapper transformation failing ("'Column' object is not callable")
-- Document builders can't handle entity-specific ID fields
-- Never reaches actual Elasticsearch writing stage
+### Core Principle: Explicit DataFrame Transformations with Pydantic Schema Validation
 
-## Proposed Solution
+Replace the JSON-based field mapper with entity-specific DataFrame transformers that leverage Spark's native capabilities and validate against Pydantic models.
 
-### Core Principle: Entity-Aware Field Handling
+### Solution Architecture
 
-Each entity type should maintain its natural field names through the pipeline and only map to a common structure at the final indexing step. This preserves data integrity while ensuring Elasticsearch receives properly formatted documents.
+#### 1. Entity-Specific DataFrame Transformers
 
-### Solution Components
+**Purpose**: Replace generic field mapper with explicit, type-safe transformers for each entity type.
 
-#### 1. Fix ID Field Handling
+**Benefits**:
+- Leverages Spark Catalyst optimizer
+- Provides compile-time type safety via Pydantic models  
+- Enables proper schema validation
+- Maintains distributed processing throughout pipeline
+- Clear, maintainable transformation logic
 
-**Current Problem**: All documents require "listing_id" but only properties naturally have this field.
+**Structure**:
+- PropertyDataFrameTransformer: Transforms raw property DataFrames to document schema
+- NeighborhoodDataFrameTransformer: Transforms raw neighborhood DataFrames to document schema
+- WikipediaDataFrameTransformer: Transforms raw Wikipedia DataFrames to document schema
 
-**Solution**: Each entity type should use its natural ID field and map it to a common document ID at indexing time.
+#### 2. Pydantic-Based Schema Validation
 
-- Properties keep "listing_id" as their natural identifier
-- Neighborhoods use "neighborhood_id" as their natural identifier  
-- Wikipedia articles use "page_id" as their natural identifier
-- All map to a common "doc_id" field for Elasticsearch's _id field
+**Purpose**: Use existing spark_converter.py to generate Spark schemas from Pydantic models.
 
-#### 2. Correct Field Mapping Application
+**Implementation**:
+- Define explicit Pydantic models for input schemas (PropertyInput, NeighborhoodInput, WikipediaInput)
+- Define output schemas matching Elasticsearch documents
+- Use spark_converter.pydantic_to_spark_schema() for schema generation
+- Apply schema validation at transformation boundaries
 
-**Current Problem**: Field mapping is defined but not properly applied before document building.
+**Benefits**:
+- Single source of truth for schemas (Pydantic models)
+- Automatic Spark schema generation
+- Runtime validation with clear error messages
+- Schema evolution handled through model versioning
 
-**Solution**: Ensure field mapping transformation occurs in the correct sequence:
+#### 3. Distributed Document Generation
 
-1. Data pipeline generates enriched DataFrames with natural field names
-2. Field mapper transforms DataFrames to standardized field names
-3. Document builders receive already-mapped DataFrames
-4. Documents are created with correct field values
+**Purpose**: Generate documents directly in Spark without collecting to driver.
 
-#### 3. Entity-Specific Document Building
+**Implementation Strategy**:
+- Use Spark SQL or DataFrame operations for all transformations
+- Apply transformations using select(), withColumn(), and struct()
+- Generate nested structures using Spark's struct() function
+- Convert to JSON strings for Elasticsearch using to_json()
+- Write directly to Elasticsearch using Spark connector
 
-**Current Problem**: Document builders expect uniform field names across all entity types.
+**Benefits**:
+- Maintains distributed processing
+- Scales to any data size
+- Leverages Spark's optimization
+- No driver memory limitations
 
-**Solution**: Each document builder should understand its entity type's natural schema:
+## Detailed Implementation Architecture
 
-- PropertyDocumentBuilder knows properties have listing_id, bedrooms, bathrooms, etc.
-- NeighborhoodDocumentBuilder knows neighborhoods have neighborhood_id, walkability_score, etc.
-- WikipediaDocumentBuilder knows articles have page_id, title, summary, etc.
+### Safety Analysis: Complete Independence from Neo4j
 
-## Implementation Requirements
+**Neo4j Data Flow (Unaffected)**:
+The Neo4j path operates entirely independently through the pipeline fork. When Neo4j is enabled in destinations, the fork executes the graph path which:
+- Extracts entities using dedicated extractors in data_pipeline/extractors/
+- Creates graph-specific DataFrames with relationships
+- Writes directly to Neo4j using neo4j_orchestrator
+- Never imports or uses any search_pipeline modules
+- Has its own DataFrame transformations optimized for graph structure
 
-### Safety Guarantee: Neo4j Remains Untouched
+**Search Pipeline Data Flow (Isolated)**:
+The search pipeline operates in complete isolation when Elasticsearch is in destinations:
+- Only activated when pipeline fork detects Elasticsearch destination
+- Imports are conditional and lazy (only when needed)
+- Has its own transformation logic separate from Neo4j
+- Cannot affect Neo4j even if it fails completely
 
-**All changes will be made exclusively in the `search_pipeline/` directory:**
-- `search_pipeline/models/documents.py` - Document model updates
-- `search_pipeline/builders/*.py` - Document builder fixes
-- `search_pipeline/core/search_runner.py` - Pipeline runner adjustments
-- `data_pipeline/transformers/field_mapper.py` - Field mapping corrections
+### Transformation Layer Architecture
 
-**No changes will be made to:**
-- `data_pipeline/core/pipeline_fork.py` - Fork logic remains unchanged
-- `data_pipeline/writers/neo4j_writer/` - Neo4j writer untouched
-- `data_pipeline/extractors/` - Entity extractors unchanged
-- Graph path processing - Completely separate and unaffected
+**New Module Structure**:
+Create a dedicated transformation layer that replaces the fragile field mapper:
 
-### Phase 1: ID Field Standardization
+**search_pipeline/transformers/** (New Directory)
+- base_transformer.py: Abstract base class for DataFrame transformers
+- property_transformer.py: Property-specific transformations
+- neighborhood_transformer.py: Neighborhood-specific transformations
+- wikipedia_transformer.py: Wikipedia-specific transformations
+- schema_validator.py: Pydantic-based schema validation utilities
 
-**Objective**: Resolve the listing_id requirement issue for all entity types.
+**search_pipeline/schemas/** (New Directory)
+- input_schemas.py: Pydantic models for input DataFrame schemas
+- output_schemas.py: Pydantic models for Elasticsearch document schemas
+- transformation_schemas.py: Intermediate transformation schemas
 
-**Location of Changes**: `search_pipeline/models/documents.py`
+**Key Design Principles**:
+- Each transformer is a pure function: DataFrame in, DataFrame out
+- All transformations use Spark SQL or DataFrame API
+- No collect() operations except for final write
+- Schema validation at transformation boundaries
+- Clear separation between input, transformation, and output schemas
 
-**Requirements**:
-- Update BaseDocument to use a generic "doc_id" field instead of "listing_id"
-- Each document builder maps its entity's natural ID to doc_id
-- Elasticsearch uses doc_id as the document identifier
-- Preserve original ID fields (listing_id, neighborhood_id, page_id) in documents for reference
+### DataFrame Transformation Patterns
 
-### Phase 2: Field Mapping Correction
+**Pattern 1: Explicit Column Selection with Aliasing**
+Instead of dynamic field mapping, use explicit select statements that clearly show the transformation:
+- Input columns are explicitly named
+- Output columns use alias() for renaming
+- Type casting is explicit using cast()
+- Missing columns handled with lit(None).alias()
 
-**Objective**: Ensure field mapping transformations are properly applied.
+**Pattern 2: Nested Structure Creation**
+Use Spark's struct() function to create nested objects matching Elasticsearch mappings:
+- Address objects created with struct(street, city, state, zip_code)
+- Arrays handled with array() or split() for string lists
+- Nested arrays of structs for complex objects like nearby_poi
 
-**Location of Changes**: 
-- `data_pipeline/transformers/field_mapper.py` - Fix transformation logic
-- `search_pipeline/builders/base.py` - Ensure mapping is called correctly
+**Pattern 3: Schema Enforcement**
+Apply target schema after transformation to ensure correctness:
+- Generate Spark schema from Pydantic model using spark_converter
+- Apply schema using spark.createDataFrame(df.rdd, schema)
+- Validation happens automatically during schema application
+- Clear error messages when schema doesn't match
 
-**Requirements**:
-- Field mapper must execute before document building
-- Transformation results must be validated before passing to builders
-- Each entity type has its own field mapping configuration
-- Mapped DataFrames retain all necessary fields for document creation
+### Elasticsearch Writing Strategy
 
-### Phase 3: Document Builder Updates
+**Option 1: DataFrame-to-JSON Direct Write (Recommended)**
+Transform DataFrames directly to Elasticsearch without intermediate Pydantic models:
+- Use to_json() to convert DataFrame rows to JSON
+- Write JSON directly using Elasticsearch Spark connector
+- Maintains distributed processing throughout
+- Scales to any data volume
 
-**Objective**: Update document builders to handle their entity's natural schema.
+**Option 2: Batch Document Generation (Fallback)**
+If Pydantic validation is required at document level:
+- Use mapPartitions() to process DataFrame partitions
+- Generate Pydantic documents within each partition
+- Convert documents to JSON within partition
+- Return DataFrame of JSON strings for writing
 
-**Location of Changes**:
-- `search_pipeline/builders/property_builder.py`
-- `search_pipeline/builders/neighborhood_builder.py`
-- `search_pipeline/builders/wikipedia_builder.py`
+**Option 3: Hybrid Approach (Best of Both)**
+Combine DataFrame transformations with Pydantic validation:
+- Transform DataFrame to match document schema
+- Sample and validate using Pydantic on small subset
+- If validation passes, write full DataFrame directly
+- Provides validation guarantees without performance penalty
 
-**Requirements**:
-- PropertyDocumentBuilder handles property-specific fields correctly
-- NeighborhoodDocumentBuilder handles neighborhood-specific fields correctly
-- WikipediaDocumentBuilder handles Wikipedia-specific fields correctly
-- All builders produce valid documents with required fields
-- Embedding fields are properly extracted and included
+## Comprehensive Implementation Plan
 
-### Phase 4: Data Flow Validation
+### Pre-Implementation Safety Verification
 
-**Objective**: Ensure complete data flow from source to Elasticsearch through search pipeline.
+#### Objective
+Ensure all changes are completely isolated from Neo4j functionality before beginning implementation.
 
-**Testing Approach**: 
-- Test search pipeline in isolation from Neo4j
-- Verify archive writer continues to work
-- Ensure no impact on graph path
+#### Verification Steps
+1. Document all import dependencies between modules
+2. Create integration test that runs Neo4j pipeline with search pipeline disabled
+3. Confirm pipeline fork correctly routes to appropriate paths
+4. Test that search pipeline failures don't cascade to other paths
 
-**Requirements**:
-- All properties from source data files are indexed via search pipeline
-- All neighborhoods from source data files are indexed via search pipeline
-- All Wikipedia articles from database are indexed via search pipeline
-- All documents include embeddings when configured
-- Field values are correctly mapped and preserved
+### Phase 1: Schema Definition and Validation Layer
+
+#### Objective
+Define Pydantic schemas for input and output transformations.
+
+#### Implementation Requirements
+
+**Input Schemas**:
+- PropertyInput: Schema matching source DataFrame structure
+- NeighborhoodInput: Schema for neighborhood DataFrames
+- WikipediaInput: Schema for Wikipedia DataFrames
+
+**Output Schemas**:
+- Use existing document models with doc_id field
+- Ensure all required fields are defined
+- Add validation rules for field constraints
+
+**Schema Converter Integration**:
+- Use existing spark_converter.py for schema generation
+- Create utility functions for schema application
+- Add validation helpers for testing
+
+### Phase 2: DataFrame Transformer Implementation
+
+#### Objective
+Replace JSON-based field mapper with explicit DataFrame transformers following Spark best practices.
+
+#### Implementation Requirements
+
+**Base Transformer Class**:
+- Abstract base class defining transformer interface
+- Common utility methods for DataFrame operations
+- Schema validation helper methods
+- Logging and error handling
+
+**Property Transformer**:
+- Explicit column selection from source DataFrame
+- Proper handling of array fields (features, amenities)
+- Creation of nested address structure using struct()
+- Type casting for numeric fields (price, bedrooms, etc.)
+- Null handling for optional fields
+- Embedding field preservation
+
+**Neighborhood Transformer**:
+- Mapping of neighborhood-specific fields
+- Score field validation (0-100 range)
+- Boundary field handling
+- Location data enrichment
+- Demographic field transformations
+
+**Wikipedia Transformer**:
+- Page ID handling and type conversion
+- Content field optimization
+- Topic array processing
+- Location extraction and structuring
+- Relevance score calculations
+
+### Phase 3: Search Pipeline Integration
+
+#### Objective
+Replace current implementation with transformers in one atomic change.
+
+#### Integration Points
+
+**Search Runner Updates**:
+- Replace field mapper with transformer in one atomic change
+- Update process_entity method to use transformers
+- Simple error handling and logging
+- Ensure embedding generation still works correctly
+
+**Document Builder Replacement**:
+- Complete replacement of builders with transformers
+- No deprecation strategy - direct replacement
+- No compatibility layers or migration paths
+
+**Configuration Management**:
+- Remove field_mappings.json completely
+- Hardcode transformations in code (no external config)
+- No feature flags or gradual rollout
+
+### Phase 4: Testing and Validation
+
+#### Objective
+Ensure correctness of new transformation pipeline.
+
+#### Testing Strategy
+
+**Basic Functionality Tests**:
+- Test each transformer works with sample data
+- Validate output matches expected schema
+- Verify all three entity types process correctly
+- Ensure embeddings are preserved
+
+**Integration Test**:
+- Run complete pipeline with test data
+- Verify documents index to Elasticsearch
+- Confirm Neo4j path still works independently
+
+### Phase 5: Basic Documentation
+
+#### Objective
+Create minimal documentation for the new implementation.
+
+#### Documentation Requirements
+
+**README Update**:
+- Brief description of transformation approach
+- How to run the pipeline
+- Basic troubleshooting steps
+
+## Detailed Task List
+
+### Week 1: Foundation and Safety
+
+- [ ] Task 1: Verify Neo4j path independence
+- [ ] Task 2: Remove archive Elasticsearch writer completely
+- [ ] Task 3: Remove field_mappings.json and field_mapper.py
+
+### Week 2: Schema Definition
+
+- [ ] Task 4: Define PropertyDocument Pydantic model for output
+- [ ] Task 5: Define NeighborhoodDocument Pydantic model for output
+- [ ] Task 6: Define WikipediaDocument Pydantic model for output
+- [ ] Task 7: Use existing spark_converter for schema generation
+
+### Week 3: Transformer Implementation
+
+- [ ] Task 8: Implement BaseDataFrameTransformer class
+- [ ] Task 9: Implement PropertyDataFrameTransformer with hardcoded transformations
+- [ ] Task 10: Implement NeighborhoodDataFrameTransformer
+- [ ] Task 11: Implement WikipediaDataFrameTransformer
+- [ ] Task 12: Add basic logging to transformers
+
+### Week 4: Integration
+
+- [ ] Task 13: Replace document builders with transformers in SearchPipelineRunner
+- [ ] Task 14: Remove all field mapper references
+- [ ] Task 15: Test complete pipeline with sample data
+- [ ] Task 16: Verify all three entity types index correctly
+
+### Week 5: Testing and Documentation
+
+- [ ] Task 17: Test with larger sample dataset
+- [ ] Task 18: Verify Neo4j path unaffected
+- [ ] Task 19: Update README with new approach
+- [ ] Task 20: Remove all old code (document builders, field mapper)
+
+### Final Phase: Code Review and Testing
+
+- [ ] Task 21: Review code follows Spark best practices
+- [ ] Task 22: Verify Pydantic models used correctly
+- [ ] Task 23: Confirm no hasattr usage
+- [ ] Task 24: Check all transformations are explicit
+- [ ] Task 25: Final test with full dataset
 
 ## Expected Outcomes
 
@@ -270,9 +438,8 @@ After implementation, running the data pipeline should result in:
 
 Each indexed document should contain:
 - Correct document ID mapped from entity's natural ID
-- All source data fields properly mapped
-- Embedding vector and metadata when configured
-- Enrichment data from Wikipedia integration
+- All source data fields properly transformed
+- Embedding vector when configured
 - Proper nested objects (address, parking, etc.)
 
 ### Validation Success
@@ -282,74 +449,21 @@ The validate-embeddings command should report:
 - Consistent embedding dimensions
 - Proper model identification
 
-## Implementation Plan
+## Risk Mitigation Strategy
 
-### Pre-Implementation Safety Verification
+### Technical Risks
 
-#### Task 0: Confirm Architecture Independence
-- [ ] Verify search_pipeline is only called from pipeline fork search path
-- [ ] Confirm Neo4j path doesn't import any search_pipeline modules
-- [ ] Validate archive_elasticsearch operates independently
-- [ ] Document all cross-module dependencies
-- [ ] Create test to ensure Neo4j path works with search pipeline disabled
+**Risk 1: Transformation Errors**
+- Mitigation: Test thoroughly with sample data first
+- Resolution: Fix issues directly, no workarounds
 
-### Week 1: Core Field Mapping Fixes
+**Risk 2: Schema Incompatibility**
+- Mitigation: Use Pydantic for validation
+- Resolution: Fix schema issues at source
 
-#### Task 1: Update Document ID Handling
-**Files to modify:**
-- [ ] `search_pipeline/models/documents.py`: Change BaseDocument.listing_id to BaseDocument.doc_id
-- [ ] `search_pipeline/models/documents.py`: Add entity_id field to preserve original IDs
-- [ ] `search_pipeline/builders/property_builder.py`: Map listing_id → doc_id
-- [ ] `search_pipeline/builders/neighborhood_builder.py`: Map neighborhood_id → doc_id
-- [ ] `search_pipeline/builders/wikipedia_builder.py`: Map page_id → doc_id
-- [ ] `search_pipeline/core/search_runner.py`: Update ES mapping.id to use doc_id
-
-#### Task 2: Fix Field Mapping Execution
-**Files to modify:**
-- [ ] `data_pipeline/transformers/field_mapper.py`: Fix "'Column' object is not callable" error
-- [ ] `search_pipeline/builders/base.py`: Verify apply_field_mapping is called correctly
-- [ ] `search_pipeline/builders/base.py`: Add validation after field mapping
-- [ ] Add comprehensive logging to track transformations
-- [ ] Create unit tests for field mapper transformations
-
-#### Task 3: Update Document Builders
-**Files to modify:**
-- [ ] `search_pipeline/builders/property_builder.py`: Fix _build_document field extraction
-- [ ] `search_pipeline/builders/neighborhood_builder.py`: Fix _build_document field extraction
-- [ ] `search_pipeline/builders/wikipedia_builder.py`: Fix _build_document field extraction
-- [ ] All builders: Ensure embedding fields (embedding, embedding_model, etc.) are extracted
-- [ ] All builders: Add graceful handling for missing optional fields
-
-### Week 2: Data Flow Completion
-
-#### Task 4: Entity-Specific Field Handling
-- [ ] Update property field mapping configuration
-- [ ] Update neighborhood field mapping configuration
-- [ ] Update Wikipedia field mapping configuration
-- [ ] Ensure all source fields are preserved
-- [ ] Validate nested object creation
-
-#### Task 5: Integration Testing
-- [ ] Test property indexing with sample data
-- [ ] Test neighborhood indexing with sample data
-- [ ] Test Wikipedia indexing with sample data
-- [ ] Verify embedding fields are indexed
-- [ ] Confirm all source data is captured
-
-#### Task 6: End-to-End Validation
-- [ ] Run complete pipeline with all data sources
-- [ ] Verify document counts match source data
-- [ ] Validate embedding coverage for all entities
-- [ ] Check field completeness in indexed documents
-- [ ] Test search queries on indexed data
-
-#### Task 7: Code Review and Testing
-- [ ] Review all changes for compliance with requirements
-- [ ] Ensure Pydantic models are used throughout
-- [ ] Verify no hasattr usage
-- [ ] Confirm clean, modular implementation
-- [ ] Run comprehensive test suite
-- [ ] Document any remaining issues
+**Risk 3: Memory Issues**
+- Mitigation: Never use collect(), always use DataFrame operations
+- Resolution: Ensure all operations stay distributed
 
 ## Success Criteria
 
@@ -368,31 +482,20 @@ The validate-embeddings command should report:
 - Pydantic validation throughout
 - Modular, testable components
 
-## Risk Assessment
-
-### Low Risk Items
-- Field name mapping: Simple string transformations
-- ID field standardization: Direct field renaming
-- Document builder updates: Straightforward field extraction
-
-### Medium Risk Items  
-- DataFrame transformation sequencing: Requires careful ordering
-- Nested object handling: Must preserve structure through mapping
-- Embedding field extraction: Must maintain vector integrity
-
-### Mitigation Strategies
-- Comprehensive logging at each transformation step
-- Validation checks between pipeline stages
-- Sample data testing before full dataset
-- Incremental testing of each entity type
-
 ## Conclusion
 
-The Elasticsearch integration requires straightforward fixes to field mapping and document building. The architecture is sound, the infrastructure works, and only simple field handling corrections are needed to achieve full data indexing. This is not a complex production optimization but rather completing the basic data flow from source files to searchable documents.
+The current search pipeline implementation violates fundamental Spark best practices by using JSON-based field mapping, collecting DataFrames to driver memory, and losing type safety through dynamic transformations. This approach will not scale and creates maintenance complexity.
 
-The implementation focuses on three simple principles:
-1. Each entity type uses its natural field names
-2. Field mapping occurs at the right point in the pipeline
-3. Document builders understand their entity's schema
+The recommended solution replaces the anti-pattern with a Spark-native transformation pipeline that:
 
-With these fixes, the system will successfully index all available data with embeddings, enabling both traditional and semantic search capabilities.
+1. **Leverages Spark's Distributed Processing**: All transformations happen in Spark without collecting to driver, ensuring scalability.
+
+2. **Provides Type Safety Through Pydantic**: Schema definitions use Pydantic models with automatic Spark schema generation via spark_converter.
+
+3. **Follows Spark 3.5 Best Practices**: Explicit transformations using DataFrame API enable Catalyst optimization and efficient execution.
+
+4. **Maintains Complete Independence**: The Neo4j pipeline remains completely unaffected as all changes are isolated to the search_pipeline module.
+
+5. **Simple Direct Replacement**: No migration phases, compatibility layers, or gradual rollouts - just a clean, atomic change.
+
+This transformation from anti-pattern to best practice will result in a maintainable, scalable search pipeline that follows the complete cut-over requirements while keeping the implementation simple and appropriate for a high-quality demo.
