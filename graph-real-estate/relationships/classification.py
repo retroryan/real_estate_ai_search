@@ -6,8 +6,8 @@ import logging
 from typing import Optional
 from neo4j import Driver
 
-from ..utils.database import run_query
-from .config import RelationshipConfig
+from utils.database import run_query
+from relationships.config import RelationshipConfig
 
 logger = logging.getLogger(__name__)
 
