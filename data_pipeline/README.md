@@ -44,18 +44,20 @@ python -m data_pipeline --sample-size 100 --output-destination archive_elasticse
 
 # Full pipeline with all destinations
 python -m data_pipeline --output-destination parquet,neo4j,archive_elasticsearch
+
+# Monitor Spark UI during processing (usually http://localhost:4040)
 ```
 
 ## Integration Testing
 
-### Parquet Testing
-
 ```bash
-# Run quick smoke test
-pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
+# Run all integration tests
+pytest data_pipeline/integration_tests/ -v
 
-# Run all parquet tests
-pytest data_pipeline/integration_tests/test_parquet_validation.py -v
+# Run tests with smaller datasets
+pytest data_pipeline/integration_tests/ -v --tb=short
+
+# Monitor Spark UI during tests (usually http://localhost:4040)
 ```
 
 ### Neo4j Setup and Data Loading
@@ -244,20 +246,22 @@ Data Sources → Spark Processing → Enrichment → Embeddings → Output Write
 
 ```bash
 # Run all unit tests
-pytest data_pipeline/tests/
+pytest data_pipeline/tests/ -v
 
 # Run with coverage
-pytest data_pipeline/tests/ --cov=data_pipeline
+pytest data_pipeline/tests/ --cov=data_pipeline --cov-report=html
+
+# Test specific modules
+pytest data_pipeline/tests/test_graph_models.py -v
+pytest data_pipeline/tests/test_neo4j_basic.py -v
 ```
 
-### Integration Tests
+### Test Environment Setup
 
 ```bash
-# Quick validation test
-pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
-
-# Full integration test suite
-pytest data_pipeline/integration_tests/ -v
+# Set in .env file for real API testing (optional)
+VOYAGE_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here
 ```
 
 ## Troubleshooting
@@ -301,6 +305,9 @@ python -m data_pipeline --log-level DEBUG --test-mode
 
 # Check logs
 tail -f logs/pipeline.log
+
+# Debug specific integration tests
+pytest data_pipeline/integration_tests/test_relationship_builder_comprehensive.py -v -s --tb=long
 ```
 
 ## Output Validation
@@ -338,13 +345,10 @@ curl -X GET "localhost:9200/properties/_search?q=city:Seattle&size=5"
 
 ```yaml
 # config.yaml - Key settings
-data_subset:
-  enabled: true
-  sample_size: 100  # Limit data for testing
+# Use --sample-size command line argument for limiting data
 
 embedding:
   provider: voyage  # or ollama, openai
-  batch_size: 100
   
 output_destinations:
   enabled_destinations:

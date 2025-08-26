@@ -12,7 +12,7 @@ from typing import Optional, Set
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import ParquetOutputConfig
 from data_pipeline.writers.base import EntityWriter
 
 logger = logging.getLogger(__name__)
@@ -26,26 +26,26 @@ class ParquetWriter(EntityWriter):
     partitioning or optimization.
     """
     
-    def __init__(self, config: PipelineConfig, spark: SparkSession):
+    def __init__(self, config: ParquetOutputConfig, spark: SparkSession):
         """
         Initialize the Parquet writer.
         
         Args:
-            config: Pipeline configuration
+            config: Parquet output configuration
             spark: SparkSession instance
         """
-        # Create a WriterConfig from PipelineConfig for base class
+        # Create a WriterConfig for base class
         from .base import WriterConfig
         writer_config = WriterConfig(enabled=True)
         super().__init__(writer_config)
         
-        # Store pipeline config separately to avoid overwriting base class config
-        self.pipeline_config = config
+        # Store parquet config
+        self.parquet_config = config
         self.spark = spark
         self.logger = logging.getLogger(__name__)
         
         # Create base path
-        self.base_path = Path(self.pipeline_config.base_path)
+        self.base_path = Path(self.parquet_config.base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
     
     def validate_connection(self) -> bool:

@@ -13,7 +13,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DecimalType, DoubleType, ArrayType, StringType, FloatType
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import Neo4jOutputConfig
 from data_pipeline.writers.base import EntityWriter
 from data_pipeline.models.writer_models import (
     WriteMetadata, EntityType, RelationshipConfig, 
@@ -30,7 +30,7 @@ class Neo4jOrchestrator(EntityWriter):
     Routes each entity type to its dedicated Neo4j writer.
     """
     
-    def __init__(self, config: PipelineConfig, spark: SparkSession):
+    def __init__(self, config: Neo4jOutputConfig, spark: SparkSession):
         """
         Initialize the Neo4j orchestrator.
         
@@ -279,6 +279,9 @@ class Neo4jOrchestrator(EntityWriter):
                 from_id = sample['from_id'] if 'from_id' in sample else 'N/A'
                 to_id = sample['to_id'] if 'to_id' in sample else 'N/A'
                 self.logger.debug(f"   Sample relationship: {from_id} -> {to_id}")
+            
+            # Convert Decimal columns to Double for Neo4j compatibility
+            relationships_df = self._convert_decimal_columns(relationships_df)
             
             # Connection config comes from SparkSession
             writer = relationships_df.write.format(self.format_string).mode("append")

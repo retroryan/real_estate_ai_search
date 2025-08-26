@@ -1,170 +1,56 @@
 # Data Pipeline Configuration
-# This file configures the multi-entity Spark data pipeline
+# All settings except secrets are configured here
+# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD, ELASTIC_PASSWORD
 
-# Pipeline metadata
-metadata:
-  name: "real_estate_data_pipeline"
-  version: "1.0.0"
-  description: "Apache Spark-based data pipeline for real estate and Wikipedia data processing"
+name: real_estate_data_pipeline
+version: 1.0.0
 
-# Spark configuration
+# Spark Configuration
 spark:
-  app_name: "RealEstateDataPipeline"
-  master: "local[*]"  # Use "spark://cluster-url:7077" for cluster mode
-  memory: "4g"
-  executor_memory: "2g"
-  config:
-    spark.sql.adaptive.enabled: true
-    spark.sql.adaptive.coalescePartitions.enabled: true
-    spark.serializer: "org.apache.spark.serializer.KryoSerializer"
-    spark.sql.shuffle.partitions: 200
+  app_name: RealEstateDataPipeline
+  master: local[*]
+  driver_memory: 4g
+  executor_memory: 2g
 
-# Data sources configuration
-properties:
-  - "real_estate_data/properties_sf.json"
-  - "real_estate_data/properties_pc.json"
+# Data Sources
+data_sources:
+  properties_files:
+    - real_estate_data/properties_sf.json
+    - real_estate_data/properties_pc.json
+  neighborhoods_files:
+    - real_estate_data/neighborhoods_sf.json
+    - real_estate_data/neighborhoods_pc.json
+  wikipedia_db_path: data/wikipedia/wikipedia.db
+  locations_file: real_estate_data/locations.json
 
-neighborhoods:
-  - "real_estate_data/neighborhoods_sf.json"
-  - "real_estate_data/neighborhoods_pc.json"
-
-wikipedia:
-  path: "data/wikipedia/wikipedia.db"
-  enabled: true
-
-locations:
-  path: "real_estate_data/locations.json"
-  enabled: true
-
-
-# Embedding configuration - FLEXIBLE MODEL SELECTION
+# Embedding Configuration
 embedding:
-  # Primary provider selection
-  provider: "voyage"  # Options: voyage | ollama | openai | gemini | mock
-  
-  # Model configurations by provider
-  models:
-    voyage:
-      model: "voyage-3"  # Options: voyage-3, voyage-large-2, voyage-code-2
-      api_key: "${VOYAGE_API_KEY}"  # Will be loaded from environment
-      dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
-      
-    ollama:
-      model: "nomic-embed-text"  # Options: nomic-embed-text, mxbai-embed-large
-      base_url: "http://localhost:11434"
-      dimension: 768  # nomic: 768, mxbai: 1024
-      
-    openai:
-      model: "text-embedding-3-small"  # Options: text-embedding-3-small, text-embedding-3-large
-      api_key: "${OPENAI_API_KEY}"
-      dimension: 1536  # small: 1536, large: 3072
-      
-    gemini:
-      model: "models/embedding-001"
-      api_key: "${GEMINI_API_KEY}"
-      dimension: 768
-  
-  # Batch processing settings
-  batch_size: 100
-  max_retries: 3
-  timeout: 30
-  rate_limit_delay: 0.1  # Delay between API calls in seconds
-  
-  # Embedding generation options
-  skip_existing: false  # Skip if embeddings already exist
-  force_regenerate: false  # Force regeneration even if exists
-  process_empty_text: false  # Process records with empty text
+  provider: voyage  # voyage, openai, ollama, gemini, mock
+  model_name: voyage-3  # Options: voyage-3, voyage-large-2, voyage-code-2
+  batch_size: 10  # Smaller batch size for API rate limits
+  dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
 
-# Text chunking configuration
-chunking:
-  enabled: true  # Enable to test LlamaIndex nodes
-  method: "simple"  # Options: simple | semantic | sentence | none
-  
-  # Chunking parameters
-  chunk_size: 512  # Characters for simple, tokens for semantic
-  chunk_overlap: 50
-  
-  # Advanced chunking options
-  respect_sentence_boundaries: true
-  min_chunk_size: 100
-  max_chunk_size: 1000
-  
-  # Semantic chunking (when method=semantic)
-  semantic:
-    breakpoint_percentile: 90
-    buffer_size: 2
-
-# Output configuration
+# Output Configuration
 output:
-  format: "parquet"  # Options: parquet | json | csv | delta
-  path: "data/processed/entity_datasets"
-  
-  # Partitioning strategy
-  partitioning:
-    enabled: true
-    columns:
-      - "entity_type"
-      - "state"
-    max_partitions: 100
-  
-  # File options
-  compression: "snappy"  # Options: snappy | gzip | lz4 | none
-  overwrite: true
-  coalesce_files: true
-  target_file_size_mb: 128
-  
-  # Schema evolution
-  merge_schema: true
-  enforce_schema: false
-
-# Multi-destination output configuration
-output_destinations:
-  # List of enabled destinations (parquet, neo4j, archive_elasticsearch)
   enabled_destinations:
-    - "parquet"
-    - "neo4j"  # Enable Neo4j
-    # - "archive_elasticsearch"  # Uncomment to enable
+    - parquet
+    # - neo4j  # Uncomment when Neo4j Spark connector is installed
+    # - elasticsearch
   
-  # Parquet writer configuration
   parquet:
-    enabled: true
-    path: "data/processed"
-    compression: "snappy"
-    mode: "overwrite"
+    base_path: data/processed
+    compression: snappy
   
-  # Neo4j writer configuration
   neo4j:
-    enabled: true  # Set to true to enable
-    uri: "${NEO4J_URI}"  # Loaded from parent .env
-    username: "${NEO4J_USERNAME}"  # Loaded from parent .env
-    password: "${NEO4J_PASSWORD}"  # Loaded from parent .env
-    database: "${NEO4J_DATABASE}"  # Loaded from parent .env
-    transaction_size: 1000
+    uri: bolt://localhost:7687
+    database: neo4j
+    username: neo4j
+    # Password from NEO4J_PASSWORD environment variable
   
-  # Elasticsearch writer configuration
-  elasticsearch:
-    enabled: false  # Set to true to enable
-    hosts:
-      - "localhost:9200"
-    username: null  # Optional
-    password: "${ES_PASSWORD}"  # Set via environment variable if needed
-    index_prefix: "realestate_demo"
-    bulk_size: 500
-
-# Logging configuration
-logging:
-  level: "INFO"  # Options: DEBUG | INFO | WARNING | ERROR | CRITICAL
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  
-  # Output destinations
-  console: true
-  file: "logs/pipeline.log"
-  
-  # Log rotation
-  max_file_size_mb: 100
-  backup_count: 5
-  
-  # Performance logging
-  log_execution_time: true
-  log_memory_usage: true
-  log_record_counts: true
+  # Uncomment to enable Elasticsearch output
+  # elasticsearch:
+  #   hosts:
+  #     - localhost:9200
+  #   index_prefix: real_estate
+  #   username: elastic
+  #   # Password from ELASTIC_PASSWORD environment variable

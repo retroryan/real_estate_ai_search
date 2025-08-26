@@ -13,9 +13,11 @@ __version__ = "2.0.0"
 
 # Export main components for easier imports
 from .core.pipeline_runner import DataPipelineRunner
-from .config.settings import ConfigurationManager
+from .config.loader import load_configuration
+from .config.models import PipelineConfig
 
 __all__ = [
     "DataPipelineRunner",
-    "ConfigurationManager",
+    "load_configuration",
+    "PipelineConfig",
 ]

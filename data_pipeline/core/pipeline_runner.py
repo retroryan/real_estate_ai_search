@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
-from data_pipeline.config.settings import ConfigurationManager
 from data_pipeline.core.spark_session import get_or_create_spark_session
 from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrator, LoadedData
 # Entity-specific imports will be done where needed
@@ -44,31 +43,24 @@ logger = logging.getLogger(__name__)
 class DataPipelineRunner:
     """Main pipeline orchestrator."""
     
-    def __init__(self, config_path: Optional[str] = None, config_override: Optional[Any] = None):
+    def __init__(self, config):
         """
-        Initialize pipeline runner.
+        Initialize pipeline runner with configuration.
         
         Args:
-            config_path: Path to configuration file
-            config_override: Optional configuration object to use instead of loading from file
+            config: Validated PipelineConfig object
         """
-        # Load configuration
-        if config_override is not None:
-            # Use the provided configuration directly
-            self.config = config_override
-            self.config_manager = None
-        else:
-            self.config_manager = ConfigurationManager(config_path)
-            self.config = self.config_manager.load_config()
+        # Store configuration
+        self.config = config
         
         # Configure logging
         self._setup_logging()
         
         # Initialize Spark session with conditional Neo4j configuration
-        self.spark = get_or_create_spark_session(self.config, self.config)
+        self.spark = get_or_create_spark_session(self.config.spark, self.config)
         
         # Initialize components
-        self.loader = DataLoaderOrchestrator(self.spark, self.config)
+        self.loader = DataLoaderOrchestrator(self.spark, self.config.data_sources)
         
         # Initialize entity-specific processors and enrichers
         self._init_entity_processors()
@@ -126,39 +118,31 @@ class DataPipelineRunner:
     
     def _init_embedding_config(self):
         """Initialize embedding configuration for entity-specific generators."""
-        from data_pipeline.models.embedding_config import EmbeddingPipelineConfig
-        
-        # Convert config to proper Pydantic type
-        if isinstance(self.config.embedding, EmbeddingPipelineConfig):
-            return self.config.embedding
-        elif isinstance(self.config.embedding, dict):
-            return EmbeddingPipelineConfig.from_dict(self.config.embedding)
-        else:
-            # Handle legacy config objects
-            return EmbeddingPipelineConfig.from_pipeline_config(self.config.embedding)
+        # Our config.embedding is already a proper Pydantic EmbeddingConfig from config/models.py
+        # No conversion needed since we're using the new clean configuration system
+        return self.config.embedding
     
     def _init_writer_orchestrator(self) -> Optional[WriterOrchestrator]:
         """Initialize the writer orchestrator with configured destinations."""
         writers = []
         
         # Add writers based on enabled destinations
-        if hasattr(self.config, 'enabled_destinations'):
-            # Add Parquet writer if enabled
-            if "parquet" in self.config.enabled_destinations:
-                logger.info("Initializing Parquet writer")
-                writers.append(ParquetWriter(self.config, self.spark))
-            
-            # Add Neo4j graph writer if enabled
-            if "neo4j" in self.config.enabled_destinations:
-                logger.info("Initializing Neo4j graph writer")
-                from data_pipeline.writers.neo4j import Neo4jOrchestrator
-                writers.append(Neo4jOrchestrator(self.config, self.spark))
-            
-            # Add Elasticsearch writer if enabled
-            if "archive_elasticsearch" in self.config.enabled_destinations:
-                logger.info("Initializing Elasticsearch writer")
-                from data_pipeline.writers.archive_elasticsearch import ElasticsearchOrchestrator
-                writers.append(ElasticsearchOrchestrator(self.config, self.spark))
+        # Pydantic guarantees enabled_destinations exists with at least empty list
+        if "parquet" in self.config.output.enabled_destinations:
+            logger.info("Initializing Parquet writer")
+            writers.append(ParquetWriter(self.config.output.parquet, self.spark))
+        
+        # Add Neo4j graph writer if enabled
+        if "neo4j" in self.config.output.enabled_destinations:
+            logger.info("Initializing Neo4j graph writer")
+            from data_pipeline.writers.neo4j import Neo4jOrchestrator
+            writers.append(Neo4jOrchestrator(self.config.output.neo4j, self.spark))
+        
+        # Add Elasticsearch writer if enabled
+        if "elasticsearch" in self.config.output.enabled_destinations:
+            logger.info("Initializing Elasticsearch writer")
+            from data_pipeline.writers.archive_elasticsearch import ElasticsearchOrchestrator
+            writers.append(ElasticsearchOrchestrator(self.config.output.elasticsearch, self.spark))
         
         
         if writers:
@@ -563,7 +547,7 @@ class DataPipelineRunner:
             "pipeline_name": self.config.name,
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
-            "environment": self.config_manager.environment
+            "environment": "production"
         }
         
         if self.writer_orchestrator:
@@ -729,7 +713,7 @@ class DataPipelineRunner:
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
             "entity_types": list(output_dataframes.keys()),
-            "environment": self.config_manager.environment if self.config_manager else "test"
+            "environment": "production"
         }
         
         if self.writer_orchestrator:
@@ -786,7 +770,7 @@ class DataPipelineRunner:
                     pipeline_version=self.config.version,
                     entity_type=entity_type,
                     record_count=df.count(),
-                    environment=self.config_manager.environment if self.config_manager else "test"
+                    environment="production"
                 )
                 
                 # Create write request
