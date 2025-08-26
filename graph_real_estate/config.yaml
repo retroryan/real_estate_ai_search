@@ -1,0 +1,43 @@
+# Configuration for graph_real_estate
+
+# Database configuration
+database:
+  uri: ${NEO4J_URI:-bolt://localhost:7687}
+  user: ${NEO4J_USERNAME:-neo4j}
+  password: ${NEO4J_PASSWORD:-password}
+  database: ${NEO4J_DATABASE:-neo4j}
+
+# API configuration for common-ingest integration
+api:
+  base_url: ${API_BASE_URL:-http://localhost:8000}
+  timeout: ${API_TIMEOUT:-30}
+  api_key: ${API_KEY}
+  max_retries: 3
+  retry_delay: 1.0
+
+# Embedding configuration
+embedding:
+  provider: "voyage"  # Options: voyage | ollama | openai | gemini
+  models:
+    voyage:
+      model: "voyage-3"
+      api_key: "${VOYAGE_API_KEY}"
+      dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
+
+# Vector index configuration
+vector_index:
+  index_name: "property_embeddings"
+  vector_dimensions: 1024  # For voyage-3
+  similarity_function: "cosine"
+  node_label: "Property"
+  embedding_property: "embedding"
+  source_property: "description"
+
+# Search configuration
+search:
+  default_top_k: 10
+  use_graph_boost: true
+  vector_weight: 0.6
+  graph_weight: 0.2
+  features_weight: 0.2
+  min_similarity: 0.01  # Lowered for Voyage embeddings which have lower similarity scores

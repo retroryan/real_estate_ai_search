@@ -141,11 +141,6 @@ class DataPipelineRunner:
             from data_pipeline.writers.neo4j import Neo4jOrchestrator
             writers.append(Neo4jOrchestrator(self.config.output.neo4j, self.spark))
         
-        # Add Elasticsearch writer if enabled
-        if "elasticsearch" in self.config.output.enabled_destinations:
-            logger.info("Initializing Elasticsearch writer")
-            from data_pipeline.writers.archive_elasticsearch import ElasticsearchOrchestrator
-            writers.append(ElasticsearchOrchestrator(self.config.output.elasticsearch, self.spark))
         
         
         if writers:
@@ -662,7 +657,7 @@ class DataPipelineRunner:
             
             # Entity writing complete
             # Note: Relationships are created in a separate Neo4j orchestration step:
-            # python -m graph-real-estate build-relationships
+            # python -m graph_real_estate build-relationships
             
             # Log summary of entity writing only
             logger.info("")
@@ -678,7 +673,7 @@ class DataPipelineRunner:
                     logger.info(f"   • {entity_name.capitalize()}: Written")
             
             logger.info("\n🔗 Note: Relationships will be created in separate step")
-            logger.info("   Next: python -m graph-real-estate build-relationships")
+            logger.info("   Next: python -m graph_real_estate build-relationships")
             
             logger.info("="*60)
             logger.info("✅ Pipeline write completed")

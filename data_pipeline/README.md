@@ -66,7 +66,7 @@ python -m pytest data_pipeline/integration_tests/test_elasticsearch_writer.py -v
 ### 4. Verify Neo4j
 ```bash
 # Verify Neo4j nodes and relationships
-python -m graph-real-estate verify-nodes
+python -m graph_real_estate verify-nodes
 
 # Run Neo4j integration tests
 python -m pytest data_pipeline/integration_tests/test_neo4j_writer.py -v
@@ -249,7 +249,7 @@ output:
 - ✅ Entity extraction (features, property types, price ranges, counties, topics)  
 - ✅ Node creation in Neo4j (properties, neighborhoods, wikipedia, etc.)
 - ✅ Graph database optimization
-- ⚠️ **Note**: Relationships are created separately using `python -m graph-real-estate build-relationships`
+- ⚠️ **Note**: Relationships are created separately using `python -m graph_real_estate build-relationships`
 
 ### Search Processing (elasticsearch + parquet)
 ```yaml
@@ -303,7 +303,7 @@ For Neo4j graph processing, use the provided configuration:
 python -m data_pipeline --config data_pipeline/neo4j.config.yaml --sample-size 5
 
 # Step 2: Create relationships (future phase)
-# python -m graph-real-estate build-relationships
+# python -m graph_real_estate build-relationships
 ```
 
 The `neo4j.config.yaml` file:

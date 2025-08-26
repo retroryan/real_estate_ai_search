@@ -7,7 +7,7 @@ version: 1.0.0
 # Data Sources Configuration
 data:
   input_path: real_estate_data
-  output_path: ./output
+  output_path: ./squack_pipeline_output
   properties_file: properties_sf.json
   sample_size: null  # null means process all records
 
@@ -18,11 +18,10 @@ duckdb:
 
 # Embedding Configuration (following common_embeddings patterns)
 embedding:
-  provider: mock  # Options: voyage, openai, ollama, gemini, mock
+  provider: voyage  # Options: voyage, openai, ollama, gemini, mock
   
-  # Voyage AI settings (recommended for real estate data)
+  # Voyage AI settings (API key loaded from parent .env)
   voyage_model: voyage-3  # 1024 dimensions, best semantic understanding
-  # voyage_api_key: null  # Set via VOYAGE_API_KEY environment variable
   
   # OpenAI settings (if provider=openai)
   # openai_api_key: null  # Set via OPENAI_API_KEY env var

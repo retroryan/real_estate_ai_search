@@ -3,7 +3,7 @@ Neo4j Graph Data Models
 
 Clean, simple Pydantic models for the real estate graph database.
 These models define the structure of nodes in Neo4j.
-Note: Relationship creation is handled separately in the graph-real-estate module.
+Note: Relationship creation is handled separately in the graph_real_estate module.
 """
 
 from typing import Optional, List, Dict, Any

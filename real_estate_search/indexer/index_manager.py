@@ -8,7 +8,7 @@ import logging
 from elasticsearch import Elasticsearch
 from pydantic import BaseModel
 
-from .mappings import get_property_mappings
+from .mappings import get_property_mappings, get_neighborhood_mappings, get_wikipedia_mappings
 from .enums import IndexName, ErrorCode
 from .exceptions import ElasticsearchIndexError
 
@@ -94,6 +94,76 @@ class ElasticsearchIndexManager:
                 ErrorCode.INDEX_NOT_FOUND,
                 f"Failed to create index {index_name}: {str(e)}"
             )
+
+    def create_neighborhood_index(self, index_name: str = IndexName.NEIGHBORHOODS) -> bool:
+        """
+        Create neighborhoods index with proper mappings.
+        
+        Args:
+            index_name: Name of the index to create
+            
+        Returns:
+            True if index was created or already exists, False on error
+        """
+        try:
+            # Check if index already exists
+            if self.client.indices.exists(index=index_name):
+                self.logger.info(f"Index {index_name} already exists")
+                return True
+            
+            # Get mappings for neighborhoods index
+            mappings_config = get_neighborhood_mappings()
+            
+            # Create the index
+            self.client.indices.create(
+                index=index_name,
+                body=mappings_config
+            )
+            
+            self.logger.info(f"Successfully created index: {index_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create index {index_name}: {str(e)}")
+            raise ElasticsearchIndexError(
+                ErrorCode.INDEX_NOT_FOUND,
+                f"Failed to create index {index_name}: {str(e)}"
+            )
+
+    def create_wikipedia_index(self, index_name: str = IndexName.WIKIPEDIA) -> bool:
+        """
+        Create Wikipedia index with proper mappings.
+        
+        Args:
+            index_name: Name of the index to create
+            
+        Returns:
+            True if index was created or already exists, False on error
+        """
+        try:
+            # Check if index already exists
+            if self.client.indices.exists(index=index_name):
+                self.logger.info(f"Index {index_name} already exists")
+                return True
+            
+            # Get mappings for Wikipedia index
+            mappings_config = get_wikipedia_mappings()
+            
+            # Create the index
+            self.client.indices.create(
+                index=index_name,
+                body=mappings_config
+            )
+            
+            self.logger.info(f"Successfully created index: {index_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create index {index_name}: {str(e)}")
+            raise ElasticsearchIndexError(
+                ErrorCode.INDEX_NOT_FOUND,
+                f"Failed to create index {index_name}: {str(e)}"
+            )
     
     def register_index_template(self, template: IndexTemplate) -> bool:
         """
@@ -142,6 +212,44 @@ class ElasticsearchIndexManager:
         template = IndexTemplate(
             name="properties_template",
             index_patterns=["properties*"],
+            settings=mappings_config["settings"],
+            mappings=mappings_config["mappings"],
+            priority=100
+        )
+        
+        return self.register_index_template(template)
+
+    def create_neighborhood_template(self) -> bool:
+        """
+        Create and register neighborhood index template.
+        
+        Returns:
+            True if template was created successfully
+        """
+        mappings_config = get_neighborhood_mappings()
+        
+        template = IndexTemplate(
+            name="neighborhoods_template",
+            index_patterns=["neighborhoods*"],
+            settings=mappings_config["settings"],
+            mappings=mappings_config["mappings"],
+            priority=100
+        )
+        
+        return self.register_index_template(template)
+
+    def create_wikipedia_template(self) -> bool:
+        """
+        Create and register Wikipedia index template.
+        
+        Returns:
+            True if template was created successfully
+        """
+        mappings_config = get_wikipedia_mappings()
+        
+        template = IndexTemplate(
+            name="wikipedia_template",
+            index_patterns=["wikipedia*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -246,7 +354,11 @@ class ElasticsearchIndexManager:
         """
         index_names = [
             IndexName.PROPERTIES,
-            IndexName.TEST_PROPERTIES
+            IndexName.TEST_PROPERTIES,
+            IndexName.NEIGHBORHOODS,
+            IndexName.TEST_NEIGHBORHOODS,
+            IndexName.WIKIPEDIA,
+            IndexName.TEST_WIKIPEDIA
         ]
         
         return [self.get_index_status(name) for name in index_names]
@@ -290,11 +402,17 @@ class ElasticsearchIndexManager:
             # First create templates
             self.logger.info("Creating index templates...")
             results["property_template"] = self.create_property_template()
+            results["neighborhood_template"] = self.create_neighborhood_template()
+            results["wikipedia_template"] = self.create_wikipedia_template()
             
             # Then create indices
             self.logger.info("Creating indices...")
             results[IndexName.PROPERTIES] = self.create_property_index(IndexName.PROPERTIES)
             results[IndexName.TEST_PROPERTIES] = self.create_property_index(IndexName.TEST_PROPERTIES)
+            results[IndexName.NEIGHBORHOODS] = self.create_neighborhood_index(IndexName.NEIGHBORHOODS)
+            results[IndexName.TEST_NEIGHBORHOODS] = self.create_neighborhood_index(IndexName.TEST_NEIGHBORHOODS)
+            results[IndexName.WIKIPEDIA] = self.create_wikipedia_index(IndexName.WIKIPEDIA)
+            results[IndexName.TEST_WIKIPEDIA] = self.create_wikipedia_index(IndexName.TEST_WIKIPEDIA)
             
             success_count = sum(1 for success in results.values() if success)
             total_count = len(results)

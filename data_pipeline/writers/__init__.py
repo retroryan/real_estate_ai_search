@@ -3,8 +3,7 @@ Data pipeline writers package.
 
 This package provides modular writers for different destinations:
 - neo4j/: Neo4j graph database writer
-- archive_elasticsearch/: Elasticsearch search engine writers
-- chromadb/: ChromaDB vector database writers
+- elasticsearch/: Elasticsearch writer (used by search_pipeline)
 - parquet: Parquet file writer
 """
 
@@ -15,9 +14,6 @@ from .parquet_writer import ParquetWriter
 
 # Import base classes
 from .base import EntityWriter
-
-# Note: ElasticsearchOrchestrator moved to archive_elasticsearch
-# and will be replaced by search_pipeline module
 
 __all__ = [
     "Neo4jOrchestrator",

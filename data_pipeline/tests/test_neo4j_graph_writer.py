@@ -2,7 +2,7 @@
 Test the enhanced Neo4j graph writer.
 
 This test validates that the Neo4j graph writer correctly creates all nodes.
-Note: Relationships are created separately in Neo4j using graph-real-estate module.
+Note: Relationships are created separately in Neo4j using graph_real_estate module.
 """
 
 import json
@@ -268,7 +268,7 @@ class TestNeo4jGraphWriter:
             print("     - MATCH (n) RETURN n LIMIT 50")
             print("     - MATCH (p:Property) RETURN p LIMIT 10")
             print("     - MATCH (n:Neighborhood) RETURN n LIMIT 10")
-            print("Note: Relationships will be created in separate Neo4j step: python -m graph-real-estate build-relationships")
+            print("Note: Relationships will be created in separate Neo4j step: python -m graph_real_estate build-relationships")
         else:
             print("❌ SOME TESTS FAILED")
         print("="*60)
