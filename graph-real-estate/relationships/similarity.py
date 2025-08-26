@@ -6,8 +6,8 @@ import logging
 from typing import Optional
 from neo4j import Driver
 
-from utils.database import run_query
-from relationships.config import RelationshipConfig
+from ..utils.database import run_query
+from .config import RelationshipConfig
 
 logger = logging.getLogger(__name__)
 
@@ -71,31 +71,32 @@ class SimilarityRelationshipBuilder:
         Create DESCRIBES relationships between Wikipedia articles and Neighborhoods.
         
         Matches based on:
-        - Wikipedia neighborhood_ids field matching Neighborhood neighborhood_id
-        - Wikipedia confidence score > 0.3
+        - WikipediaArticle city field matching Neighborhood city field
+        - WikipediaArticle has valid location data
         
         Includes relationship properties:
-        - confidence: The confidence score of the match
-        - relationship_type: The type of relationship (from Wikipedia data)
+        - confidence: The location confidence score from Wikipedia data
+        - relationship_type: The content category from Wikipedia data
         
         Returns:
             Number of relationships created
         """
-        # Wikipedia articles have neighborhood_ids array and relationship metadata
+        # Match WikipediaArticles to Neighborhoods based on city
         query = """
-        MATCH (w:Wikipedia)
-        WHERE w.neighborhood_ids IS NOT NULL AND w.confidence > 0.3
-        UNWIND w.neighborhood_ids AS nid
-        MATCH (n:Neighborhood {neighborhood_id: nid})
+        MATCH (w:WikipediaArticle)
+        WHERE w.best_city IS NOT NULL AND w.has_valid_location = true
+        MATCH (n:Neighborhood)
+        WHERE n.city = w.best_city
         MERGE (w)-[r:DESCRIBES]->(n)
         ON CREATE SET 
-            r.confidence = w.confidence,
-            r.relationship_type = COALESCE(w.relationship_type, 'general')
+            r.confidence = COALESCE(w.location_confidence, 0.5),
+            r.relationship_type = COALESCE(w.content_category, 'general'),
+            r.relevance_score = COALESCE(w.location_relevance_score, 0.5)
         RETURN count(*) as count
         """
         
         if self.config.verbose:
-            logger.debug("Creating DESCRIBES relationships...")
+            logger.debug("Creating DESCRIBES relationships between WikipediaArticles and Neighborhoods...")
         
         result = run_query(self.driver, query)
         return result[0]["count"] if result else 0
@@ -115,7 +116,7 @@ class SimilarityRelationshipBuilder:
         # First get neighborhoods with their data
         query = """
         MATCH (n:Neighborhood)
-        OPTIONAL MATCH (n)<-[:DESCRIBES]-(w:Wikipedia)
+        OPTIONAL MATCH (n)<-[:DESCRIBES]-(w:WikipediaArticle)
         RETURN n.neighborhood_id as id,
                n.name as name,
                n.city as city,

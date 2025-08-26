@@ -1,0 +1,74 @@
+{
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "name": {
+      "type": "text",
+      "analyzer": "property_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "city": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "state": {
+      "type": "keyword"
+    },
+    "location": {
+      "type": "geo_point"
+    },
+    "population": {
+      "type": "integer"
+    },
+    "median_income": {
+      "type": "integer"
+    },
+    "walkability_score": {
+      "type": "byte"
+    },
+    "school_rating": {
+      "type": "half_float"
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "property_analyzer"
+    },
+    "amenities": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "demographics": {
+      "type": "object",
+      "properties": {
+        "age_distribution": {
+          "type": "keyword"
+        },
+        "education_level": {
+          "type": "keyword"
+        },
+        "income_brackets": {
+          "type": "keyword"
+        }
+      }
+    },
+    "embedding": {
+      "type": "dense_vector",
+      "dims": 1536,
+      "similarity": "cosine"
+    },
+    "embedding_model": {
+      "type": "keyword"
+    },
+    "embedding_dimension": {
+      "type": "integer"
+    },
+    "embedded_at": {
+      "type": "date"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-"""Graph database initialization utilities - extracted from archive/controllers/graph_builder.py"""
+"""Graph database initialization utilities - extracted from graph_archive/controllers/graph_builder.py"""
 
 from typing import Optional
 from neo4j import Driver

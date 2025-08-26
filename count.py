@@ -12,8 +12,8 @@ TARGET_EXTENSIONS = {".go", ".py", ".sql", ".md", ".js", ".html"}
 # regardless of where they appear in the directory tree.
 EXCLUDE_DIRS = {"__pycache__", "venv", ".venv", ".git", ".history", ".pytest_cache", "node_modules"}
 
-# Starting directory ('.' means current directory)
-START_DIR = "."
+# Starting directory (from command line argument or current directory)
+START_DIR = sys.argv[1] if len(sys.argv) > 1 else "."
 # --- End Configuration ---
 
 def count_lines_in_file(filepath):
@@ -34,6 +34,15 @@ def main():
     line_counts = defaultdict(int)
     total_files_processed = 0
     folder_counts = defaultdict(lambda: defaultdict(int))
+    
+    # Check if directory exists
+    if not os.path.exists(START_DIR):
+        print(f"Error: Directory '{START_DIR}' does not exist.")
+        sys.exit(1)
+    
+    if not os.path.isdir(START_DIR):
+        print(f"Error: '{START_DIR}' is not a directory.")
+        sys.exit(1)
 
     # Get absolute start path mainly for display purposes
     start_path_abs_display = os.path.abspath(START_DIR)
@@ -56,14 +65,21 @@ def main():
 
             if extension in TARGET_EXTENSIONS:
                 relative_dirpath = os.path.relpath(dirpath, START_DIR)
-                # Get the top-level folder name
-                folder_parts = relative_dirpath.split(os.sep)
-                top_folder = folder_parts[0] if folder_parts[0] != '.' else 'root'
+                
+                # For subdirectory counting - only count files in their immediate directory
+                # Don't use '.' for root, use the actual folder name
+                if relative_dirpath == '.':
+                    # Files in the root of the target directory
+                    folder_key = os.path.basename(os.path.abspath(START_DIR))
+                else:
+                    # Files in subdirectories - get just the first level subdirectory
+                    folder_parts = relative_dirpath.split(os.sep)
+                    folder_key = folder_parts[0]
 
                 filepath = os.path.join(dirpath, filename)
                 lines = count_lines_in_file(filepath)
                 line_counts[extension] += lines
-                folder_counts[top_folder][extension] += lines
+                folder_counts[folder_key][extension] += lines
                 total_files_processed += 1
         # --- End File Processing ---
 
@@ -71,21 +87,31 @@ def main():
 
     # Print folder-by-folder breakdown
     print("-" * 20)
-    print("Line counts by folder:")
+    print("Line counts by top-level subdirectory:")
     if not folder_counts:
         print("  (None)")
     else:
         # Sort folders for consistent output
-        for folder in sorted(folder_counts.keys()):
+        sorted_folders = sorted(folder_counts.keys())
+        
+        # Separate root folder from subdirectories
+        root_folder_name = os.path.basename(os.path.abspath(START_DIR))
+        
+        for folder in sorted_folders:
             # Build the formatted string for this folder
             ext_strings = []
+            folder_total = 0
             for ext in sorted(folder_counts[folder].keys()):
                 ext_name = ext[1:]  # Remove the dot
                 count = folder_counts[folder][ext]
                 ext_strings.append(f"{ext_name}: {count:,}")
+                folder_total += count
             
-            folder_total = sum(folder_counts[folder].values())
-            print(f"  {folder} ({', '.join(ext_strings)})")
+            # Display folder with total and breakdown
+            if folder == root_folder_name:
+                print(f"  {folder}/ (root) - Total: {folder_total:,} ({', '.join(ext_strings)})")
+            else:
+                print(f"  {folder}/ - Total: {folder_total:,} ({', '.join(ext_strings)})")
 
     print("-" * 20)
     print("Overall line counts by extension:")

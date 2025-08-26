@@ -59,3 +59,8 @@ class ValidationError(PropertyIndexerError):
 class ConfigurationError(PropertyIndexerError):
     """Raised when configuration is invalid."""
     pass
+
+
+class ElasticsearchIndexError(PropertyIndexerError):
+    """Raised when Elasticsearch index operations fail."""
+    pass

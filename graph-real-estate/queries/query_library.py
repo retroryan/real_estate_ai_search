@@ -201,7 +201,7 @@ class QueryLibrary:
                 WHERE f.name IN ['Pool', 'Hot Tub', 'Sauna', 'Wine Cellar', 'Home Theater']
                 WITH p, collect(DISTINCT f.name) as luxury_features
                 WHERE size(luxury_features) >= 2
-                RETURN p.address as address,
+                RETURN p.street as address,
                        p.listing_price as price,
                        luxury_features
                 ORDER BY price DESC
@@ -246,7 +246,7 @@ class QueryLibrary:
                 cypher="""
                 MATCH (p:Property)
                 WHERE p.price_per_sqft IS NOT NULL AND p.square_feet > 1500
-                RETURN p.address as address,
+                RETURN p.street as address,
                        p.listing_price as price,
                        p.square_feet as sqft,
                        p.price_per_sqft as price_per_sqft
@@ -382,7 +382,7 @@ class QueryLibrary:
                      collect(DISTINCT f.name)[0..5] as top_features,
                      n.lifestyle_tags as lifestyle,
                      count(DISTINCT similar) as similar_properties
-                RETURN p.address as address,
+                RETURN p.street as address,
                        p.listing_price as price,
                        p.price_per_sqft as price_per_sqft,
                        c.name as city,

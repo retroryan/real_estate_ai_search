@@ -9,6 +9,10 @@ from pathlib import Path
 import yaml
 import logging
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,15 @@ class ElasticsearchConfig(BaseModel):
     batch_size: int = Field(default=100, description="Batch size for bulk operations", gt=0)
     request_timeout: int = Field(default=30, description="Request timeout in seconds", gt=0)
     verify_certs: bool = Field(default=False, description="Verify SSL certificates")
+    
+    def model_post_init(self, __context):
+        """Load credentials from environment if not provided."""
+        if self.username is None:
+            self.username = os.getenv("ES_USERNAME") or os.getenv("ELASTICSEARCH_USERNAME")
+        if self.password is None:
+            self.password = os.getenv("ES_PASSWORD") or os.getenv("ELASTICSEARCH_PASSWORD") or os.getenv("ELASTIC_PASSWORD")
+        if self.api_key is None:
+            self.api_key = os.getenv("ES_API_KEY") or os.getenv("ELASTICSEARCH_API_KEY")
 
 
 class EmbeddingConfig(BaseModel):

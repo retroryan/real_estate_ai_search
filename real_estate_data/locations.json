@@ -2,1420 +2,1711 @@
   {
     "city": "Oakland",
     "county": "Alameda",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94601"
   },
   {
     "neighborhood": "Rockridge",
     "city": "Oakland",
     "county": "Alameda",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94618"
   },
   {
     "neighborhood": "Temescal",
     "city": "Oakland",
     "county": "Alameda",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94609"
   },
   {
     "city": "Salinas",
     "county": "Monterey",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "93901"
   },
   {
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94102"
   },
   {
     "neighborhood": "Mission District",
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94110"
   },
   {
     "neighborhood": "Noe Valley",
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94114"
   },
   {
     "neighborhood": "Pacific Heights",
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94115"
   },
   {
     "neighborhood": "SOMA",
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94103"
   },
   {
     "neighborhood": "Sunset District",
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "94122"
   },
   {
     "city": "San Jose",
     "county": "Santa Clara",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "95112"
   },
   {
     "neighborhood": "Santana Row",
     "city": "San Jose",
     "county": "Santa Clara",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "95128"
   },
   {
     "neighborhood": "Willow Glen",
     "city": "San Jose",
     "county": "Santa Clara",
-    "state": "CA"
+    "state": "CA",
+    "zip_code": "95125"
   },
   {
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Fremont",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94536"
   },
   {
     "city": "Grand Lake",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94610"
   },
   {
     "city": "Hayward",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94541"
   },
   {
     "city": "Interstate 238 and State Route 238",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Mountain House",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Oakland",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94601"
   },
   {
     "city": "San Francisco\u2013Oakland",
     "county": "Alameda",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Alameda County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Berkeley",
     "county": "Alameda County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94704"
   },
   {
     "city": "Fremont",
     "county": "Alameda County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94536"
   },
   {
     "city": "Oakland",
     "county": "Alameda County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94601"
   },
   {
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Alpine Village",
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Bear Valley",
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lake Alpine",
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Mount Bullion",
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Silver Mountain",
     "county": "Alpine",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Alpine County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Centerville",
     "county": "Alpine County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Markleeville",
     "county": "Alpine County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Amador",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Buckhorn",
     "county": "Amador",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Buena Vista",
     "county": "Amador",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Jackson",
     "county": "Amador",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Butte",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Chico",
     "county": "Butte",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95926"
   },
   {
     "city": "Angels Camp",
     "county": "Calaveras",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Contra Costa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Antioch",
     "county": "Contra Costa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Bayview",
     "county": "Contra Costa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Mountain View",
     "county": "Contra Costa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94040"
   },
   {
     "county": "Contra Costa County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Humboldt",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Klamath County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Clearlake",
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lakeport",
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lucerne",
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Pine Grove",
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Spring Valley",
     "county": "Lake",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Alondra Park",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Alpine",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Baldwin Park",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Burbank",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "91502"
   },
   {
     "city": "Cornell",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "El Nido",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "La Habra Heights",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lancaster",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "93534"
   },
   {
     "city": "Pyramid Lake",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Rowland Heights",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Sand Canyon",
     "county": "Los Angeles",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Los Angeles County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Elizabeth Lake",
     "county": "Los Angeles County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Los Angeles",
     "county": "Los Angeles County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90012"
   },
   {
     "city": "Corte Madera",
     "county": "Marin",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94925"
   },
   {
     "city": "San Rafael",
     "county": "Marin",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94901"
   },
   {
     "city": "Santa Rosa",
     "county": "Marin",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95401"
   },
   {
     "county": "Marin County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Corte Madera",
     "county": "Marin County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94925"
   },
   {
     "city": "Tiburon",
     "county": "Marin County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94920"
   },
   {
     "city": "Mariposa",
     "county": "Mariposa County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Monterey",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Salinas",
     "county": "Monterey",
-    "state": "California"
+    "state": "California",
+    "zip_code": "93901"
   },
   {
     "county": "Monterey County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Napa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "American Canyon",
     "county": "Napa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "St. Helena",
     "county": "Napa",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Buena Park",
     "county": "Orange",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Silverado",
     "county": "Orange",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Silverado",
     "county": "Orange County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Canyon Lake",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Chiriaco Summit",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Eagle Mountain",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Edgemont",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "El Cerrito",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "El Sobrante",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "La Cresta",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lake Riverside",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Martinez",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Oasis",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Riverside",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "92501"
   },
   {
     "city": "Sage",
     "county": "Riverside",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Riverside County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Riverside",
     "county": "Riverside County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "92501"
   },
   {
     "city": "Sacramento",
     "county": "Sacramento",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95814"
   },
   {
     "city": "Sacramento",
     "county": "Sacramento County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95814"
   },
   {
     "county": "San Benito",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "San Bernardino",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Big Bear City",
     "county": "San Bernardino",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Big Bear Lake",
     "county": "San Bernardino",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Pine Mountain",
     "county": "San Bernardino",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Baldwin Lake",
     "county": "San Bernardino County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Bluff Lake",
     "county": "San Bernardino County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Granite Mountains",
     "county": "San Bernardino County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "San Diego",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "San Diego",
     "county": "San Diego",
-    "state": "California"
+    "state": "California",
+    "zip_code": "92101"
   },
   {
     "county": "San Diego County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "San Diego",
     "county": "San Diego County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "92101"
   },
   {
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Bayview\u2013Hunters Point",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94124"
   },
   {
     "city": "Bernal Heights",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94110"
   },
   {
     "city": "Castro District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94114"
   },
   {
     "city": "Diamond Heights",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94131"
   },
   {
     "city": "Eureka Valley",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94114"
   },
   {
     "city": "Excelsior District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94112"
   },
   {
     "city": "Fillmore District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94115"
   },
   {
     "city": "Financial District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94111"
   },
   {
     "city": "Glen Park",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94127"
   },
   {
     "city": "Lower Pacific Heights, San Francisco",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Marina District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94123"
   },
   {
     "city": "Mission Bay",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94158"
   },
   {
     "city": "Mission District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94110"
   },
   {
     "city": "Noe Valley",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94114"
   },
   {
     "city": "Oceanview",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94112"
   },
   {
     "city": "Pacific Heights",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94115"
   },
   {
     "city": "Parkside",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94116"
   },
   {
     "city": "Richmond District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94118"
   },
   {
     "city": "San Francisco",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94102"
   },
   {
     "city": "San Francisco Bay Area",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Sunset District",
     "county": "San Francisco",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94122"
   },
   {
     "city": "Mountain House",
     "county": "San Joaquin",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Old River",
     "county": "San Joaquin",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Mountain House",
     "county": "San Joaquin County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Baywood-Los Osos",
     "county": "San Luis Obispo",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "San Mateo",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "South San Francisco",
     "county": "San Mateo",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "San Mateo County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Burbank",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "91502"
   },
   {
     "city": "Coyote Lake",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Crystal Peak",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Los Altos Hills",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94022"
   },
   {
     "city": "Morgan Hill",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95037"
   },
   {
     "city": "Mountain View",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94040"
   },
   {
     "city": "San Jose",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95112"
   },
   {
     "city": "Twin Peaks",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Willow Glen",
     "county": "Santa Clara",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95125"
   },
   {
     "county": "Santa Clara County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Black Mountain",
     "county": "Santa Clara County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Los Altos Hills",
     "county": "Santa Clara County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "94022"
   },
   {
     "city": "Los Gatos",
     "county": "Santa Clara County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "San Jose",
     "county": "Santa Clara County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95112"
   },
   {
     "city": "Boulder Creek",
     "county": "Santa Cruz",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Los Gatos",
     "county": "Santa Cruz",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Santa Cruz",
     "county": "Santa Cruz",
-    "state": "California"
+    "state": "California",
+    "zip_code": "95060"
   },
   {
     "county": "Siskiyou",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Bear Mountain",
     "county": "Siskiyou",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Black Butte",
     "county": "Siskiyou",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Klamath River",
     "county": "Siskiyou",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Lake Shastina",
     "county": "Siskiyou",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Benicia",
     "county": "Solano",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Solano County",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "county": "Sonoma",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Allensworth",
     "county": "Tulare",
-    "state": "California"
+    "state": "California",
+    "zip_code": "90001"
   },
   {
     "city": "Coalville",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84017"
   },
   {
     "city": "Kamas",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84036"
   },
   {
     "city": "Oakley",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84055"
   },
   {
     "city": "Park City",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84060"
   },
   {
     "neighborhood": "Canyons Village",
     "city": "Park City",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84098"
   },
   {
     "neighborhood": "Deer Valley",
     "city": "Park City",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84060"
   },
   {
     "neighborhood": "Old Town",
     "city": "Park City",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84060"
   },
   {
     "city": "Summit Park",
     "county": "Summit",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84098"
   },
   {
     "city": "Heber City",
     "county": "Wasatch",
-    "state": "UT"
+    "state": "UT",
+    "zip_code": "84032"
   },
   {
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Beaver",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Beaver",
     "county": "Beaver",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Eagle Point Ski Resort",
     "county": "Beaver",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Beaver",
     "county": "Beaver County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Bear River City",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Beaver Dam",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Blue Creek",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Brigham City",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84302"
   },
   {
     "city": "Park Valley",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Riverside",
     "county": "Box Elder",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "92501"
   },
   {
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Amalga",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Avon",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Benson",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Cache Junction",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Clarkston",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "College Ward",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Hyde Park",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Logan",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84321"
   },
   {
     "city": "River Heights",
     "county": "Cache",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Carbon",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Price",
     "county": "Carbon County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84501"
   },
   {
     "city": "Manila",
     "county": "Daggett",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Davis County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Duchesne",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Uinta Mountains",
     "county": "Duchesne",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Roosevelt",
     "county": "Duchesne County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Garfield",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Boulder",
     "county": "Garfield",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Bryce Canyon City",
     "county": "Garfield",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Escalante",
     "county": "Garfield",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Panguitch",
     "county": "Garfield",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Beryl",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Beryl Junction",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Brian Head",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Cedar City",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84720"
   },
   {
     "city": "Cedar Highlands",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Enoch",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Summit",
     "county": "Iron",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Iron County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Cedar City",
     "county": "Iron County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84720"
   },
   {
     "city": "Cedar Valley",
     "county": "Iron County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Black Mountains",
     "county": "Iron County; Beaver County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Eureka",
     "county": "Juab",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Mirror Lake",
     "county": "Lakes of Duchesne",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Argyle",
     "county": "Rich",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Garden",
     "county": "Rich",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Laketown",
     "county": "Rich",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Rich County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Garden City",
     "county": "Rich County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Bingham Canyon",
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Emigration Canyon",
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Riverton",
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Salt Lake City",
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Snowbird",
     "county": "Salt Lake",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Kearns",
     "county": "Salt Lake County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Salt Lake City",
     "county": "Salt Lake County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "West Jordan",
     "county": "Salt Lake County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Moab",
     "county": "San Juan",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84532"
   },
   {
     "city": "Blacks Fork",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Coalville",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84017"
   },
   {
     "city": "Echo",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Francis",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Kamas",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84036"
   },
   {
     "city": "Oakley",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84055"
   },
   {
     "city": "Park City",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84060"
   },
   {
     "city": "Silver Summit",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Summit Park",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84098"
   },
   {
     "city": "Upton",
     "county": "Summit",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Coalville",
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84017"
   },
   {
     "city": "East Basin",
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Park City",
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84060"
   },
   {
     "city": "Salt Lake City",
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Upton",
     "county": "Summit County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Ajax",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Aragonite",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Arinosa",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Dugway",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Iosepa",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Lake Point",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Pine Canyon",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Rush Lake",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Stansbury Park",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Stockton",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Tooele",
     "county": "Tooele",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Vernal",
     "county": "Uintah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84078"
   },
   {
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Eagle Mountain",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Lake Shore",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Lakeview",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Lehi",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Orem",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84057"
   },
   {
     "city": "Provo",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84601"
   },
   {
     "city": "Spring Lake",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Sundance Resort",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "West Mountain",
     "county": "Utah",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Wasatch",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Heber City",
     "county": "Wasatch",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84032"
   },
   {
     "city": "Interlaken",
     "county": "Wasatch",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Soldier Summit",
     "county": "Wasatch",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Charleston",
     "county": "Wasatch County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Heber City",
     "county": "Wasatch County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84032"
   },
   {
     "city": "Enterprise",
     "county": "Washington",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "St. George",
     "county": "Washington County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84770"
   },
   {
     "city": "Loa",
     "county": "Wayne",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "county": "Wayne County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Blind Lake",
     "county": "Wayne County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   },
   {
     "city": "Boulder Mountain",
     "county": "Wayne County",
-    "state": "Utah"
+    "state": "Utah",
+    "zip_code": "84101"
   }
 ]

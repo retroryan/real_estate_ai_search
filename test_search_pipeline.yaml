@@ -1,0 +1,56 @@
+# Test configuration for search pipeline with fixed ID fields
+spark:
+  app_name: "TestSearchPipeline"
+  master: "local[2]"
+  driver_memory: "2g"
+
+data_source:
+  properties_files:
+    - "real_estate_data/properties_sf.json"
+  neighborhoods_files: 
+    - "real_estate_data/neighborhoods_sf.json"
+  wikipedia_db_path: "data/wikipedia/wikipedia.db"
+
+processing:
+  enable_wikipedia_enrichment: false  # Disable for faster testing
+  enable_field_mapping: true
+  enable_embeddings: true
+
+embedding:
+  provider: "mock"
+  model_name: "test-model"
+  dimension: 1536
+  batch_size: 100
+
+output:
+  enabled_destinations:
+    - "elasticsearch"
+  elasticsearch:
+    hosts:
+      - "localhost:9200"
+    index_prefix: "test"
+    bulk_size: 100
+    username: "elastic"
+    # Password from ELASTICSEARCH_PASSWORD env variable
+
+# Search pipeline configuration
+search_pipeline:
+  enabled: true
+  elasticsearch:
+    nodes:
+      - "localhost:9200"
+    index_prefix: "test"
+    index_auto_create: false
+  process_properties: true
+  process_neighborhoods: true  
+  process_wikipedia: true
+  validate_connection: true
+  embedding_config:
+    provider: "mock"
+    model_name: "test-model"
+    dimension: 1536
+    batch_size: 100
+
+# Pipeline settings  
+sample_size: 5  # Very small sample for quick testing
+test_mode: true

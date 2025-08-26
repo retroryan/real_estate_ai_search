@@ -54,6 +54,24 @@ python -m data_pipeline --config path/to/custom.config.yaml
 python -m data_pipeline --config data_pipeline/neo4j.config.yaml --sample-size 2
 ```
 
+### 3. Verify Elasticsearch
+```bash
+# Verify Elasticsearch indices and data
+python data_pipeline/scripts/verify_elasticsearch.py
+
+# Run Elasticsearch integration tests
+python -m pytest data_pipeline/integration_tests/test_elasticsearch_writer.py -v
+```
+
+### 4. Verify Neo4j
+```bash
+# Verify Neo4j nodes and relationships
+python -m graph-real-estate verify-nodes
+
+# Run Neo4j integration tests
+python -m pytest data_pipeline/integration_tests/test_neo4j_writer.py -v
+```
+
 ## Configuration
 
 ### Configuration Files

@@ -1,12 +1,14 @@
 """
 Topic extraction and clustering from Wikipedia articles.
 
-Simple topic grouping without complex clustering algorithms.
+Clean, Pydantic-based topic extractor for Wikipedia content.
 """
 
 import logging
 from typing import Dict, List, Optional
 from collections import defaultdict
+from pydantic import BaseModel, ConfigDict
+
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
     col,
@@ -24,20 +26,25 @@ from data_pipeline.enrichment.id_generator import generate_topic_cluster_id
 logger = logging.getLogger(__name__)
 
 
-class TopicExtractor:
+class TopicExtractor(BaseModel):
     """Extract and group topics from Wikipedia articles."""
     
-    def __init__(self, spark: SparkSession):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    spark: SparkSession
+    topic_categories: Dict[str, str] = {}
+    
+    def __init__(self, spark: SparkSession, **kwargs):
         """
         Initialize the topic extractor.
         
         Args:
             spark: Active SparkSession
         """
-        self.spark = spark
-        self.topic_categories = self._initialize_categories()
+        super().__init__(spark=spark, topic_categories=self._get_default_categories(), **kwargs)
     
-    def _initialize_categories(self) -> Dict[str, str]:
+    @staticmethod
+    def _get_default_categories() -> Dict[str, str]:
         """Initialize topic category mappings."""
         return {
             # Education topics

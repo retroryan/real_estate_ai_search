@@ -7,7 +7,7 @@ import requests
 import numpy as np
 from neo4j import Driver
 
-from core.interfaces import IVectorManager
+from ..core.interfaces import IVectorManager
 
 
 class EmbeddingModel:
