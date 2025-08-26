@@ -112,15 +112,32 @@ class WriterOrchestrator:
             self.logger.info(f"Writing {entity_type} to {writer_name}...")
             
             try:
-                # Call entity-specific write method
-                if entity_type == EntityType.PROPERTY:
+                # Call entity-specific write methods
+                if entity_type == EntityType.PROPERTY and hasattr(writer, 'write_properties'):
                     success = writer.write_properties(df)
-                elif entity_type == EntityType.NEIGHBORHOOD:
+                elif entity_type == EntityType.NEIGHBORHOOD and hasattr(writer, 'write_neighborhoods'):
                     success = writer.write_neighborhoods(df)
-                elif entity_type == EntityType.WIKIPEDIA:
+                elif entity_type == EntityType.WIKIPEDIA and hasattr(writer, 'write_wikipedia'):
                     success = writer.write_wikipedia(df)
+                elif entity_type == EntityType.FEATURE and hasattr(writer, 'write_features'):
+                    success = writer.write_features(df)
+                elif entity_type == EntityType.PROPERTY_TYPE and hasattr(writer, 'write_property_types'):
+                    success = writer.write_property_types(df)
+                elif entity_type == EntityType.PRICE_RANGE and hasattr(writer, 'write_price_ranges'):
+                    success = writer.write_price_ranges(df)
+                elif entity_type == EntityType.COUNTY and hasattr(writer, 'write_counties'):
+                    success = writer.write_counties(df)
+                elif entity_type == EntityType.CITY and hasattr(writer, 'write_cities'):
+                    success = writer.write_cities(df)
+                elif entity_type == EntityType.STATE and hasattr(writer, 'write_states'):
+                    success = writer.write_states(df)
+                elif entity_type == EntityType.TOPIC_CLUSTER and hasattr(writer, 'write_topic_clusters'):
+                    success = writer.write_topic_clusters(df)
+                # For Neo4j, use the generic write method with metadata
+                elif hasattr(writer, 'write'):
+                    success = writer.write(df, metadata)
                 else:
-                    raise RuntimeError(f"Unknown entity type: {entity_type}")
+                    raise RuntimeError(f"Writer {writer_name} doesn't support entity type: {entity_type}")
                 
                 if not success:
                     raise RuntimeError(f"Write operation returned False")

@@ -26,7 +26,7 @@ def test_imports():
         print("✓ wiki_embed.embedding imported")
         
         from wiki_embed.elasticsearch import ElasticsearchStore
-        print("✓ wiki_embed.elasticsearch imported")
+        print("✓ wiki_embed.archive_elasticsearch imported")
         
         from wiki_embed.utils import load_summaries_from_db, configure_from_config
         print("✓ wiki_embed.utils imported")

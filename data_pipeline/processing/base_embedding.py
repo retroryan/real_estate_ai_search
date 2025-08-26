@@ -41,8 +41,8 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, DoubleType
 
-from data_pipeline.models.embedding_config import (
-    EmbeddingPipelineConfig,
+from data_pipeline.config.models import (
+    EmbeddingConfig,
     EmbeddingProvider
 )
 
@@ -74,7 +74,7 @@ class BaseEmbeddingGenerator(ABC):
     Example:
     --------
     ```python
-    from data_pipeline.models.embedding_config import EmbeddingPipelineConfig
+    from data_pipeline.config.models import EmbeddingConfig
     
     class PropertyEmbeddingGenerator(BaseEmbeddingGenerator):
         def prepare_embedding_text(self, df: DataFrame) -> DataFrame:
@@ -83,10 +83,11 @@ class BaseEmbeddingGenerator(ABC):
                 concat_ws(" ", col("address"), col("description")))
 
     # Create proper config
-    config = EmbeddingPipelineConfig.from_dict({
-        'provider': 'voyage',
-        'models': {'voyage': {'model': 'voyage-3'}}
-    })
+    config = EmbeddingConfig(
+        provider='voyage',
+        model_name='voyage-3',
+        api_key='your-api-key'  # Or load from environment
+    )
     
     # Use the generator
     generator = PropertyEmbeddingGenerator(spark, config)
@@ -95,21 +96,22 @@ class BaseEmbeddingGenerator(ABC):
     ```
     """
     
-    def __init__(self, spark: SparkSession, config: EmbeddingPipelineConfig):
+    def __init__(self, spark: SparkSession, config):
         """
         Initialize the embedding generator.
         
         Args:
             spark: Active SparkSession for distributed processing
-            config: Validated EmbeddingPipelineConfig instance
+            config: Validated EmbeddingConfig instance
         """
         self.spark = spark
         self.config = config
         
         # Extract key metadata for logging and tracking
-        self.model_identifier = self.config.embedding.get_model_identifier()
-        self.embedding_dimension = self.config.embedding.get_embedding_dimension()
-        self.provider_name = self.config.embedding.provider.value
+        # Our config IS the embedding config directly now
+        self.model_identifier = f"{config.provider.value}_{config.model_name or 'default'}"
+        self.embedding_dimension = config.dimension or 1024  # Default dimension
+        self.provider_name = config.provider.value
         
         # Register the Pandas UDF for embedding generation
         self._register_udfs()
@@ -157,39 +159,56 @@ class BaseEmbeddingGenerator(ABC):
             """
             # Import inside UDF to avoid serialization issues
             import logging as udf_logging
-            from data_pipeline.models.embedding_config import EmbeddingPipelineConfig
-            from data_pipeline.embedding.factory import EmbeddingFactory
+            from data_pipeline.config.models import EmbeddingConfig, EmbeddingProvider
             
             udf_logger = udf_logging.getLogger(__name__)
             
-            # Recreate configuration from serialized dict
-            try:
-                config = EmbeddingPipelineConfig(**config_dict)
-                embed_model, model_id = EmbeddingFactory.create_provider(config)
-                udf_logger.debug(f"Initialized {model_id} for batch of {len(text_series)} texts")
-            except Exception as e:
-                udf_logger.error(f"Failed to initialize embedding provider: {e}")
-                # Return None for all texts if provider initialization fails
-                return pd.Series([None] * len(text_series))
+            # Recreate configuration from serialized dict - it was validated at startup
+            config = EmbeddingConfig(**config_dict)
+            model_id = f"{config.provider.value}_{config.model_name or 'default'}"
+            
+            if config.provider == EmbeddingProvider.MOCK:
+                # Mock provider for testing
+                embed_model = None
+                model_id = "mock_embeddings"
+            elif config.provider == EmbeddingProvider.VOYAGE:
+                from llama_index.embeddings.voyageai import VoyageEmbedding
+                embed_model = VoyageEmbedding(
+                    api_key=config.api_key,
+                    model_name=config.model_name or "voyage-3"
+                )
+            elif config.provider == EmbeddingProvider.OPENAI:
+                from llama_index.embeddings.openai import OpenAIEmbedding
+                embed_model = OpenAIEmbedding(
+                    api_key=config.api_key,
+                    model=config.model_name or "text-embedding-3-small"
+                )
+            elif config.provider == EmbeddingProvider.GEMINI:
+                from llama_index.embeddings.gemini import GeminiEmbedding
+                embed_model = GeminiEmbedding(
+                    api_key=config.api_key,
+                    model_name=config.model_name or "models/embedding-001"
+                )
+            else:
+                raise ValueError(f"Provider {config.provider} not implemented")
+            
+            udf_logger.debug(f"Initialized {model_id} for batch of {len(text_series)} texts")
             
             # Generate embeddings for each text in the batch
             embeddings = []
-            for idx, text in enumerate(text_series):
+            for text in text_series:
                 if pd.isna(text) or text == "" or text is None:
-                    # Skip empty texts
                     embeddings.append(None)
+                elif embed_model is None:
+                    # Mock embeddings only
+                    import random
+                    dimension = config.dimension or 1024
+                    embedding = [random.random() for _ in range(dimension)]
+                    embeddings.append(embedding)
                 else:
-                    try:
-                        # Generate embedding using LlamaIndex provider
-                        embedding = embed_model.get_text_embedding(str(text))
-                        embeddings.append(embedding)
-                    except Exception as e:
-                        # Log error but don't fail the batch
-                        if idx < 3:  # Only log first few errors to avoid spam
-                            udf_logger.error(
-                                f"Failed to generate embedding for text {idx}: {str(e)[:200]}"
-                            )
-                        embeddings.append(None)
+                    # Generate real embedding - let it fail if there's a problem
+                    embedding = embed_model.get_text_embedding(str(text))
+                    embeddings.append(embedding)
             
             return pd.Series(embeddings)
         

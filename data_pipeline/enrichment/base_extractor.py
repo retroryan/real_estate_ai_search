@@ -133,7 +133,9 @@ class BaseExtractor(ABC):
         """
         if models:
             try:
-                return self.spark.createDataFrame(models)
+                # Use the model's spark schema for proper type inference
+                schema = model_class.spark_schema()
+                return self.spark.createDataFrame(models, schema=schema)
             except Exception as e:
                 logger.error(f"Error creating DataFrame from models: {e}")
                 return self.create_empty_dataframe(model_class)
@@ -165,17 +167,6 @@ class BaseExtractor(ABC):
         """
         pass
     
-    def create_relationships(self, *args, **kwargs) -> DataFrame:
-        """
-        Create relationships for extracted entities.
-        
-        Override this in subclasses that create relationships.
-        
-        Returns:
-            DataFrame of relationships or empty DataFrame
-        """
-        # Default implementation returns empty DataFrame
-        return self.spark.createDataFrame([], ["from_id", "to_id", "relationship_type"])
 
 
 class ConfigurableExtractor(BaseExtractor):

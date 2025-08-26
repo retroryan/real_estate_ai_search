@@ -15,7 +15,6 @@ from pyspark.sql.functions import (
     col,
     lit,
     count,
-    when,
     concat,
     regexp_replace
 )
@@ -175,43 +174,3 @@ class FeatureExtractor(BaseExtractor):
             logger.error(f"Error extracting features: {e}")
             return self.create_empty_dataframe(FeatureNode)
     
-    def create_relationships(self, properties_df: DataFrame) -> DataFrame:
-        """
-        Create HAS_FEATURE relationships between properties and features.
-        
-        Args:
-            properties_df: DataFrame with properties
-            
-        Returns:
-            DataFrame of HAS_FEATURE relationships
-        """
-        logger.info("Creating HAS_FEATURE relationships")
-        
-        # Validate input
-        if not self.validate_input_columns(properties_df, ["listing_id", "features"]):
-            return super().create_relationships()
-            
-        try:
-            # Explode features to create relationships
-            relationships = properties_df.select(
-                col("listing_id").alias("from_id"),
-                explode(col("features")).alias("feature_name")
-            ).filter(
-                col("feature_name").isNotNull()
-            ).withColumn(
-                "to_id",
-                concat(lit("feature:"), regexp_replace(lower(trim(col("feature_name"))), " ", "_"))
-            ).select(
-                "from_id",
-                "to_id",
-                lit("HAS_FEATURE").alias("relationship_type")
-            )
-            
-            # Log relationship count
-            rel_count = relationships.count()
-            self.log_extraction_stats("HAS_FEATURE relationship", rel_count)
-            
-            return relationships
-        except Exception as e:
-            logger.error(f"Error creating feature relationships: {e}")
-            return super().create_relationships()

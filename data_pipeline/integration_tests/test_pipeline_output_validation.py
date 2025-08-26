@@ -16,7 +16,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import ArrayType
 
 from data_pipeline.core.pipeline_runner import DataPipelineRunner
-from data_pipeline.config.settings import ConfigurationManager
+from data_pipeline.config.loader import load_configuration
 
 
 class TestPipelineOutputValidation:
@@ -31,15 +31,15 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class") 
     def pipeline_settings(self, temp_output_dir):
         """Create test settings with temporary output directory."""
-        # Create configuration manager with test settings
-        config_manager = ConfigurationManager(environment="test", sample_size=10)
-        config = config_manager.load_config()
+        from data_pipeline.config.models import EmbeddingProvider
         
-        # Override output path to use temporary directory
-        config.output.path = temp_output_dir
-        config.output_destinations.enabled_destinations = ["parquet"]
-        config.output_destinations.parquet.path = temp_output_dir
-        config.output_destinations.parquet.enabled = True
+        # Load configuration with test settings
+        config = load_configuration(sample_size=10)
+        
+        # Override for testing
+        config.output.enabled_destinations = ["parquet"]
+        config.output.parquet.base_path = temp_output_dir
+        config.embedding.provider = EmbeddingProvider.MOCK  # Use mock for tests
         
         return config
     
@@ -59,22 +59,20 @@ class TestPipelineOutputValidation:
     @pytest.fixture(scope="class")
     def pipeline_output(self, pipeline_settings, spark_session):
         """Run the complete pipeline and return output information."""
-        runner = DataPipelineRunner(
-            settings=pipeline_settings,
-            spark_session=spark_session
-        )
+        runner = DataPipelineRunner(pipeline_settings)
         
         # Run the complete pipeline
-        runner.run()
+        entity_dataframes = runner.run_full_pipeline_with_embeddings()
+        runner.write_entity_outputs(entity_dataframes)
         
         # Return output directory and expected files
-        output_dir = Path(pipeline_settings.destinations["parquet"]["output_path"])
+        output_dir = Path(pipeline_settings.output.parquet.base_path)
         return {
             "output_dir": output_dir,
             "expected_files": {
-                "properties": output_dir / "properties.parquet",
-                "neighborhoods": output_dir / "neighborhoods.parquet", 
-                "wikipedia": output_dir / "wikipedia.parquet"
+                "properties": output_dir / "properties",
+                "neighborhoods": output_dir / "neighborhoods", 
+                "wikipedia": output_dir / "wikipedia"
             }
         }
     
@@ -89,11 +87,12 @@ class TestPipelineOutputValidation:
         expected_files = pipeline_output["expected_files"]
         
         for entity_type, file_path in expected_files.items():
-            assert file_path.exists(), f"Parquet file not created for {entity_type}: {file_path}"
-            assert file_path.is_file(), f"Path exists but is not a file: {file_path}"
+            assert file_path.exists(), f"Parquet directory not created for {entity_type}: {file_path}"
+            assert file_path.is_dir(), f"Path exists but is not a directory: {file_path}"
             
-            # Check that file is not empty
-            assert file_path.stat().st_size > 0, f"Parquet file is empty: {file_path}"
+            # Check that directory has parquet files
+            parquet_files = list(file_path.glob("*.parquet"))
+            assert len(parquet_files) > 0, f"No parquet files in directory: {file_path}"
     
     def test_parquet_files_readable(self, pipeline_output, spark_session):
         """Test that all Parquet files can be read successfully."""
@@ -220,7 +219,8 @@ class TestPipelineOutputValidation:
                 "null_embedding_text": df.filter(df.embedding_text.isNull()).count(),
                 "empty_embedding_text": df.filter((df.embedding_text == "") | (df.embedding_text.isNull())).count(),
                 "null_embeddings": df.filter(df.embedding.isNull()).count(),
-                "has_correlation_id": df.filter(df[f"{entity_type.rstrip('s')}_correlation_id"].isNotNull()).count()
+                # Handle different entity types for correlation ID column names
+                "has_correlation_id": df.filter(df[f"{entity_type[:-1] if entity_type.endswith('s') else entity_type}_correlation_id"].isNotNull()).count() if entity_type != "wikipedia" else df.filter(df["article_correlation_id"].isNotNull()).count()
             }
             
             # Calculate quality percentages
@@ -308,14 +308,11 @@ def test_pipeline_integration_smoke():
     """Smoke test that can be run independently to verify basic pipeline functionality."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create minimal settings for smoke test
-        config_manager = ConfigurationManager(environment="test", sample_size=5)
-        config = config_manager.load_config()
+        config = load_configuration(sample_size=5)
         
         # Override output path to use temporary directory
-        config.output.path = temp_dir
-        config.output_destinations.enabled_destinations = ["parquet"]
-        config.output_destinations.parquet.path = temp_dir
-        config.output_destinations.parquet.enabled = True
+        config.output.enabled_destinations = ["parquet"]
+        config.output.parquet.base_path = temp_dir
         
         # Create Spark session
         spark = SparkSession.builder \
@@ -325,8 +322,9 @@ def test_pipeline_integration_smoke():
         
         try:
             # Run pipeline
-            runner = DataPipelineRunner(settings=settings, spark_session=spark)
-            runner.run()
+            runner = DataPipelineRunner(config)
+            entity_dataframes = runner.run_full_pipeline_with_embeddings()
+            runner.write_entity_outputs(entity_dataframes)
             
             # Verify output
             output_file = Path(temp_dir) / "properties.parquet"

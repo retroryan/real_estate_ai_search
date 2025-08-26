@@ -276,7 +276,7 @@ Run the complete data pipeline with output to multiple destinations:
 
 ```bash
 # Run Spark pipeline with outputs to Neo4j, Elasticsearch, and Parquet
-python -m data_pipeline --output-destination neo4j,elasticsearch,parquet
+python -m data_pipeline --output-destination neo4j,archive_elasticsearch,parquet
 
 # Run with specific configuration
 python -m data_pipeline --config config/production.yaml
@@ -304,10 +304,10 @@ Set up Elasticsearch-based RAG system:
 
 ```bash
 # 1. Start Elasticsearch
-docker-compose up elasticsearch -d
+docker-compose up archive_elasticsearch -d
 
 # 2. Run Spark pipeline to populate Elasticsearch
-python -m data_pipeline --output-destination elasticsearch
+python -m data_pipeline --output-destination archive_elasticsearch
 
 # 3. Start the search API
 uvicorn real_estate_search.api:app --reload

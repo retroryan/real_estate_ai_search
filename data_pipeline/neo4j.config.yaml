@@ -1,0 +1,46 @@
+# Data Pipeline Configuration for Neo4j Output
+# This config enables only Neo4j output destination for Phase 1 testing
+# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD
+
+name: real_estate_data_pipeline_neo4j
+version: 1.0.0
+
+# Spark Configuration
+spark:
+  app_name: RealEstateDataPipeline-Neo4j
+  master: local[*]
+  driver_memory: 4g
+  executor_memory: 2g
+
+# Data Sources
+data_sources:
+  properties_files:
+    - real_estate_data/properties_sf.json
+    - real_estate_data/properties_pc.json
+  neighborhoods_files:
+    - real_estate_data/neighborhoods_sf.json
+    - real_estate_data/neighborhoods_pc.json
+  wikipedia_db_path: data/wikipedia/wikipedia.db
+  locations_file: real_estate_data/locations.json
+
+# Embedding Configuration
+embedding:
+  provider: voyage  # voyage, openai, ollama, gemini, mock
+  model_name: voyage-3  # Options: voyage-3, voyage-large-2, voyage-code-2
+  batch_size: 10  # Smaller batch size for API rate limits
+  dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
+
+# Output Configuration - Neo4j ONLY
+output:
+  enabled_destinations:
+    - neo4j
+  
+  neo4j:
+    uri: bolt://localhost:7687
+    database: neo4j
+    username: neo4j
+    # Password from NEO4J_PASSWORD environment variable
+    clear_before_write: true  # Clear database before writing new data
+
+# Development/Testing
+sample_size: null  # Use --sample-size argument instead

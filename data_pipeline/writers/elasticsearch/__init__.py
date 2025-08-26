@@ -1,9 +1,32 @@
 """
-Elasticsearch writer package.
+Elasticsearch writer module.
 
-This package contains the Elasticsearch orchestrator for entity-specific indexing.
+Provides clean, modular, and type-safe Elasticsearch writing functionality.
 """
 
-from .elasticsearch_orchestrator import ElasticsearchOrchestrator
+from data_pipeline.writers.elasticsearch.models import (
+    ElasticsearchWriteMode,
+    EntityType,
+    IndexSettings,
+    SchemaTransformation,
+    WriteOperation,
+    WriteResult,
+    ElasticsearchWriterSettings,
+)
 
-__all__ = ["ElasticsearchOrchestrator"]
+from data_pipeline.writers.elasticsearch.transformations import (
+    DataFrameTransformer,
+    ComplexSchemaTransformer,
+)
+
+__all__ = [
+    "ElasticsearchWriteMode",
+    "EntityType", 
+    "IndexSettings",
+    "SchemaTransformation",
+    "WriteOperation",
+    "WriteResult",
+    "ElasticsearchWriterSettings",
+    "DataFrameTransformer",
+    "ComplexSchemaTransformer",
+]

@@ -1,12 +1,8 @@
 """
-Main entry point for the data pipeline CLI with enhanced configuration support.
+Main entry point for the data pipeline CLI.
 
-This module provides command-line interface for running the Spark data pipeline
-with data subsetting and flexible embedding model selection.
-
-Can be run from within the module or from the parent directory:
-    python -m data_pipeline (from parent directory)
-    python __main__.py (from within data_pipeline directory)
+Simple CLI with only --sample-size option for development/testing.
+All other configuration comes from YAML and environment variables.
 """
 
 import argparse
@@ -21,213 +17,89 @@ if __name__ == "__main__":
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-from .core.pipeline_runner import DataPipelineRunner
-from .config.settings import ConfigurationManager
+from data_pipeline.config.loader import load_configuration
+from data_pipeline.core.pipeline_runner import DataPipelineRunner
 
 
-def setup_logging(level: str) -> None:
-    """
-    Configure logging for the application.
-    
-    Args:
-        level: Logging level (DEBUG, INFO, WARNING, ERROR)
-    """
+def setup_logging() -> None:
+    """Configure logging with sensible defaults."""
     logging.basicConfig(
-        level=getattr(logging, level.upper()),
+        level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         stream=sys.stdout
     )
     
-    # Set py4j logging to INFO level to avoid extremely verbose debug output
-    # py4j generates hundreds of debug messages per second which makes output unreadable
-    logging.getLogger("py4j").setLevel(logging.INFO)
-    logging.getLogger("py4j.java_gateway").setLevel(logging.INFO)
-    logging.getLogger("py4j.clientserver").setLevel(logging.INFO)
+    # Reduce noise from py4j
+    logging.getLogger("py4j").setLevel(logging.WARNING)
+    logging.getLogger("py4j.java_gateway").setLevel(logging.WARNING)
+    logging.getLogger("py4j.clientserver").setLevel(logging.WARNING)
 
 
 def main():
-    """Main CLI entry point with enhanced configuration options."""
+    """Main CLI entry point - simplified to only accept sample-size."""
     
     parser = argparse.ArgumentParser(
-        description="Run the multi-entity Spark data pipeline for real estate and Wikipedia data"
+        description="Run the real estate data pipeline",
+        epilog="All configuration is in config.yaml. Use environment variables for API keys."
     )
     
-    # Configuration options
+    # Configuration file argument
     parser.add_argument(
         "--config",
         type=str,
         default=None,
-        help="Path to pipeline configuration file (default: searches for config.yaml)"
+        help="Path to configuration YAML file (default: searches for config.yaml)"
     )
     
-    
-    # Data subsetting options
+    # Single optional argument for development/testing
     parser.add_argument(
         "--sample-size",
         type=int,
         default=None,
-        help="Number of records to sample from each source"
-    )
-    
-    # Output options
-    parser.add_argument(
-        "--output-destination",
-        type=str,
-        default=None,
-        help="Output destinations (comma-separated): parquet,neo4j,elasticsearch"
-    )
-    
-    parser.add_argument(
-        "--output",
-        type=str,
-        default=None,
-        help="Custom output directory path"
-    )
-    
-    # Spark options
-    parser.add_argument(
-        "--cores",
-        type=int,
-        default=None,
-        help="Number of cores to use (default: all available)"
-    )
-    
-    
-    # Operational options
-    parser.add_argument(
-        "--log-level",
-        type=str,
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: INFO)"
-    )
-    
-    parser.add_argument(
-        "--validate-only",
-        action="store_true",
-        help="Only validate configuration and environment, don't run pipeline"
-    )
-    
-    parser.add_argument(
-        "--show-config",
-        action="store_true",
-        help="Display effective configuration and exit"
-    )
-    
-    parser.add_argument(
-        "--test-mode",
-        action="store_true",
-        help="Run in test mode with minimal data (sets subset=10 records)"
+        help="Number of records to sample from each source (for development/testing only)"
     )
     
     args = parser.parse_args()
     
     # Setup logging
-    setup_logging(args.log_level)
+    setup_logging()
     logger = logging.getLogger(__name__)
     
     try:
+        # Load configuration with sample size if provided
+        logger.info("Loading pipeline configuration...")
+        config = load_configuration(config_path=args.config, sample_size=args.sample_size)
         
-        # Handle test mode first (highest priority)
-        if args.test_mode:
-            sample_size = 10
-            embedding_provider = "mock"
-            logger.info("Test mode enabled: using 10 records per source with mock embeddings")
+        if args.sample_size:
+            logger.info(f"Running in development mode with sample size: {args.sample_size}")
         else:
-            sample_size = args.sample_size
-            embedding_provider = None
-            if sample_size:
-                logger.info(f"Data subsetting enabled: {sample_size} records per source")
+            logger.info("Running in production mode with full datasets")
         
-        # Initialize configuration manager with direct arguments
-        config_manager = ConfigurationManager(
-            config_path=args.config,
-            environment=None,
-            sample_size=sample_size,
-            output_destinations=args.output_destination,
-            output_path=args.output,
-            cores=args.cores,
-            embedding_provider=embedding_provider
-        )
-        config = config_manager.load_config()
+        # Create and run pipeline
+        logger.info("Initializing pipeline runner...")
+        runner = DataPipelineRunner(config)
         
-        # Show configuration and exit if requested
-        if args.show_config:
-            print("\n" + "=" * 60)
-            print("EFFECTIVE PIPELINE CONFIGURATION")
-            print("=" * 60)
-            summary = config_manager.get_effective_config_summary()
-            
-            print(f"\nPipeline: {summary['pipeline']['name']} v{summary['pipeline']['version']}")
-            print(f"Environment: {summary['pipeline']['environment']}")
-            
-            print(f"\nSpark:")
-            print(f"  Master: {summary['spark']['master']}")
-            print(f"  Memory: {summary['spark']['memory']}")
-            
-            
-            print(f"\nEmbedding:")
-            print(f"  Provider: {summary['embedding']['provider']}")
-            print(f"  Model: {summary['embedding']['model']}")
-            print(f"  Batch Size: {summary['embedding']['batch_size']}")
-            
-            print(f"\nOutput:")
-            print(f"  Format: {summary['output']['format']}")
-            print(f"  Path: {summary['output']['path']}")
-            
-            print(f"\nDestinations:")
-            print(f"  Enabled: {summary['destinations']['enabled']}")
-            
-            print("=" * 60)
-            return 0
+        logger.info("Starting pipeline execution...")
+        result = runner.run_full_pipeline_with_embeddings()
         
-        # Initialize pipeline runner with loaded configuration
-        runner = DataPipelineRunner(config_override=config)
-        
-        # Validate only mode
-        if args.validate_only:
-            logger.info("Running in validation-only mode")
-            
-            # Validate configuration
-            is_prod_ready = config_manager.validate_for_production()
-            
-            print("\n" + "=" * 60)
-            print("PIPELINE VALIDATION RESULTS")
-            print("=" * 60)
-            print(f"Configuration valid: True")
-            print(f"Production ready: {is_prod_ready}")
-            
-            # Show configuration summary
-            summary = config_manager.get_effective_config_summary()
-            print(f"\nEnvironment: {summary['pipeline']['environment']}")
-            print(f"Embedding provider: {summary['embedding']['provider']}")
-            
-            # Validate pipeline components
-            validation = runner.validate_pipeline()
-            
-            print(f"\nSpark version: {validation['environment']['spark_version']}")
-            print(f"Available cores: {validation['environment']['available_cores']}")
-            
-            print("\nData Sources:")
-            for source, status in validation['data_sources'].items():
-                symbol = "✓" if status['exists'] else "✗"
-                enabled = "enabled" if status['enabled'] else "disabled"
-                print(f"  {symbol} {source}: {enabled}")
-            
-            print("=" * 60)
-            return 0
-        
-        # Run the full pipeline with embeddings (always included for simplicity)
-        result_dataframes = runner.run_full_pipeline_with_embeddings()
-        
-        # Write results to all configured destinations using entity-specific method
-        runner.write_entity_outputs(result_dataframes)
+        # Write outputs
+        logger.info("Writing outputs...")
+        runner.write_entity_outputs(result)
         
         # Clean up
         runner.stop()
         
+        logger.info("Pipeline completed successfully!")
         return 0
         
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file not found: {e}")
+        logger.error("Please create a config.yaml file in the data_pipeline directory")
+        return 1
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        logger.error("Please check your config.yaml and environment variables")
+        return 1
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         return 1

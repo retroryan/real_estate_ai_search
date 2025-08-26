@@ -37,7 +37,7 @@ class TestHealthEndpoint:
         assert "status" in data
         assert "timestamp" in data
         assert "api" in data
-        assert "elasticsearch" in data
+        assert "archive_elasticsearch" in data
         assert "index" in data
         assert "version" in data
         assert "environment" in data
