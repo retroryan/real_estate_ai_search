@@ -295,6 +295,7 @@ def test_quick_parquet_smoke():
     with tempfile.TemporaryDirectory() as temp_dir:
         import os
         from data_pipeline.config.loader import load_configuration
+        from data_pipeline.config.models import EmbeddingProvider
         
         # Set environment variables for test configuration
         original_env = {}
@@ -319,6 +320,10 @@ def test_quick_parquet_smoke():
                 # Load test configuration with sample size
                 config = load_configuration(sample_size=3)
                 config.output.parquet.base_path = temp_dir
+                # Disable Neo4j for this test to avoid connection requirements
+                config.output.enabled_destinations = ["parquet"]
+                # Use mock embeddings for testing
+                config.embedding.provider = EmbeddingProvider.MOCK
                 
                 # Run pipeline with the modified config
                 runner = DataPipelineRunner(config)

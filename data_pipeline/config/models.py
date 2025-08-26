@@ -52,6 +52,12 @@ class SparkConfig(BaseModel):
     def to_spark_conf(self) -> Dict[str, str]:
         """Convert to Spark configuration dictionary."""
         conf = {}
+        
+        # Add Neo4j connector JAR if it exists (use 2.12 version for Spark 3.5 compatibility)
+        jar_path = "lib/neo4j-connector-apache-spark_2.12-5.3.0_for_spark_3.jar"
+        if os.path.exists(jar_path):
+            conf["spark.jars"] = jar_path
+        
         if not self.master.startswith("local"):
             conf["spark.driver.memory"] = self.driver_memory
             conf["spark.executor.memory"] = self.executor_memory

@@ -53,12 +53,25 @@ def spark():
 @pytest.fixture(scope="session")
 def test_settings():
     """Create test settings with appropriate overrides.""" 
-    from data_pipeline.config.loader import load_configuration
-    # Load configuration with mock embeddings for testing
-    settings = load_configuration(sample_size=None)
-    settings.embedding.provider = "mock"  # Use mock for tests
+    from pathlib import Path
+    import yaml
+    from data_pipeline.config.models import PipelineConfig
     
-    # Settings for testing loaded directly from config
+    # Load test-specific configuration
+    test_config_path = Path(__file__).parent / "test_config.yaml"
+    
+    if test_config_path.exists():
+        # Use test-specific config if available
+        with open(test_config_path, "r") as f:
+            config_dict = yaml.safe_load(f)
+        settings = PipelineConfig(**config_dict)
+    else:
+        # Fallback to loading main config with overrides
+        from data_pipeline.config.loader import load_configuration
+        from data_pipeline.config.models import EmbeddingProvider
+        settings = load_configuration(sample_size=None)
+        settings.embedding.provider = EmbeddingProvider.MOCK  # Use mock for tests
+        settings.output.enabled_destinations = ["parquet"]  # Disable Neo4j for tests
     
     return settings
 
