@@ -8,9 +8,8 @@ These models define the structure of nodes and relationships in Neo4j.
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic.functional_validators import field_validator
 from enum import Enum
-from .spark_converter import SparkModel, pydantic_to_spark_schema
+from .spark_converter import SparkModel
 
 
 # ============================================================================
@@ -24,20 +23,6 @@ class PropertyType(str, Enum):
     TOWNHOME = "townhome"
     MULTI_FAMILY = "multi_family"
     LAND = "land"
-    OTHER = "other"
-
-
-class AmenityType(str, Enum):
-    """Types of amenities extracted from Wikipedia."""
-    PARK = "park"
-    SCHOOL = "school"
-    RESTAURANT = "restaurant"
-    SHOPPING = "shopping"
-    TRANSIT = "transit"
-    RECREATION = "recreation"
-    LANDMARK = "landmark"
-    CULTURAL = "cultural"
-    MEDICAL = "medical"
     OTHER = "other"
 
 
@@ -60,12 +45,10 @@ class RelationshipType(str, Enum):
     DESCRIBES = "DESCRIBES"
     NEAR = "NEAR"
     SIMILAR_TO = "SIMILAR_TO"
-    HAS_AMENITY = "HAS_AMENITY"
     HAS_FEATURE = "HAS_FEATURE"
     OF_TYPE = "OF_TYPE"
     IN_PRICE_RANGE = "IN_PRICE_RANGE"
     IN_COUNTY = "IN_COUNTY"
-    WITHIN_PROXIMITY = "WITHIN_PROXIMITY"
     IN_TOPIC_CLUSTER = "IN_TOPIC_CLUSTER"
 
 
@@ -260,34 +243,6 @@ class WikipediaArticleNode(SparkModel):
     processed_at: Optional[datetime] = Field(None, description="Processing timestamp")
 
 
-class AmenityNode(SparkModel):
-    """Amenity node for points of interest extracted from Wikipedia."""
-    
-    # Unique identifier
-    id: str = Field(..., description="Unique amenity ID")
-    
-    # Basic information
-    name: str = Field(..., description="Amenity name")
-    amenity_type: AmenityType = Field(..., description="Type of amenity")
-    
-    # Location
-    city: Optional[str] = Field(None, description="City name")
-    state: Optional[str] = Field(None, description="State abbreviation")
-    latitude: Optional[float] = Field(None, description="Latitude if known")
-    longitude: Optional[float] = Field(None, description="Longitude if known")
-    
-    # Description
-    description: Optional[str] = Field(None, description="Amenity description")
-    
-    # Source
-    source_article_id: Optional[str] = Field(None, description="Source Wikipedia article ID")
-    extraction_confidence: float = Field(0.5, ge=0.0, le=1.0, description="Extraction confidence")
-    
-    model_config = ConfigDict(
-        use_enum_values=True
-    )
-
-
 class FeatureNode(SparkModel):
     """Feature node for property features."""
     
@@ -414,7 +369,7 @@ class PartOfRelationship(BaseRelationship):
 
 
 class DescribesRelationship(BaseRelationship):
-    """DESCRIBES relationship (WikipediaArticle -> City/Neighborhood/Amenity)."""
+    """DESCRIBES relationship (WikipediaArticle -> City/Neighborhood)."""
     
     relationship_type: Literal[RelationshipType.DESCRIBES] = RelationshipType.DESCRIBES
     confidence: float = Field(0.5, ge=0.0, le=1.0, description="Match confidence")
@@ -422,7 +377,7 @@ class DescribesRelationship(BaseRelationship):
 
 
 class NearRelationship(BaseRelationship):
-    """NEAR relationship (Property -> Amenity)."""
+    """NEAR relationship between nodes."""
     
     relationship_type: Literal[RelationshipType.NEAR] = RelationshipType.NEAR
     distance_meters: float = Field(..., description="Distance in meters")
@@ -477,16 +432,6 @@ class InCountyRelationship(BaseRelationship):
     
     relationship_type: Literal[RelationshipType.IN_COUNTY] = RelationshipType.IN_COUNTY
     hierarchy_level: str = Field(..., description="Level in hierarchy (city, neighborhood)")
-
-
-class WithinProximityRelationship(BaseRelationship):
-    """WITHIN_PROXIMITY relationship (Property -> Amenity)."""
-    
-    relationship_type: Literal[RelationshipType.WITHIN_PROXIMITY] = RelationshipType.WITHIN_PROXIMITY
-    distance_meters: float = Field(..., description="Distance in meters")
-    walking_time_minutes: Optional[float] = Field(None, description="Walking time in minutes")
-    driving_time_minutes: Optional[float] = Field(None, description="Driving time in minutes")
-    proximity_type: str = Field(..., description="Type: walking, short_drive, nearby")
 
 
 class InTopicClusterRelationship(BaseRelationship):

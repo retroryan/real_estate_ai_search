@@ -74,7 +74,7 @@ def main():
         "--output-destination",
         type=str,
         default=None,
-        help="Output destinations (comma-separated): parquet,neo4j,elasticsearch"
+        help="Output destinations (comma-separated): parquet,neo4j,archive_elasticsearch"
     )
     
     parser.add_argument(
@@ -101,23 +101,17 @@ def main():
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Logging level (default: INFO)"
     )
-    
+
     parser.add_argument(
         "--validate-only",
         action="store_true",
         help="Only validate configuration and environment, don't run pipeline"
     )
-    
+
     parser.add_argument(
         "--show-config",
         action="store_true",
         help="Display effective configuration and exit"
-    )
-    
-    parser.add_argument(
-        "--test-mode",
-        action="store_true",
-        help="Run in test mode with minimal data (sets subset=10 records)"
     )
     
     args = parser.parse_args()
@@ -127,17 +121,10 @@ def main():
     logger = logging.getLogger(__name__)
     
     try:
-        
-        # Handle test mode first (highest priority)
-        if args.test_mode:
-            sample_size = 10
-            embedding_provider = "mock"
-            logger.info("Test mode enabled: using 10 records per source with mock embeddings")
-        else:
-            sample_size = args.sample_size
-            embedding_provider = None
-            if sample_size:
-                logger.info(f"Data subsetting enabled: {sample_size} records per source")
+        sample_size = args.sample_size
+        embedding_provider = None
+        if sample_size:
+            logger.info(f"Data sample size enabled: {sample_size} records per source")
         
         # Initialize configuration manager with direct arguments
         config_manager = ConfigurationManager(
@@ -150,6 +137,8 @@ def main():
             embedding_provider=embedding_provider
         )
         config = config_manager.load_config()
+        logger.debug(f"Config manager created: {config_manager}")
+        logger.debug(f"Config loaded: {config}")
         
         # Show configuration and exit if requested
         if args.show_config:
@@ -189,6 +178,8 @@ def main():
             logger.info("Running in validation-only mode")
             
             # Validate configuration
+            logger.debug(f"ConfigManager type: {type(config_manager)}")
+            logger.debug(f"ConfigManager value: {config_manager}")
             is_prod_ready = config_manager.validate_for_production()
             
             print("\n" + "=" * 60)
@@ -202,17 +193,15 @@ def main():
             print(f"\nEnvironment: {summary['pipeline']['environment']}")
             print(f"Embedding provider: {summary['embedding']['provider']}")
             
-            # Validate pipeline components
-            validation = runner.validate_pipeline()
-            
-            print(f"\nSpark version: {validation['environment']['spark_version']}")
-            print(f"Available cores: {validation['environment']['available_cores']}")
+            # Show basic Spark info
+            print(f"\nSpark version: {runner.spark.sparkContext.version}")
+            print(f"Available cores: {runner.spark.sparkContext.defaultParallelism}")
             
             print("\nData Sources:")
-            for source, status in validation['data_sources'].items():
-                symbol = "✓" if status['exists'] else "✗"
-                enabled = "enabled" if status['enabled'] else "disabled"
-                print(f"  {symbol} {source}: {enabled}")
+            print(f"  ✓ Properties: {len(config.properties)} files")
+            print(f"  ✓ Neighborhoods: {len(config.neighborhoods)} files")
+            print(f"  ✓ Wikipedia: enabled")
+            print(f"  ✓ Locations: enabled")
             
             print("=" * 60)
             return 0

@@ -36,7 +36,7 @@ Uses standard `config.yaml` from wiki_embed:
 
 ```yaml
 vector_store:
-  provider: elasticsearch
+  provider: archive_elasticsearch
   elasticsearch:
     host: localhost
     port: 9200

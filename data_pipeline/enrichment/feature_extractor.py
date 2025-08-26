@@ -15,7 +15,6 @@ from pyspark.sql.functions import (
     col,
     lit,
     count,
-    when,
     concat,
     regexp_replace
 )

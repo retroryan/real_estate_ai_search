@@ -75,6 +75,9 @@ class SparkSessionManager:
             # Disable ambiguous self-join check for relationship building
             self._spark_session.conf.set("spark.sql.analyzer.failAmbiguousSelfJoin", "false")
             
+            # Increase maxToStringFields to prevent truncation warnings
+            self._spark_session.conf.set("spark.sql.debug.maxToStringFields", "200")
+            
             # Log session info
             self._log_session_info()
             
@@ -183,6 +186,8 @@ class SparkSessionManager:
         self._spark_session.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
         # Disable ambiguous self-join check for relationship building
         self._spark_session.conf.set("spark.sql.analyzer.failAmbiguousSelfJoin", "false")
+        # Increase maxToStringFields to prevent truncation warnings
+        self._spark_session.conf.set("spark.sql.debug.maxToStringFields", "200")
         logger.info("Adaptive query execution enabled")
     
     def set_shuffle_partitions(self, num_partitions: int) -> None:
@@ -254,7 +259,7 @@ def _add_elasticsearch_config_if_enabled(spark_config: PipelineConfig, pipeline_
     """
     # Check if Elasticsearch writer is enabled in the pipeline configuration
     if (hasattr(pipeline_config, 'output_destinations') and 
-        hasattr(pipeline_config.output_destinations, 'elasticsearch') and
+        hasattr(pipeline_config.output_destinations, 'archive_elasticsearch') and
         pipeline_config.output_destinations.elasticsearch.enabled):
         
         es_cfg = pipeline_config.output_destinations.elasticsearch
