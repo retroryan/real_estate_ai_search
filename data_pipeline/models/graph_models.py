@@ -354,6 +354,7 @@ def validate_coordinates(lat: float, lon: float) -> bool:
     return -90 <= lat <= 90 and -180 <= lon <= 180
 
 
-def clean_string_for_id(value: str) -> str:
     """Clean a string for use in node IDs."""
+    if not value or not isinstance(value, str):
+        return ''
     return value.lower().strip().replace(' ', '_').replace('-', '_')
