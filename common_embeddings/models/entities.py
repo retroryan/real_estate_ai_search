@@ -1,5 +1,5 @@
 """
-Business entity models for Property Finder.
+Business entity models for embeddings.
 
 Provides models for properties, neighborhoods, and Wikipedia articles.
 """
@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from .core import BaseEnrichedModel, generate_uuid
+from .base import BaseEnrichedModel, generate_uuid
 from .enums import PropertyType, PropertyStatus
 from .geographic import EnrichedAddress, GeoPolygon, GeoLocation, LocationInfo
 

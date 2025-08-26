@@ -1,38 +1,72 @@
 """
 Pydantic models for the common embeddings module.
 
-This module imports shared models from common and defines
-embeddings-specific models for processing and pipeline operations.
+This module contains all models for the embeddings processing pipeline.
 """
 
-# Import shared models from common
-from common.property_finder_models import (
-    # Core
+# Import from base module
+from .base import (
+    BaseEnrichedModel,
     BaseMetadata,
-    
-    # Enums
+    generate_uuid,
+    ISODatetime,
+)
+
+# Import from enums module
+from .enums import (
+    # Property enums
+    PropertyType,
+    PropertyStatus,
+    # Entity enums
     EntityType,
     SourceType,
+    # Embedding enums
     EmbeddingProvider,
-    
-    # Configuration
+    ChunkingMethod,
+    PreprocessingStep,
+    AugmentationType,
+)
+
+# Import from geographic module
+from .geographic import (
+    GeoLocation,
+    GeoPolygon,
+    EnrichedAddress,
+    LocationInfo,
+)
+
+# Import from entities module
+from .entities import (
+    EmbeddingData,
+    EnrichedProperty,
+    EnrichedNeighborhood,
+    EnrichedWikipediaArticle,
+    WikipediaSummary,
+    WikipediaEnrichmentMetadata,
+)
+
+# Import from config module
+from .config import (
     EmbeddingConfig,
     ChromaDBConfig,
     Config,
-    
-    # Exceptions
+    ChunkingConfig,
+    ProcessingConfig,
+    ExtendedConfig,
+    BaseConfig,
+)
+
+# Import from exceptions module
+from .exceptions import (
+    PropertyFinderError,
     ConfigurationError,
     DataLoadingError,
     StorageError,
     ValidationError,
     MetadataError,
-)
-
-# Import local embeddings-specific models
-from .enums import (
-    ChunkingMethod,
-    PreprocessingStep,
-    AugmentationType,
+    EmbeddingGenerationError,
+    ChunkingError,
+    ProviderError,
 )
 
 from .metadata import (
@@ -44,11 +78,6 @@ from .metadata import (
     ProcessingMetadata,
 )
 
-from .config import (
-    ChunkingConfig,
-    ProcessingConfig,
-    ExtendedConfig,
-)
 
 from .interfaces import (
     IDataLoader,
@@ -56,11 +85,6 @@ from .interfaces import (
     IVectorStore,
 )
 
-from .exceptions import (
-    EmbeddingGenerationError,
-    ProviderError,
-    ChunkingError,
-)
 
 from .processing import (
     ProcessingChunkMetadata,
@@ -85,26 +109,57 @@ from .correlation import (
 )
 
 __all__ = [
-    # From common
+    # Base models
+    "BaseEnrichedModel",
     "BaseMetadata",
+    "generate_uuid",
+    "ISODatetime",
+    
+    # Enums
+    "PropertyType",
+    "PropertyStatus",
     "EntityType",
     "SourceType",
     "EmbeddingProvider",
+    "ChunkingMethod",
+    "PreprocessingStep",
+    "AugmentationType",
+    
+    # Geographic models
+    "GeoLocation",
+    "GeoPolygon",
+    "EnrichedAddress",
+    "LocationInfo",
+    
+    # Entity models
+    "EmbeddingData",
+    "EnrichedProperty",
+    "EnrichedNeighborhood",
+    "EnrichedWikipediaArticle",
+    "WikipediaSummary",
+    "WikipediaEnrichmentMetadata",
+    
+    # Configuration
     "EmbeddingConfig",
     "ChromaDBConfig",
     "Config",
+    "BaseConfig",
+    "ChunkingConfig",
+    "ProcessingConfig",
+    "ExtendedConfig",
+    
+    # Exceptions
+    "PropertyFinderError",
     "ConfigurationError",
     "DataLoadingError",
     "StorageError",
     "ValidationError",
     "MetadataError",
+    "EmbeddingGenerationError",
+    "ChunkingError",
+    "ProviderError",
     
-    # Local enums
-    "ChunkingMethod",
-    "PreprocessingStep",
-    "AugmentationType",
-    
-    # Local metadata
+    # Metadata models
     "PropertyMetadata",
     "NeighborhoodMetadata",
     "WikipediaMetadata",
@@ -112,28 +167,18 @@ __all__ = [
     "EmbeddingContextMetadata",
     "ProcessingMetadata",
     
-    # Local configuration
-    "ChunkingConfig",
-    "ProcessingConfig",
-    "ExtendedConfig",
-    
-    # Local interfaces
+    # Interfaces
     "IDataLoader",
     "IEmbeddingProvider",
     "IVectorStore",
     
-    # Local exceptions
-    "EmbeddingGenerationError",
-    "ProviderError",
-    "ChunkingError",
-    
-    # Local processing
+    # Processing models
     "ProcessingChunkMetadata",
     "ProcessingResult",
     "BatchProcessingResult",
     "DocumentBatch",
     
-    # Local statistics
+    # Statistics models
     "CollectionInfo",
     "PipelineStatistics",
     "BatchProcessorStatistics",

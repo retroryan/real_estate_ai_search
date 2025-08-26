@@ -9,40 +9,16 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class GeoLocation(BaseModel):
-    """Geographic coordinates."""
+    """Geographic coordinates with automatic validation."""
     
     lat: float = Field(..., ge=-90, le=90, description="Latitude")
     lon: float = Field(..., ge=-180, le=180, description="Longitude")
-    
-    @field_validator('lat')
-    @classmethod
-    def validate_latitude(cls, v: float) -> float:
-        """Validate latitude is within valid range."""
-        if not -90 <= v <= 90:
-            raise ValueError(f"Latitude {v} is out of valid range [-90, 90]")
-        return v
-    
-    @field_validator('lon')
-    @classmethod
-    def validate_longitude(cls, v: float) -> float:
-        """Validate longitude is within valid range."""
-        if not -180 <= v <= 180:
-            raise ValueError(f"Longitude {v} is out of valid range [-180, 180]")
-        return v
 
 
 class GeoPolygon(BaseModel):
     """Geographic polygon for boundaries."""
     
-    points: List[GeoLocation] = Field(..., min_length=3)
-    
-    @field_validator('points')
-    @classmethod
-    def validate_polygon(cls, v: List[GeoLocation]) -> List[GeoLocation]:
-        """Validate polygon has at least 3 points."""
-        if len(v) < 3:
-            raise ValueError("Polygon must have at least 3 points")
-        return v
+    points: List[GeoLocation] = Field(..., min_length=3, description="Polygon points (minimum 3)")
 
 
 class EnrichedAddress(BaseModel):

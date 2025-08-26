@@ -78,7 +78,6 @@ class WikipediaEnricher(BaseEnricher):
         """
         logger.info("Starting Wikipedia article enrichment process")
         
-        initial_count = df.count()
         enriched_df = df
         
         # Add correlation IDs - always enabled
@@ -107,11 +106,15 @@ class WikipediaEnricher(BaseEnricher):
         enriched_df = self._calculate_quality_scores(enriched_df)
         logger.info("Calculated article quality scores")
         
+        # Add Phase 2 fields (metadata and timestamps)
+        enriched_df = self._add_phase2_fields(enriched_df)
+        logger.info("Added Phase 2 metadata fields")
+        
         # Add processing timestamp
         enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        return self.validate_enrichment(enriched_df, initial_count, "Wikipedia article")
+        return self.validate_enrichment(enriched_df, entity_name="Wikipedia article")
     
     
     def _validate_locations(self, df: DataFrame) -> DataFrame:
@@ -390,67 +393,71 @@ class WikipediaEnricher(BaseEnricher):
 
         return df_with_quality
     
+    def _add_phase2_fields(self, df: DataFrame) -> DataFrame:
+        """
+        Add Phase 2 fields including metadata and timestamps.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with Phase 2 fields
+        """
+        from pyspark.sql.functions import current_timestamp, size, when, coalesce
+        from data_pipeline.processing.score_calculator import ScoreCalculator
+        
+        # Add timestamps
+        df_with_timestamps = df.withColumn("created_at", current_timestamp()) \
+                               .withColumn("updated_at", current_timestamp())
+        
+        # Add content metadata fields
+        df_with_metadata = df_with_timestamps.withColumn(
+            "content_length",
+            when(col("long_summary").isNotNull(),
+                 length(col("long_summary")))
+            .otherwise(lit(None))
+        ).withColumn(
+            "topic_count",
+            when(col("key_topics").isNotNull(),
+                 size(col("key_topics")))
+            .otherwise(lit(0))
+        )
+        
+        # Add confidence scores (using existing relevance_score as extraction_confidence)
+        df_with_confidence = df_with_metadata.withColumn(
+            "extraction_confidence",
+            coalesce(col("relevance_score"), lit(0.5))
+        ).withColumn(
+            "content_ratio",
+            when(col("content_length") > 500, lit(0.8))
+            .when(col("content_length") > 200, lit(0.6))
+            .when(col("content_length") > 100, lit(0.4))
+            .otherwise(lit(0.2))
+        )
+        
+        # Add location_confidence if missing (set to 0.5 for Wikipedia articles)
+        if "location_confidence" not in df_with_confidence.columns:
+            df_with_confidence = df_with_confidence.withColumn("location_confidence", lit(0.5))
+        
+        # Initialize score calculator with fixed Pandas UDFs
+        score_calculator = ScoreCalculator(self.spark)
+        
+        # Add confidence scores using the efficient Pandas UDF approach
+        df_with_overall_confidence = score_calculator.add_confidence_scores(df_with_confidence)
+        
+        return df_with_overall_confidence
+    
     def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
-        Calculate statistics about the enrichment process.
+        Get enrichment metadata without forcing evaluation.
+        
+        Note: This method is deprecated and not used in the pipeline.
+        Kept for backward compatibility only.
         
         Args:
             df: Enriched DataFrame
             
         Returns:
-            Dictionary of enrichment statistics
+            Dictionary of metadata
         """
-        stats = {}
-        
-        total = df.count()
-        stats["total_articles"] = total
-        
-        # Location validation
-        if "has_valid_location" in df.columns:
-            with_location = df.filter(col("has_valid_location") == True).count()
-            stats["articles_with_valid_location"] = with_location
-            stats["location_coverage"] = (with_location / total * 100) if total > 0 else 0
-        
-        # Location specificity
-        if "location_specificity" in df.columns:
-            specificity_counts = df.groupBy("location_specificity").count().collect()
-            stats["location_specificity"] = {
-                row["location_specificity"]: row["count"] for row in specificity_counts
-            }
-        
-        
-        # Relevance scores
-        if "location_relevance_score" in df.columns:
-            relevance_stats = df.select(
-                expr("avg(location_relevance_score) as avg_relevance"),
-                expr("count(case when relevance_category = 'highly_relevant' then 1 end) as highly_relevant"),
-                expr("count(case when relevance_category = 'relevant' then 1 end) as relevant")
-            ).collect()[0]
-            
-            stats["avg_relevance_score"] = float(relevance_stats["avg_relevance"]) if relevance_stats["avg_relevance"] else 0
-            stats["highly_relevant_articles"] = relevance_stats["highly_relevant"]
-            stats["relevant_articles"] = relevance_stats["relevant"]
-        
-        # Quality scores
-        if "article_quality_score" in df.columns:
-            quality_stats = df.select(
-                expr("avg(article_quality_score) as avg_quality")
-            ).collect()[0]
-            
-            stats["avg_quality_score"] = float(quality_stats["avg_quality"]) if quality_stats["avg_quality"] else 0
-            stats["validated_articles"] = quality_stats["validated"]
-            stats["low_quality_articles"] = quality_stats["low_quality"]
-        
-        # Content statistics
-        if "long_summary" in df.columns:
-            content_stats = df.filter(col("long_summary").isNotNull()).select(
-                expr("avg(length(long_summary)) as avg_summary_length"),
-                expr("min(length(long_summary)) as min_summary_length"),
-                expr("max(length(long_summary)) as max_summary_length")
-            ).collect()[0]
-            
-            stats["avg_summary_length"] = float(content_stats["avg_summary_length"]) if content_stats["avg_summary_length"] else 0
-            stats["min_summary_length"] = content_stats["min_summary_length"]
-            stats["max_summary_length"] = content_stats["max_summary_length"]
-        
-        return stats
+        return super().get_enrichment_statistics(df)

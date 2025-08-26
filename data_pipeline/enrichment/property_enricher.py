@@ -22,6 +22,8 @@ from pyspark.sql.functions import (
     trim,
     upper,
     when,
+    current_timestamp,
+    size,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,7 +99,6 @@ class PropertyEnricher(BaseEnricher):
         """
         logger.info("Starting property enrichment process")
         
-        initial_count = df.count()
         enriched_df = df
         
         enriched_df = self.add_correlation_ids(enriched_df, "property_correlation_id")
@@ -120,18 +121,21 @@ class PropertyEnricher(BaseEnricher):
         # Property details are already flattened - square_feet, bedrooms, etc. are top-level columns
         logger.info("Property details are already flattened in the input data")
 
-        # Show sample data with listing_id and extracted fields
-        logger.info("Sample of enriched property data:")
+        # Log field availability without forcing evaluation
         if "bedrooms" in enriched_df.columns:
-            enriched_df.select("listing_id", "bedrooms", "square_feet", "bathrooms").show(5, truncate=False)
+            logger.info("Property details (bedrooms, bathrooms, square_feet) available")
         else:
-            enriched_df.select("listing_id").show(5, truncate=False)
-            logger.warning("bedrooms field not found after extraction")
+            logger.warning("Some property details may be missing")
 
         enriched_df = self._calculate_price_fields(enriched_df)
         logger.info("Calculated price-related fields")
         enriched_df = self._calculate_quality_scores(enriched_df)
         logger.info("Calculated property quality scores")
+        
+        # Add new fields for Phase 2
+        enriched_df = self._add_phase2_fields(enriched_df)
+        logger.info("Added Phase 2 fields (timestamps, media, metadata)")
+        
         # Coordinates are already flattened - latitude and longitude are top-level columns
         
 
@@ -152,7 +156,7 @@ class PropertyEnricher(BaseEnricher):
         enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        return self.validate_enrichment(enriched_df, initial_count, "Property")
+        return self.validate_enrichment(enriched_df, entity_name="Property")
     
     
     def _add_neighborhood_names(self, df: DataFrame) -> DataFrame:
@@ -306,6 +310,53 @@ class PropertyEnricher(BaseEnricher):
         
         return df_with_validation
     
+    def _add_phase2_fields(self, df: DataFrame) -> DataFrame:
+        """
+        Add Phase 2 fields to properties (timestamps, media, metadata).
+        
+        Args:
+            df: Property DataFrame
+            
+        Returns:
+            DataFrame with Phase 2 fields added
+        """
+        # Add timestamps
+        df = df.withColumn("created_at", current_timestamp())
+        df = df.withColumn("updated_at", current_timestamp())
+        
+        # Add data source if not present
+        if "data_source" not in df.columns:
+            df = df.withColumn("data_source", lit("real_estate_data"))
+        
+        # Calculate enhanced quality score based on completeness
+        if "quality_score" not in df.columns:
+            # Count non-null essential fields
+            essential_fields = ["listing_price", "bedrooms", "bathrooms", "square_feet", 
+                              "street", "city", "state", "description"]
+            
+            completeness_expr = lit(0.0)
+            for field in essential_fields:
+                if field in df.columns:
+                    completeness_expr = completeness_expr + when(col(field).isNotNull(), 1.0).otherwise(0.0)
+            
+            # Calculate quality score (0 to 1)
+            df = df.withColumn(
+                "quality_score",
+                (completeness_expr / len(essential_fields)).cast("float")
+            )
+        
+        # Ensure media fields exist (they should from the model but may be empty)
+        if "virtual_tour_url" not in df.columns:
+            df = df.withColumn("virtual_tour_url", lit(None).cast("string"))
+        
+        if "images" not in df.columns:
+            df = df.withColumn("images", expr("array()"))
+        
+        if "price_history" not in df.columns:
+            df = df.withColumn("price_history", expr("array()"))
+        
+        return df
+    
     def _enhance_with_location_data(self, df: DataFrame) -> DataFrame:
         """
         Enhance properties with location hierarchy and neighborhood linking.
@@ -347,55 +398,18 @@ class PropertyEnricher(BaseEnricher):
     
     def get_enrichment_statistics(self, df: DataFrame) -> Dict:
         """
-        Calculate statistics about the enrichment process.
+        Get enrichment metadata without forcing evaluation.
+        
+        Note: This method is deprecated and not used in the pipeline.
+        Kept for backward compatibility only.
         
         Args:
             df: Enriched DataFrame
             
         Returns:
-            Dictionary of enrichment statistics
+            Dictionary of metadata
         """
-        stats = {}
-        
-        total = df.count()
-        stats["total_properties"] = total
-        
-        # Price calculations
-        if "price_per_sqft" in df.columns:
-            with_price_sqft = df.filter(col("price_per_sqft").isNotNull()).count()
-            stats["properties_with_price_per_sqft"] = with_price_sqft
-            
-            avg_price_sqft = df.filter(col("price_per_sqft").isNotNull()) \
-                              .select(expr("avg(price_per_sqft)")).collect()[0][0]
-            stats["avg_price_per_sqft"] = float(avg_price_sqft) if avg_price_sqft else 0
-        
-        # Address normalization
-        if "city_normalized" in df.columns:
-            with_normalized_city = df.filter(col("city_normalized").isNotNull()).count()
-            stats["properties_with_normalized_city"] = with_normalized_city
-        
-        # Quality scores
-        if "property_quality_score" in df.columns:
-            quality_stats = df.select(
-                expr("avg(property_quality_score) as avg_quality"),
-                expr("min(property_quality_score) as min_quality"),
-                expr("max(property_quality_score) as max_quality"),
-                expr("count(case when property_validation_status = 'validated' then 1 end) as validated"),
-                expr("count(case when property_validation_status = 'low_quality' then 1 end) as low_quality")
-            ).collect()[0]
-            
-            stats["avg_quality_score"] = float(quality_stats["avg_quality"]) if quality_stats["avg_quality"] else 0
-            stats["min_quality_score"] = float(quality_stats["min_quality"]) if quality_stats["min_quality"] else 0
-            stats["max_quality_score"] = float(quality_stats["max_quality"]) if quality_stats["max_quality"] else 0
-            stats["validated_properties"] = quality_stats["validated"]
-            stats["low_quality_properties"] = quality_stats["low_quality"]
-        
-        # Price categories
-        if "price_category" in df.columns:
-            category_counts = df.groupBy("price_category").count().collect()
-            stats["price_categories"] = {row["price_category"]: row["count"] for row in category_counts}
-        
-        return stats
+        return super().get_enrichment_statistics(df)
     
     def categorize_price_range(self, df: DataFrame) -> DataFrame:
         """

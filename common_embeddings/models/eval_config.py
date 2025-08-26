@@ -12,7 +12,7 @@ import logging
 import os
 
 # Import base config classes to extend
-from common.property_finder_models import EmbeddingConfig, ChromaDBConfig
+from .config import EmbeddingConfig, ChromaDBConfig
 from .config import ChunkingConfig, ProcessingConfig, ExtendedConfig
 
 logger = logging.getLogger(__name__)

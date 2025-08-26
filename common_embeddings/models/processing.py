@@ -8,7 +8,8 @@ from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
-from common.property_finder_models import EntityType, SourceType, BaseMetadata
+from .enums import EntityType, SourceType
+from .base import BaseMetadata
 from .enums import ChunkingMethod
 
 
@@ -168,6 +169,4 @@ class DocumentBatch(BaseModel):
         """Check if this is the last batch."""
         return self.batch_index == self.total_batches - 1
     
-    class Config:
-        """Pydantic configuration."""
-        arbitrary_types_allowed = True  # Allow LlamaIndex Document objects
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # Allow LlamaIndex Document objects

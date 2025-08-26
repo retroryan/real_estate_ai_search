@@ -6,9 +6,9 @@ Clean, type-safe models for advanced ChromaDB operations and correlation.
 
 from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
-from common.property_finder_models import EntityType, SourceType
+from .enums import EntityType, SourceType
 from .metadata import BaseMetadata
 
 
@@ -78,15 +78,21 @@ class ValidationResult(BaseModel):
     error_count: int = Field(0, description="Number of errors found")
     warning_count: int = Field(0, description="Number of warnings found")
     
-    @validator('error_count', always=True)
-    def set_error_count(cls, v, values):
+    @field_validator('error_count', mode='before')
+    @classmethod
+    def set_error_count(cls, v, info):
         """Automatically set error count from errors list."""
-        return len(values.get('errors', []))
+        if hasattr(info, 'data'):
+            return len(info.data.get('errors', []))
+        return v or 0
     
-    @validator('warning_count', always=True)
-    def set_warning_count(cls, v, values):
+    @field_validator('warning_count', mode='before')
+    @classmethod
+    def set_warning_count(cls, v, info):
         """Automatically set warning count from warnings list."""
-        return len(values.get('warnings', []))
+        if hasattr(info, 'data'):
+            return len(info.data.get('warnings', []))
+        return v or 0
     
     def add_error(self, error: str) -> None:
         """Add a validation error."""

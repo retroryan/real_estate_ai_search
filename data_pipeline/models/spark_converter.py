@@ -8,6 +8,7 @@ properly handling Optional types, nested models, and lists.
 import inspect
 from decimal import Decimal
 from typing import List, Optional, get_args, get_origin, Union
+from enum import Enum
 
 from pydantic import BaseModel
 from pyspark.sql.types import (
@@ -80,6 +81,10 @@ def _get_spark_type(python_type, field_info=None) -> DataType:
     Returns:
         Corresponding Spark DataType
     """
+    # Handle Enum types - they become strings when use_enum_values=True
+    if inspect.isclass(python_type) and issubclass(python_type, Enum):
+        return StringType()
+    
     # Handle nested Pydantic models
     if inspect.isclass(python_type) and issubclass(python_type, BaseModel):
         return pydantic_to_spark_schema(python_type)

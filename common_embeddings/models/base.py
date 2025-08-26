@@ -1,13 +1,12 @@
 """
-Core base models and utilities for Property Finder.
+Core base models and utilities for embeddings.
 
 Provides foundational classes used across all modules.
 """
 
 from datetime import datetime
-from typing import Optional, Any, Dict, Annotated
+from typing import Any, Dict, Annotated
 from uuid import uuid4
-import uuid
 
 from pydantic import BaseModel, Field, ConfigDict, PlainSerializer
 
@@ -125,4 +124,4 @@ def generate_uuid() -> str:
     Returns:
         A string UUID
     """
-    return str(uuid.uuid4())
+    return str(uuid4())
