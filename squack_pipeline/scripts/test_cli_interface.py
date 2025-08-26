@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple test script for CLI interface."""
+"""Test script for SQUACK Pipeline CLI Interface - Command-line interface and argument parsing."""
 
 import sys
 import subprocess

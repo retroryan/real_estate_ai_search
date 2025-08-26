@@ -1,6 +1,6 @@
-# Test configuration for data pipeline with mock embeddings and search pipeline
+# Test configuration for search pipeline with fixed ID fields
 spark:
-  app_name: "TestPipeline"
+  app_name: "TestSearchPipeline"
   master: "local[2]"
   driver_memory: "2g"
 
@@ -12,32 +12,26 @@ data_source:
   wikipedia_db_path: "data/wikipedia/wikipedia.db"
 
 processing:
-  enable_wikipedia_enrichment: true
+  enable_wikipedia_enrichment: false  # Disable for faster testing
   enable_field_mapping: true
   enable_embeddings: true
 
 embedding:
   provider: "mock"
   model_name: "test-model"
-  dimension: 1536  # Match OpenAI dimension for consistency
+  dimension: 1536
   batch_size: 100
 
 output:
   enabled_destinations:
-    - "parquet"
     - "elasticsearch"
-  parquet:
-    base_path: "test_output"
-    format: "parquet"
-    mode: "overwrite"
-    partitioned: false
   elasticsearch:
     hosts:
       - "localhost:9200"
-    index_prefix: "real_estate"
-    bulk_size: 1000
+    index_prefix: "test"
+    bulk_size: 100
     username: "elastic"
-    # Password will be read from ELASTICSEARCH_PASSWORD env variable
+    # Password from ELASTICSEARCH_PASSWORD env variable
 
 # Search pipeline configuration
 search_pipeline:
@@ -45,8 +39,8 @@ search_pipeline:
   elasticsearch:
     nodes:
       - "localhost:9200"
-    index_prefix: "real_estate"
-    index_auto_create: false  # We created them manually
+    index_prefix: "test"
+    index_auto_create: false
   process_properties: true
   process_neighborhoods: true  
   process_wikipedia: true
@@ -57,10 +51,6 @@ search_pipeline:
     dimension: 1536
     batch_size: 100
 
-# Neo4j configuration (disabled for this test)
-neo4j:
-  enabled: false
-
 # Pipeline settings  
-sample_size: 10  # Small sample for quick testing
+sample_size: 5  # Very small sample for quick testing
 test_mode: true

@@ -89,7 +89,6 @@
       "architectural_style"
     ],
     "required_fields": [
-      "listing_id",
       "neighborhood_id"
     ]
   },
@@ -119,7 +118,6 @@
       "embedding"
     ],
     "required_fields": [
-      "listing_id",
       "page_id",
       "title"
     ]

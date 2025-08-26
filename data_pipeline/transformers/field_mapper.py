@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, lit, array, struct, when, coalesce
+from pyspark.sql.functions import col, lit, array, struct, when, coalesce, split, trim
 from pyspark.sql.types import StringType, IntegerType, FloatType, ArrayType, StructType, StructField
 from pydantic import BaseModel, Field, field_validator
 
@@ -407,8 +407,8 @@ class FieldMapper:
                         # Handle both single values and comma-separated strings
                         when(
                             col(field_name).contains(","),
-                            # Split comma-separated string
-                            array(*[lit(item.strip()) for item in col(field_name).cast(StringType()).split(",")])
+                            # Split comma-separated string using PySpark's split function
+                            split(trim(col(field_name).cast(StringType())), ",")
                         ).otherwise(
                             # Single value -> array
                             array(col(field_name).cast(StringType()))

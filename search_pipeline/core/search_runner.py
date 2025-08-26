@@ -268,7 +268,7 @@ class SearchPipelineRunner:
         # Write to Elasticsearch using Spark connector
         es_conf = self.config.elasticsearch.get_spark_conf()
         es_conf["es.resource"] = index_name
-        es_conf["es.mapping.id"] = "listing_id"  # Use the 'listing_id' field from documents
+        es_conf["es.mapping.id"] = "doc_id"  # Use the 'doc_id' field from documents
         
         # Log configuration for debugging (but truncate long values)
         debug_conf = {k: str(v)[:200] + "..." if len(str(v)) > 200 else v 
@@ -292,7 +292,7 @@ class SearchPipelineRunner:
         try:
             # Create a simple test DataFrame
             test_df = self.spark.createDataFrame(
-                [{"listing_id": "test-1", "message": "test", "timestamp": datetime.now()}]
+                [{"doc_id": "test-1", "entity_id": "test-1", "entity_type": "test", "message": "test", "timestamp": datetime.now()}]
             )
             
             # Try to write to a test index
@@ -300,7 +300,7 @@ class SearchPipelineRunner:
             
             es_conf = self.config.elasticsearch.get_spark_conf()
             es_conf["es.resource"] = test_index
-            es_conf["es.mapping.id"] = "listing_id"
+            es_conf["es.mapping.id"] = "doc_id"
             
             # Attempt write with single document
             test_df.write \

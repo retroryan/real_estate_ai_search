@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple test script for Phase 1 components."""
+"""Test script for SQUACK Pipeline Basic Loading - DuckDB connection and property data loading."""
 
 import sys
 from datetime import date

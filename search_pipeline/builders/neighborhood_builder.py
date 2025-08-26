@@ -98,9 +98,6 @@ class NeighborhoodDocumentBuilder(BaseDocumentBuilder):
         neighborhood_id = str(self.extract_field(row, "neighborhood_id"))
         name = self.clean_text(self.extract_field(row, "name", ""))
         
-        # Use neighborhood_id as listing_id for base document
-        listing_id = neighborhood_id
-        
         # Build nested address object
         address = self._build_address(row)
         
@@ -137,9 +134,13 @@ class NeighborhoodDocumentBuilder(BaseDocumentBuilder):
         embedding_dimension = self.extract_field(row, "embedding_dimension")
         embedded_at = self._parse_date(self.extract_field(row, "embedded_at"))
         
-        # Create document
+        # Create document with new ID mapping
         return NeighborhoodDocument(
-            listing_id=listing_id,
+            # Base document fields
+            doc_id=neighborhood_id,  # Use neighborhood_id as doc_id
+            entity_id=neighborhood_id,
+            entity_type="neighborhood",
+            # Neighborhood-specific fields
             neighborhood_id=neighborhood_id,
             name=name,
             address=address,

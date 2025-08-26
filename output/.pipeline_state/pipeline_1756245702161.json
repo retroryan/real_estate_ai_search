@@ -1,0 +1,16 @@
+{
+  "pipeline_id": "pipeline_1756245702161",
+  "state": "failed",
+  "started_at": "2025-08-26T16:01:42.161058",
+  "updated_at": "2025-08-26T16:01:42.286313",
+  "environment": "development",
+  "current_phase": "",
+  "records_processed": 0,
+  "bronze_table": null,
+  "silver_table": null,
+  "gold_table": null,
+  "enriched_table": null,
+  "metrics": {},
+  "error_message": "Failed to initialize embedding pipeline",
+  "error_phase": ""
+}
