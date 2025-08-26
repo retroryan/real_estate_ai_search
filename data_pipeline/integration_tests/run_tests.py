@@ -71,6 +71,25 @@ def run_full_tests():
     return True
 
 
+def run_neo4j_tests():
+    """Run Neo4j database verification tests."""
+    print("🔍 Running Neo4j verification tests...")
+    
+    result = subprocess.run([
+        sys.executable, "-m", "pytest",
+        "data_pipeline/integration_tests/test_neo4j_verification.py",
+        "-v", "--tb=short", "-s"
+    ])
+    
+    if result.returncode == 0:
+        print("✅ Neo4j verification tests passed!")
+    else:
+        print("❌ Neo4j verification tests failed!")
+        return False
+    
+    return True
+
+
 def run_with_coverage():
     """Run tests with coverage reporting."""
     print("📈 Running tests with coverage...")
@@ -104,7 +123,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run data pipeline integration tests")
     parser.add_argument(
         "test_type", 
-        choices=["smoke", "parquet", "full", "coverage"],
+        choices=["smoke", "parquet", "neo4j", "full", "coverage"],
         help="Type of tests to run"
     )
     parser.add_argument(
@@ -130,6 +149,8 @@ def main():
         success = run_smoke_tests()
     elif args.test_type == "parquet":
         success = run_parquet_tests()
+    elif args.test_type == "neo4j":
+        success = run_neo4j_tests()
     elif args.test_type == "full":
         success = run_full_tests()
     elif args.test_type == "coverage":

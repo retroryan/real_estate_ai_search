@@ -1,8 +1,8 @@
 """
 Test the enhanced Neo4j graph writer.
 
-This test validates that the Neo4j graph writer correctly creates all nodes
-and relationships as defined in the graph model.
+This test validates that the Neo4j graph writer correctly creates all nodes.
+Note: Relationships are created separately in Neo4j using graph-real-estate module.
 """
 
 import json
@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import PipelineConfig
 from data_pipeline.writers.neo4j_graph_writer import Neo4jGraphWriter
 
 
@@ -207,17 +207,13 @@ class TestNeo4jGraphWriter:
         print("\nVerifying graph structure...")
         
         try:
-            # Check node counts
+            # Check node counts only (relationships are created separately in Neo4j)
             queries = [
                 ("MATCH (p:Property) RETURN count(p) as count", "Property nodes"),
                 ("MATCH (n:Neighborhood) RETURN count(n) as count", "Neighborhood nodes"),
                 ("MATCH (w:WikipediaArticle) RETURN count(w) as count", "Wikipedia nodes"),
                 ("MATCH (c:City) RETURN count(c) as count", "City nodes"),
-                ("MATCH (s:State) RETURN count(s) as count", "State nodes"),
-                ("MATCH ()-[r:LOCATED_IN]->() RETURN count(r) as count", "LOCATED_IN relationships"),
-                ("MATCH ()-[r:PART_OF]->() RETURN count(r) as count", "PART_OF relationships"),
-                ("MATCH ()-[r:DESCRIBES]->() RETURN count(r) as count", "DESCRIBES relationships"),
-                ("MATCH ()-[r:SIMILAR_TO]->() RETURN count(r) as count", "SIMILAR_TO relationships")
+                ("MATCH (s:State) RETURN count(s) as count", "State nodes")
             ]
             
             for query, description in queries:
@@ -270,8 +266,9 @@ class TestNeo4jGraphWriter:
             print("  2. Login with your credentials")
             print("  3. Try these queries:")
             print("     - MATCH (n) RETURN n LIMIT 50")
-            print("     - MATCH p=(:Property)-[:LOCATED_IN]->(:Neighborhood)-[:LOCATED_IN]->(:City) RETURN p")
-            print("     - MATCH (w:WikipediaArticle)-[:DESCRIBES]->(c:City) RETURN w, c")
+            print("     - MATCH (p:Property) RETURN p LIMIT 10")
+            print("     - MATCH (n:Neighborhood) RETURN n LIMIT 10")
+            print("Note: Relationships will be created in separate Neo4j step: python -m graph-real-estate build-relationships")
         else:
             print("❌ SOME TESTS FAILED")
         print("="*60)

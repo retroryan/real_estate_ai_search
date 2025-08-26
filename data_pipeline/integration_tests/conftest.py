@@ -31,13 +31,47 @@ def spark_session():
 
 
 @pytest.fixture(scope="session")
+def spark():
+    """Alias for spark_session to match test expectations."""
+    spark = SparkSession.builder \
+        .appName("DataPipelineIntegrationTests") \
+        .master("local[2]") \
+        .config("spark.sql.adaptive.enabled", "true") \
+        .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+        .config("spark.sql.execution.arrow.pyspark.enabled", "false") \
+        .getOrCreate()
+    
+    # Set log level to reduce noise during testing
+    spark.sparkContext.setLogLevel("WARN")
+    
+    yield spark
+    
+    spark.stop()
+
+
+@pytest.fixture(scope="session")
 def test_settings():
     """Create test settings with appropriate overrides.""" 
-    from data_pipeline.config.settings import ConfigurationManager
-    config_manager = ConfigurationManager(environment="test")
-    settings = config_manager.load_config()
+    from pathlib import Path
+    import yaml
+    from data_pipeline.config.models import PipelineConfig
     
-    # Settings for testing loaded directly from config
+    # Load test-specific configuration
+    test_config_path = Path(__file__).parent / "test_config.yaml"
+    
+    if test_config_path.exists():
+        # Use test-specific config if available
+        with open(test_config_path, "r") as f:
+            config_dict = yaml.safe_load(f)
+        settings = PipelineConfig(**config_dict)
+    else:
+        # Fallback to loading main config with overrides
+        from data_pipeline.config.loader import load_configuration
+        from data_pipeline.config.models import EmbeddingProvider
+        settings = load_configuration(sample_size=None)
+        settings.embedding.provider = EmbeddingProvider.MOCK  # Use mock for tests
+        settings.output.enabled_destinations = ["parquet"]  # Disable Neo4j for tests
     
     return settings
 
@@ -56,15 +90,13 @@ def test_settings_with_temp_output(test_settings, temp_output_directory):
     import copy
     settings_copy = copy.deepcopy(test_settings)
     
-    # Override output_destinations to use temporary directory for Parquet output
+    # Override output to use temporary directory for Parquet output
     # Enable only Parquet output for testing
-    settings_copy.output_destinations.enabled_destinations = ["parquet"]
+    settings_copy.output.enabled_destinations = ["parquet"]
     
     # Configure Parquet destination with temporary directory
-    settings_copy.output_destinations.parquet.enabled = True
-    settings_copy.output_destinations.parquet.base_path = str(temp_output_directory)
-    settings_copy.output_destinations.parquet.mode = "overwrite"
-    settings_copy.output_destinations.parquet.compression = "snappy"
+    settings_copy.output.parquet.base_path = str(temp_output_directory)
+    settings_copy.output.parquet.compression = "snappy"
     
     return settings_copy
 

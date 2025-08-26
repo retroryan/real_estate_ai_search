@@ -14,7 +14,7 @@ embedding:
   voyage_model: "voyage-3"
 
 vector_store:
-  provider: elasticsearch  # Options: chromadb, elasticsearch
+  provider: archive_elasticsearch  # Options: chromadb, archive_elasticsearch
   chromadb:
     path: "./data/wiki_chroma_db"
     collection_prefix: "wiki_embeddings"

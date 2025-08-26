@@ -19,6 +19,7 @@ from pyspark.sql.functions import (
 )
 
 from data_pipeline.models.graph_models import TopicClusterNode
+from data_pipeline.enrichment.id_generator import generate_topic_cluster_id
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,7 @@ class TopicExtractor:
         # Create topic cluster nodes
         cluster_nodes = []
         for category, topics in topic_groups.items():
-            cluster_id = f"topic_cluster:{category}"
+            cluster_id = generate_topic_cluster_id(category)
             
             # Get top topics (limit to 20 most common)
             top_topics = sorted(topics)[:20]
@@ -179,63 +180,7 @@ class TopicExtractor:
         
         # Convert to DataFrame
         if cluster_nodes:
-            return self.spark.createDataFrame(cluster_nodes)
+            return self.spark.createDataFrame(cluster_nodes, schema=TopicClusterNode.spark_schema())
         else:
             return self.spark.createDataFrame([], TopicClusterNode.spark_schema())
     
-    def create_topic_relationships(
-        self,
-        wikipedia_df: Optional[DataFrame] = None,
-        properties_df: Optional[DataFrame] = None,
-        neighborhoods_df: Optional[DataFrame] = None
-    ) -> DataFrame:
-        """
-        Create IN_TOPIC_CLUSTER relationships.
-        
-        Args:
-            wikipedia_df: DataFrame with Wikipedia articles
-            properties_df: DataFrame with properties
-            neighborhoods_df: DataFrame with neighborhoods
-            
-        Returns:
-            DataFrame of IN_TOPIC_CLUSTER relationships
-        """
-        logger.info("Creating IN_TOPIC_CLUSTER relationships")
-        
-        relationships = []
-        
-        # Create Wikipedia article to topic cluster relationships
-        if wikipedia_df and "key_topics" in wikipedia_df.columns:
-            wiki_topics = wikipedia_df.select(
-                col("id").alias("from_id"),
-                explode(col("key_topics")).alias("topic")
-            ).filter(
-                col("topic").isNotNull()
-            )
-            
-            # Add category for each topic
-            wiki_rels = []
-            for row in wiki_topics.collect():
-                category = self.categorize_topic(row["topic"])
-                wiki_rels.append({
-                    "from_id": row["from_id"],
-                    "to_id": f"topic_cluster:{category}",
-                    "relationship_type": "IN_TOPIC_CLUSTER"
-                })
-            
-            if wiki_rels:
-                relationships.append(self.spark.createDataFrame(wiki_rels))
-        
-        # For properties and neighborhoods, we would need topic extraction logic
-        # This is simplified - in reality, we'd extract topics from descriptions
-        
-        # Union all relationships
-        if relationships:
-            result = relationships[0]
-            for rel_df in relationships[1:]:
-                result = result.union(rel_df)
-            return result
-        else:
-            # Return empty DataFrame with correct schema
-            schema = ["from_id", "to_id", "relationship_type"]
-            return self.spark.createDataFrame([], schema)

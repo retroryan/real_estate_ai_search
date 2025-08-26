@@ -13,8 +13,8 @@ from typing import Any, Dict, List, Optional
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
-from data_pipeline.config.settings import ConfigurationManager
 from data_pipeline.core.spark_session import get_or_create_spark_session
+from data_pipeline.core.pipeline_fork import PipelineFork, ProcessingPaths
 from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrator, LoadedData
 # Entity-specific imports will be done where needed
 # Entity-specific embedding generators used instead
@@ -25,7 +25,6 @@ from data_pipeline.processing.wikipedia_text_processor import WikipediaTextProce
 from data_pipeline.enrichment.property_enricher import PropertyEnricher
 from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher
 from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher
-from data_pipeline.enrichment.relationship_builder import RelationshipBuilder
 from data_pipeline.enrichment.feature_extractor import FeatureExtractor
 from data_pipeline.enrichment.county_extractor import CountyExtractor
 from data_pipeline.enrichment.entity_extractors import PropertyTypeExtractor, PriceRangeExtractor
@@ -44,39 +43,32 @@ logger = logging.getLogger(__name__)
 class DataPipelineRunner:
     """Main pipeline orchestrator."""
     
-    def __init__(self, config_path: Optional[str] = None, config_override: Optional[Any] = None):
+    def __init__(self, config):
         """
-        Initialize pipeline runner.
+        Initialize pipeline runner with configuration.
         
         Args:
-            config_path: Path to configuration file
-            config_override: Optional configuration object to use instead of loading from file
+            config: Validated PipelineConfig object
         """
-        # Load configuration
-        if config_override is not None:
-            # Use the provided configuration directly
-            self.config = config_override
-            self.config_manager = None
-        else:
-            self.config_manager = ConfigurationManager(config_path)
-            self.config = self.config_manager.load_config()
+        # Store configuration
+        self.config = config
         
         # Configure logging
         self._setup_logging()
         
         # Initialize Spark session with conditional Neo4j configuration
-        self.spark = get_or_create_spark_session(self.config, self.config)
+        self.spark = get_or_create_spark_session(self.config.spark, self.config)
         
         # Initialize components
-        self.loader = DataLoaderOrchestrator(self.spark, self.config)
+        self.loader = DataLoaderOrchestrator(self.spark, self.config.data_sources)
         
         # Initialize entity-specific processors and enrichers
         self._init_entity_processors()
         # Entity-specific embedding generators will be created as needed
         self.embedding_config = self._init_embedding_config()
         
-        # Initialize relationship builder
-        self.relationship_builder = RelationshipBuilder(self.spark)
+        # Initialize pipeline fork based on output destinations
+        self.pipeline_fork = PipelineFork(self.config.output.enabled_destinations)
         
         # Initialize writer orchestrator if configured
         self.writer_orchestrator = self._init_writer_orchestrator()
@@ -126,39 +118,31 @@ class DataPipelineRunner:
     
     def _init_embedding_config(self):
         """Initialize embedding configuration for entity-specific generators."""
-        from data_pipeline.models.embedding_config import EmbeddingPipelineConfig
-        
-        # Convert config to proper Pydantic type
-        if isinstance(self.config.embedding, EmbeddingPipelineConfig):
-            return self.config.embedding
-        elif isinstance(self.config.embedding, dict):
-            return EmbeddingPipelineConfig.from_dict(self.config.embedding)
-        else:
-            # Handle legacy config objects
-            return EmbeddingPipelineConfig.from_pipeline_config(self.config.embedding)
+        # Our config.embedding is already a proper Pydantic EmbeddingConfig from config/models.py
+        # No conversion needed since we're using the new clean configuration system
+        return self.config.embedding
     
     def _init_writer_orchestrator(self) -> Optional[WriterOrchestrator]:
         """Initialize the writer orchestrator with configured destinations."""
         writers = []
         
         # Add writers based on enabled destinations
-        if hasattr(self.config, 'enabled_destinations'):
-            # Add Parquet writer if enabled
-            if "parquet" in self.config.enabled_destinations:
-                logger.info("Initializing Parquet writer")
-                writers.append(ParquetWriter(self.config, self.spark))
-            
-            # Add Neo4j graph writer if enabled
-            if "neo4j" in self.config.enabled_destinations:
-                logger.info("Initializing Neo4j graph writer")
-                from data_pipeline.writers.neo4j import Neo4jOrchestrator
-                writers.append(Neo4jOrchestrator(self.config, self.spark))
-            
-            # Add Elasticsearch writer if enabled
-            if "elasticsearch" in self.config.enabled_destinations:
-                logger.info("Initializing Elasticsearch writer")
-                from data_pipeline.writers.elasticsearch import ElasticsearchOrchestrator
-                writers.append(ElasticsearchOrchestrator(self.config, self.spark))
+        # Pydantic guarantees enabled_destinations exists with at least empty list
+        if "parquet" in self.config.output.enabled_destinations:
+            logger.info("Initializing Parquet writer")
+            writers.append(ParquetWriter(self.config.output.parquet, self.spark))
+        
+        # Add Neo4j graph writer if enabled
+        if "neo4j" in self.config.output.enabled_destinations:
+            logger.info("Initializing Neo4j graph writer")
+            from data_pipeline.writers.neo4j import Neo4jOrchestrator
+            writers.append(Neo4jOrchestrator(self.config.output.neo4j, self.spark))
+        
+        # Add Elasticsearch writer if enabled
+        if "elasticsearch" in self.config.output.enabled_destinations:
+            logger.info("Initializing Elasticsearch writer")
+            from data_pipeline.writers.archive_elasticsearch import ElasticsearchOrchestrator
+            writers.append(ElasticsearchOrchestrator(self.config.output.elasticsearch, self.spark))
         
         
         if writers:
@@ -237,12 +221,45 @@ class DataPipelineRunner:
                     loaded_data.wikipedia
                 )
             
-            # Extract new entity nodes from the processed data
-            logger.info("\n🔍 Extracting entity nodes...")
-            entity_nodes = self._extract_entity_nodes(loaded_data, processed_entities)
+            # Fork point: Process based on output destinations
+            logger.info("\n🔀 Fork point: Processing based on output destinations...")
+            logger.info(f"Enabled destinations: {self.config.output.enabled_destinations}")
             
-            # Add entity nodes to processed entities
-            processed_entities.update(entity_nodes)
+            # Create search config if needed
+            search_config = None
+            if "elasticsearch" in self.config.output.enabled_destinations:
+                search_config = self._get_search_config()
+            
+            # Prepare extractors for graph processing if needed
+            entity_extractors = None
+            if "neo4j" in self.config.output.enabled_destinations:
+                entity_extractors = {
+                    "feature_extractor": self.feature_extractor,
+                    "property_type_extractor": self.property_type_extractor,
+                    "price_range_extractor": self.price_range_extractor,
+                    "county_extractor": self.county_extractor,
+                    "topic_extractor": self.topic_extractor,
+                    "locations_data": loaded_data.locations
+                }
+            
+            # Process all required paths
+            processing_result, output_data = self.pipeline_fork.process_paths(
+                processed_entities,
+                spark=self.spark,
+                search_config=search_config,
+                entity_extractors=entity_extractors
+            )
+            
+            # Update processed_entities based on processing results
+            if "neo4j" in output_data:
+                processed_entities = output_data["neo4j"]
+            elif "parquet" in output_data:
+                processed_entities = output_data["parquet"]
+            
+            # Log any processing errors
+            if not processing_result.is_successful():
+                for error in processing_result.get_errors():
+                    logger.error(f"Processing error: {error}")
             
             # Store cached references
             self._cached_dataframes = processed_entities
@@ -308,16 +325,42 @@ class DataPipelineRunner:
         
         return processed_df
     
+    def _get_search_config(self):
+        """
+        Create search pipeline configuration from main pipeline config.
+        
+        Returns:
+            SearchPipelineConfig instance
+        """
+        from search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig
+        
+        # Check if Elasticsearch is enabled in output destinations
+        search_enabled = "elasticsearch" in self.config.output.enabled_destinations
+        
+        # Create search configuration
+        search_config = SearchPipelineConfig(
+            enabled=search_enabled,
+            elasticsearch=ElasticsearchConfig(
+                nodes=self.config.output.elasticsearch.hosts if self.config.output.elasticsearch else ["localhost:9200"],
+                index_prefix=self.config.output.elasticsearch.index_prefix if self.config.output.elasticsearch else "real_estate",
+                username=self.config.output.elasticsearch.username if self.config.output.elasticsearch else None
+                # Don't set mapping_id here - let each entity type handle its own ID field
+            )
+        )
+        
+        return search_config
+    
     def _extract_entity_nodes(self, loaded_data: LoadedData, processed_entities: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Extract new entity nodes from the loaded and processed data.
+        Note: Only extracts node data. Relationships are created separately in Neo4j.
         
         Args:
             loaded_data: Original loaded data
             processed_entities: Processed entity DataFrames
             
         Returns:
-            Dictionary of new entity node DataFrames
+            Dictionary of new entity node DataFrames (nodes only, no relationships)
         """
         entity_nodes = {}
         
@@ -325,19 +368,16 @@ class DataPipelineRunner:
         if 'properties' in processed_entities:
             logger.info("   Extracting features...")
             entity_nodes['features'] = self.feature_extractor.extract(processed_entities['properties'])
-            entity_nodes['feature_relationships'] = self.feature_extractor.create_relationships(processed_entities['properties'])
         
         # Extract property types from properties
         if 'properties' in processed_entities:
             logger.info("   Extracting property types...")
             entity_nodes['property_types'] = self.property_type_extractor.extract_property_types(processed_entities['properties'])
-            entity_nodes['property_type_relationships'] = self.property_type_extractor.create_property_type_relationships(processed_entities['properties'])
         
         # Extract price ranges from properties
         if 'properties' in processed_entities:
             logger.info("   Extracting price ranges...")
             entity_nodes['price_ranges'] = self.price_range_extractor.extract_price_ranges(processed_entities['properties'])
-            entity_nodes['price_range_relationships'] = self.price_range_extractor.create_price_range_relationships(processed_entities['properties'])
         
         # Extract counties from locations
         if loaded_data.locations is not None:
@@ -347,22 +387,11 @@ class DataPipelineRunner:
                 processed_entities.get('properties'),
                 processed_entities.get('neighborhoods')
             )
-            # Create county relationships if we have cities or neighborhoods
-            cities_df = None  # We would need to extract cities first
-            entity_nodes['county_relationships'] = self.county_extractor.create_county_relationships(
-                cities_df,
-                processed_entities.get('neighborhoods')
-            )
         
         # Extract topic clusters from Wikipedia
         if 'wikipedia' in processed_entities:
             logger.info("   Extracting topic clusters...")
             entity_nodes['topic_clusters'] = self.topic_extractor.extract_topic_clusters(processed_entities['wikipedia'])
-            entity_nodes['topic_relationships'] = self.topic_extractor.create_topic_relationships(
-                processed_entities.get('wikipedia'),
-                processed_entities.get('properties'),
-                processed_entities.get('neighborhoods')
-            )
         
         return entity_nodes
     
@@ -479,6 +508,46 @@ class DataPipelineRunner:
                 wikipedia_embedder = WikipediaEmbeddingGenerator(self.spark, self.embedding_config)
                 processed_entities['wikipedia'] = wikipedia_embedder.generate_embeddings(processed_df)
             
+            # Fork point: Process based on output destinations
+            logger.info("\n🔀 Fork point: Processing based on output destinations...")
+            logger.info(f"Enabled destinations: {self.config.output.enabled_destinations}")
+            
+            # Create search config if needed
+            search_config = None
+            if "elasticsearch" in self.config.output.enabled_destinations:
+                search_config = self._get_search_config()
+            
+            # Prepare extractors for graph processing if needed
+            entity_extractors = None
+            if "neo4j" in self.config.output.enabled_destinations:
+                entity_extractors = {
+                    "feature_extractor": self.feature_extractor,
+                    "property_type_extractor": self.property_type_extractor,
+                    "price_range_extractor": self.price_range_extractor,
+                    "county_extractor": self.county_extractor,
+                    "topic_extractor": self.topic_extractor,
+                    "locations_data": loaded_data.locations
+                }
+            
+            # Process all required paths
+            processing_result, output_data = self.pipeline_fork.process_paths(
+                processed_entities,
+                spark=self.spark,
+                search_config=search_config,
+                entity_extractors=entity_extractors
+            )
+            
+            # Update processed_entities based on processing results
+            if "neo4j" in output_data:
+                processed_entities = output_data["neo4j"]
+            elif "parquet" in output_data:
+                processed_entities = output_data["parquet"]
+            
+            # Log any processing errors
+            if not processing_result.is_successful():
+                for error in processing_result.get_errors():
+                    logger.error(f"Processing error: {error}")
+            
             # Store cached references
             self._cached_dataframes = processed_entities
             
@@ -556,7 +625,7 @@ class DataPipelineRunner:
             "pipeline_name": self.config.name,
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
-            "environment": self.config_manager.environment
+            "environment": "production"
         }
         
         if self.writer_orchestrator:
@@ -587,97 +656,7 @@ class DataPipelineRunner:
             
             logger.info("="*60)
     
-    def _log_write_summary(
-        self, 
-        entity_dataframes: Dict[str, DataFrame], 
-        relationships: Dict[str, DataFrame],
-        write_result: Any
-    ) -> None:
-        """
-        Log write summary without forcing DataFrame evaluation.
-        
-        Args:
-            entity_dataframes: Dictionary of entity DataFrames
-            relationships: Dictionary of relationship DataFrames
-            write_result: Result from write operations
-        """
-        logger.info("")
-        logger.info("="*60)
-        logger.info("📊 WRITE SUMMARY")
-        logger.info("="*60)
-        
-        # Entities written
-        logger.info("\n📦 Entities Written:")
-        for entity_type, df in entity_dataframes.items():
-            if df is not None:
-                logger.info(f"   • {entity_type.capitalize()}: ✓")
-        
-        # Relationships created
-        if relationships:
-            logger.info("\n🔗 Relationships Created:")
-            for rel_type, rel_df in relationships.items():
-                if rel_df is not None:
-                    logger.info(f"   • {rel_type}: ✓")
-        else:
-            logger.info("\n🔗 No relationships created")
-        
-        # Performance metrics from write result
-        if hasattr(write_result, 'total_duration_seconds'):
-            logger.info(f"\n⏱️ Performance Metrics:")
-            logger.info(f"   • Total write time: {write_result.total_duration_seconds:.2f} seconds")
-        
-        # Use write result statistics if available
-        if hasattr(write_result, 'total_records_written'):
-            logger.info(f"   • Total records written: {write_result.total_records_written:,}")
-            
-            if hasattr(write_result, 'total_duration_seconds') and write_result.total_duration_seconds > 0:
-                records_per_sec = write_result.total_records_written / write_result.total_duration_seconds
-                logger.info(f"   • Throughput: {records_per_sec:.0f} records/second")
-        
-        # Writer statistics
-        if hasattr(write_result, 'results'):
-            writers_used = set(r.writer_name for r in write_result.results)
-            logger.info(f"\n📝 Writers Used: {', '.join(writers_used)}")
     
-    def _build_relationships(self, entity_dataframes: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
-        """
-        Build all relationships between entities.
-        
-        Args:
-            entity_dataframes: Dictionary of entity DataFrames
-            
-        Returns:
-            Dictionary of relationship DataFrames
-        """
-        logger.info("")
-        logger.info("="*60)
-        logger.info("🔗 Building Entity Relationships...")
-        logger.info("="*60)
-        
-        relationships = {}
-        
-        # Build all relationships using the RelationshipBuilder
-        try:
-            all_relationships = self.relationship_builder.build_all_relationships(
-                properties_df=entity_dataframes.get('properties'),
-                neighborhoods_df=entity_dataframes.get('neighborhoods'),
-                wikipedia_df=entity_dataframes.get('wikipedia')
-            )
-            
-            # Add successfully built relationships
-            for rel_name, rel_df in all_relationships.items():
-                if rel_df is not None:
-                    logger.info(f"   ✓ Built {rel_name} relationships")
-                    relationships[rel_name] = rel_df
-            
-            if not relationships:
-                logger.warning("   No relationships built")
-            
-        except Exception as e:
-            logger.error(f"Failed to build relationships: {e}")
-            # Continue without relationships rather than failing pipeline
-        
-        return relationships
     
     def write_entity_outputs(self, entity_dataframes: Optional[Dict[str, DataFrame]] = None) -> None:
         """
@@ -698,7 +677,7 @@ class DataPipelineRunner:
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
             "entity_types": list(output_dataframes.keys()),
-            "environment": self.config_manager.environment if self.config_manager else "test"
+            "environment": "production"
         }
         
         if self.writer_orchestrator:
@@ -712,43 +691,94 @@ class DataPipelineRunner:
             self.writer_orchestrator.validate_all_connections()
             
             # Step 1: Write all entity nodes first
-            properties_df = output_dataframes.get('properties')
-            neighborhoods_df = output_dataframes.get('neighborhoods')
-            wikipedia_df = output_dataframes.get('wikipedia')
-            
             logger.info("📝 Writing entity nodes...")
-            result = self.writer_orchestrator.write_dataframes(
-                properties_df=properties_df,
-                neighborhoods_df=neighborhoods_df,
-                wikipedia_df=wikipedia_df,
-                pipeline_name=self.config.name,
-                pipeline_version=self.config.version,
-                environment=self.config_manager.environment if self.config_manager else "test"
-            )
             
-            # Log node write results
-            if result.all_successful():
-                logger.info(f"✅ Entity nodes written successfully")
-                logger.info(f"   Total records written: {result.total_records_written:,}")
+            # Import required types
+            from data_pipeline.models.writer_models import EntityType, WriteMetadata, WriteRequest
+            
+            # Map entity names to EntityType enum
+            entity_type_map = {
+                'properties': EntityType.PROPERTY,
+                'neighborhoods': EntityType.NEIGHBORHOOD,
+                'wikipedia': EntityType.WIKIPEDIA,
+                'features': EntityType.FEATURE,
+                'property_types': EntityType.PROPERTY_TYPE,
+                'price_ranges': EntityType.PRICE_RANGE,
+                'counties': EntityType.COUNTY,
+                'cities': EntityType.CITY,
+                'states': EntityType.STATE,
+                'topic_clusters': EntityType.TOPIC_CLUSTER
+            }
+            
+            total_written = 0
+            failed_entities = []
+            
+            # Write each entity type
+            for entity_name, df in output_dataframes.items():
+                if df is None:
+                    continue
+                
+                # Get the entity type
+                entity_type = entity_type_map.get(entity_name)
+                if not entity_type:
+                    logger.warning(f"Skipping unknown entity type: {entity_name}")
+                    continue
+                
+                # Create metadata for this entity
+                metadata = WriteMetadata(
+                    pipeline_name=self.config.name,
+                    pipeline_version=self.config.version,
+                    entity_type=entity_type,
+                    record_count=df.count(),
+                    environment="production"
+                )
+                
+                # Create write request
+                request = WriteRequest(
+                    entity_type=entity_type,
+                    dataframe=df,
+                    metadata=metadata
+                )
+                
+                # Write the entity
+                logger.info(f"   Writing {entity_name}: {metadata.record_count:,} records...")
+                results = self.writer_orchestrator.write_entity(request)
+                
+                # Check results
+                if all(r.success for r in results):
+                    total_written += metadata.record_count
+                    logger.info(f"     ✓ {entity_name} written successfully")
+                else:
+                    failed_entities.append(entity_name)
+                    logger.error(f"     ✗ {entity_name} write failed")
+            
+            # Log overall results
+            if not failed_entities:
+                logger.info(f"✅ All entity nodes written successfully")
+                logger.info(f"   Total records written: {total_written:,}")
             else:
-                logger.error(f"⚠️ Entity node write had failures")
-                logger.error(f"   Failed writes: {result.failed_writes}")
+                logger.error(f"⚠️ Entity node write had failures: {failed_entities}")
                 # Continue to try relationships even if some writes failed
             
-            # Step 2: Build and write relationships (if any writers support them)
-            # Build relationships after nodes are written
-            relationships = self._build_relationships(output_dataframes)
+            # Entity writing complete
+            # Note: Relationships are created in a separate Neo4j orchestration step:
+            # python -m graph-real-estate build-relationships
             
-            if relationships:
-                # Use the generic orchestrator method to write to all relationship-supporting writers
-                success = self.writer_orchestrator.write_all_relationships(relationships)
-                if success:
-                    logger.info("✅ All relationships written successfully")
-                else:
-                    logger.warning("⚠️ Some relationships failed to write")
+            # Log summary of entity writing only
+            logger.info("")
+            logger.info("="*60)
+            logger.info("📊 ENTITY WRITE SUMMARY")
+            logger.info("="*60)
+            logger.info(f"✅ Entity nodes written successfully")
+            logger.info(f"   Total records written: {total_written:,}")
             
-            # Step 3: Generate and log summary statistics
-            self._log_write_summary(output_dataframes, relationships, result)
+            # List entities written
+            for entity_name, df in output_dataframes.items():
+                if df is not None:
+                    logger.info(f"   • {entity_name.capitalize()}: Written")
+            
+            logger.info("\n🔗 Note: Relationships will be created in separate step")
+            logger.info("   Next: python -m graph-real-estate build-relationships")
             
             logger.info("="*60)
             logger.info("✅ Pipeline write completed")
@@ -780,42 +810,6 @@ class DataPipelineRunner:
             
             logger.info(f"✅ Results written successfully to {path}")
     
-    def validate_pipeline(self) -> Dict[str, Any]:
-        """
-        Validate pipeline configuration and environment.
-        
-        Returns:
-            Dictionary with validation results
-        """
-        validation_results = {
-            "configuration": {},
-            "environment": {},
-            "data_sources": {}
-        }
-        
-        # Validate configuration
-        validation_results["configuration"]["is_valid"] = True
-        validation_results["configuration"]["production_ready"] = \
-            self.config_manager.validate_for_production()
-        
-        # Validate Spark environment
-        spark_conf = self.spark.sparkContext.getConf()
-        validation_results["environment"]["spark_version"] = \
-            self.spark.sparkContext.version
-        validation_results["environment"]["spark_master"] = \
-            spark_conf.get("spark.master")
-        validation_results["environment"]["available_cores"] = \
-            self.spark.sparkContext.defaultParallelism
-        
-        # Validate data sources
-        for source_name, source_config in self.config.data_sources.items():
-            source_valid = Path(source_config.path).exists() if source_config.enabled else True
-            validation_results["data_sources"][source_name] = {
-                "enabled": source_config.enabled,
-                "exists": source_valid
-            }
-        
-        return validation_results
     
     def stop(self) -> None:
         """Stop the pipeline and clean up resources."""

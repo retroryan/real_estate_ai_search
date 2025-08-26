@@ -151,7 +151,7 @@ def create_test_server():
             "version": settings.server.version,
             "environment": settings.environment,
             "demo_mode": settings.is_demo,
-            "elasticsearch": {
+            "archive_elasticsearch": {
                 "host": settings.elasticsearch.host,
                 "port": settings.elasticsearch.port,
                 "index": settings.elasticsearch.index_name
@@ -215,8 +215,8 @@ def test_server_configuration():
     
     assert result["name"] == "real-estate-search"
     assert "version" in result
-    assert result["elasticsearch"]["host"] == "localhost"
-    assert result["elasticsearch"]["port"] == 9200
+    assert result["archive_elasticsearch"]["host"] == "localhost"
+    assert result["archive_elasticsearch"]["port"] == 9200
     print("✓ Server configuration accessible")
 
 

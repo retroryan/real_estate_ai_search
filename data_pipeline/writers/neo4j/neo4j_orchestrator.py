@@ -7,15 +7,18 @@ graph structure with proper dependencies between entity types.
 
 import logging
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DecimalType, DoubleType, ArrayType, StringType, FloatType
 
-from data_pipeline.config.pipeline_config import PipelineConfig
+from data_pipeline.config.models import Neo4jOutputConfig
 from data_pipeline.writers.base import EntityWriter
-from data_pipeline.models.writer_models import WriteMetadata, EntityType
+from data_pipeline.models.writer_models import (
+    WriteMetadata, EntityType, RelationshipConfig, 
+    RelationshipType, Neo4jEntityConfig
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ class Neo4jOrchestrator(EntityWriter):
     Routes each entity type to its dedicated Neo4j writer.
     """
     
-    def __init__(self, config: PipelineConfig, spark: SparkSession):
+    def __init__(self, config: Neo4jOutputConfig, spark: SparkSession):
         """
         Initialize the Neo4j orchestrator.
         
@@ -74,6 +77,21 @@ class Neo4jOrchestrator(EntityWriter):
             self.logger.error(f"Neo4j connection validation failed: {e}")
             return False
     
+    def _get_entity_configs(self) -> Dict[EntityType, Neo4jEntityConfig]:
+        """Get Pydantic-based entity configurations."""
+        return {
+            EntityType.PROPERTY: Neo4jEntityConfig(label="Property", key_field="listing_id"),
+            EntityType.NEIGHBORHOOD: Neo4jEntityConfig(label="Neighborhood", key_field="neighborhood_id"),
+            EntityType.WIKIPEDIA: Neo4jEntityConfig(label="WikipediaArticle", key_field="page_id"),
+            EntityType.FEATURE: Neo4jEntityConfig(label="Feature", key_field="id"),
+            EntityType.PROPERTY_TYPE: Neo4jEntityConfig(label="PropertyType", key_field="id"),
+            EntityType.PRICE_RANGE: Neo4jEntityConfig(label="PriceRange", key_field="id"),
+            EntityType.COUNTY: Neo4jEntityConfig(label="County", key_field="id"),
+            EntityType.CITY: Neo4jEntityConfig(label="City", key_field="id"),
+            EntityType.STATE: Neo4jEntityConfig(label="State", key_field="id"),
+            EntityType.TOPIC_CLUSTER: Neo4jEntityConfig(label="TopicCluster", key_field="id")
+        }
+    
     def write(self, df: DataFrame, metadata: WriteMetadata) -> bool:
         """
         Write entity-specific DataFrame to Neo4j.
@@ -85,20 +103,14 @@ class Neo4jOrchestrator(EntityWriter):
         Returns:
             True if write was successful, False otherwise
         """
-        # Handle both enum and string entity types
-        if hasattr(metadata.entity_type, 'value'):
-            entity_type = metadata.entity_type.value.lower()
-        else:
-            entity_type = str(metadata.entity_type).lower()
+        entity_configs = self._get_entity_configs()
         
-        if entity_type == "property":
-            return self._write_properties(df, metadata)
-        elif entity_type == "neighborhood":
-            return self._write_neighborhoods(df, metadata)
-        elif entity_type == "wikipedia":
-            return self._write_wikipedia(df, metadata)
+        # Get the configuration for this entity type
+        if metadata.entity_type in entity_configs:
+            config = entity_configs[metadata.entity_type]
+            return self._write_nodes(df, config.label, config.key_field)
         else:
-            self.logger.error(f"Unknown entity type: {entity_type}")
+            self.logger.error(f"Unknown entity type: {metadata.entity_type}")
             return False
     
     def _convert_decimal_columns(self, df: DataFrame) -> DataFrame:
@@ -268,6 +280,9 @@ class Neo4jOrchestrator(EntityWriter):
                 to_id = sample['to_id'] if 'to_id' in sample else 'N/A'
                 self.logger.debug(f"   Sample relationship: {from_id} -> {to_id}")
             
+            # Convert Decimal columns to Double for Neo4j compatibility
+            relationships_df = self._convert_decimal_columns(relationships_df)
+            
             # Connection config comes from SparkSession
             writer = relationships_df.write.format(self.format_string).mode("append")
             
@@ -307,7 +322,72 @@ class Neo4jOrchestrator(EntityWriter):
                 self.logger.error(f"❌ Failed to write {relationship_type} relationships: {e}")
             return False
     
-    def _get_relationship_config(self, relationship_type: str) -> Dict[str, str]:
+    def _get_relationship_configs(self) -> Dict[str, RelationshipConfig]:
+        """Get Pydantic-based relationship configurations."""
+        return {
+            RelationshipType.LOCATED_IN.value: RelationshipConfig(
+                source_labels=":Property",
+                source_keys="from_id:listing_id",
+                target_labels=":Neighborhood",
+                target_keys="to_id:neighborhood_id"
+            ),
+            RelationshipType.PART_OF.value: RelationshipConfig(
+                source_labels=":Neighborhood",
+                source_keys="from_id:neighborhood_id",
+                target_labels=":City",
+                target_keys="to_id:city_id"
+            ),
+            RelationshipType.DESCRIBES.value: RelationshipConfig(
+                source_labels=":WikipediaArticle",
+                source_keys="from_id:page_id",
+                target_labels=":Neighborhood",
+                target_keys="to_id:neighborhood_id"
+            ),
+            RelationshipType.SIMILAR_TO.value: RelationshipConfig(
+                source_labels="",  # Can be Property or Neighborhood
+                source_keys="from_id",
+                target_labels="",  # Same as source
+                target_keys="to_id"
+            ),
+            RelationshipType.NEAR.value: RelationshipConfig(
+                source_labels=":Property",
+                source_keys="from_id:listing_id",
+                target_labels=":Property",
+                target_keys="to_id:listing_id"
+            ),
+            RelationshipType.HAS_FEATURE.value: RelationshipConfig(
+                source_labels=":Property",
+                source_keys="from_id:listing_id",
+                target_labels=":Feature",
+                target_keys="to_id:id"
+            ),
+            RelationshipType.OF_TYPE.value: RelationshipConfig(
+                source_labels=":Property",
+                source_keys="from_id:listing_id",
+                target_labels=":PropertyType",
+                target_keys="to_id:id"
+            ),
+            RelationshipType.IN_PRICE_RANGE.value: RelationshipConfig(
+                source_labels=":Property",
+                source_keys="from_id:listing_id",
+                target_labels=":PriceRange",
+                target_keys="to_id:id"
+            ),
+            RelationshipType.IN_COUNTY.value: RelationshipConfig(
+                source_labels="",  # Can be Neighborhood or City
+                source_keys="from_id",
+                target_labels=":County",
+                target_keys="to_id:id"
+            ),
+            RelationshipType.IN_TOPIC_CLUSTER.value: RelationshipConfig(
+                source_labels="",  # Can be various entities
+                source_keys="from_id",
+                target_labels=":TopicCluster",
+                target_keys="to_id:id"
+            )
+        }
+    
+    def _get_relationship_config(self, relationship_type: str) -> Optional[Dict[str, str]]:
         """
         Get configuration for different relationship types.
         
@@ -315,42 +395,20 @@ class Neo4jOrchestrator(EntityWriter):
             relationship_type: Type of relationship
             
         Returns:
-            Configuration dictionary with labels and keys
+            Configuration dictionary with labels and keys, or None if not found
         """
-        configs = {
-            "LOCATED_IN": {
-                "source_labels": ":Property",
-                "source_keys": "from_id:listing_id",
-                "target_labels": ":Neighborhood",
-                "target_keys": "to_id:neighborhood_id"
-            },
-            "PART_OF": {
-                "source_labels": ":Neighborhood",
-                "source_keys": "from_id:neighborhood_id",
-                "target_labels": ":City",
-                "target_keys": "to_id:city_id"
-            },
-            "DESCRIBES": {
-                "source_labels": ":WikipediaArticle",
-                "source_keys": "from_id:page_id",
-                "target_labels": ":Neighborhood",
-                "target_keys": "to_id:neighborhood_id"
-            },
-            "SIMILAR_TO": {
-                "source_labels": "",  # Can be Property or Neighborhood
-                "source_keys": "from_id",
-                "target_labels": "",  # Same as source
-                "target_keys": "to_id"
-            },
-            "NEAR": {
-                "source_labels": ":Property",
-                "source_keys": "from_id:listing_id",
-                "target_labels": ":Amenity",
-                "target_keys": "to_id:amenity_id"
-            }
-        }
+        configs = self._get_relationship_configs()
         
-        return configs.get(relationship_type)
+        if relationship_type in configs:
+            config = configs[relationship_type]
+            return {
+                "source_labels": config.source_labels,
+                "source_keys": config.source_keys,
+                "target_labels": config.target_labels,
+                "target_keys": config.target_keys
+            }
+        
+        return None
     
     def _write_all_relationship_types(self, relationships: Dict[str, DataFrame]) -> bool:
         """

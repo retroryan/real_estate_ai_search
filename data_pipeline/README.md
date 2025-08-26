@@ -1,394 +1,344 @@
-# Spark Data Pipeline
+# Data Pipeline
 
 ## Project Overview
 
-A high-performance data processing pipeline built on Apache Spark for transforming, enriching, and indexing real estate and Wikipedia data with advanced embedding generation capabilities. Designed for scalable AI-powered search and recommendation systems.
+A high-performance data processing pipeline built on Apache Spark for transforming, enriching, and indexing real estate and Wikipedia data with advanced embedding generation capabilities. Features an **output-driven architecture** that automatically determines processing paths based on enabled destinations.
+
+## Architecture
+
+### Output-Driven Processing Paths
+
+The pipeline uses an intelligent fork system that determines processing complexity based on your configured output destinations:
+
+- **🗂️ Lightweight Path** (parquet-only): Minimal processing for basic data storage
+- **📊 Graph Path** (neo4j + parquet): Entity extraction and relationship building for graph databases
+- **🔍 Search Path** (elasticsearch + parquet): Document preparation and indexing for search engines
+
+Processing paths are **automatically selected** based on `enabled_destinations` - no separate configuration needed!
 
 ## Generative AI Technologies
 
-- **LlamaIndex**: Document processing and semantic chunking for optimal retrieval
-- **Neo4j**: Graph database with HNSW-based vector indexes for KNN search, cosine/euclidean similarity, and Graph Data Science algorithms
-- **Elasticsearch**: Dense vector search with HNSW algorithm, int8/int4 quantization, and hybrid BM25+KNN scoring
-- **Voyage AI**: State-of-the-art embedding models optimized for semantic search
+- **Apache Spark**: Distributed computing framework for processing large-scale datasets with ML capabilities
+- **Voyage AI**: State-of-the-art embedding models optimized for semantic search (`voyage-3`, `voyage-large-2`)
 - **Ollama**: Local LLM inference for privacy-preserving embedding generation
 - **OpenAI Embeddings**: Industry-standard text embeddings with proven performance
+- **Neo4j**: Graph database with vector similarity search and GDS algorithms
+- **Elasticsearch**: Full-text and vector search with hybrid scoring capabilities
+- **LlamaIndex**: Document processing and semantic chunking for optimal retrieval
 
 ## Quick Start
 
-### Installation
-
-From the parent directory (real_estate_ai_search):
-
+### 1. Set up environment variables
+Create a `.env` file in the project root with your API keys:
 ```bash
-pip install -e data_pipeline/
+VOYAGE_API_KEY=your-voyage-api-key
+# Optional: Add these if using other providers
+OPENAI_API_KEY=your-openai-key
+GEMINI_API_KEY=your-gemini-key
+NEO4J_PASSWORD=your-neo4j-password
+ELASTIC_PASSWORD=your-elastic-password
 ```
 
-Or from within this directory:
-
+### 2. Run the pipeline
 ```bash
-pip install -e .
-```
+# Process full dataset with default config
+python -m data_pipeline
 
-```bash
-# Install the module (from parent directory)
-pip install -e data_pipeline/
+# Process sample data (for testing)
+python -m data_pipeline --sample-size 5
 
-# Run test pipeline (10 records, mock embeddings)
-python -m data_pipeline --test-mode
+# Use custom configuration file
+python -m data_pipeline --config path/to/custom.config.yaml
 
-# Process with real embeddings (50 records)
-python -m data_pipeline --sample-size 50
-
-# Load to Neo4j graph database
-python -m data_pipeline --sample-size 100 --output-destination neo4j
-
-# Load to Elasticsearch for search
-python -m data_pipeline --sample-size 100 --output-destination elasticsearch
-
-# Full pipeline with all destinations
-python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
-```
-
-## Integration Testing
-
-### Parquet Testing
-
-```bash
-# Run quick smoke test
-pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
-
-# Run all parquet tests
-pytest data_pipeline/integration_tests/test_parquet_validation.py -v
-```
-
-### Neo4j Setup and Data Loading
-
-#### 1. Start Neo4j Database
-
-```bash
-# Using Docker (recommended)
-docker run \
-    --name neo4j \
-    -p 7474:7474 -p 7687:7687 \
-    -e NEO4J_AUTH=neo4j/password \
-    -e NEO4J_PLUGINS='["apoc"]' \
-    -v $HOME/neo4j/data:/data \
-    -v $HOME/neo4j/logs:/logs \
-    neo4j:latest
-
-# Or if you have docker-compose in graph-real-estate/
-cd ../graph-real-estate
-docker-compose up -d neo4j
-
-# Verify Neo4j is running
-curl http://localhost:7474
-# Access Neo4j Browser at http://localhost:7474
-# Default credentials: neo4j/password
-```
-
-#### 2. Install Neo4j Spark Connector (Required for Spark Integration)
-
-```bash
-# Download the Neo4j Spark Connector JAR
-wget https://github.com/neo4j/neo4j-spark-connector/releases/download/5.2.0/neo4j-connector-apache-spark_2.12-5.2.0_for_spark_3.jar
-
-# Create jars directory in data_pipeline
-mkdir -p data_pipeline/jars
-
-# Move the JAR file
-mv neo4j-connector-apache-spark_2.12-5.2.0_for_spark_3.jar data_pipeline/jars/
-
-# Alternative: Install via pip (if available)
-pip install pyspark-neo4j
-```
-
-#### 3. Load Full Dataset to Neo4j
-
-```bash
-# Load complete dataset (all properties, neighborhoods, and Wikipedia articles)
-python -m data_pipeline --output-destination neo4j
-
-# Load with sample data for testing (faster)
-python -m data_pipeline --sample-size 5 --output-destination neo4j
-
-# Load specific entity types only
-python -m data_pipeline --output-destination neo4j --entities properties,neighborhoods
-
-# Load to both Neo4j and Parquet
-python -m data_pipeline --output-destination neo4j,elasticsearch,parquet
-```
-
-#### 4. Verify Data in Neo4j
-
-```cypher
--- Count all nodes
-MATCH (n) RETURN labels(n)[0] as NodeType, COUNT(n) as Count;
-
--- Sample properties
-MATCH (p:Property) RETURN p LIMIT 5;
-
--- Properties with neighborhoods
-MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
-RETURN p.address, n.name, p.price LIMIT 10;
-
--- Wikipedia articles describing locations
-MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
-RETURN w.title, n.name LIMIT 10;
-
--- Property similarity relationships
-MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
-WHERE s.similarity_score > 0.8
-RETURN p1.address, p2.address, s.similarity_score LIMIT 10;
+# Neo4j-only processing with sample data
+python -m data_pipeline --config data_pipeline/neo4j.config.yaml --sample-size 2
 ```
 
 ## Configuration
 
-### Configuration File
+### Configuration Files
 
-The pipeline uses `config.yaml` in this directory for all settings:
+The pipeline supports multiple configuration files for different use cases:
 
-- **data_subset**: Control data sampling
-- **embedding**: Provider and model settings (Voyage, Ollama, OpenAI)
-- **spark**: Session and resource settings
-- **output_destinations**: Configure Neo4j, Elasticsearch, Parquet outputs
+- **`config.yaml`** - Default configuration with parquet + elasticsearch output
+- **`neo4j.config.yaml`** - Neo4j-only configuration for graph processing
+- **Custom configs** - Use `--config path/to/custom.yaml` for your specific setup
 
-### Environment Setup
+All configurations use a **clean, hierarchical structure**:
 
-#### Neo4j Configuration
-The pipeline is pre-configured for Neo4j. Current settings in `config.yaml`:
+### Output Destinations (determines processing paths automatically)
+
 ```yaml
-neo4j:
-  enabled: false  # Change to true to enable
-  uri: "bolt://localhost:7687"
-  username: "neo4j"
-  password: "password"
-  database: "neo4j"
+output:
+  enabled_destinations:
+    - parquet          # Always recommended
+    - elasticsearch    # Enables search path
+    - neo4j           # Enables graph path
+  
+  # Parquet configuration
+  parquet:
+    base_path: data/processed
+    compression: snappy
+  
+  # Neo4j configuration (if neo4j enabled)
+  neo4j:
+    uri: bolt://localhost:7687
+    database: neo4j
+    username: neo4j
+    # Password from NEO4J_PASSWORD environment variable
+  
+  # Elasticsearch configuration (if elasticsearch enabled)
+  elasticsearch:
+    hosts:
+      - localhost:9200
+    index_prefix: real_estate
+    username: elastic
+    bulk_size: 1000
+    # Password from ELASTIC_PASSWORD environment variable
 ```
 
-To enable Neo4j output:
-1. Edit `data_pipeline/config.yaml`
-2. Set `neo4j.enabled: true`
-3. Or add "neo4j" to `enabled_destinations` list
+### Embedding Configuration
 
-Alternative: Use command line (overrides config):
-```bash
-python -m data_pipeline --output-destination neo4j
+```yaml
+embedding:
+  provider: voyage  # Options: voyage, openai, ollama, gemini, mock
+  model_name: voyage-3  # voyage-3, voyage-large-2, voyage-code-2
+  batch_size: 10    # Smaller for API rate limits
+  dimension: 1024   # voyage-3: 1024, voyage-large-2: 1536
+  # API keys loaded from environment variables
 ```
 
-Parent `.env` file (`/Users/ryanknight/projects/temporal/.env`):
-```bash
-NEO4J_PASSWORD=password
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USERNAME=neo4j
-NEO4J_DATABASE=neo4j
+### Data Sources
+
+```yaml
+data_sources:
+  properties_files:
+    - real_estate_data/properties_sf.json
+    - real_estate_data/properties_pc.json
+  neighborhoods_files:
+    - real_estate_data/neighborhoods_sf.json
+    - real_estate_data/neighborhoods_pc.json
+  wikipedia_db_path: data/wikipedia/wikipedia.db
+  locations_file: real_estate_data/locations.json
 ```
 
-#### Elasticsearch
-Default connection (no auth required for local) - Elasticsearch should be running on `localhost:9200`
+### Spark Configuration
 
-#### API Keys
-Add to `.env` for embeddings:
+```yaml
+spark:
+  app_name: RealEstateDataPipeline
+  master: local[*]
+  driver_memory: 4g
+  executor_memory: 2g
+```
+
+## Project Structure
+
+```
+data_pipeline/
+├── config.yaml              # Main configuration file
+├── neo4j.config.yaml        # Neo4j-only configuration
+├── config/                  # Configuration models
+│   ├── models.py           # Pydantic config models (hierarchical)
+│   └── loader.py           # Config loading with environment secrets
+├── core/                    # Core pipeline components
+│   ├── pipeline_runner.py  # Main orchestrator
+│   ├── pipeline_fork.py    # Output-driven processing paths
+│   └── spark_session.py    # Spark session management
+├── processing/              # Data processing
+│   ├── base_embedding.py   # Base embedding generator
+│   └── entity_embeddings.py # Entity-specific embeddings
+├── loaders/                 # Data loaders
+├── enrichment/              # Data enrichment & entity extraction
+│   ├── property_enricher.py
+│   ├── neighborhood_enricher.py
+│   ├── wikipedia_enricher.py
+│   ├── entity_extractors.py # Feature/type/price extraction
+│   └── score_calculator.py  # Relationship scoring
+├── writers/                 # Output writers
+│   ├── parquet_writer.py
+│   ├── orchestrator.py       # Writer orchestration
+│   ├── base.py              # Base writer classes
+│   ├── neo4j/               # Neo4j writer implementation
+│   └── archive_elasticsearch/  # Elasticsearch writer (archived pattern)
+├── models/                  # Data models
+│   ├── graph_models.py     # Neo4j node/relationship models
+│   └── spark_converter.py   # Spark DataFrame conversion
+├── tests/                   # Unit tests
+└── integration_tests/       # Integration tests
+```
+
+## Elasticsearch Setup
+
+### Required JAR Installation
+
+The pipeline requires the **Elasticsearch-Spark connector** for Spark 3.x compatibility. Here's how to install it:
+
 ```bash
-VOYAGE_API_KEY=your-key-here
-OPENAI_API_KEY=your-key-here
+# Download the correct Elasticsearch-Spark connector for Spark 3.x + Scala 2.12
+cd lib/
+curl -O https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-spark-30_2.12/9.0.0/elasticsearch-spark-30_2.12-9.0.0.jar
+```
+
+**Critical**: Do not use older connectors like:
+- ❌ `elasticsearch-hadoop-8.15.2.jar` (Scala version incompatibility) 
+- ❌ `elasticsearch-spark-20_2.11-8.15.2.jar` (Spark 2.x only)
+
+**Required**: 
+- ✅ `elasticsearch-spark-30_2.12-9.0.0.jar` (Spark 3.x + Scala 2.12)
+
+### Authentication Setup
+
+Elasticsearch requires authentication. Set your credentials:
+
+```bash
+export ELASTIC_PASSWORD=your-elastic-password
+```
+
+Or add to your `.env` file:
+```
+ELASTIC_PASSWORD=your-elastic-password
+```
+
+### Verification
+
+Test the connection:
+```bash
+# Test with small sample
+python -m data_pipeline --sample-size 2
+```
+
+You should see successful connection validation instead of:
+- ❌ `Failed to find the data source: es` 
+- ❌ `java.lang.NoClassDefFoundError: scala.Product$class`
+
+## Processing Path Examples
+
+### Lightweight Processing (parquet-only)
+```yaml
+output:
+  enabled_destinations: [parquet]
+```
+- ✅ Minimal processing for data storage
+- ✅ Fastest execution time
+- ✅ No external service dependencies
+
+### Graph Processing (neo4j + parquet)  
+```yaml
+output:
+  enabled_destinations: [neo4j, parquet]
+```
+- ✅ Entity extraction (features, property types, price ranges, counties, topics)  
+- ✅ Node creation in Neo4j (properties, neighborhoods, wikipedia, etc.)
+- ✅ Graph database optimization
+- ⚠️ **Note**: Relationships are created separately using `python -m graph-real-estate build-relationships`
+
+### Search Processing (elasticsearch + parquet)
+```yaml
+output:
+  enabled_destinations: [elasticsearch, parquet]
+```
+- ✅ Document preparation for search
+- ✅ Full-text and vector indexing
+- ✅ Search optimization
+
+### Full Processing (all destinations)
+```yaml
+output:
+  enabled_destinations: [parquet, neo4j, elasticsearch]
+```
+- ✅ Maximum functionality with both graph and search paths
+- ✅ Enriched parquet files with all extracted entities
+
+## Testing
+
+```bash
+# Run unit tests
+python -m pytest data_pipeline/tests/ -v
+
+# Run integration tests  
+python -m pytest data_pipeline/integration_tests/ -v
+
+# Test output-driven architecture specifically
+python -m pytest data_pipeline/integration_tests/test_output_driven_integration.py -v
+
+# Test pipeline fork logic
+python -m pytest data_pipeline/tests/test_pipeline_fork.py -v
+
+# Test with real API (requires VOYAGE_API_KEY)
+python data_pipeline/integration_tests/test_real_voyage.py
 ```
 
 ## Command Line Options
 
-### Core Options
+- `--config PATH`: Specify custom configuration file (default: searches for config.yaml)
+- `--sample-size N`: Process only N records from each data source (useful for testing)
+
+All other configuration is handled via YAML files and environment variables for clean separation of concerns.
+
+### Neo4j-Specific Workflow
+
+For Neo4j graph processing, use the provided configuration:
 
 ```bash
-# Sample size control
-python -m data_pipeline --sample-size 100
+# Step 1: Process and create nodes in Neo4j
+python -m data_pipeline --config data_pipeline/neo4j.config.yaml --sample-size 5
 
-# Test mode (10 records, mock embeddings)
-python -m data_pipeline --test-mode
-
-# Output destinations
-python -m data_pipeline --output-destination neo4j
-python -m data_pipeline --output-destination elasticsearch
-python -m data_pipeline --output-destination parquet,neo4j,elasticsearch
-
-# Custom output path
-python -m data_pipeline --output /path/to/results
+# Step 2: Create relationships (future phase)
+# python -m graph-real-estate build-relationships
 ```
 
-## Spark Data Pipeline Flow
+The `neo4j.config.yaml` file:
+- Enables **only** Neo4j output destination
+- Sets `clear_before_write: true` to reset database
+- Optimized for node-only creation (relationships handled separately)
 
-### Processing Pipeline
-1. **Data Ingestion**: Load JSON/CSV data from multiple sources using Spark DataFrames
-2. **Data Enrichment**: Enhance properties with location data, calculate derived features
-3. **Embedding Generation**: Create vector representations using configured AI provider
-4. **Relationship Discovery**: Identify similarities and connections between entities
-5. **Multi-Destination Output**: Write to Parquet, Neo4j, and Elasticsearch simultaneously
+## Outputs
 
-### Architecture Overview
+Default output locations (configurable in `config.yaml`):
+- **Parquet files**: `data/processed/`
+- **Neo4j**: Local database at `bolt://localhost:7687` 
+- **Elasticsearch**: Local instance at `localhost:9200`
 
-```
-Data Sources → Spark Processing → Enrichment → Embeddings → Output Writers
-     ↓              ↓                ↓            ↓              ↓
-[JSON/CSV]    [DataFrames]    [Location]   [Voyage/Ollama]  [Storage]
-                                    ↓                           ↓
-                              [Features]                   [Neo4j Graph]
-                                                           [Elasticsearch]
-                                                           [Parquet Files]
-```
+The pipeline **automatically determines processing complexity** based on your enabled destinations:
+- Enable only `parquet` → Lightweight path (fastest)
+- Enable `neo4j` → Graph path (adds entity extraction)
+- Enable `elasticsearch` → Search path (adds document preparation)
+- Enable multiple → Multiple paths executed
 
-### Supported Data Entities
-- **Properties**: Real estate listings with addresses, prices, features, and amenities
-- **Wikipedia Articles**: Location-based content with geographic context
-- **Neighborhoods**: Geographic boundaries with demographic and statistical data
+## Processing Pipeline Flow
 
-### Output Destinations
-- **Parquet**: Columnar storage for analytics and data science workflows
-- **Neo4j**: Graph database for relationship traversal and similarity search
-- **Elasticsearch**: Full-text and vector search with faceted filtering
-
-## Testing
-
-### Unit Tests
-
-```bash
-# Run all unit tests
-pytest data_pipeline/tests/
-
-# Run with coverage
-pytest data_pipeline/tests/ --cov=data_pipeline
-```
-
-### Integration Tests
-
-```bash
-# Quick validation test
-pytest data_pipeline/integration_tests/test_parquet_validation.py::test_quick_parquet_smoke -v
-
-# Full integration test suite
-pytest data_pipeline/integration_tests/ -v
-```
+1. **Configuration Loading**: Load and validate `config.yaml` with environment secrets
+2. **Path Determination**: Automatically select processing paths from output destinations
+3. **Data Ingestion**: Load JSON data from multiple sources with Spark
+4. **Data Enrichment**: Enhance properties with location data
+5. **Embedding Generation**: Create vector representations using configured provider
+6. **Path-Specific Processing**:
+   - **Graph Path**: Entity extraction, relationship discovery
+   - **Search Path**: Document preparation, indexing optimization  
+   - **Lightweight Path**: Minimal processing for storage
+7. **Output Writing**: Write to all configured destinations with optimized schemas
 
 ## Troubleshooting
 
-### Common Issues
+### Performance Issues
+- **Out of Memory**: Reduce sample size with `--sample-size 10`
+- **Slow Processing**: Check if unnecessary destinations are enabled
+- **API Rate Limits**: Reduce `embedding.batch_size` in `config.yaml`
 
-**Out of Memory**
-```bash
-python -m data_pipeline --cores 2 --sample-size 10
-```
+### Connection Issues  
+- **Neo4j**: Check service is running on port 7687, verify NEO4J_PASSWORD
+- **Elasticsearch**: Check service is running on port 9200, verify ELASTIC_PASSWORD
+- **API Keys**: Verify VOYAGE_API_KEY/OPENAI_API_KEY environment variables
 
-**API Rate Limits**
-```bash
-# Use mock provider for testing
-python -m data_pipeline --test-mode
-```
+### Configuration Issues
+- **Invalid Config**: Check `config.yaml` syntax and required fields
+- **Missing Files**: Check data source file paths in `data_sources` section  
+- **Wrong Paths**: Check if paths are relative to correct working directory
 
-**Neo4j Connection Issues**
-```bash
-# Test connection
-python -m data_pipeline.tests.test_neo4j_basic
+### Path Selection
+- Want faster processing? Use `enabled_destinations: [parquet]` only
+- Need graph features? Add `neo4j` to destinations
+- Need search features? Add `elasticsearch` to destinations
+- The pipeline automatically optimizes processing based on your choices!
 
-# Check Neo4j is running
-curl http://localhost:7474
-```
-
-**Elasticsearch Connection Issues**
-```bash
-# Check Elasticsearch is running
-curl http://localhost:9200
-
-# Test with small dataset
-python -m data_pipeline --sample-size 5 --output-destination elasticsearch
-```
-
-### Debug Commands
-
-```bash
-# Maximum debugging
-python -m data_pipeline --log-level DEBUG --test-mode
-
-# Check logs
-tail -f logs/pipeline.log
-```
-
-## Output Validation
-
-### Parquet Files
-```bash
-# Check output files
-ls -la data/processed/entity_datasets/*.parquet
-
-# Validate with pandas
-python -c "import pandas as pd; df = pd.read_parquet('data/processed/entity_datasets/properties.parquet'); print(df.info())"
-```
-
-### Neo4j Data
-```cypher
--- Count nodes by type
-MATCH (n) RETURN labels(n), count(n);
-
--- Sample property data
-MATCH (p:Property) RETURN p LIMIT 5;
-```
-
-### Elasticsearch Data
-```bash
-# Check indices
-curl -X GET "localhost:9200/_cat/indices?v"
-
-# Sample search
-curl -X GET "localhost:9200/properties/_search?q=city:Seattle&size=5"
-```
-
-## Advanced Usage
-
-### Configuration Management
-
-```yaml
-# config.yaml - Key settings
-data_subset:
-  enabled: true
-  sample_size: 100  # Limit data for testing
-
-embedding:
-  provider: voyage  # or ollama, openai
-  batch_size: 100
-  
-output_destinations:
-  enabled_destinations:
-    - parquet
-    - neo4j
-    - elasticsearch
-```
-
-### Environment Variables
-
-```bash
-# Set API keys in .env file
-VOYAGE_API_KEY=your-key-here
-OPENAI_API_KEY=your-key-here
-NEO4J_PASSWORD=your-password
-```
-
-### Batch Processing
-
-```bash
-# Process in batches with checkpointing
-python -m data_pipeline \
-  --batch-size 1000 \
-  --checkpoint-dir /tmp/spark-checkpoint
-```
-
-### Additional Commands
-
-```bash
-# Show current configuration
-python -m data_pipeline --show-config
-
-# Validate configuration only
-python -m data_pipeline --validate-only
-
-# Set logging level
-python -m data_pipeline --log-level DEBUG
-
-# Specify CPU cores
-python -m data_pipeline --cores 4
-```

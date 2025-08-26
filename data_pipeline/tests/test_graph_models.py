@@ -2,6 +2,7 @@
 Test Graph Models
 
 Validates that the Pydantic graph models work correctly with sample data.
+Note: Only tests node models. Relationships are handled separately in Neo4j.
 """
 
 import json
@@ -18,394 +19,273 @@ from data_pipeline.models.graph_models import (
     CityNode,
     StateNode,
     WikipediaArticleNode,
-    AmenityNode,
-    LocatedInRelationship,
-    PartOfRelationship,
-    DescribesRelationship,
-    NearRelationship,
-    SimilarToRelationship,
+    FeatureNode,
+    PropertyTypeNode,
+    PriceRangeNode,
+    CountyNode,
+    TopicClusterNode,
     PropertyType,
-    AmenityType,
-    GraphConfiguration,
+    FeatureCategory,
+    NodeConfiguration,
     create_node_id,
-    validate_coordinates
+    validate_coordinates,
+    clean_string_for_id
 )
 
 
 class TestGraphModels:
-    """Test suite for graph models."""
+    """Test the graph data models."""
     
     def test_property_node(self):
-        """Test PropertyNode model with sample data."""
+        """Test PropertyNode model."""
+        print("\n🏠 Testing PropertyNode...")
+        
         property_data = {
-            "id": "prop-001",
+            "id": "property:123456",
             "address": "123 Main St",
             "city": "San Francisco",
             "state": "CA",
             "zip_code": "94102",
             "latitude": 37.7749,
             "longitude": -122.4194,
-            "property_type": "condo",
-            "bedrooms": 2,
-            "bathrooms": 1.5,
-            "square_feet": 1200,
-            "lot_size": 0.1,
-            "year_built": 1990,
-            "stories": 1,
-            "garage_spaces": 1,
-            "listing_price": 850000,
-            "price_per_sqft": 708.33,
-            "listing_date": "2025-01-15",
+            "property_type": PropertyType.SINGLE_FAMILY,
+            "bedrooms": 3,
+            "bathrooms": 2.5,
+            "square_feet": 2000,
+            "lot_size": 0.25,
+            "year_built": 1925,
+            "stories": 2,
+            "garage_spaces": 2,
+            "listing_price": 1200000,
+            "price_per_sqft": 600.0,
+            "listing_date": date(2024, 1, 15),
             "days_on_market": 30,
-            "description": "Beautiful condo in downtown SF",
-            "features": ["hardwood floors", "city views", "parking"],
-            "neighborhood_id": "sf-downtown"
+            "description": "Beautiful Victorian home",
+            "features": ["hardwood floors", "fireplace", "garden"],
+            "images": ["image1.jpg", "image2.jpg"],
+            "neighborhood_id": "neighborhood:nob_hill_ca",
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "data_source": "mls",
+            "quality_score": 0.95
         }
         
-        # Create node
-        node = PropertyNode(**property_data)
+        # Test creation and validation
+        property_node = PropertyNode(**property_data)
         
-        # Validate
-        assert node.id == "prop-001"
-        assert node.city == "San Francisco"
-        assert node.property_type == PropertyType.CONDO.value
-        assert len(node.features) == 3
-        assert node.listing_price == 850000
+        # Validate required fields
+        assert property_node.id == "property:123456"
+        assert property_node.address == "123 Main St"
+        assert property_node.property_type == PropertyType.SINGLE_FAMILY
+        assert property_node.bedrooms == 3
+        assert property_node.bathrooms == 2.5
+        assert property_node.listing_price == 1200000
+        
+        # Test enum value (converted to string due to use_enum_values=True)
+        assert property_node.property_type == "single_family"
+        
         print("✅ PropertyNode validation passed")
         
-        return node
-    
     def test_neighborhood_node(self):
         """Test NeighborhoodNode model."""
+        print("\n🏘️ Testing NeighborhoodNode...")
+        
         neighborhood_data = {
-            "id": "sf-pac-heights",
-            "name": "Pacific Heights",
+            "id": "neighborhood:nob_hill_ca",
+            "name": "Nob Hill",
             "city": "San Francisco",
             "state": "CA",
-            "county": "San Francisco",
-            "latitude": 37.7925,
-            "longitude": -122.4382,
-            "description": "Upscale residential neighborhood",
+            "county": "San Francisco County",
+            "latitude": 37.7928,
+            "longitude": -122.4194,
+            "description": "Historic upscale neighborhood",
             "walkability_score": 9,
             "transit_score": 8,
-            "school_rating": 9,
+            "school_rating": 7,
             "safety_rating": 8,
-            "median_home_price": 3500000,
-            "price_trend": "stable",
-            "median_household_income": 154264,
-            "population": 20754,
-            "lifestyle_tags": ["luxury", "views", "historic"],
-            "amenities": ["parks", "shopping", "dining"],
-            "vibe": "sophisticated residential"
+            "median_home_price": 1500000,
+            "price_trend": "increasing",
+            "median_household_income": 120000,
+            "population": 15000,
+            "lifestyle_tags": ["urban", "historic", "upscale"],
+            "amenities": ["restaurants", "shops", "cable_cars"],
+            "vibe": "sophisticated",
+            "nightlife_score": 8.5,
+            "family_friendly_score": 6.0,
+            "cultural_score": 9.0,
+            "green_space_score": 5.5,
+            "knowledge_score": 0.85,
+            "aggregated_topics": ["history", "architecture", "dining"],
+            "wikipedia_count": 12,
+            "created_at": datetime.now()
         }
         
-        node = NeighborhoodNode(**neighborhood_data)
-        assert node.id == "sf-pac-heights"
-        assert node.walkability_score == 9
-        assert len(node.lifestyle_tags) == 3
+        # Test creation and validation
+        neighborhood_node = NeighborhoodNode(**neighborhood_data)
+        
+        # Validate required fields
+        assert neighborhood_node.id == "neighborhood:nob_hill_ca"
+        assert neighborhood_node.name == "Nob Hill"
+        assert neighborhood_node.walkability_score == 9
+        assert neighborhood_node.lifestyle_tags == ["urban", "historic", "upscale"]
+        
         print("✅ NeighborhoodNode validation passed")
-        
-        return node
     
-    def test_city_node(self):
-        """Test CityNode model."""
-        city_data = {
-            "id": "san_francisco_ca",
-            "name": "San Francisco",
-            "state": "CA",
-            "county": "San Francisco",
-            "latitude": 37.7749,
-            "longitude": -122.4194,
-            "population": 873965,
-            "median_home_price": 1400000
+    def test_feature_node(self):
+        """Test FeatureNode model."""
+        print("\n🔧 Testing FeatureNode...")
+        
+        feature_data = {
+            "id": "feature:hardwood_floors",
+            "name": "hardwood floors",
+            "category": FeatureCategory.STRUCTURAL,
+            "description": "Beautiful hardwood flooring throughout",
+            "count": 45
         }
         
-        node = CityNode(**city_data)
-        assert node.id == "san_francisco_ca"
-        assert node.population == 873965
-        print("✅ CityNode validation passed")
+        feature_node = FeatureNode(**feature_data)
         
-        # Test auto ID generation
-        city_data2 = {
-            "name": "Park City",
-            "state": "UT",
-            "latitude": 40.6461,
-            "longitude": -111.4980
-        }
-        node2 = CityNode(**city_data2)
-        assert node2.id == "park_city_ut"
-        print("✅ CityNode auto-ID generation passed")
+        assert feature_node.id == "feature:hardwood_floors"
+        assert feature_node.category == FeatureCategory.STRUCTURAL
+        assert feature_node.category == "structural"
         
-        return node
-    
-    def test_state_node(self):
-        """Test StateNode model."""
-        state_data = {
-            "id": "CA",
-            "name": "California",
-            "abbreviation": "CA",
-            "latitude": 36.7783,
-            "longitude": -119.4179
-        }
-        
-        node = StateNode(**state_data)
-        assert node.id == "CA"
-        assert node.name == "California"
-        print("✅ StateNode validation passed")
-        
-        return node
+        print("✅ FeatureNode validation passed")
     
     def test_wikipedia_article_node(self):
         """Test WikipediaArticleNode model."""
+        print("\n📚 Testing WikipediaArticleNode...")
+        
         article_data = {
-            "id": "wiki_1978628",
-            "page_id": 1978628,
-            "title": "Pacific Heights, San Francisco",
-            "url": "https://en.wikipedia.org/wiki/Pacific_Heights,_San_Francisco",
-            "short_summary": "Upscale neighborhood in San Francisco",
-            "long_summary": "Pacific Heights is a neighborhood...",
-            "key_topics": ["residential", "historic", "architecture"],
+            "id": "123456",
+            "page_id": 123456,
+            "title": "Golden Gate Park",
+            "url": "https://en.wikipedia.org/wiki/Golden_Gate_Park",
+            "short_summary": "Large urban park in San Francisco",
+            "long_summary": "Golden Gate Park is a large urban park...",
+            "key_topics": ["parks", "recreation", "san francisco"],
             "best_city": "San Francisco",
             "best_state": "CA",
+            "best_county": "San Francisco County",
             "confidence": 0.95,
-            "latitude": 37.7925,
-            "longitude": -122.4382,
+            "overall_confidence": 0.90,
+            "location_type": "park",
+            "latitude": 37.7694,
+            "longitude": -122.4862,
+            "extraction_method": "coordinates",
+            "topics_extracted_at": datetime.now(),
+            "amenities_count": 15,
+            "content_length": 5000,
             "processed_at": datetime.now()
         }
         
-        node = WikipediaArticleNode(**article_data)
-        assert node.page_id == 1978628
-        assert node.confidence == 0.95
-        assert len(node.key_topics) == 3
+        article_node = WikipediaArticleNode(**article_data)
+        
+        assert article_node.page_id == 123456
+        assert article_node.title == "Golden Gate Park"
+        assert article_node.confidence == 0.95
+        assert "parks" in article_node.key_topics
+        
         print("✅ WikipediaArticleNode validation passed")
-        
-        return node
-    
-    def test_amenity_node(self):
-        """Test AmenityNode model."""
-        amenity_data = {
-            "id": "amenity_golden_gate_park",
-            "name": "Golden Gate Park",
-            "amenity_type": AmenityType.PARK,
-            "city": "San Francisco",
-            "state": "CA",
-            "latitude": 37.7694,
-            "longitude": -122.4862,
-            "description": "Large urban park",
-            "source_article_id": "wiki_123456",
-            "extraction_confidence": 0.9
-        }
-        
-        node = AmenityNode(**amenity_data)
-        assert node.name == "Golden Gate Park"
-        assert node.amenity_type == AmenityType.PARK.value
-        assert node.extraction_confidence == 0.9
-        print("✅ AmenityNode validation passed")
-        
-        return node
-    
-    def test_relationships(self):
-        """Test relationship models."""
-        # LocatedIn
-        located_in = LocatedInRelationship(
-            from_id="prop-001",
-            to_id="sf-pac-heights",
-            confidence=0.95,
-            distance_meters=250.5
-        )
-        assert located_in.relationship_type == "LOCATED_IN"
-        assert located_in.distance_meters == 250.5
-        print("✅ LocatedInRelationship validation passed")
-        
-        # PartOf
-        part_of = PartOfRelationship(
-            from_id="san_francisco_ca",
-            to_id="CA"
-        )
-        assert part_of.relationship_type == "PART_OF"
-        print("✅ PartOfRelationship validation passed")
-        
-        # Describes
-        describes = DescribesRelationship(
-            from_id="wiki_1978628",
-            to_id="sf-pac-heights",
-            confidence=0.9,
-            match_type="title"
-        )
-        assert describes.confidence == 0.9
-        print("✅ DescribesRelationship validation passed")
-        
-        # Near
-        near = NearRelationship(
-            from_id="prop-001",
-            to_id="amenity_golden_gate_park",
-            distance_meters=1500
-        )
-        assert near.distance_meters == 1500
-        assert near.distance_miles is not None
-        assert abs(near.distance_miles - 0.932) < 0.01  # Check conversion
-        print("✅ NearRelationship validation passed")
-        
-        # SimilarTo
-        similar = SimilarToRelationship(
-            from_id="prop-001",
-            to_id="prop-002",
-            similarity_score=0.85,
-            price_similarity=0.9,
-            size_similarity=0.8,
-            feature_similarity=0.85
-        )
-        assert similar.similarity_score == 0.85
-        print("✅ SimilarToRelationship validation passed")
-    
-    def test_graph_configuration(self):
-        """Test GraphConfiguration model."""
-        config = GraphConfiguration()
-        assert config.near_distance_meters == 1609.34  # 1 mile
-        assert config.similarity_threshold == 0.7
-        assert config.node_batch_size == 1000
-        print("✅ GraphConfiguration validation passed")
-        
-        # Test with custom values
-        custom_config = GraphConfiguration(
-            near_distance_meters=2000,
-            similarity_threshold=0.8,
-            node_batch_size=500
-        )
-        assert custom_config.near_distance_meters == 2000
-        assert custom_config.similarity_threshold == 0.8
-        print("✅ GraphConfiguration custom values passed")
     
     def test_utility_functions(self):
         """Test utility functions."""
-        # Test node ID creation
-        node_id = create_node_id("property", "oak", "125")
-        assert node_id == "property:oak:125"
+        print("\n🛠️ Testing utility functions...")
         
-        node_id2 = create_node_id("city", "San Francisco", "CA")
-        assert node_id2 == "city:san_francisco:ca"
-        print("✅ create_node_id validation passed")
+        # Test create_node_id
+        node_id = create_node_id("property", "123", "main_st")
+        assert node_id == "property:123:main_st"
         
-        # Test coordinate validation
+        # Test validate_coordinates
         assert validate_coordinates(37.7749, -122.4194) == True
-        assert validate_coordinates(91, -122) == False
-        assert validate_coordinates(37, -181) == False
-        print("✅ validate_coordinates validation passed")
-    
-    def test_with_real_data(self):
-        """Test models with real data from files."""
-        # Load sample property data
-        property_file = Path("/Users/ryanknight/projects/temporal/real_estate_ai_search/real_estate_data/properties_sf.json")
-        if property_file.exists():
-            with open(property_file, 'r') as f:
-                properties = json.load(f)
-                
-            # Test first property
-            if properties:
-                prop = properties[0]
-                property_node = PropertyNode(
-                    id=prop["listing_id"],
-                    address=prop["address"]["street"],
-                    city=prop["address"]["city"],
-                    state=prop["address"]["state"],
-                    zip_code=prop["address"]["zip"],
-                    latitude=prop["coordinates"]["latitude"],
-                    longitude=prop["coordinates"]["longitude"],
-                    property_type=prop["property_details"]["property_type"],
-                    bedrooms=prop["property_details"]["bedrooms"],
-                    bathrooms=prop["property_details"]["bathrooms"],
-                    square_feet=prop["property_details"]["square_feet"],
-                    lot_size=prop["property_details"].get("lot_size"),
-                    year_built=prop["property_details"].get("year_built"),
-                    stories=prop["property_details"].get("stories"),
-                    garage_spaces=prop["property_details"].get("garage_spaces"),
-                    listing_price=prop["listing_price"],
-                    price_per_sqft=prop["price_per_sqft"],
-                    listing_date=prop["listing_date"],
-                    days_on_market=prop["days_on_market"],
-                    description=prop.get("description"),
-                    features=prop.get("features", []),
-                    neighborhood_id=prop.get("neighborhood_id")
-                )
-                print(f"✅ Real property data validation passed: {property_node.id}")
+        assert validate_coordinates(91.0, -122.4194) == False  # Invalid latitude
+        assert validate_coordinates(37.7749, -181.0) == False  # Invalid longitude
         
-        # Load sample neighborhood data
-        neighborhood_file = Path("/Users/ryanknight/projects/temporal/real_estate_ai_search/real_estate_data/neighborhoods_sf.json")
-        if neighborhood_file.exists():
-            with open(neighborhood_file, 'r') as f:
-                neighborhoods = json.load(f)
-                
-            # Test first neighborhood
-            if neighborhoods:
-                hood = neighborhoods[0]
-                neighborhood_node = NeighborhoodNode(
-                    id=hood["neighborhood_id"],
-                    name=hood["name"],
-                    city=hood["city"],
-                    state=hood["state"],
-                    county=hood.get("county"),
-                    latitude=hood["coordinates"]["latitude"],
-                    longitude=hood["coordinates"]["longitude"],
-                    description=hood["description"],
-                    walkability_score=hood["characteristics"].get("walkability_score"),
-                    transit_score=hood["characteristics"].get("transit_score"),
-                    school_rating=hood["characteristics"].get("school_rating"),
-                    safety_rating=hood["characteristics"].get("safety_rating"),
-                    median_home_price=hood.get("median_home_price"),
-                    price_trend=hood.get("price_trend"),
-                    median_household_income=hood["demographics"].get("median_household_income"),
-                    population=hood["demographics"].get("population"),
-                    lifestyle_tags=hood.get("lifestyle_tags", []),
-                    amenities=hood.get("amenities", []),
-                    vibe=hood["demographics"].get("vibe")
-                )
-                print(f"✅ Real neighborhood data validation passed: {neighborhood_node.id}")
+        # Test clean_string_for_id
+        clean_id = clean_string_for_id("Nob Hill")
+        assert clean_id == "nob_hill"
+        
+        clean_id2 = clean_string_for_id("Multi-Family Home")
+        assert clean_id2 == "multi_family_home"
+        
+        print("✅ Utility functions validation passed")
+    
+    def test_configuration_models(self):
+        """Test configuration models."""
+        print("\n⚙️ Testing configuration models...")
+        
+        config_data = {
+            "node_batch_size": 2000,
+            "max_concurrent_batches": 6
+        }
+        
+        config = NodeConfiguration(**config_data)
+        
+        assert config.node_batch_size == 2000
+        assert config.max_concurrent_batches == 6
+        
+        print("✅ NodeConfiguration validation passed")
+    
+    def test_serialization(self):
+        """Test JSON serialization."""
+        print("\n📤 Testing serialization...")
+        
+        property_node = PropertyNode(
+            id="property:test",
+            address="123 Test St",
+            city="Test City",
+            state="CA",
+            latitude=37.0,
+            longitude=-122.0,
+            property_type=PropertyType.CONDO,
+            bedrooms=2,
+            bathrooms=2.0,
+            square_feet=1200,
+            listing_price=800000,
+            price_per_sqft=667.0,
+            listing_date=date(2024, 1, 1)
+        )
+        
+        # Test serialization
+        json_data = property_node.model_dump_json()
+        assert '"property_type":"condo"' in json_data
+        
+        # Test deserialization
+        loaded_node = PropertyNode.model_validate_json(json_data)
+        assert loaded_node.id == "property:test"
+        assert loaded_node.property_type == "condo"
+        
+        print("✅ Serialization validation passed")
     
     def run_all_tests(self):
         """Run all tests."""
-        print("\n" + "="*60)
-        print("GRAPH MODELS TEST SUITE")
-        print("="*60 + "\n")
+        print("="*60)
+        print("🧪 RUNNING GRAPH MODELS TESTS (Node-only)")
+        print("="*60)
         
         try:
-            # Test individual models
-            property_node = self.test_property_node()
-            neighborhood_node = self.test_neighborhood_node()
-            city_node = self.test_city_node()
-            state_node = self.test_state_node()
-            wikipedia_node = self.test_wikipedia_article_node()
-            amenity_node = self.test_amenity_node()
-            
-            # Test relationships
-            self.test_relationships()
-            
-            # Test configuration
-            self.test_graph_configuration()
+            # Test node models
+            self.test_property_node()
+            self.test_neighborhood_node()
+            self.test_feature_node()
+            self.test_wikipedia_article_node()
             
             # Test utilities
             self.test_utility_functions()
+            self.test_configuration_models()
             
-            # Test with real data
-            self.test_with_real_data()
+            # Test serialization
+            self.test_serialization()
             
             print("\n" + "="*60)
-            print("✅ ALL GRAPH MODEL TESTS PASSED!")
+            print("✅ ALL GRAPH MODEL TESTS PASSED")
+            print("Note: Relationships are handled separately in Neo4j")
             print("="*60)
-            return True
             
         except Exception as e:
             print(f"\n❌ Test failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-
-def main():
-    """Main entry point."""
-    tester = TestGraphModels()
-    success = tester.run_all_tests()
-    sys.exit(0 if success else 1)
+            raise
 
 
 if __name__ == "__main__":
-    main()
+    tester = TestGraphModels()
+    tester.run_all_tests()

@@ -152,18 +152,3 @@ def generate_city_id(city_name: str, state: str) -> str:
     return f"city:{city_norm}_{state_norm}"
 
 
-def generate_amenity_id(amenity_name: str, location: Optional[str] = None) -> str:
-    """
-    Generate a standardized amenity ID.
-    
-    Args:
-        amenity_name: Amenity name
-        location: Optional location for disambiguation
-        
-    Returns:
-        Amenity ID
-    """
-    base_id = f"amenity:{normalize_for_id(amenity_name)}"
-    if location:
-        base_id += f"_{normalize_for_id(location)}"
-    return base_id

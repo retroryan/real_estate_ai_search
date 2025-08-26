@@ -2,15 +2,15 @@
 Neo4j Graph Data Models
 
 Clean, simple Pydantic models for the real estate graph database.
-These models define the structure of nodes and relationships in Neo4j.
+These models define the structure of nodes in Neo4j.
+Note: Relationship creation is handled separately in the graph-real-estate module.
 """
 
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic.functional_validators import field_validator
 from enum import Enum
-from .spark_converter import SparkModel, pydantic_to_spark_schema
+from .spark_converter import SparkModel
 
 
 # ============================================================================
@@ -27,20 +27,6 @@ class PropertyType(str, Enum):
     OTHER = "other"
 
 
-class AmenityType(str, Enum):
-    """Types of amenities extracted from Wikipedia."""
-    PARK = "park"
-    SCHOOL = "school"
-    RESTAURANT = "restaurant"
-    SHOPPING = "shopping"
-    TRANSIT = "transit"
-    RECREATION = "recreation"
-    LANDMARK = "landmark"
-    CULTURAL = "cultural"
-    MEDICAL = "medical"
-    OTHER = "other"
-
-
 class FeatureCategory(str, Enum):
     """Categories for property features."""
     AMENITY = "amenity"
@@ -51,22 +37,6 @@ class FeatureCategory(str, Enum):
     PARKING = "parking"
     VIEW = "view"
     OTHER = "other"
-
-
-class RelationshipType(str, Enum):
-    """Types of relationships between nodes."""
-    LOCATED_IN = "LOCATED_IN"
-    PART_OF = "PART_OF"
-    DESCRIBES = "DESCRIBES"
-    NEAR = "NEAR"
-    SIMILAR_TO = "SIMILAR_TO"
-    HAS_AMENITY = "HAS_AMENITY"
-    HAS_FEATURE = "HAS_FEATURE"
-    OF_TYPE = "OF_TYPE"
-    IN_PRICE_RANGE = "IN_PRICE_RANGE"
-    IN_COUNTY = "IN_COUNTY"
-    WITHIN_PROXIMITY = "WITHIN_PROXIMITY"
-    IN_TOPIC_CLUSTER = "IN_TOPIC_CLUSTER"
 
 
 # ============================================================================
@@ -260,34 +230,6 @@ class WikipediaArticleNode(SparkModel):
     processed_at: Optional[datetime] = Field(None, description="Processing timestamp")
 
 
-class AmenityNode(SparkModel):
-    """Amenity node for points of interest extracted from Wikipedia."""
-    
-    # Unique identifier
-    id: str = Field(..., description="Unique amenity ID")
-    
-    # Basic information
-    name: str = Field(..., description="Amenity name")
-    amenity_type: AmenityType = Field(..., description="Type of amenity")
-    
-    # Location
-    city: Optional[str] = Field(None, description="City name")
-    state: Optional[str] = Field(None, description="State abbreviation")
-    latitude: Optional[float] = Field(None, description="Latitude if known")
-    longitude: Optional[float] = Field(None, description="Longitude if known")
-    
-    # Description
-    description: Optional[str] = Field(None, description="Amenity description")
-    
-    # Source
-    source_article_id: Optional[str] = Field(None, description="Source Wikipedia article ID")
-    extraction_confidence: float = Field(0.5, ge=0.0, le=1.0, description="Extraction confidence")
-    
-    model_config = ConfigDict(
-        use_enum_values=True
-    )
-
-
 class FeatureNode(SparkModel):
     """Feature node for property features."""
     
@@ -384,142 +326,17 @@ class TopicClusterNode(SparkModel):
 
 
 # ============================================================================
-# Relationship Models
-# ============================================================================
-
-class BaseRelationship(BaseModel):
-    """Base class for all relationships."""
-    
-    from_id: str = Field(..., description="Source node ID")
-    to_id: str = Field(..., description="Target node ID")
-    relationship_type: RelationshipType = Field(..., description="Type of relationship")
-    
-    model_config = ConfigDict(
-        use_enum_values=True
-    )
-
-
-class LocatedInRelationship(BaseRelationship):
-    """LOCATED_IN relationship (Property/Neighborhood -> Neighborhood/City)."""
-    
-    relationship_type: Literal[RelationshipType.LOCATED_IN] = RelationshipType.LOCATED_IN
-    confidence: float = Field(1.0, ge=0.0, le=1.0, description="Location match confidence")
-    distance_meters: Optional[float] = Field(None, description="Distance in meters")
-
-
-class PartOfRelationship(BaseRelationship):
-    """PART_OF relationship (City -> State, Neighborhood -> City)."""
-    
-    relationship_type: Literal[RelationshipType.PART_OF] = RelationshipType.PART_OF
-
-
-class DescribesRelationship(BaseRelationship):
-    """DESCRIBES relationship (WikipediaArticle -> City/Neighborhood/Amenity)."""
-    
-    relationship_type: Literal[RelationshipType.DESCRIBES] = RelationshipType.DESCRIBES
-    confidence: float = Field(0.5, ge=0.0, le=1.0, description="Match confidence")
-    match_type: str = Field("title", description="Type of match (title, content, location)")
-
-
-class NearRelationship(BaseRelationship):
-    """NEAR relationship (Property -> Amenity)."""
-    
-    relationship_type: Literal[RelationshipType.NEAR] = RelationshipType.NEAR
-    distance_meters: float = Field(..., description="Distance in meters")
-    distance_miles: Optional[float] = Field(None, description="Distance in miles")
-    
-    def __init__(self, **data):
-        """Initialize with calculated miles if not provided."""
-        if 'distance_miles' not in data or data['distance_miles'] is None:
-            if 'distance_meters' in data:
-                data['distance_miles'] = data['distance_meters'] * 0.000621371
-        super().__init__(**data)
-
-
-class SimilarToRelationship(BaseRelationship):
-    """SIMILAR_TO relationship (Property -> Property)."""
-    
-    relationship_type: Literal[RelationshipType.SIMILAR_TO] = RelationshipType.SIMILAR_TO
-    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity score")
-    
-    # Similarity factors
-    price_similarity: Optional[float] = Field(None, ge=0.0, le=1.0)
-    size_similarity: Optional[float] = Field(None, ge=0.0, le=1.0)
-    feature_similarity: Optional[float] = Field(None, ge=0.0, le=1.0)
-
-
-class HasFeatureRelationship(BaseRelationship):
-    """HAS_FEATURE relationship (Property -> Feature)."""
-    
-    relationship_type: Literal[RelationshipType.HAS_FEATURE] = RelationshipType.HAS_FEATURE
-    is_primary: bool = Field(False, description="Whether this is a primary feature")
-    verified: bool = Field(True, description="Whether the feature is verified")
-
-
-class OfTypeRelationship(BaseRelationship):
-    """OF_TYPE relationship (Property -> PropertyType)."""
-    
-    relationship_type: Literal[RelationshipType.OF_TYPE] = RelationshipType.OF_TYPE
-    confidence: float = Field(1.0, ge=0.0, le=1.0, description="Type classification confidence")
-    is_primary: bool = Field(True, description="Whether this is the primary type")
-
-
-class InPriceRangeRelationship(BaseRelationship):
-    """IN_PRICE_RANGE relationship (Property -> PriceRange)."""
-    
-    relationship_type: Literal[RelationshipType.IN_PRICE_RANGE] = RelationshipType.IN_PRICE_RANGE
-    price_percentile: float = Field(..., ge=0.0, le=1.0, description="Percentile within range")
-    actual_price: float = Field(..., description="Actual property price")
-
-
-class InCountyRelationship(BaseRelationship):
-    """IN_COUNTY relationship (City/Neighborhood -> County)."""
-    
-    relationship_type: Literal[RelationshipType.IN_COUNTY] = RelationshipType.IN_COUNTY
-    hierarchy_level: str = Field(..., description="Level in hierarchy (city, neighborhood)")
-
-
-class WithinProximityRelationship(BaseRelationship):
-    """WITHIN_PROXIMITY relationship (Property -> Amenity)."""
-    
-    relationship_type: Literal[RelationshipType.WITHIN_PROXIMITY] = RelationshipType.WITHIN_PROXIMITY
-    distance_meters: float = Field(..., description="Distance in meters")
-    walking_time_minutes: Optional[float] = Field(None, description="Walking time in minutes")
-    driving_time_minutes: Optional[float] = Field(None, description="Driving time in minutes")
-    proximity_type: str = Field(..., description="Type: walking, short_drive, nearby")
-
-
-class InTopicClusterRelationship(BaseRelationship):
-    """IN_TOPIC_CLUSTER relationship (Entity -> TopicCluster)."""
-    
-    relationship_type: Literal[RelationshipType.IN_TOPIC_CLUSTER] = RelationshipType.IN_TOPIC_CLUSTER
-    relevance_score: float = Field(..., ge=0.0, le=1.0, description="Topic relevance score")
-    extraction_source: str = Field(..., description="Source of topic extraction")
-    confidence: float = Field(0.5, ge=0.0, le=1.0, description="Topic assignment confidence")
-
-
-# ============================================================================
 # Configuration Models
 # ============================================================================
 
-class GraphConfiguration(BaseModel):
-    """Configuration for graph construction."""
+class NodeConfiguration(BaseModel):
+    """Configuration for node creation only."""
     
-    # Distance thresholds
-    near_distance_meters: float = Field(1609.34, description="NEAR relationship threshold (1 mile)")
-    located_in_radius_meters: float = Field(5000, description="LOCATED_IN matching radius")
-    
-    # Similarity thresholds
-    similarity_threshold: float = Field(0.7, description="Minimum similarity score")
-    max_similar_properties: int = Field(10, description="Max similar properties per node")
-    
-    # Confidence thresholds
-    min_location_confidence: float = Field(0.5, description="Minimum location confidence")
-    min_extraction_confidence: float = Field(0.3, description="Minimum extraction confidence")
-    
-    # Batch sizes
+    # Node batch sizes for efficient creation
     node_batch_size: int = Field(1000, description="Batch size for node creation")
-    relationship_batch_size: int = Field(5000, description="Batch size for relationship creation")
+
+    # Processing settings
+    max_concurrent_batches: int = Field(4, description="Maximum concurrent batch operations")
 
 
 # ============================================================================
@@ -535,3 +352,9 @@ def create_node_id(node_type: str, *components) -> str:
 def validate_coordinates(lat: float, lon: float) -> bool:
     """Validate latitude and longitude."""
     return -90 <= lat <= 90 and -180 <= lon <= 180
+
+
+    """Clean a string for use in node IDs."""
+    if not value or not isinstance(value, str):
+        return ''
+    return value.lower().strip().replace(' ', '_').replace('-', '_')

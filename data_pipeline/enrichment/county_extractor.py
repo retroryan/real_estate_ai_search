@@ -19,6 +19,7 @@ from pyspark.sql.functions import (
 )
 
 from data_pipeline.models.graph_models import CountyNode
+from data_pipeline.enrichment.id_generator import generate_county_id
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class CountyExtractor:
         # Extract unique counties from locations
         counties = locations_df.select(
             col("county").alias("name"),
-            col("state")
+            col("state").alias("county_state")
         ).filter(
             col("county").isNotNull()
         ).distinct()
@@ -65,33 +66,43 @@ class CountyExtractor:
         # Add city count per county
         city_counts = locations_df.groupBy("county", "state").agg(
             count("city").alias("city_count")
+        ).select(
+            col("county").alias("cc_county"),
+            col("state").alias("cc_state"),
+            col("city_count")
         )
         
         counties = counties.join(
             city_counts,
-            (counties["name"] == city_counts["county"]) & 
-            (counties["state"] == city_counts["state"]),
+            (counties["name"] == city_counts["cc_county"]) & 
+            (counties["county_state"] == city_counts["cc_state"]),
             "left"
         ).select(
-            counties["name"],
-            counties["state"],
-            city_counts["city_count"]
+            col("name"),
+            col("county_state").alias("state"),
+            col("city_count")
         )
         
         # Calculate median home price if properties available
         if properties_df:
             county_prices = properties_df.groupBy("county", "state").agg(
                 avg("listing_price").alias("median_home_price")
+            ).select(
+                col("county").alias("cp_county"),
+                col("state").alias("cp_state"),
+                col("median_home_price")
             )
             
             counties = counties.join(
                 county_prices,
-                (counties["name"] == county_prices["county"]) & 
-                (counties["state"] == county_prices["state"]),
+                (counties["name"] == county_prices["cp_county"]) & 
+                (counties["state"] == county_prices["cp_state"]),
                 "left"
             ).select(
-                counties["*"],
-                county_prices["median_home_price"]
+                col("name"),
+                col("state"),
+                col("city_count"),
+                col("median_home_price")
             )
         else:
             counties = counties.withColumn("median_home_price", lit(None))
@@ -100,18 +111,23 @@ class CountyExtractor:
         county_nodes = []
         try:
             for row in counties.collect():
-                if not row.get("name") or not row.get("state"):
+                # Check for required fields using row indexing
+                if not row["name"] or not row["state"]:
                     logger.warning(f"Skipping county with missing name or state: {row}")
                     continue
                     
-                county_id = f"county:{row['name'].lower().replace(' ', '_')}_{row['state'].lower()}"
+                county_id = generate_county_id(row['name'], row['state'])
+                
+                # Handle optional fields safely
+                city_count = row["city_count"] if row["city_count"] is not None else 0
+                median_price = int(row["median_home_price"]) if row["median_home_price"] else None
                 
                 county_node = CountyNode(
                     id=county_id,
                     name=row["name"],
                     state=row["state"],
-                    city_count=row.get("city_count", 0) if row.get("city_count") is not None else 0,
-                    median_home_price=int(row["median_home_price"]) if row.get("median_home_price") else None
+                    city_count=city_count,
+                    median_home_price=median_price
                 )
                 county_nodes.append(county_node.model_dump())
         except Exception as e:
@@ -119,69 +135,8 @@ class CountyExtractor:
         
         # Convert to DataFrame
         if county_nodes:
-            return self.spark.createDataFrame(county_nodes)
+            return self.spark.createDataFrame(county_nodes, schema=CountyNode.spark_schema())
         else:
             # Return empty DataFrame with correct schema
             return self.spark.createDataFrame([], CountyNode.spark_schema())
     
-    def create_county_relationships(
-        self,
-        cities_df: Optional[DataFrame] = None,
-        neighborhoods_df: Optional[DataFrame] = None
-    ) -> DataFrame:
-        """
-        Create IN_COUNTY relationships for cities and neighborhoods.
-        
-        Args:
-            cities_df: DataFrame with city data
-            neighborhoods_df: DataFrame with neighborhood data
-            
-        Returns:
-            DataFrame of IN_COUNTY relationships
-        """
-        logger.info("Creating IN_COUNTY relationships")
-        
-        relationships = []
-        
-        # Create city to county relationships
-        if cities_df and "county" in cities_df.columns:
-            city_county_rels = cities_df.filter(
-                col("county").isNotNull()
-            ).select(
-                col("id").alias("from_id"),
-                concat(
-                    lit("county:"),
-                    regexp_replace(lower(col("county")), " ", "_"),
-                    lit("_"),
-                    lower(col("state"))
-                ).alias("to_id"),
-                lit("IN_COUNTY").alias("relationship_type")
-            )
-            relationships.append(city_county_rels)
-        
-        # Create neighborhood to county relationships
-        if neighborhoods_df and "county" in neighborhoods_df.columns:
-            neighborhood_county_rels = neighborhoods_df.filter(
-                col("county").isNotNull()
-            ).select(
-                col("neighborhood_id").alias("from_id"),
-                concat(
-                    lit("county:"),
-                    regexp_replace(lower(col("county")), " ", "_"),
-                    lit("_"),
-                    lower(col("state"))
-                ).alias("to_id"),
-                lit("IN_COUNTY").alias("relationship_type")
-            )
-            relationships.append(neighborhood_county_rels)
-        
-        # Union all relationships
-        if relationships:
-            result = relationships[0]
-            for rel_df in relationships[1:]:
-                result = result.union(rel_df)
-            return result
-        else:
-            # Return empty DataFrame with correct schema
-            schema = ["from_id", "to_id", "relationship_type"]
-            return self.spark.createDataFrame([], schema)

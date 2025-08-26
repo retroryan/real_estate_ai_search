@@ -320,19 +320,19 @@ async def health_check(request: Request) -> JSONResponse:
     if resources.es:
         try:
             es_health = await resources.es.cluster.health()
-            health_status["elasticsearch"] = {
+            health_status["archive_elasticsearch"] = {
                 "status": es_health["status"],
                 "number_of_nodes": es_health["number_of_nodes"],
                 "active_shards": es_health["active_primary_shards"]
             }
         except Exception as e:
-            health_status["elasticsearch"] = {
+            health_status["archive_elasticsearch"] = {
                 "status": "error",
                 "error": str(e)
             }
             health_status["status"] = "degraded"
     else:
-        health_status["elasticsearch"] = {"status": "not_initialized"}
+        health_status["archive_elasticsearch"] = {"status": "not_initialized"}
         health_status["status"] = "degraded"
     
     return JSONResponse(health_status)
