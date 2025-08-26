@@ -55,64 +55,94 @@ The current implementation in real_estate_search is straightforward:
 
 This plan maintains that simplicity while establishing a proper architectural foundation.
 
-## Phase 1: Pipeline Fork Infrastructure ✅ COMPLETED
+## Phase 1: Pipeline Fork Infrastructure ✅ COMPLETED & REFACTORED
 
 ### Objective
 Create a minimal fork point that routes data to graph or search processing after enrichment completes.
 
 ### Requirements
 
-#### Simple Fork Router ✅
-A basic PipelineFork class that receives DataFrames and routes them to the appropriate processing path. No caching, no metrics, just simple routing based on configuration.
+#### Output-Driven Fork Router ✅ REFACTORED
+~~A basic PipelineFork class that receives DataFrames and routes them to the appropriate processing path based on configuration.~~
+**REFACTORED**: PipelineFork now **automatically determines processing paths** based on output destinations, eliminating configuration inconsistencies.
 
-#### Basic Configuration ✅
-Extend the pipeline configuration to include a simple boolean flag for enabling the search path. When enabled, data flows to both graph and search processing.
+#### Output-Based Configuration ✅ REFACTORED  
+~~Extend the pipeline configuration to include a simple boolean flag for enabling the search path.~~
+**REFACTORED**: Processing paths are **derived automatically** from `enabled_destinations` - no separate fork configuration needed.
 
 #### Preserve Graph Path ✅
 The existing graph processing remains completely unchanged. All entity extraction and relationship building continues as-is.
 
 ### Implementation Tasks
 
-1. ✅ Create data_pipeline/core/pipeline_fork.py with minimal PipelineFork class
-2. ✅ Define ForkConfiguration Pydantic model with enabled_paths list
-3. ✅ Update PipelineConfig to include fork_configuration
+1. ✅ ~~Create data_pipeline/core/pipeline_fork.py with minimal PipelineFork class~~
+   ✅ **REFACTORED**: Created output-driven PipelineFork with ProcessingPaths.from_destinations()
+2. ✅ ~~Define ForkConfiguration Pydantic model with enabled_paths list~~  
+   ✅ **REFACTORED**: Removed ForkConfiguration, created ProcessingPaths and ProcessingResult models
+3. ✅ ~~Update PipelineConfig to include fork_configuration~~
+   ✅ **REFACTORED**: Removed fork config, paths determined from output.enabled_destinations
 4. ✅ Modify pipeline_runner.py to use PipelineFork after text processing
-5. ✅ Create basic unit tests for PipelineFork
+5. ✅ ~~Create basic unit tests for PipelineFork~~
+   ✅ **ENHANCED**: Created comprehensive unit tests + integration tests for output-driven logic
 6. ✅ Verify Neo4j path works unchanged
 7. ✅ Code review and testing
 
 ### Success Criteria
 - ✅ Neo4j processing unchanged
-- ✅ Fork adds minimal overhead
-- ✅ Configuration controls routing
+- ✅ Fork adds minimal overhead  
+- ✅ ~~Configuration controls routing~~
+- ✅ **NEW**: Output destinations automatically determine processing paths
+- ✅ **NEW**: Eliminates logical inconsistency between fork config and output config
 
 ### Implementation Summary
 - **Files Created:**
-  - `data_pipeline/core/pipeline_fork.py` - PipelineFork class with ForkConfiguration and ForkResult models
-  - `data_pipeline/tests/test_pipeline_fork.py` - Comprehensive unit tests
+  - `data_pipeline/core/pipeline_fork.py` - ✅ Output-driven PipelineFork with ProcessingPaths/ProcessingResult
+  - `data_pipeline/tests/test_pipeline_fork.py` - ✅ Comprehensive unit tests for new architecture
+  - `data_pipeline/integration_tests/test_output_driven_integration.py` - ✅ End-to-end integration tests
   - `test_phase1_fork.py` - Integration test script
 
 - **Files Modified:**
-  - `data_pipeline/config/models.py` - Added ForkConfig to PipelineConfig
-  - `data_pipeline/config.yaml` - Added fork configuration section
-  - `data_pipeline/core/pipeline_runner.py` - Integrated PipelineFork after text processing
+  - `data_pipeline/config/models.py` - ✅ **REFACTORED**: Removed ForkConfig, enhanced Spark config for JARs
+  - `data_pipeline/config.yaml` - ✅ **REFACTORED**: Removed fork section, enabled elasticsearch  
+  - `data_pipeline/core/pipeline_runner.py` - ✅ **REFACTORED**: Output-driven fork initialization
 
 - **Key Design Decisions:**
   - Fork placed after text processing (Stage 3) as specified
-  - One-way data flow from PipelineRunner → PipelineFork → SearchPipelineRunner
+  - One-way data flow from PipelineRunner → PipelineFork → SearchPipelineRunner  
   - Graph path remains completely unchanged
-  - No caching implemented in Phase 1 (deferred to later phase)
+  - **NEW**: **Output-driven architecture** - processing complexity determined by destinations
+  - **NEW**: Three processing paths: lightweight (parquet-only), graph (neo4j), search (elasticsearch)
   - Clean Pydantic models throughout
 
-## Phase 2: Elasticsearch Separation ✅ COMPLETED
+### Architecture Evolution
+**Original**: Configuration-driven fork with separate `enabled_paths` setting
+```yaml
+fork:
+  enabled_paths: [search]
+output:
+  enabled_destinations: [neo4j]  # Logical inconsistency!
+```
+
+**Refactored**: Output-driven fork automatically determines paths  
+```yaml
+output:
+  enabled_destinations: [elasticsearch]  # Automatically enables search path
+```
+
+- ✅ **parquet-only** → Lightweight path (fastest)
+- ✅ **neo4j + parquet** → Graph path (adds entity extraction)  
+- ✅ **elasticsearch + parquet** → Search path (adds document preparation)
+- ✅ **Multiple destinations** → Multiple paths executed
+
+## Phase 2: Elasticsearch Separation ✅ COMPLETED & ENHANCED
 
 ### Objective
 Create a dedicated search_pipeline module while keeping archive_elasticsearch as a reference implementation.
 
 ### Requirements
 
-#### Keep Archive for Reference ✅
-Keep data_pipeline/writers/archive_elasticsearch/ as a reference pattern for Elasticsearch Spark connector usage. This provides a working example of connection setup and configuration.
+#### Keep Archive for Reference ✅ ENHANCED
+✅ **ENHANCED**: Fixed archive_elasticsearch to work with Spark 3.5 by implementing required abstract methods and removing generic write patterns for clean entity-specific boundaries.
 
 #### Create Search Pipeline Module ✅
 New search_pipeline module parallel to data_pipeline with its own structure for search-specific processing. Research and implement current best practices for Spark-Elasticsearch integration.
@@ -123,24 +153,29 @@ SearchPipelineRunner receives DataFrames from the fork and prepares them for Ela
 ### Implementation Tasks
 
 1. ✅ Keep data_pipeline/writers/archive_elasticsearch/ as reference implementation
+   ✅ **ENHANCED**: Fixed abstract method implementation and removed generic write methods
 2. ✅ Remove Elasticsearch imports from data_pipeline/writers/__init__.py and orchestrator.py
 3. ✅ Create search_pipeline/ module structure
 4. ✅ Research current Spark-Elasticsearch best practices (web search required)
+   ✅ **ENHANCED**: Identified and fixed Spark 3.5 + Scala 2.12 compatibility issues
 5. ✅ Create search_pipeline/core/search_runner.py with modern implementation
 6. ✅ Update PipelineFork to route to SearchPipelineRunner
 7. ✅ Create basic integration test with connection validation
+   ✅ **ENHANCED**: Fixed authentication setup with proper environment variable configuration
 8. ✅ Code review and testing
 
 ### Implementation Notes
 - **COMPLETED**: Searched web for latest Elasticsearch Spark connector best practices
 - Used archive_elasticsearch as reference pattern but updated with 2024 recommendations
 - Focused on connection setup, bulk operations, and error handling
-- Ensured compatibility with Spark 3.0-3.4 (noted 3.5+ compatibility issues)
+- ✅ **FIXED**: Spark 3.5 compatibility issues resolved with correct JAR
 
 ### Success Criteria
 - ✅ Elasticsearch removed from writers
 - ✅ Search pipeline module created
 - ✅ Basic routing works
+- ✅ **NEW**: Spark 3.5 + Elasticsearch connector working end-to-end
+- ✅ **NEW**: Authentication properly configured
 
 ### Implementation Summary
 - **Files Created:**
@@ -156,20 +191,54 @@ SearchPipelineRunner receives DataFrames from the fork and prepares them for Ela
   - `data_pipeline/writers/__init__.py` - Removed ElasticsearchOrchestrator import
   - `data_pipeline/core/pipeline_fork.py` - Added SearchPipelineRunner integration
   - `data_pipeline/core/pipeline_runner.py` - Added search config generation and fork routing
+  - ✅ **NEW**: `data_pipeline/writers/archive_elasticsearch/elasticsearch_orchestrator.py` - Fixed abstract methods
+  - ✅ **NEW**: `data_pipeline/config/models.py` - Enhanced JAR loading for ES + Neo4j connectors
+  - ✅ **NEW**: `data_pipeline/config.yaml` - Enabled and configured Elasticsearch properly
+  - ✅ **NEW**: `.env` - Added ELASTIC_PASSWORD for authentication
 
 - **Key Design Decisions:**
   - **2024 Best Practices Applied**: Batch sizes (1MB/1000 docs), retry logic, timeout handling
-  - **Spark 3.0-3.4 Compatibility**: Warnings for unsupported versions
+  - ✅ **FIXED**: Spark 3.5 + Scala 2.12 compatibility with `elasticsearch-spark-30_2.12-9.0.0.jar`
   - **Clean Pydantic Models**: Full type safety and validation
   - **Error Independence**: Search path failures don't affect graph path
   - **Connection Validation**: Optional validation with detailed error logging
   - **Bulk Operations**: Optimized for 1-2 second processing time per batch
   - **Authentication Support**: Environment variable-based credentials
+  - ✅ **NEW**: **Entity-specific methods only** - no generic write methods for clean architectural boundaries
 
-## Phase 3: Property Document Implementation
+### Critical Fixes Applied
+#### Elasticsearch-Spark Connector Compatibility
+**Problem**: `elasticsearch-hadoop-8.15.2.jar` caused `java.lang.ClassNotFoundException: scala.Product$class`
+**Solution**: Downloaded correct `elasticsearch-spark-30_2.12-9.0.0.jar` for Spark 3.x + Scala 2.12
+
+#### Authentication Configuration  
+**Problem**: `missing authentication credentials for REST request [/]`
+**Solution**: Added `ELASTIC_PASSWORD=2GJXncaV` to `.env` and enabled ES config in `config.yaml`
+
+#### Abstract Method Implementation
+**Problem**: `Can't instantiate abstract class ElasticsearchOrchestrator with abstract methods`  
+**Solution**: Implemented required `write_properties()`, `write_neighborhoods()`, `write_wikipedia()` methods
+
+### JAR Installation Documentation
+Added comprehensive setup instructions to `data_pipeline/README.md`:
+
+```bash
+# Download correct Elasticsearch-Spark connector for Spark 3.x + Scala 2.12
+cd lib/  
+curl -O https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-spark-30_2.12/9.0.0/elasticsearch-spark-30_2.12-9.0.0.jar
+```
+
+**Critical**: Must use `elasticsearch-spark-30_2.12-9.0.0.jar` (NOT older versions)
+
+## Phase 3: Property Document Implementation 🚧 READY TO BEGIN
 
 ### Objective
 Implement basic property document conversion matching the current real_estate_search functionality.
+
+### Status
+✅ **Prerequisites Complete**: Output-driven fork working with Elasticsearch connector
+🚧 **Ready to Begin**: Pipeline successfully routes to search path and writes to Elasticsearch  
+📋 **Next Steps**: Implement PropertyDocument model and document builders
 
 ### Requirements
 
@@ -410,8 +479,37 @@ After the basic system works, these could be considered:
 
 These are explicitly NOT part of this implementation plan.
 
+## Current Status Summary (August 2024)
+
+### Completed Phases ✅
+- **Phase 1**: ✅ **Pipeline Fork Infrastructure** - Output-driven fork working with entity-specific boundaries  
+- **Phase 2**: ✅ **Elasticsearch Separation** - Spark 3.5 compatibility resolved with working authentication
+
+### Architecture Achievements ✅
+- ✅ **Output-Driven Fork**: Processing paths automatically determined by destinations
+- ✅ **Clean Entity Boundaries**: Entity-specific methods only (no generic write methods)
+- ✅ **Spark 3.5 + Elasticsearch**: Working end-to-end with proper JAR and authentication
+- ✅ **Three Processing Paths**: 
+  - Lightweight (parquet-only) 
+  - Graph (neo4j + entity extraction)
+  - Search (elasticsearch + document preparation)
+
+### Ready for Next Phase 🚧
+- **Phase 3**: 🚧 Property Document Implementation ready to begin
+- Infrastructure is solid, authentication working, routing verified
+
+### Key Learnings Applied ✅
+1. **Output-driven architecture** eliminates configuration inconsistencies
+2. **Entity-specific methods** maintain clean architectural boundaries
+3. **Proper JAR management** critical for Spark 3.5 compatibility
+4. **Environment-based secrets** cleanly separate config from credentials
+
 ## Conclusion
 
 This simplified plan focuses on replacing the current real_estate_search ingestion with a cleaner architecture while maintaining exact functional parity. No new features are added. The system will be simpler, more maintainable, and provide a foundation for future enhancements without the complexity of unnecessary features.
 
-The key is discipline: implement only what currently exists, resist adding "nice to have" features, and maintain clean separation of concerns. The result will be a working system that demonstrates the fork architecture while remaining simple enough to understand and maintain.
+**Progress**: The foundational architecture (Phases 1-2) is **complete and working**. The fork correctly routes data based on output destinations, Elasticsearch connectivity is established, and all authentication is properly configured. 
+
+The key discipline maintained: implement only what currently exists, resist adding "nice to have" features, and maintain clean separation of concerns. The result is a working system that demonstrates the fork architecture while remaining simple enough to understand and maintain.
+
+**Next**: Ready to proceed with document models and builders in Phase 3.

@@ -14,7 +14,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col
 
 from data_pipeline.core.spark_session import get_or_create_spark_session
-from data_pipeline.core.pipeline_fork import PipelineFork, ForkConfiguration
+from data_pipeline.core.pipeline_fork import PipelineFork, ProcessingPaths
 from data_pipeline.loaders.data_loader_orchestrator import DataLoaderOrchestrator, LoadedData
 # Entity-specific imports will be done where needed
 # Entity-specific embedding generators used instead
@@ -67,9 +67,8 @@ class DataPipelineRunner:
         # Entity-specific embedding generators will be created as needed
         self.embedding_config = self._init_embedding_config()
         
-        # Initialize pipeline fork
-        fork_config = ForkConfiguration(**self.config.fork.model_dump())
-        self.pipeline_fork = PipelineFork(fork_config)
+        # Initialize pipeline fork based on output destinations
+        self.pipeline_fork = PipelineFork(self.config.output.enabled_destinations)
         
         # Initialize writer orchestrator if configured
         self.writer_orchestrator = self._init_writer_orchestrator()
@@ -222,39 +221,45 @@ class DataPipelineRunner:
                     loaded_data.wikipedia
                 )
             
-            # Fork point: Route processed DataFrames to enabled paths
-            logger.info("\n🔀 Fork point: Routing to processing paths...")
+            # Fork point: Process based on output destinations
+            logger.info("\n🔀 Fork point: Processing based on output destinations...")
+            logger.info(f"Enabled destinations: {self.config.output.enabled_destinations}")
             
-            # Create search config if search path is enabled
+            # Create search config if needed
             search_config = None
-            if self.pipeline_fork.config.is_search_enabled():
+            if "elasticsearch" in self.config.output.enabled_destinations:
                 search_config = self._get_search_config()
             
-            fork_result, routed_results = self.pipeline_fork.route(
-                processed_entities.get('properties'),
-                processed_entities.get('neighborhoods'),
-                processed_entities.get('wikipedia'),
+            # Prepare extractors for graph processing if needed
+            entity_extractors = None
+            if "neo4j" in self.config.output.enabled_destinations:
+                entity_extractors = {
+                    "feature_extractor": self.feature_extractor,
+                    "property_type_extractor": self.property_type_extractor,
+                    "price_range_extractor": self.price_range_extractor,
+                    "county_extractor": self.county_extractor,
+                    "topic_extractor": self.topic_extractor,
+                    "locations_data": loaded_data.locations
+                }
+            
+            # Process all required paths
+            processing_result, output_data = self.pipeline_fork.process_paths(
+                processed_entities,
                 spark=self.spark,
-                search_config=search_config
+                search_config=search_config,
+                entity_extractors=entity_extractors
             )
             
-            # Process graph path if enabled (existing behavior)
-            if fork_result.graph_success and 'graph' in routed_results:
-                logger.info("   📊 Processing graph path...")
-                graph_dfs = routed_results['graph']
-                
-                # Extract new entity nodes from the processed data (graph path only)
-                logger.info("\n🔍 Extracting entity nodes...")
-                entity_nodes = self._extract_entity_nodes(loaded_data, graph_dfs)
-                
-                # Add entity nodes to processed entities for graph path
-                processed_entities.update(entity_nodes)
+            # Update processed_entities based on processing results
+            if "neo4j" in output_data:
+                processed_entities = output_data["neo4j"]
+            elif "parquet" in output_data:
+                processed_entities = output_data["parquet"]
             
-            # Log search path results if processed
-            if fork_result.search_success and 'search' in routed_results:
-                search_result = routed_results.get('search')
-                if hasattr(search_result, 'get_summary'):
-                    logger.info(f"   🔍 Search path completed: {search_result.total_documents_indexed} documents indexed")
+            # Log any processing errors
+            if not processing_result.is_successful():
+                for error in processing_result.get_errors():
+                    logger.error(f"Processing error: {error}")
             
             # Store cached references
             self._cached_dataframes = processed_entities
@@ -338,8 +343,8 @@ class DataPipelineRunner:
             elasticsearch=ElasticsearchConfig(
                 nodes=self.config.output.elasticsearch.hosts if self.config.output.elasticsearch else ["localhost:9200"],
                 index_prefix=self.config.output.elasticsearch.index_prefix if self.config.output.elasticsearch else "real_estate",
-                username=self.config.output.elasticsearch.username if self.config.output.elasticsearch else None,
-                mapping_id="listing_id"  # Use listing_id as document ID
+                username=self.config.output.elasticsearch.username if self.config.output.elasticsearch else None
+                # Don't set mapping_id here - let each entity type handle its own ID field
             )
         )
         
@@ -503,39 +508,45 @@ class DataPipelineRunner:
                 wikipedia_embedder = WikipediaEmbeddingGenerator(self.spark, self.embedding_config)
                 processed_entities['wikipedia'] = wikipedia_embedder.generate_embeddings(processed_df)
             
-            # Fork point: Route processed DataFrames to enabled paths
-            logger.info("\n🔀 Fork point: Routing to processing paths...")
+            # Fork point: Process based on output destinations
+            logger.info("\n🔀 Fork point: Processing based on output destinations...")
+            logger.info(f"Enabled destinations: {self.config.output.enabled_destinations}")
             
-            # Create search config if search path is enabled
+            # Create search config if needed
             search_config = None
-            if self.pipeline_fork.config.is_search_enabled():
+            if "elasticsearch" in self.config.output.enabled_destinations:
                 search_config = self._get_search_config()
             
-            fork_result, routed_results = self.pipeline_fork.route(
-                processed_entities.get('properties'),
-                processed_entities.get('neighborhoods'),
-                processed_entities.get('wikipedia'),
+            # Prepare extractors for graph processing if needed
+            entity_extractors = None
+            if "neo4j" in self.config.output.enabled_destinations:
+                entity_extractors = {
+                    "feature_extractor": self.feature_extractor,
+                    "property_type_extractor": self.property_type_extractor,
+                    "price_range_extractor": self.price_range_extractor,
+                    "county_extractor": self.county_extractor,
+                    "topic_extractor": self.topic_extractor,
+                    "locations_data": loaded_data.locations
+                }
+            
+            # Process all required paths
+            processing_result, output_data = self.pipeline_fork.process_paths(
+                processed_entities,
                 spark=self.spark,
-                search_config=search_config
+                search_config=search_config,
+                entity_extractors=entity_extractors
             )
             
-            # Process graph path if enabled (existing behavior)
-            if fork_result.graph_success and 'graph' in routed_results:
-                logger.info("   📊 Processing graph path...")
-                graph_dfs = routed_results['graph']
-                
-                # Extract additional entity nodes from the processed data (graph path only)
-                logger.info("\n🔍 Extracting entity nodes from processed data...")
-                entity_nodes = self._extract_entity_nodes(loaded_data, graph_dfs)
-                
-                # Merge extracted entities into processed_entities for graph path
-                processed_entities.update(entity_nodes)
+            # Update processed_entities based on processing results
+            if "neo4j" in output_data:
+                processed_entities = output_data["neo4j"]
+            elif "parquet" in output_data:
+                processed_entities = output_data["parquet"]
             
-            # Log search path results if processed
-            if fork_result.search_success and 'search' in routed_results:
-                search_result = routed_results.get('search')
-                if hasattr(search_result, 'get_summary'):
-                    logger.info(f"   🔍 Search path completed: {search_result.total_documents_indexed} documents indexed")
+            # Log any processing errors
+            if not processing_result.is_successful():
+                for error in processing_result.get_errors():
+                    logger.error(f"Processing error: {error}")
             
             # Store cached references
             self._cached_dataframes = processed_entities
@@ -749,8 +760,9 @@ class DataPipelineRunner:
                 logger.error(f"⚠️ Entity node write had failures: {failed_entities}")
                 # Continue to try relationships even if some writes failed
             
-            # Entity writing complete - no relationship building needed
-            # Relationships will be built in separate Neo4j step: python -m graph-real-estate build-relationships
+            # Entity writing complete
+            # Note: Relationships are created in a separate Neo4j orchestration step:
+            # python -m graph-real-estate build-relationships
             
             # Log summary of entity writing only
             logger.info("")

@@ -6,11 +6,11 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from pyspark.sql import SparkSession
 
-from data_pipeline.config.pipeline_config import (
-    Neo4jConfig,
-    ElasticsearchConfig,
-    ParquetWriterConfig,
-    OutputDestinationsConfig,
+from data_pipeline.config.models import (
+    Neo4jOutputConfig,
+    ElasticsearchOutputConfig,
+    ParquetOutputConfig,
+    OutputConfig,
     PipelineConfig
 )
 from data_pipeline.writers.base import EntityWriter, WriterConfig

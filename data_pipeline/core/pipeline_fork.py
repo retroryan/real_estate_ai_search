@@ -7,7 +7,7 @@ deriving processing needs from output requirements.
 """
 
 import logging
-from typing import Dict, List, Optional, Set, Any
+from typing import Dict, List, Optional, Set, Any, Tuple
 
 from pydantic import BaseModel, Field
 from pyspark.sql import DataFrame, SparkSession
@@ -121,148 +121,194 @@ class ProcessingResult(BaseModel):
 
 class PipelineFork:
     """
-    Minimal pipeline fork for routing DataFrames to processing paths.
+    Output-driven pipeline fork for routing DataFrames to processing paths.
     
-    This class receives DataFrames after text processing and routes them
-    to the appropriate processing paths based on configuration. No caching
-    or metrics in Phase 1 - just simple routing.
+    This class determines processing paths based on output destinations,
+    eliminating configuration confusion. It processes only what's needed
+    for the configured outputs.
     """
     
-    def __init__(self, config: ForkConfiguration):
+    def __init__(self, destinations: List[str]):
         """
-        Initialize the pipeline fork.
+        Initialize the pipeline fork based on output destinations.
         
         Args:
-            config: Fork configuration determining enabled paths
+            destinations: List of enabled output destinations
         """
-        self.config = config
-        logger.info(f"Pipeline fork initialized with paths: {config.enabled_paths}")
+        self.destinations = destinations
+        self.paths = ProcessingPaths.from_destinations(destinations)
+        
+        logger.info(f"Pipeline fork initialized for destinations: {destinations}")
+        logger.info(f"Enabled processing paths: {self.paths.get_enabled_paths()}")
     
-    def route(
+    def process_paths(
         self,
-        properties_df: DataFrame,
-        neighborhoods_df: DataFrame,
-        wikipedia_df: DataFrame,
+        processed_entities: Dict[str, DataFrame],
         spark: Optional[SparkSession] = None,
-        search_config: Optional[Any] = None
-    ) -> Tuple[ForkResult, Dict[str, Any]]:
+        search_config: Optional[Any] = None,
+        entity_extractors: Optional[Any] = None
+    ) -> Tuple[ProcessingResult, Dict[str, Any]]:
         """
-        Route DataFrames to enabled processing paths.
+        Process DataFrames according to required output destinations.
         
         Args:
-            properties_df: Properties DataFrame after text processing
-            neighborhoods_df: Neighborhoods DataFrame after text processing
-            wikipedia_df: Wikipedia DataFrame after text processing
-            spark: Optional Spark session for search pipeline
-            search_config: Optional search pipeline configuration
+            processed_entities: Dictionary of processed entity DataFrames
+            spark: Spark session for search processing
+            search_config: Search pipeline configuration
+            entity_extractors: Dictionary of entity extractors for graph path
             
         Returns:
-            Tuple of (ForkResult, Dict of results for each path)
+            Tuple of (ProcessingResult, Dict of output data by destination)
         """
-        logger.info("Starting pipeline fork routing")
+        logger.info("Starting output-driven processing")
+        logger.info(f"Processing paths: {self.paths.get_enabled_paths()}")
         
-        result = ForkResult()
-        routed_results = {}
+        result = ProcessingResult(paths_processed=self.paths.get_enabled_paths())
+        output_data = {}
         
-        # Route to graph path if enabled
-        if self.config.is_graph_enabled():
-            logger.info("Routing DataFrames to graph path")
+        # Lightweight path: Just processed entities for parquet-only
+        if self.paths.lightweight:
+            logger.info("🗂️  Processing lightweight path (parquet-only)")
             try:
-                # For graph path, just pass through the DataFrames
-                routed_results["graph"] = {
-                    "properties": properties_df,
-                    "neighborhoods": neighborhoods_df,
-                    "wikipedia": wikipedia_df
-                }
-                result.graph_success = True
-                logger.info("Successfully routed to graph path")
+                output_data["parquet"] = processed_entities
+                logger.info("✓ Lightweight path completed")
             except Exception as e:
-                logger.error(f"Failed to route to graph path: {e}")
+                logger.error(f"Lightweight path failed: {e}")
+                result.lightweight_success = False
+                result.lightweight_error = str(e)
+        
+        # Graph path: Extract entities for Neo4j + parquet
+        if self.paths.graph:
+            logger.info("📊 Processing graph path (Neo4j)")
+            try:
+                # Extract additional entities for graph
+                graph_entities = dict(processed_entities)  # Start with processed entities
+                
+                if entity_extractors:
+                    extracted = self._extract_graph_entities(processed_entities, entity_extractors)
+                    graph_entities.update(extracted)
+                
+                output_data["neo4j"] = graph_entities
+                
+                # Parquet gets the enriched data when graph path is active
+                if "parquet" in self.destinations:
+                    output_data["parquet"] = graph_entities
+                
+                logger.info(f"✓ Graph path completed with {len(graph_entities)} entity types")
+            except Exception as e:
+                logger.error(f"Graph path failed: {e}")
+                result.graph_success = False
                 result.graph_error = str(e)
         
-        # Route to search path if enabled
-        if self.config.is_search_enabled():
-            logger.info("Routing DataFrames to search path")
+        # Search path: Process documents for Elasticsearch + parquet
+        if self.paths.search:
+            logger.info("🔍 Processing search path (Elasticsearch)")
             try:
-                # Process search path if Spark and config are provided
                 if spark and search_config:
                     from search_pipeline.core.search_runner import SearchPipelineRunner
                     
                     search_runner = SearchPipelineRunner(spark, search_config)
-                    search_result = search_runner.process({
-                        "properties": properties_df,
-                        "neighborhoods": neighborhoods_df,
-                        "wikipedia": wikipedia_df
-                    })
+                    search_result = search_runner.process(processed_entities)
                     
-                    routed_results["search"] = search_result
-                    result.search_success = search_result.success
-                    if not search_result.success:
+                    output_data["elasticsearch"] = search_result
+                    
+                    # Parquet gets processed entities if no graph path
+                    if "parquet" in self.destinations and not self.paths.graph:
+                        output_data["parquet"] = processed_entities
+                    
+                    if search_result.success:
+                        logger.info(f"✓ Search path completed: {search_result.total_documents_indexed} documents indexed")
+                    else:
+                        result.search_success = False
                         result.search_error = search_result.error_message
                 else:
-                    # Just mark as routed without processing
-                    routed_results["search"] = {
-                        "properties": properties_df,
-                        "neighborhoods": neighborhoods_df,
-                        "wikipedia": wikipedia_df
-                    }
-                    result.search_success = True
-                    logger.info("Search path enabled but not processed (missing config)")
-                
-                logger.info("Successfully routed to search path")
+                    logger.warning("Search path enabled but missing Spark session or config")
+                    result.search_success = False
+                    result.search_error = "Missing Spark session or search configuration"
+                    
             except Exception as e:
-                logger.error(f"Failed to route to search path: {e}")
+                logger.error(f"Search path failed: {e}")
+                result.search_success = False
                 result.search_error = str(e)
         
-        logger.info(
-            f"Fork routing complete - Graph: {result.graph_success}, "
-            f"Search: {result.search_success}"
-        )
+        logger.info(f"Processing complete - Success: {result.is_successful()}")
+        if not result.is_successful():
+            logger.error(f"Errors: {', '.join(result.get_errors())}")
         
-        return result, routed_results
+        return result, output_data
     
-    def validate_dataframes(
-        self,
-        properties_df: DataFrame,
-        neighborhoods_df: DataFrame,
-        wikipedia_df: DataFrame
-    ) -> bool:
+    def _extract_graph_entities(
+        self, 
+        processed_entities: Dict[str, DataFrame], 
+        extractors: Dict[str, Any]
+    ) -> Dict[str, DataFrame]:
         """
-        Basic validation of input DataFrames.
+        Extract additional entities for graph processing.
         
         Args:
-            properties_df: Properties DataFrame
-            neighborhoods_df: Neighborhoods DataFrame
-            wikipedia_df: Wikipedia DataFrame
+            processed_entities: Base processed entities
+            extractors: Dictionary of entity extractors
             
         Returns:
-            True if all DataFrames are valid
+            Dictionary of extracted entity DataFrames
+        """
+        extracted = {}
+        
+        # Extract features from properties
+        if "properties" in processed_entities and "feature_extractor" in extractors:
+            logger.info("   Extracting features...")
+            extracted["features"] = extractors["feature_extractor"].extract(processed_entities["properties"])
+        
+        # Extract property types
+        if "properties" in processed_entities and "property_type_extractor" in extractors:
+            logger.info("   Extracting property types...")
+            extracted["property_types"] = extractors["property_type_extractor"].extract_property_types(processed_entities["properties"])
+        
+        # Extract price ranges
+        if "properties" in processed_entities and "price_range_extractor" in extractors:
+            logger.info("   Extracting price ranges...")
+            extracted["price_ranges"] = extractors["price_range_extractor"].extract_price_ranges(processed_entities["properties"])
+        
+        # Extract counties
+        if "county_extractor" in extractors:
+            logger.info("   Extracting counties...")
+            extracted["counties"] = extractors["county_extractor"].extract_counties(
+                extractors.get("locations_data"),
+                processed_entities.get("properties"),
+                processed_entities.get("neighborhoods")
+            )
+        
+        # Extract topic clusters from Wikipedia
+        if "wikipedia" in processed_entities and "topic_extractor" in extractors:
+            logger.info("   Extracting topic clusters...")
+            extracted["topic_clusters"] = extractors["topic_extractor"].extract_topic_clusters(processed_entities["wikipedia"])
+        
+        return extracted
+    
+    def validate_entities(self, processed_entities: Dict[str, DataFrame]) -> bool:
+        """
+        Validate processed entities are ready for processing.
+        
+        Args:
+            processed_entities: Dictionary of entity DataFrames
+            
+        Returns:
+            True if entities are valid for processing
         """
         try:
-            # Check that DataFrames are not None
-            if properties_df is None:
-                logger.error("Properties DataFrame is None")
-                return False
-            if neighborhoods_df is None:
-                logger.error("Neighborhoods DataFrame is None")
-                return False
-            if wikipedia_df is None:
-                logger.error("Wikipedia DataFrame is None")
+            if not processed_entities:
+                logger.error("No processed entities provided")
                 return False
             
-            # Basic schema validation (just check they have columns)
-            if len(properties_df.columns) == 0:
-                logger.error("Properties DataFrame has no columns")
-                return False
-            if len(neighborhoods_df.columns) == 0:
-                logger.error("Neighborhoods DataFrame has no columns")
-                return False
-            if len(wikipedia_df.columns) == 0:
-                logger.error("Wikipedia DataFrame has no columns")
-                return False
+            for entity_type, df in processed_entities.items():
+                if df is not None:
+                    if len(df.columns) == 0:
+                        logger.error(f"{entity_type} DataFrame has no columns")
+                        return False
+                    logger.debug(f"✓ {entity_type}: {len(df.columns)} columns")
             
             return True
             
         except Exception as e:
-            logger.error(f"DataFrame validation failed: {e}")
+            logger.error(f"Entity validation failed: {e}")
             return False

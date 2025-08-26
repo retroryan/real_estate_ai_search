@@ -18,19 +18,21 @@ This application initializes a Neo4j database with schema, constraints, and inde
 for the real estate knowledge graph. Data loading will be handled separately.
 
 Commands:
-  init      Initialize database with schema and indexes
-  clear     Clear all data from database
-  stats     Show database statistics
-  test      Test database connection
-  demo      Run demonstration queries
+  init                Initialize database with schema and indexes
+  clear               Clear all data from database
+  stats               Show database statistics
+  test                Test database connection
+  build-relationships Build all relationships in Neo4j
+  demo                Run demonstration queries
 
 Examples:
-  python main.py init          # Initialize database schema
-  python main.py init --clear  # Clear database and initialize
-  python main.py clear         # Clear database only
-  python main.py stats         # Show current database statistics
-  python main.py test          # Test database connection
-  python main.py demo --demo 1 # Run demo 1 (Basic Graph Queries)
+  python main.py init                    # Initialize database schema
+  python main.py init --clear            # Clear database and initialize
+  python main.py clear                   # Clear database only
+  python main.py stats                   # Show current database statistics
+  python main.py test                    # Test database connection
+  python main.py build-relationships     # Build all relationships
+  python main.py demo --demo 1           # Run demo 1 (Basic Graph Queries)
   python main.py demo --demo 2 # Run demo 2 (Hybrid Search Simple)
   python main.py demo --demo 3 # Run demo 3 (Hybrid Search Advanced)
   python main.py demo --demo 4 # Run demo 4 (Graph Analysis)
@@ -42,7 +44,7 @@ Examples:
     
     parser.add_argument(
         "action",
-        choices=["init", "clear", "stats", "test", "demo"],
+        choices=["init", "clear", "stats", "test", "build-relationships", "demo"],
         help="Action to perform"
     )
     
@@ -129,6 +131,30 @@ def main():
         elif args.action == "stats":
             # Show database statistics
             initializer.print_stats()
+            sys.exit(0)
+        
+        elif args.action == "build-relationships":
+            # Build relationships
+            logger.info("Building relationships in Neo4j...")
+            from relationships import RelationshipOrchestrator, RelationshipConfig
+            
+            # Create config (uses defaults)
+            config = RelationshipConfig()
+            
+            # Create orchestrator and build relationships
+            orchestrator = RelationshipOrchestrator(initializer.driver, config)
+            stats = orchestrator.build_all_relationships()
+            
+            # Verify relationships
+            logger.info("\nVerifying relationships...")
+            actual_stats = orchestrator.verify_relationships()
+            
+            logger.info("\nRelationship verification:")
+            for rel_type, count in actual_stats.dict().items():
+                logger.info(f"  {rel_type}: {count:,} relationships")
+            logger.info(f"  Total: {actual_stats.total:,} relationships")
+            
+            logger.info("✅ Relationship building completed successfully")
             sys.exit(0)
         
         elif args.action == "demo":

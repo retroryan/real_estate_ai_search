@@ -86,28 +86,6 @@ class PropertyTypeExtractor:
         else:
             return self.spark.createDataFrame([], PropertyTypeNode.spark_schema())
     
-    def create_property_type_relationships(self, properties_df: DataFrame) -> DataFrame:
-        """
-        Create OF_TYPE relationships between properties and property types.
-        
-        Args:
-            properties_df: DataFrame with properties
-            
-        Returns:
-            DataFrame of OF_TYPE relationships
-        """
-        logger.info("Creating OF_TYPE relationships")
-        
-        relationships = properties_df.filter(
-            col("property_type").isNotNull()
-        ).select(
-            col("listing_id").alias("from_id"),
-            # Note: Can't use generate_property_type_id in Spark SQL, so we replicate its logic
-            concat(lit("property_type:"), col("property_type")).alias("to_id"),
-            lit("OF_TYPE").alias("relationship_type")
-        )
-        
-        return relationships
 
 
 class PriceRangeExtractor:
@@ -167,40 +145,3 @@ class PriceRangeExtractor:
         # Convert to DataFrame with proper schema
         return self.spark.createDataFrame(range_nodes, schema=PriceRangeNode.spark_schema())
     
-    def create_price_range_relationships(self, properties_df: DataFrame) -> DataFrame:
-        """
-        Create IN_PRICE_RANGE relationships between properties and price ranges.
-        
-        Args:
-            properties_df: DataFrame with properties
-            
-        Returns:
-            DataFrame of IN_PRICE_RANGE relationships
-        """
-        logger.info("Creating IN_PRICE_RANGE relationships")
-        
-        # Add price range to each property
-        df = properties_df.filter(col("listing_price").isNotNull())
-        
-        # Determine price range for each property
-        df = df.withColumn(
-            "price_range_id",
-            # Note: Can't use generate_price_range_id in Spark SQL, so we replicate its logic
-            when(col("listing_price") < 500000, "price_range:under_500k")
-            .when((col("listing_price") >= 500000) & (col("listing_price") < 1000000), 
-                  "price_range:500k_1m")
-            .when((col("listing_price") >= 1000000) & (col("listing_price") < 2000000), 
-                  "price_range:1m_2m")
-            .when((col("listing_price") >= 2000000) & (col("listing_price") < 5000000), 
-                  "price_range:2m_5m")
-            .otherwise("price_range:5mplus")
-        )
-        
-        # Create relationships
-        relationships = df.select(
-            col("listing_id").alias("from_id"),
-            col("price_range_id").alias("to_id"),
-            lit("IN_PRICE_RANGE").alias("relationship_type")
-        )
-        
-        return relationships

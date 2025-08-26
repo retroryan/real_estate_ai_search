@@ -53,10 +53,21 @@ class SparkConfig(BaseModel):
         """Convert to Spark configuration dictionary."""
         conf = {}
         
-        # Add Neo4j connector JAR if it exists (use 2.12 version for Spark 3.5 compatibility)
-        jar_path = "lib/neo4j-connector-apache-spark_2.12-5.3.0_for_spark_3.jar"
-        if os.path.exists(jar_path):
-            conf["spark.jars"] = jar_path
+        # Add connector JARs if they exist
+        jar_paths = []
+        
+        # Neo4j connector JAR (use 2.12 version for Spark 3.5 compatibility)
+        neo4j_jar_path = "lib/neo4j-connector-apache-spark_2.12-5.3.0_for_spark_3.jar"
+        if os.path.exists(neo4j_jar_path):
+            jar_paths.append(neo4j_jar_path)
+        
+        # Elasticsearch connector JAR (Spark 3.x + Scala 2.12 compatible)
+        es_jar_path = "lib/elasticsearch-spark-30_2.12-9.0.0.jar"
+        if os.path.exists(es_jar_path):
+            jar_paths.append(es_jar_path)
+        
+        if jar_paths:
+            conf["spark.jars"] = ",".join(jar_paths)
         
         if not self.master.startswith("local"):
             conf["spark.driver.memory"] = self.driver_memory

@@ -43,6 +43,14 @@ def main():
         epilog="All configuration is in config.yaml. Use environment variables for API keys."
     )
     
+    # Configuration file argument
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to configuration YAML file (default: searches for config.yaml)"
+    )
+    
     # Single optional argument for development/testing
     parser.add_argument(
         "--sample-size",
@@ -60,7 +68,7 @@ def main():
     try:
         # Load configuration with sample size if provided
         logger.info("Loading pipeline configuration...")
-        config = load_configuration(sample_size=args.sample_size)
+        config = load_configuration(config_path=args.config, sample_size=args.sample_size)
         
         if args.sample_size:
             logger.info(f"Running in development mode with sample size: {args.sample_size}")

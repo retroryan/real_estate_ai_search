@@ -1,8 +1,8 @@
 """
-Unit tests for the pipeline fork implementation.
+Unit tests for the output-driven pipeline fork implementation.
 
-Tests the PipelineFork class and ForkConfiguration for correct
-routing of DataFrames to processing paths.
+Tests the PipelineFork class and ProcessingPaths for correct
+determination of processing paths from output destinations.
 """
 
 import pytest
@@ -11,8 +11,8 @@ from pyspark.sql import SparkSession, DataFrame
 
 from data_pipeline.core.pipeline_fork import (
     PipelineFork,
-    ForkConfiguration,
-    ForkResult
+    ProcessingPaths,
+    ProcessingResult
 )
 
 
@@ -26,8 +26,8 @@ def spark():
 
 
 @pytest.fixture
-def mock_dataframes():
-    """Create mock DataFrames for testing."""
+def mock_entities():
+    """Create mock entity DataFrames for testing."""
     properties_df = Mock(spec=DataFrame)
     properties_df.columns = ['listing_id', 'price', 'embedding_text']
     
@@ -37,192 +37,213 @@ def mock_dataframes():
     wikipedia_df = Mock(spec=DataFrame)
     wikipedia_df.columns = ['page_id', 'title', 'embedding_text']
     
-    return properties_df, neighborhoods_df, wikipedia_df
+    return {
+        'properties': properties_df,
+        'neighborhoods': neighborhoods_df,
+        'wikipedia': wikipedia_df
+    }
 
 
-class TestForkConfiguration:
-    """Test the ForkConfiguration model."""
+class TestProcessingPaths:
+    """Test the ProcessingPaths model."""
     
-    def test_default_configuration(self):
-        """Test default fork configuration."""
-        config = ForkConfiguration()
-        assert config.enabled_paths == ["graph"]
-        assert config.is_graph_enabled()
-        assert not config.is_search_enabled()
+    def test_parquet_only_lightweight(self):
+        """Test that parquet-only destinations result in lightweight path."""
+        paths = ProcessingPaths.from_destinations(["parquet"])
+        assert paths.lightweight
+        assert not paths.graph
+        assert not paths.search
+        assert paths.get_enabled_paths() == ["lightweight"]
     
-    def test_both_paths_enabled(self):
-        """Test configuration with both paths enabled."""
-        config = ForkConfiguration(enabled_paths=["graph", "search"])
-        assert config.is_graph_enabled()
-        assert config.is_search_enabled()
+    def test_neo4j_graph_path(self):
+        """Test that neo4j destination enables graph path."""
+        paths = ProcessingPaths.from_destinations(["neo4j"])
+        assert not paths.lightweight
+        assert paths.graph
+        assert not paths.search
+        assert paths.get_enabled_paths() == ["graph"]
     
-    def test_search_only(self):
-        """Test configuration with only search enabled."""
-        config = ForkConfiguration(enabled_paths=["search"])
-        assert not config.is_graph_enabled()
-        assert config.is_search_enabled()
+    def test_elasticsearch_search_path(self):
+        """Test that elasticsearch destination enables search path."""
+        paths = ProcessingPaths.from_destinations(["elasticsearch"])
+        assert not paths.lightweight
+        assert not paths.graph
+        assert paths.search
+        assert paths.get_enabled_paths() == ["search"]
     
-    def test_invalid_path(self):
-        """Test that invalid paths are rejected."""
-        with pytest.raises(ValueError, match="Invalid paths"):
-            ForkConfiguration(enabled_paths=["invalid"])
+    def test_multiple_destinations(self):
+        """Test multiple destinations enable corresponding paths."""
+        paths = ProcessingPaths.from_destinations(["neo4j", "elasticsearch", "parquet"])
+        assert not paths.lightweight  # Not parquet-only
+        assert paths.graph
+        assert paths.search
+        assert set(paths.get_enabled_paths()) == {"graph", "search"}
+    
+    def test_neo4j_parquet_graph_path(self):
+        """Test that neo4j + parquet enables graph path (not lightweight)."""
+        paths = ProcessingPaths.from_destinations(["neo4j", "parquet"])
+        assert not paths.lightweight  # Not parquet-only
+        assert paths.graph
+        assert not paths.search
+        assert paths.get_enabled_paths() == ["graph"]
 
 
 class TestPipelineFork:
     """Test the PipelineFork class."""
     
-    def test_graph_only_routing(self, mock_dataframes):
-        """Test routing with only graph path enabled."""
-        config = ForkConfiguration(enabled_paths=["graph"])
-        fork = PipelineFork(config)
+    def test_parquet_only_processing(self, mock_entities):
+        """Test processing with parquet-only destination."""
+        fork = PipelineFork(["parquet"])
         
-        properties_df, neighborhoods_df, wikipedia_df = mock_dataframes
-        
-        result, routed = fork.route(properties_df, neighborhoods_df, wikipedia_df)
+        result, output_data = fork.process_paths(mock_entities)
         
         # Check result
-        assert result.graph_success
-        assert not result.search_success
-        assert result.graph_error is None
-        assert result.search_error is None
+        assert result.is_successful()
+        assert result.lightweight_success
+        assert result.paths_processed == ["lightweight"]
         
-        # Check routed DataFrames
-        assert "graph" in routed
-        assert "search" not in routed
-        assert routed["graph"]["properties"] == properties_df
-        assert routed["graph"]["neighborhoods"] == neighborhoods_df
-        assert routed["graph"]["wikipedia"] == wikipedia_df
+        # Check output data
+        assert "parquet" in output_data
+        assert output_data["parquet"] == mock_entities
+        assert "neo4j" not in output_data
+        assert "elasticsearch" not in output_data
     
-    def test_both_paths_routing(self, mock_dataframes):
-        """Test routing with both paths enabled."""
-        config = ForkConfiguration(enabled_paths=["graph", "search"])
-        fork = PipelineFork(config)
+    def test_neo4j_processing(self, mock_entities):
+        """Test processing with neo4j destination."""
+        fork = PipelineFork(["neo4j"])
         
-        properties_df, neighborhoods_df, wikipedia_df = mock_dataframes
+        # Mock entity extractors
+        extractors = {
+            "feature_extractor": Mock(),
+            "property_type_extractor": Mock(),
+            "price_range_extractor": Mock(),
+            "county_extractor": Mock(),
+            "topic_extractor": Mock(),
+        }
         
-        result, routed = fork.route(properties_df, neighborhoods_df, wikipedia_df)
+        # Mock the extraction methods
+        for extractor in extractors.values():
+            if hasattr(extractor, 'extract'):
+                extractor.extract.return_value = Mock(spec=DataFrame)
+            if hasattr(extractor, 'extract_property_types'):
+                extractor.extract_property_types.return_value = Mock(spec=DataFrame)
+            if hasattr(extractor, 'extract_price_ranges'):
+                extractor.extract_price_ranges.return_value = Mock(spec=DataFrame)
+            if hasattr(extractor, 'extract_counties'):
+                extractor.extract_counties.return_value = Mock(spec=DataFrame)
+            if hasattr(extractor, 'extract_topic_clusters'):
+                extractor.extract_topic_clusters.return_value = Mock(spec=DataFrame)
+        
+        result, output_data = fork.process_paths(mock_entities, entity_extractors=extractors)
         
         # Check result
+        assert result.is_successful()
         assert result.graph_success
+        assert result.paths_processed == ["graph"]
+        
+        # Check output data
+        assert "neo4j" in output_data
+        assert len(output_data["neo4j"]) > len(mock_entities)  # Should have extracted entities
+    
+    def test_elasticsearch_processing(self, spark, mock_entities):
+        """Test processing with elasticsearch destination."""
+        fork = PipelineFork(["elasticsearch"])
+        
+        # Mock search config
+        search_config = Mock()
+        search_config.enabled = False  # Disable to avoid actual ES connection
+        
+        result, output_data = fork.process_paths(
+            mock_entities, 
+            spark=spark, 
+            search_config=search_config
+        )
+        
+        # Check result (should succeed with disabled search config)
         assert result.search_success
-        assert result.graph_error is None
-        assert result.search_error is None
+        assert result.paths_processed == ["search"]
         
-        # Check routed DataFrames
-        assert "graph" in routed
-        assert "search" in routed
-        
-        # Both paths should get the same DataFrames
-        assert routed["graph"]["properties"] == properties_df
-        assert routed["search"]["properties"] == properties_df
+        # Check output data
+        assert "elasticsearch" in output_data
     
-    def test_search_only_routing(self, mock_dataframes):
-        """Test routing with only search path enabled."""
-        config = ForkConfiguration(enabled_paths=["search"])
-        fork = PipelineFork(config)
+    def test_multiple_destinations(self, spark, mock_entities):
+        """Test processing with multiple destinations."""
+        fork = PipelineFork(["neo4j", "elasticsearch", "parquet"])
         
-        properties_df, neighborhoods_df, wikipedia_df = mock_dataframes
+        # Mock extractors and search config
+        extractors = {
+            "feature_extractor": Mock(),
+            "property_type_extractor": Mock(),
+            "price_range_extractor": Mock(),
+            "county_extractor": Mock(), 
+            "topic_extractor": Mock(),
+        }
         
-        result, routed = fork.route(properties_df, neighborhoods_df, wikipedia_df)
+        search_config = Mock()
+        search_config.enabled = False
+        
+        result, output_data = fork.process_paths(
+            mock_entities,
+            spark=spark,
+            search_config=search_config,
+            entity_extractors=extractors
+        )
         
         # Check result
-        assert not result.graph_success
-        assert result.search_success
-        assert result.graph_error is None
-        assert result.search_error is None
+        assert result.paths_processed == ["graph", "search"]
         
-        # Check routed DataFrames
-        assert "graph" not in routed
-        assert "search" in routed
-        assert routed["search"]["properties"] == properties_df
+        # Check output data (both paths should be present)
+        assert "neo4j" in output_data or "parquet" in output_data  # Graph processing
+        assert "elasticsearch" in output_data  # Search processing
     
-    def test_validate_dataframes_valid(self, mock_dataframes):
-        """Test DataFrame validation with valid DataFrames."""
-        config = ForkConfiguration()
-        fork = PipelineFork(config)
+    def test_validate_entities_valid(self, mock_entities):
+        """Test entity validation with valid entities."""
+        fork = PipelineFork(["parquet"])
         
-        properties_df, neighborhoods_df, wikipedia_df = mock_dataframes
-        
-        assert fork.validate_dataframes(properties_df, neighborhoods_df, wikipedia_df)
+        assert fork.validate_entities(mock_entities)
     
-    def test_validate_dataframes_none(self):
-        """Test DataFrame validation with None DataFrames."""
-        config = ForkConfiguration()
-        fork = PipelineFork(config)
+    def test_validate_entities_empty(self):
+        """Test entity validation with empty entities."""
+        fork = PipelineFork(["parquet"])
         
-        assert not fork.validate_dataframes(None, Mock(spec=DataFrame), Mock(spec=DataFrame))
-        assert not fork.validate_dataframes(Mock(spec=DataFrame), None, Mock(spec=DataFrame))
-        assert not fork.validate_dataframes(Mock(spec=DataFrame), Mock(spec=DataFrame), None)
+        assert not fork.validate_entities({})
     
-    def test_validate_dataframes_empty_columns(self):
-        """Test DataFrame validation with empty columns."""
-        config = ForkConfiguration()
-        fork = PipelineFork(config)
+    def test_validate_entities_empty_columns(self):
+        """Test entity validation with empty columns."""
+        fork = PipelineFork(["parquet"])
         
-        properties_df = Mock(spec=DataFrame)
-        properties_df.columns = []
+        empty_df = Mock(spec=DataFrame)
+        empty_df.columns = []
         
-        neighborhoods_df = Mock(spec=DataFrame)
-        neighborhoods_df.columns = ['id']
+        entities = {"properties": empty_df}
         
-        wikipedia_df = Mock(spec=DataFrame)
-        wikipedia_df.columns = ['id']
-        
-        assert not fork.validate_dataframes(properties_df, neighborhoods_df, wikipedia_df)
-    
-    def test_routing_with_none_dataframes(self):
-        """Test routing handles None DataFrames gracefully."""
-        config = ForkConfiguration(enabled_paths=["graph"])
-        fork = PipelineFork(config)
-        
-        result, routed = fork.route(None, None, None)
-        
-        # Should still succeed but with None values
-        assert result.graph_success
-        assert "graph" in routed
-        assert routed["graph"]["properties"] is None
-        assert routed["graph"]["neighborhoods"] is None
-        assert routed["graph"]["wikipedia"] is None
-    
-    def test_error_handling(self, mock_dataframes):
-        """Test error handling in routing."""
-        config = ForkConfiguration(enabled_paths=["graph"])
-        fork = PipelineFork(config)
-        
-        # Make properties_df raise an exception when accessed
-        properties_df = Mock(spec=DataFrame)
-        properties_df.columns = Mock(side_effect=Exception("Test error"))
-        
-        neighborhoods_df, wikipedia_df = mock_dataframes[1:]
-        
-        # The route method should handle exceptions gracefully
-        result, routed = fork.route(properties_df, neighborhoods_df, wikipedia_df)
-        
-        # Should still route successfully (error handling is in validation, not routing)
-        assert result.graph_success
-        assert "graph" in routed
+        assert not fork.validate_entities(entities)
 
 
-class TestForkResult:
-    """Test the ForkResult model."""
+class TestProcessingResult:
+    """Test the ProcessingResult model."""
     
     def test_default_result(self):
-        """Test default ForkResult values."""
-        result = ForkResult()
-        assert not result.graph_success
-        assert not result.search_success
-        assert result.graph_error is None
-        assert result.search_error is None
+        """Test default ProcessingResult values."""
+        result = ProcessingResult()
+        assert result.is_successful()
+        assert result.lightweight_success
+        assert result.graph_success
+        assert result.search_success
+        assert len(result.get_errors()) == 0
     
     def test_with_errors(self):
-        """Test ForkResult with errors."""
-        result = ForkResult(
-            graph_success=False,
-            search_success=True,
-            graph_error="Graph processing failed",
-            search_error=None
+        """Test ProcessingResult with errors."""
+        result = ProcessingResult(
+            lightweight_success=False,
+            graph_success=True,
+            search_success=False,
+            lightweight_error="Lightweight failed",
+            search_error="Search failed"
         )
-        assert not result.graph_success
-        assert result.search_success
-        assert result.graph_error == "Graph processing failed"
-        assert result.search_error is None
+        
+        assert not result.is_successful()
+        errors = result.get_errors()
+        assert len(errors) == 2
+        assert "Lightweight: Lightweight failed" in errors
+        assert "Search: Search failed" in errors

@@ -1,13 +1,13 @@
-# Data Pipeline Configuration
-# All settings except secrets are configured here
-# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD, ELASTIC_PASSWORD
+# Data Pipeline Configuration for Neo4j Output
+# This config enables only Neo4j output destination for Phase 1 testing
+# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD
 
-name: real_estate_data_pipeline
+name: real_estate_data_pipeline_neo4j
 version: 1.0.0
 
 # Spark Configuration
 spark:
-  app_name: RealEstateDataPipeline
+  app_name: RealEstateDataPipeline-Neo4j
   master: local[*]
   driver_memory: 4g
   executor_memory: 2g
@@ -30,26 +30,17 @@ embedding:
   batch_size: 10  # Smaller batch size for API rate limits
   dimension: 1024  # voyage-3: 1024, voyage-large-2: 1536
 
-# Output Configuration
+# Output Configuration - Neo4j ONLY
 output:
   enabled_destinations:
-    - parquet
-    # - neo4j
-    - elasticsearch
-  
-  parquet:
-    base_path: data/processed
-    compression: snappy
+    - neo4j
   
   neo4j:
     uri: bolt://localhost:7687
     database: neo4j
     username: neo4j
     # Password from NEO4J_PASSWORD environment variable
-  
-  elasticsearch:
-    hosts:
-      - localhost:9200
-    index_prefix: real_estate
-    username: elastic
-    # Password from ELASTIC_PASSWORD environment variable
+    clear_before_write: true  # Clear database before writing new data
+
+# Development/Testing
+sample_size: null  # Use --sample-size argument instead
