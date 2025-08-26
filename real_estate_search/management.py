@@ -238,9 +238,9 @@ class IndexManagementCLI:
         try:
             # Entity types and their expected indices
             entity_indices = {
-                "properties": "real_estate_properties",
-                "neighborhoods": "real_estate_neighborhoods", 
-                "wikipedia": "real_estate_wikipedia"
+                "properties": IndexName.PROPERTIES,
+                "neighborhoods": IndexName.NEIGHBORHOODS, 
+                "wikipedia": IndexName.WIKIPEDIA
             }
             
             print("\nVector Embedding Validation Results:")

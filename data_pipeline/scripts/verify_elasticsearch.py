@@ -28,7 +28,7 @@ def get_es_connection_info() -> tuple:
     es_port = os.environ.get('ES_PORT', '9200')
     # Try both variable names for compatibility
     es_username = os.environ.get('ES_USERNAME') or os.environ.get('ELASTICSEARCH_USERNAME', 'elastic')
-    es_password = os.environ.get('ES_PASSWORD') or os.environ.get('ELASTIC_PASSWORD', '')
+    es_password = os.environ.get('ES_PASSWORD') or os.environ.get('ELASTICSEARCH_PASSWORD', '')
     
     base_url = f'http://{es_host}:{es_port}'
     auth = HTTPBasicAuth(es_username, es_password) if es_password else None
@@ -197,7 +197,7 @@ def main():
         # Debug mode - show what credentials we're using
         if '--debug' in sys.argv:
             username = os.environ.get('ES_USERNAME') or os.environ.get('ELASTICSEARCH_USERNAME', 'elastic')
-            password_set = bool(os.environ.get('ES_PASSWORD') or os.environ.get('ELASTIC_PASSWORD'))
+            password_set = bool(os.environ.get('ES_PASSWORD') or os.environ.get('ELASTICSEARCH_PASSWORD'))
             print(f'🔐 Username: {username}')
             print(f'🔑 Password: {"✅ Set" if password_set else "❌ Not set"}')
         
