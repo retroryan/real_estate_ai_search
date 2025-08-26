@@ -13,6 +13,14 @@ import sys
 from typing import Dict, List, Optional
 from requests.auth import HTTPBasicAuth
 
+# Try to load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If dotenv not available, user needs to source .env manually
+    pass
+
 
 def get_es_connection_info() -> tuple:
     """Get Elasticsearch connection details from environment variables."""
@@ -185,6 +193,13 @@ def main():
         # Get connection info
         base_url, auth = get_es_connection_info()
         print(f'📍 Connecting to: {base_url}')
+        
+        # Debug mode - show what credentials we're using
+        if '--debug' in sys.argv:
+            username = os.environ.get('ES_USERNAME') or os.environ.get('ELASTICSEARCH_USERNAME', 'elastic')
+            password_set = bool(os.environ.get('ES_PASSWORD') or os.environ.get('ELASTIC_PASSWORD'))
+            print(f'🔐 Username: {username}')
+            print(f'🔑 Password: {"✅ Set" if password_set else "❌ Not set"}')
         
         # Check cluster health
         health = check_cluster_health(base_url, auth)
