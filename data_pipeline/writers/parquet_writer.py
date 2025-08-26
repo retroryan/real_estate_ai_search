@@ -83,10 +83,9 @@ class ParquetWriter(EntityWriter):
             True if successful, False otherwise
         """
         try:
-            record_count = df.count()
             output_path = self.base_path / "properties"
             
-            self.logger.info(f"Writing {record_count} property records to {output_path}")
+            self.logger.info(f"Writing property records to {output_path}")
             
             # Validate schema has required fields
             required_cols = {"listing_id", "city", "state"}
@@ -98,7 +97,7 @@ class ParquetWriter(EntityWriter):
             # Write to Parquet with simple overwrite mode
             df.write.mode("overwrite").parquet(str(output_path))
             
-            self.logger.info(f"Successfully wrote {record_count} property records")
+            self.logger.info("✓ Successfully wrote property records")
             return True
             
         except Exception as e:
@@ -116,10 +115,9 @@ class ParquetWriter(EntityWriter):
             True if successful, False otherwise
         """
         try:
-            record_count = df.count()
             output_path = self.base_path / "neighborhoods"
             
-            self.logger.info(f"Writing {record_count} neighborhood records to {output_path}")
+            self.logger.info(f"Writing neighborhood records to {output_path}")
             
             # Validate schema has required fields
             required_cols = {"neighborhood_id", "name", "city", "state"}
@@ -131,7 +129,7 @@ class ParquetWriter(EntityWriter):
             # Write to Parquet with simple overwrite mode
             df.write.mode("overwrite").parquet(str(output_path))
             
-            self.logger.info(f"Successfully wrote {record_count} neighborhood records")
+            self.logger.info("✓ Successfully wrote neighborhood records")
             return True
             
         except Exception as e:
@@ -149,10 +147,9 @@ class ParquetWriter(EntityWriter):
             True if successful, False otherwise
         """
         try:
-            record_count = df.count()
             output_path = self.base_path / "wikipedia"
             
-            self.logger.info(f"Writing {record_count} Wikipedia records to {output_path}")
+            self.logger.info(f"Writing Wikipedia records to {output_path}")
             
             # Validate schema has required fields
             required_cols = {"page_id", "title", "short_summary", "long_summary"}
@@ -172,7 +169,7 @@ class ParquetWriter(EntityWriter):
             # Write to Parquet with simple overwrite mode
             df.write.mode("overwrite").parquet(str(output_path))
             
-            self.logger.info(f"Successfully wrote {record_count} Wikipedia records")
+            self.logger.info("✓ Successfully wrote Wikipedia records")
             return True
             
         except Exception as e:

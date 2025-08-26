@@ -123,7 +123,7 @@ class DataLoaderOrchestrator:
         for df in dataframes[1:]:
             result = result.unionByName(df, allowMissingColumns=False)
         
-        logger.info(f"Loaded {result.count()} property records total")
+        logger.info("✓ Property data loaded and combined")
         return result
     
     def _load_neighborhoods(self) -> Optional[DataFrame]:
@@ -161,7 +161,7 @@ class DataLoaderOrchestrator:
         for df in dataframes[1:]:
             result = result.unionByName(df, allowMissingColumns=False)
         
-        logger.info(f"Loaded {result.count()} neighborhood records total")
+        logger.info("✓ Neighborhood data loaded and combined")
         return result
     
     def _load_wikipedia(self) -> Optional[DataFrame]:
@@ -180,7 +180,7 @@ class DataLoaderOrchestrator:
             df = self.wikipedia_loader.load(self.config.wikipedia.path)
             
             if self.wikipedia_loader.validate(df):
-                logger.info(f"✓ Successfully loaded Wikipedia data with {df.count()} articles")
+                logger.info("✓ Successfully loaded Wikipedia data")
                 return df
             else:
                 logger.warning("✗ Wikipedia validation failed")
@@ -206,7 +206,7 @@ class DataLoaderOrchestrator:
             df = self.location_loader.load(self.config.locations.path)
             
             if self.location_loader.validate(df):
-                logger.info(f"✓ Successfully loaded {df.count()} location records")
+                logger.info("✓ Successfully loaded location data")
                 return df
             else:
                 logger.warning("✗ Location validation failed")
@@ -227,42 +227,36 @@ class DataLoaderOrchestrator:
     
     def _log_summary(self, loaded_data: LoadedData) -> None:
         """
-        Log summary statistics for loaded data.
+        Log summary of loaded data without forcing evaluation.
         
         Args:
             loaded_data: LoadedData object containing all DataFrames
         """
-        total = 0
-        entity_counts = {}
+        # Log what data types were loaded
+        loaded_entities = []
         
-        # Count records per entity type
         if loaded_data.properties is not None:
-            count = loaded_data.properties.count()
-            entity_counts["properties"] = count
-            total += count
+            loaded_entities.append("properties")
             
         if loaded_data.neighborhoods is not None:
-            count = loaded_data.neighborhoods.count()
-            entity_counts["neighborhoods"] = count
-            total += count
+            loaded_entities.append("neighborhoods")
             
         if loaded_data.wikipedia is not None:
-            count = loaded_data.wikipedia.count()
-            entity_counts["wikipedia"] = count
-            total += count
+            loaded_entities.append("wikipedia")
             
         if loaded_data.locations is not None:
-            count = loaded_data.locations.count()
-            entity_counts["locations"] = count
-            total += count
+            loaded_entities.append("locations")
         
-        logger.info("")
-        logger.info("=" * 60)
-        logger.info(f"Data Loading Complete: {total:,} total records")
-        logger.info("=" * 60)
-        
-        # Log counts by entity type
-        for entity_type, count in entity_counts.items():
-            logger.info(f"  {entity_type}: {count:,} records")
-        
-        logger.info("=" * 60)
+        if loaded_entities:
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info("Data Loading Complete")
+            logger.info("=" * 60)
+            
+            # Log loaded entity types
+            for entity_type in loaded_entities:
+                logger.info(f"  ✓ {entity_type} loaded")
+            
+            logger.info("=" * 60)
+        else:
+            logger.warning("No data loaded from any source")

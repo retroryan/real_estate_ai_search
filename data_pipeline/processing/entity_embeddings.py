@@ -13,6 +13,7 @@ from pyspark.sql.functions import (
     col,
     concat_ws,
     length,
+    lit,
     when,
 )
 

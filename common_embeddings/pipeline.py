@@ -85,7 +85,7 @@ class EmbeddingPipeline:
         
         # Create embedding model
         try:
-            self.embed_model, self.model_identifier = EmbeddingFactory.create_provider(self.config)
+            self.embed_model, self.model_identifier = EmbeddingFactory.create_from_config(self.config)
             logger.info(f"Initialized embedding model: {self.model_identifier}")
         except Exception as e:
             logger.error(f"Failed to initialize embedding model: {e}")

@@ -1,0 +1,21 @@
+# Test configuration for model comparison
+version: "1.0"
+
+models:
+  - name: nomic-embed-text
+    provider: ollama
+    collection_name: bronze_ollama_nomic_eval
+  - name: voyage-3
+    provider: voyage  
+    collection_name: bronze_voyage_voyage_3_eval
+
+evaluation:
+  dataset: bronze
+  top_k: 10
+
+comparison:
+  primary_metric: f1_score
+
+reporting:
+  format: html
+  output_directory: ./common_embeddings/evaluate_results

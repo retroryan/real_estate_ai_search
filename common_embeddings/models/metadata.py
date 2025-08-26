@@ -10,8 +10,8 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
 
-from common.property_finder_models import (
-    BaseMetadata,
+from .base import BaseMetadata
+from .enums import (
     EntityType,
     SourceType,
     EmbeddingProvider,

@@ -9,6 +9,7 @@ from neo4j import Driver
 from pydantic import BaseModel, Field
 from .models import DemoConfig
 from .database import run_query
+from .demo_registry import DEMO_REGISTRY, DemoType, DemoEntryPoint
 from demos.models import (
     RelationshipCount,
     GeographicHierarchy, 
@@ -48,57 +49,42 @@ class DemoRunner:
         self.demos_dir = Path(__file__).parent.parent / "demos"
     
     def run_demo(self) -> None:
-        """Run the configured demo"""
-        if self.config.demo_number == 1:
+        """Run the configured demo using the type-safe registry"""
+        demo_def = DEMO_REGISTRY.get(self.config.demo_number)
+        
+        if not demo_def:
+            raise ValueError(f"Demo {self.config.demo_number} not found in registry. Available demos: 1-7")
+        
+        print(f"\n{'='*60}")
+        print(f"DEMO {self.config.demo_number}: {demo_def.title}")
+        print(f"{'='*60}\n")
+        
+        if demo_def.demo_type == DemoType.SIMPLE:
             # Run simple demo queries for demo 1
             simple_runner = SimpleDemoRunner(self.driver, self.config)
             simple_runner.run_demo()
-        else:
-            # Run the existing demo files for demos 2-6
-            self._run_demo_file()
+        elif demo_def.demo_type == DemoType.MODULE:
+            # Run the demo from a module file
+            if not demo_def.file_name:
+                raise ValueError(f"Demo {self.config.demo_number} is type MODULE but has no file_name")
+            if not demo_def.entry_point:
+                raise ValueError(f"Demo {self.config.demo_number} is type MODULE but has no entry_point")
+            
+            demo_path = self.demos_dir / demo_def.file_name
+            if not demo_path.exists():
+                raise FileNotFoundError(f"Demo file not found: {demo_path}")
+            
+            # Execute the demo module with the specified entry point
+            self._execute_demo_module(demo_path, demo_def.file_name, demo_def.entry_point)
     
-    def _run_demo_file(self) -> None:
-        """Run a demo file from the demos directory"""
-        # Map demo numbers to files (shifted by 1 since demo 1 is now SimpleDemoRunner)
-        demo_map = {
-            2: ("demo_1_hybrid_search_simple.py", "Hybrid Search Simple"),
-            3: ("demo_1_hybrid_search.py", "Hybrid Search Advanced"),
-            4: ("demo_2_graph_analysis.py", "Graph Analysis"),
-            5: ("demo_3_market_intelligence.py", "Market Intelligence"),
-        }
-        
-        if self.config.demo_number not in demo_map:
-            # Check for additional demos
-            if self.config.demo_number == 6:
-                demo_file = "demo_4_wikipedia_enhanced.py"
-                demo_title = "Wikipedia Enhanced"
-            elif self.config.demo_number == 7:
-                demo_file = "demo_5_pure_vector_search.py"
-                demo_title = "Pure Vector Search"
-            else:
-                raise ValueError(f"Demo {self.config.demo_number} not found. Available demos: 1-7")
-            demo_path = self.demos_dir / demo_file
-        else:
-            demo_file, demo_title = demo_map[self.config.demo_number]
-            demo_path = self.demos_dir / demo_file
-        
-        if not demo_path.exists():
-            raise FileNotFoundError(f"Demo file not found: {demo_path}")
-        
-        print(f"\n{'='*60}")
-        print(f"DEMO {self.config.demo_number}: {demo_title}")
-        print(f"{'='*60}\n")
-        
-        # Execute the demo module
-        self._execute_demo_module(demo_path, demo_file)
-    
-    def _execute_demo_module(self, demo_path: Path, demo_file: str) -> None:
+    def _execute_demo_module(self, demo_path: Path, demo_file: str, entry_point: str) -> None:
         """
-        Execute a demo module dynamically
+        Execute a demo module dynamically with type-safe entry point
         
         Args:
             demo_path: Path to the demo file
             demo_file: Name of the demo file
+            entry_point: The entry point function name to call
         """
         # Add the parent directory to sys.path temporarily
         parent_dir = str(demo_path.parent.parent)
@@ -118,16 +104,15 @@ class DemoRunner:
                 # Execute the module
                 spec.loader.exec_module(demo_module)
                 
-                # Call the main function if it exists
-                if hasattr(demo_module, 'main'):
-                    demo_module.main()
-                elif hasattr(demo_module, 'run'):
-                    demo_module.run()
-                elif hasattr(demo_module, 'run_demo'):
-                    demo_module.run_demo()
+                # Call the specified entry point function
+                # entry_point is already a string value when use_enum_values=True
+                entry_func = getattr(demo_module, entry_point, None)
+                if entry_func and callable(entry_func):
+                    entry_func()
                 else:
-                    # Module runs on import (many of the existing demos do this)
-                    print(f"✓ Demo {self.config.demo_number} executed")
+                    raise AttributeError(
+                        f"Demo module {demo_file} does not have callable function '{entry_point}'"
+                    )
             else:
                 raise ImportError(f"Could not load demo module: {demo_file}")
                 

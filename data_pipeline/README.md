@@ -109,7 +109,7 @@ pip install pyspark-neo4j
 python -m data_pipeline --output-destination neo4j
 
 # Load with sample data for testing (faster)
-python -m data_pipeline --sample-size 100 --output-destination neo4j
+python -m data_pipeline --sample-size 5 --output-destination neo4j
 
 # Load specific entity types only
 python -m data_pipeline --output-destination neo4j --entities properties,neighborhoods

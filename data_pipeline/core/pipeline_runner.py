@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import avg, col, count, desc
+from pyspark.sql.functions import col
 
 from data_pipeline.config.settings import ConfigurationManager
 from data_pipeline.core.spark_session import get_or_create_spark_session
@@ -26,6 +26,10 @@ from data_pipeline.enrichment.property_enricher import PropertyEnricher
 from data_pipeline.enrichment.neighborhood_enricher import NeighborhoodEnricher
 from data_pipeline.enrichment.wikipedia_enricher import WikipediaEnricher
 from data_pipeline.enrichment.relationship_builder import RelationshipBuilder
+from data_pipeline.enrichment.feature_extractor import FeatureExtractor
+from data_pipeline.enrichment.county_extractor import CountyExtractor
+from data_pipeline.enrichment.entity_extractors import PropertyTypeExtractor, PriceRangeExtractor
+from data_pipeline.enrichment.topic_extractor import TopicExtractor
 from data_pipeline.writers.orchestrator import WriterOrchestrator
 from data_pipeline.models.writer_models import (
     EntityType,
@@ -112,13 +116,26 @@ class DataPipelineRunner:
         # Wikipedia processors - always enabled
         self.wikipedia_enricher = WikipediaEnricher(self.spark)
         self.wikipedia_text_processor = WikipediaTextProcessor(self.spark)
+        
+        # Entity extractors - always enabled
+        self.feature_extractor = FeatureExtractor(self.spark)
+        self.county_extractor = CountyExtractor(self.spark)
+        self.property_type_extractor = PropertyTypeExtractor(self.spark)
+        self.price_range_extractor = PriceRangeExtractor(self.spark)
+        self.topic_extractor = TopicExtractor(self.spark)
     
     def _init_embedding_config(self):
         """Initialize embedding configuration for entity-specific generators."""
-        from data_pipeline.config.pipeline_config import ProviderType
+        from data_pipeline.models.embedding_config import EmbeddingPipelineConfig
         
-        # Return the embedding config from settings directly
-        return self.config.embedding
+        # Convert config to proper Pydantic type
+        if isinstance(self.config.embedding, EmbeddingPipelineConfig):
+            return self.config.embedding
+        elif isinstance(self.config.embedding, dict):
+            return EmbeddingPipelineConfig.from_dict(self.config.embedding)
+        else:
+            # Handle legacy config objects
+            return EmbeddingPipelineConfig.from_pipeline_config(self.config.embedding)
     
     def _init_writer_orchestrator(self) -> Optional[WriterOrchestrator]:
         """Initialize the writer orchestrator with configured destinations."""
@@ -170,30 +187,29 @@ class DataPipelineRunner:
             logger.info("📥 Loading data from all sources...")
             loaded_data = self.loader.load_all_sources()
             
-            # Log loading summary
-            total_records = 0
+            # Log loading summary without forcing evaluation
             if loaded_data.properties is not None:
-                count = loaded_data.properties.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} properties records")
+                logger.info("   ✓ Properties data loaded")
             if loaded_data.neighborhoods is not None:
-                count = loaded_data.neighborhoods.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} neighborhoods records")
+                logger.info("   ✓ Neighborhoods data loaded")
             if loaded_data.wikipedia is not None:
-                count = loaded_data.wikipedia.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} wikipedia records")
+                logger.info("   ✓ Wikipedia data loaded")
             if loaded_data.locations is not None:
-                count = loaded_data.locations.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} locations records")
+                logger.info("   ✓ Locations data loaded")
             
-            if total_records == 0:
+            # Check if any data was loaded without forcing evaluation
+            has_data = (
+                loaded_data.properties is not None or
+                loaded_data.neighborhoods is not None or
+                loaded_data.wikipedia is not None or
+                loaded_data.locations is not None
+            )
+            
+            if not has_data:
                 logger.warning("No data loaded. Pipeline terminating.")
                 return {}
             
-            logger.info(f"   Total: {total_records:,} records across all entities")
+            logger.info("   Data loading complete")
             
             # Process each entity type separately
             processed_entities = {}
@@ -220,6 +236,13 @@ class DataPipelineRunner:
                 processed_entities['wikipedia'] = self._process_wikipedia(
                     loaded_data.wikipedia
                 )
+            
+            # Extract new entity nodes from the processed data
+            logger.info("\n🔍 Extracting entity nodes...")
+            entity_nodes = self._extract_entity_nodes(loaded_data, processed_entities)
+            
+            # Add entity nodes to processed entities
+            processed_entities.update(entity_nodes)
             
             # Store cached references
             self._cached_dataframes = processed_entities
@@ -285,6 +308,64 @@ class DataPipelineRunner:
         
         return processed_df
     
+    def _extract_entity_nodes(self, loaded_data: LoadedData, processed_entities: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+        """
+        Extract new entity nodes from the loaded and processed data.
+        
+        Args:
+            loaded_data: Original loaded data
+            processed_entities: Processed entity DataFrames
+            
+        Returns:
+            Dictionary of new entity node DataFrames
+        """
+        entity_nodes = {}
+        
+        # Extract features from properties
+        if 'properties' in processed_entities:
+            logger.info("   Extracting features...")
+            entity_nodes['features'] = self.feature_extractor.extract(processed_entities['properties'])
+            entity_nodes['feature_relationships'] = self.feature_extractor.create_relationships(processed_entities['properties'])
+        
+        # Extract property types from properties
+        if 'properties' in processed_entities:
+            logger.info("   Extracting property types...")
+            entity_nodes['property_types'] = self.property_type_extractor.extract_property_types(processed_entities['properties'])
+            entity_nodes['property_type_relationships'] = self.property_type_extractor.create_property_type_relationships(processed_entities['properties'])
+        
+        # Extract price ranges from properties
+        if 'properties' in processed_entities:
+            logger.info("   Extracting price ranges...")
+            entity_nodes['price_ranges'] = self.price_range_extractor.extract_price_ranges(processed_entities['properties'])
+            entity_nodes['price_range_relationships'] = self.price_range_extractor.create_price_range_relationships(processed_entities['properties'])
+        
+        # Extract counties from locations
+        if loaded_data.locations is not None:
+            logger.info("   Extracting counties...")
+            entity_nodes['counties'] = self.county_extractor.extract_counties(
+                loaded_data.locations,
+                processed_entities.get('properties'),
+                processed_entities.get('neighborhoods')
+            )
+            # Create county relationships if we have cities or neighborhoods
+            cities_df = None  # We would need to extract cities first
+            entity_nodes['county_relationships'] = self.county_extractor.create_county_relationships(
+                cities_df,
+                processed_entities.get('neighborhoods')
+            )
+        
+        # Extract topic clusters from Wikipedia
+        if 'wikipedia' in processed_entities:
+            logger.info("   Extracting topic clusters...")
+            entity_nodes['topic_clusters'] = self.topic_extractor.extract_topic_clusters(processed_entities['wikipedia'])
+            entity_nodes['topic_relationships'] = self.topic_extractor.create_topic_relationships(
+                processed_entities.get('wikipedia'),
+                processed_entities.get('properties'),
+                processed_entities.get('neighborhoods')
+            )
+        
+        return entity_nodes
+    
     def _process_wikipedia(self, df: DataFrame) -> DataFrame:
         """
         Process Wikipedia data through enrichment and text processing.
@@ -331,30 +412,29 @@ class DataPipelineRunner:
             logger.info("📥 Loading data from all sources...")
             loaded_data = self.loader.load_all_sources()
             
-            # Log loading summary
-            total_records = 0
+            # Log loading summary without forcing evaluation
             if loaded_data.properties is not None:
-                count = loaded_data.properties.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} properties records")
+                logger.info("   ✓ Properties data loaded")
             if loaded_data.neighborhoods is not None:
-                count = loaded_data.neighborhoods.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} neighborhoods records")
+                logger.info("   ✓ Neighborhoods data loaded")
             if loaded_data.wikipedia is not None:
-                count = loaded_data.wikipedia.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} wikipedia records")
+                logger.info("   ✓ Wikipedia data loaded")
             if loaded_data.locations is not None:
-                count = loaded_data.locations.count()
-                total_records += count
-                logger.info(f"   Loaded {count:,} locations records")
+                logger.info("   ✓ Locations data loaded")
             
-            if total_records == 0:
+            # Check if any data was loaded without forcing evaluation
+            has_data = (
+                loaded_data.properties is not None or
+                loaded_data.neighborhoods is not None or
+                loaded_data.wikipedia is not None or
+                loaded_data.locations is not None
+            )
+            
+            if not has_data:
                 logger.warning("No data loaded. Pipeline terminating.")
                 return {}
             
-            logger.info(f"   Total: {total_records:,} records across all entities")
+            logger.info("   Data loading complete")
             
             # Process each entity type separately WITH embeddings
             processed_entities = {}
@@ -418,7 +498,7 @@ class DataPipelineRunner:
     
     def _print_entity_pipeline_summary(self, entity_dataframes: Dict[str, DataFrame]) -> None:
         """
-        Print comprehensive pipeline statistics for entity-specific DataFrames.
+        Print pipeline summary without forcing DataFrame evaluation.
         
         Args:
             entity_dataframes: Dictionary of entity type to DataFrame
@@ -428,63 +508,22 @@ class DataPipelineRunner:
         logger.info("📊 PIPELINE SUMMARY")
         logger.info("="*60)
         
-        # Total records across all entities
-        total_records = sum(
-            df.count() for df in entity_dataframes.values() if df is not None
-        )
-        logger.info(f"📈 Total Records: {total_records:,}")
-        
-        # Entity type breakdown
+        # Entity types processed
         logger.info("")
-        logger.info("🏢 Entity Type Breakdown:")
+        logger.info("🏢 Entities Processed:")
         for entity_type, df in entity_dataframes.items():
             if df is not None:
-                count = df.count()
-                logger.info(f"   {entity_type}: {count:,} records")
-        
-        # Process each entity separately for statistics
-        for entity_type, df in entity_dataframes.items():
-            if df is not None:
-                logger.info("")
-                logger.info(f"📊 {entity_type.upper()} Statistics:")
+                logger.info(f"   ✓ {entity_type}")
+                logger.info(f"      Columns: {len(df.columns)}")
+                logger.info(f"      Partitions: {df.rdd.getNumPartitions()}")
                 
-                entity_count = df.count()
-                
-                # Location breakdown for this entity
+                # Log schema fields without evaluation
                 if "state" in df.columns:
-                    location_counts = df.filter(col("state").isNotNull()) \
-                                       .groupBy("state").count() \
-                                       .orderBy(desc("count")) \
-                                       .limit(3).collect()
-                    if location_counts:
-                        logger.info(f"   Top States:")
-                        for row in location_counts:
-                            logger.info(f"      {row['state']}: {row['count']:,} records")
-                
-                # Data quality indicators
-                if "city" in df.columns:
-                    with_city = df.filter(col("city").isNotNull()).count()
-                    logger.info(f"   With city data: {with_city:,} ({100*with_city/entity_count:.1f}%)")
-                
-                if "city_normalized" in df.columns:
-                    with_normalized = df.filter(col("city_normalized").isNotNull()).count()
-                    logger.info(f"   With normalized city: {with_normalized:,} ({100*with_normalized/entity_count:.1f}%)")
-                
-                if "data_quality_score" in df.columns:
-                    with_quality = df.filter(col("data_quality_score").isNotNull()).count()
-                    logger.info(f"   With quality score: {with_quality:,} ({100*with_quality/entity_count:.1f}%)")
-                
+                    logger.info(f"      Has location data: ✓")
                 if "embedding_text" in df.columns:
-                    with_text = df.filter(col("embedding_text").isNotNull()).count()
-                    logger.info(f"   With embedding text: {with_text:,} ({100*with_text/entity_count:.1f}%)")
-                
+                    logger.info(f"      Has embedding text: ✓")
                 if "embeddings" in df.columns:
-                    with_embeddings = df.filter(col("embeddings").isNotNull()).count()
-                    logger.info(f"   With embeddings: {with_embeddings:,} ({100*with_embeddings/entity_count:.1f}%)")
-                
-                # DataFrame info
-                logger.info(f"   Partitions: {df.rdd.getNumPartitions()}")
-                logger.info(f"   Columns: {len(df.columns)}")
+                    logger.info(f"      Has embeddings: ✓")
         
         logger.info("="*60)
     
@@ -517,7 +556,6 @@ class DataPipelineRunner:
             "pipeline_name": self.config.name,
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
-            "record_count": df.count(),
             "environment": self.config_manager.environment
         }
         
@@ -537,7 +575,7 @@ class DataPipelineRunner:
                 pipeline_name=metadata["pipeline_name"],
                 pipeline_version=metadata["pipeline_version"],
                 entity_type=EntityType.PROPERTY,
-                record_count=metadata["record_count"],
+                record_count=0,  # Will be counted during write if needed
                 environment=metadata.get("environment", "development")
             )
             request = WriteRequest(
@@ -556,7 +594,7 @@ class DataPipelineRunner:
         write_result: Any
     ) -> None:
         """
-        Log comprehensive summary statistics after writing.
+        Log write summary without forcing DataFrame evaluation.
         
         Args:
             entity_dataframes: Dictionary of entity DataFrames
@@ -565,59 +603,41 @@ class DataPipelineRunner:
         """
         logger.info("")
         logger.info("="*60)
-        logger.info("📊 WRITE SUMMARY STATISTICS")
+        logger.info("📊 WRITE SUMMARY")
         logger.info("="*60)
         
-        # Entity statistics
+        # Entities written
         logger.info("\n📦 Entities Written:")
-        total_entities = 0
         for entity_type, df in entity_dataframes.items():
             if df is not None:
-                count = df.count()
-                total_entities += count
-                logger.info(f"   • {entity_type.capitalize()}: {count:,} records")
+                logger.info(f"   • {entity_type.capitalize()}: ✓")
         
-        # Relationship statistics
+        # Relationships created
         if relationships:
             logger.info("\n🔗 Relationships Created:")
-            total_relationships = 0
             for rel_type, rel_df in relationships.items():
                 if rel_df is not None:
-                    count = rel_df.count()
-                    total_relationships += count
-                    logger.info(f"   • {rel_type}: {count:,} relationships")
+                    logger.info(f"   • {rel_type}: ✓")
         else:
-            total_relationships = 0
             logger.info("\n🔗 No relationships created")
         
-        # Performance metrics
+        # Performance metrics from write result
         if hasattr(write_result, 'total_duration_seconds'):
             logger.info(f"\n⏱️ Performance Metrics:")
             logger.info(f"   • Total write time: {write_result.total_duration_seconds:.2f} seconds")
-            if write_result.total_duration_seconds > 0:
-                entities_per_sec = total_entities / write_result.total_duration_seconds
-                logger.info(f"   • Throughput: {entities_per_sec:.0f} entities/second")
+        
+        # Use write result statistics if available
+        if hasattr(write_result, 'total_records_written'):
+            logger.info(f"   • Total records written: {write_result.total_records_written:,}")
+            
+            if hasattr(write_result, 'total_duration_seconds') and write_result.total_duration_seconds > 0:
+                records_per_sec = write_result.total_records_written / write_result.total_duration_seconds
+                logger.info(f"   • Throughput: {records_per_sec:.0f} records/second")
         
         # Writer statistics
         if hasattr(write_result, 'results'):
             writers_used = set(r.writer_name for r in write_result.results)
             logger.info(f"\n📝 Writers Used: {', '.join(writers_used)}")
-        
-        # Grand totals
-        logger.info(f"\n📈 Grand Totals:")
-        logger.info(f"   • Total entities: {total_entities:,}")
-        logger.info(f"   • Total relationships: {total_relationships:,}")
-        logger.info(f"   • Total records: {total_entities + total_relationships:,}")
-        
-        # Data quality indicators
-        if total_entities > 0:
-            logger.info(f"\n✨ Data Quality Indicators:")
-            avg_relationships_per_entity = total_relationships / total_entities if total_entities > 0 else 0
-            logger.info(f"   • Average relationships per entity: {avg_relationships_per_entity:.2f}")
-            
-            # Check for orphaned entities (entities without relationships)
-            if avg_relationships_per_entity < 0.5:
-                logger.warning(f"   ⚠️ Low relationship ratio - some entities may be orphaned")
     
     def _build_relationships(self, entity_dataframes: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
@@ -644,13 +664,11 @@ class DataPipelineRunner:
                 wikipedia_df=entity_dataframes.get('wikipedia')
             )
             
-            # Log relationship counts
+            # Add successfully built relationships
             for rel_name, rel_df in all_relationships.items():
                 if rel_df is not None:
-                    count = rel_df.count()
-                    if count > 0:
-                        logger.info(f"   Built {count:,} {rel_name} relationships")
-                        relationships[rel_name] = rel_df
+                    logger.info(f"   ✓ Built {rel_name} relationships")
+                    relationships[rel_name] = rel_df
             
             if not relationships:
                 logger.warning("   No relationships built")
@@ -674,15 +692,11 @@ class DataPipelineRunner:
             logger.error("No data to write. Run pipeline first.")
             return
         
-        # Calculate total record count
-        total_records = sum(df.count() for df in output_dataframes.values() if df is not None)
-        
         # Prepare metadata for writers
         metadata = {
             "pipeline_name": self.config.name,
             "pipeline_version": self.config.version,
             "timestamp": datetime.now().isoformat(),
-            "total_record_count": total_records,
             "entity_types": list(output_dataframes.keys()),
             "environment": self.config_manager.environment if self.config_manager else "test"
         }

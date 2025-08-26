@@ -79,28 +79,28 @@ class RelationshipBuilder:
             relationships["property_located_in"] = self.build_located_in_relationships(
                 properties_df, neighborhoods_df
             )
-            logger.info(f"Built {relationships['property_located_in'].count()} LOCATED_IN relationships")
+            logger.info("✓ Built LOCATED_IN relationships")
         
         # Geographic hierarchy relationships - always enabled if neighborhoods dataframe exists
         if neighborhoods_df:
             relationships["geographic_hierarchy"] = self.build_geographic_hierarchy(
                 neighborhoods_df
             )
-            logger.info(f"Built {relationships['geographic_hierarchy'].count()} PART_OF relationships")
+            logger.info("✓ Built PART_OF relationships")
         
         # Wikipedia DESCRIBES relationships - always enabled if both dataframes exist
         if wikipedia_df and neighborhoods_df:
             relationships["wikipedia_describes"] = self.build_describes_relationships(
                 wikipedia_df, neighborhoods_df
             )
-            logger.info(f"Built {relationships['wikipedia_describes'].count()} DESCRIBES relationships")
+            logger.info("✓ Built DESCRIBES relationships")
         
         # Similarity relationships - always enabled
         if properties_df:
             relationships["property_similarity"] = self.calculate_property_similarity(
                 properties_df
             )
-            logger.info(f"Built {relationships['property_similarity'].count()} property SIMILAR_TO relationships")
+            logger.info("✓ Built property SIMILAR_TO relationships")
         
         return relationships
     

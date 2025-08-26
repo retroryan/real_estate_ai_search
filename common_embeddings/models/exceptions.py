@@ -1,22 +1,51 @@
 """
-Custom exceptions specific to embeddings processing.
+Custom exceptions for the embeddings module.
 
-Core exceptions (ConfigurationError, DataLoadingError, StorageError, 
-ValidationError, MetadataError) are imported from common.
+Provides a hierarchy of exceptions for different error scenarios.
 """
 
 
-class EmbeddingGenerationError(Exception):
+class PropertyFinderError(Exception):
+    """Base exception for all Property Finder errors."""
+    pass
+
+
+class ConfigurationError(PropertyFinderError):
+    """Raised when configuration is invalid or missing."""
+    pass
+
+
+class DataLoadingError(PropertyFinderError):
+    """Raised when data cannot be loaded from source."""
+    pass
+
+
+class StorageError(PropertyFinderError):
+    """Raised when storage operations fail."""
+    pass
+
+
+class ValidationError(PropertyFinderError):
+    """Raised when data validation fails."""
+    pass
+
+
+class MetadataError(PropertyFinderError):
+    """Raised when metadata operations fail."""
+    pass
+
+
+class EmbeddingGenerationError(PropertyFinderError):
     """Raised when embedding generation fails."""
     pass
 
 
-class ChunkingError(Exception):
+class ChunkingError(PropertyFinderError):
     """Raised when text chunking fails."""
     pass
 
 
-class ProviderError(Exception):
+class ProviderError(PropertyFinderError):
     """Raised when embedding provider operations fail."""
     
     def __init__(self, provider: str, message: str, original_error: Exception = None):

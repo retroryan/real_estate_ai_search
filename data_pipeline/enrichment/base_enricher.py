@@ -138,64 +138,39 @@ class BaseEnricher(ABC):
     def validate_enrichment(
         self, 
         df: DataFrame, 
-        initial_count: int, 
-        entity_name: str
+        initial_count: Optional[int] = None,  # Made optional for backward compatibility
+        entity_name: str = "Entity"
     ) -> DataFrame:
         """
-        Validate enrichment didn't lose records.
+        Log enrichment completion without forcing evaluation.
         
         Args:
             df: Enriched DataFrame
-            initial_count: Original record count
+            initial_count: Deprecated - no longer used
             entity_name: Name of entity type for logging
             
         Returns:
             The enriched DataFrame
         """
-        final_count = df.count()
-        if final_count != initial_count:
-            logger.warning(
-                f"{entity_name} count changed during enrichment: "
-                f"{initial_count} -> {final_count}"
-            )
-        else:
-            logger.info(f"{entity_name} enrichment completed for {final_count} records")
+        # Simply log completion without forcing evaluation
+        logger.info(f"{entity_name} enrichment completed successfully")
         
         return df
     
     def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
-        Calculate basic enrichment statistics.
+        Get basic enrichment metadata without forcing evaluation.
         
         Args:
             df: Enriched DataFrame
             
         Returns:
-            Dictionary of statistics
+            Dictionary of metadata
         """
         stats = {
-            "total_records": df.count(),
-            "columns": len(df.columns)
+            "columns": len(df.columns),
+            "has_quality_score": any("quality_score" in col_name for col_name in df.columns)
         }
-        
-        # Add quality score stats if available
-        quality_col = None
-        for col_name in df.columns:
-            if "quality_score" in col_name:
-                quality_col = col_name
-                break
-        
-        if quality_col:
-            quality_stats = df.select(
-                col(quality_col).alias("score")
-            ).summary("mean", "min", "max").collect()
-            
-            if quality_stats:
-                stats["quality_scores"] = {
-                    "mean": float(quality_stats[1]["score"]) if quality_stats[1]["score"] else 0,
-                    "min": float(quality_stats[2]["score"]) if quality_stats[2]["score"] else 0,
-                    "max": float(quality_stats[3]["score"]) if quality_stats[3]["score"] else 0,
-                }
         
         return stats
 

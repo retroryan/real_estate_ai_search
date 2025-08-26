@@ -85,7 +85,6 @@ class NeighborhoodEnricher(BaseEnricher):
         """
         logger.info("Starting neighborhood enrichment process")
         
-        initial_count = df.count()
         enriched_df = df
         
         # Add correlation IDs - always enabled
@@ -109,11 +108,15 @@ class NeighborhoodEnricher(BaseEnricher):
         enriched_df = self._calculate_quality_scores(enriched_df)
         logger.info("Calculated neighborhood quality scores")
         
+        # Add Phase 2 fields (scores and timestamps)
+        enriched_df = self._add_phase2_fields(enriched_df)
+        logger.info("Added Phase 2 score fields")
+        
         # Add processing timestamp
         enriched_df = self.add_processing_timestamp(enriched_df)
         
         # Validate enrichment
-        return self.validate_enrichment(enriched_df, initial_count, "Neighborhood")
+        return self.validate_enrichment(enriched_df, entity_name="Neighborhood")
     
     
     def _normalize_locations(self, df: DataFrame) -> DataFrame:
@@ -262,6 +265,38 @@ class NeighborhoodEnricher(BaseEnricher):
         
         return df_with_validation
     
+    def _add_phase2_fields(self, df: DataFrame) -> DataFrame:
+        """
+        Add Phase 2 fields including score calculations and timestamps.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with Phase 2 fields
+        """
+        from pyspark.sql.functions import current_timestamp
+        from data_pipeline.processing.score_calculator import ScoreCalculator
+        
+        # Add timestamps
+        df_with_timestamps = df.withColumn("created_at", current_timestamp()) \
+                               .withColumn("updated_at", current_timestamp())
+        
+        # Initialize score calculator with fixed Pandas UDFs
+        score_calculator = ScoreCalculator(self.spark)
+        
+        # Add all lifestyle scores using the efficient Pandas UDF approach
+        df_with_scores = score_calculator.add_lifestyle_scores(df_with_timestamps)
+        
+        # Add knowledge scores if Wikipedia data is available
+        if "wikipedia_count" in df_with_scores.columns:
+            df_with_scores = score_calculator.add_knowledge_scores(df_with_scores)
+        else:
+            # Set knowledge score to 0 when Wikipedia data is not available
+            df_with_scores = df_with_scores.withColumn("knowledge_score", lit(0.0))
+        
+        return df_with_scores
+    
     def _enhance_with_location_hierarchy(self, df: DataFrame) -> DataFrame:
         """
         Enhance neighborhoods with location hierarchy and parent relationships.
@@ -302,61 +337,18 @@ class NeighborhoodEnricher(BaseEnricher):
     
     def get_enrichment_statistics(self, df: DataFrame) -> Dict[str, Any]:
         """
-        Calculate statistics about the enrichment process.
+        Get enrichment metadata without forcing evaluation.
+        
+        Note: This method is deprecated and not used in the pipeline.
+        Kept for backward compatibility only.
         
         Args:
             df: Enriched DataFrame
             
         Returns:
-            Dictionary of enrichment statistics
+            Dictionary of metadata
         """
-        stats = {}
-        
-        total = df.count()
-        stats["total_neighborhoods"] = total
-        
-        # Location normalization
-        if "city_normalized" in df.columns:
-            with_normalized_city = df.filter(col("city_normalized").isNotNull()).count()
-            stats["neighborhoods_with_normalized_city"] = with_normalized_city
-        
-        # Demographics
-        if "demographic_completeness" in df.columns:
-            demo_stats = df.select(
-                expr("avg(demographic_completeness) as avg_completeness"),
-                expr("count(case when demographic_completeness = 1.0 then 1 end) as fully_complete")
-            ).collect()[0]
-            
-            stats["avg_demographic_completeness"] = float(demo_stats["avg_completeness"]) if demo_stats["avg_completeness"] else 0
-            stats["neighborhoods_with_complete_demographics"] = demo_stats["fully_complete"]
-        
-        # Boundaries
-        if "has_valid_boundary" in df.columns:
-            with_boundaries = df.filter(col("has_valid_boundary") == True).count()
-            stats["neighborhoods_with_boundaries"] = with_boundaries
-        
-        # Quality scores
-        if "neighborhood_quality_score" in df.columns:
-            quality_stats = df.select(
-                expr("avg(neighborhood_quality_score) as avg_quality"),
-                expr("min(neighborhood_quality_score) as min_quality"),
-                expr("max(neighborhood_quality_score) as max_quality"),
-                expr("count(case when neighborhood_validation_status = 'validated' then 1 end) as validated"),
-                expr("count(case when neighborhood_validation_status = 'low_quality' then 1 end) as low_quality")
-            ).collect()[0]
-            
-            stats["avg_quality_score"] = float(quality_stats["avg_quality"]) if quality_stats["avg_quality"] else 0
-            stats["min_quality_score"] = float(quality_stats["min_quality"]) if quality_stats["min_quality"] else 0
-            stats["max_quality_score"] = float(quality_stats["max_quality"]) if quality_stats["max_quality"] else 0
-            stats["validated_neighborhoods"] = quality_stats["validated"]
-            stats["low_quality_neighborhoods"] = quality_stats["low_quality"]
-        
-        # Income brackets
-        if "income_bracket" in df.columns:
-            bracket_counts = df.groupBy("income_bracket").count().collect()
-            stats["income_brackets"] = {row["income_bracket"]: row["count"] for row in bracket_counts}
-        
-        return stats
+        return super().get_enrichment_statistics(df)
     
     def calculate_knowledge_score(self, df: DataFrame, wikipedia_df: Optional[DataFrame] = None) -> DataFrame:
         """
