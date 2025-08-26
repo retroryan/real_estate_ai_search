@@ -334,14 +334,9 @@ class NodeConfiguration(BaseModel):
     
     # Node batch sizes for efficient creation
     node_batch_size: int = Field(1000, description="Batch size for node creation")
-    
-    # Data quality thresholds
-    min_location_confidence: float = Field(0.5, description="Minimum location confidence")
-    min_extraction_confidence: float = Field(0.3, description="Minimum extraction confidence")
-    
+
     # Processing settings
     max_concurrent_batches: int = Field(4, description="Maximum concurrent batch operations")
-    enable_data_validation: bool = Field(True, description="Enable Pydantic data validation")
 
 
 # ============================================================================

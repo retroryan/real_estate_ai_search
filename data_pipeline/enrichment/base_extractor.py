@@ -167,17 +167,6 @@ class BaseExtractor(ABC):
         """
         pass
     
-    def create_relationships(self, *args, **kwargs) -> DataFrame:
-        """
-        Create relationships for extracted entities.
-        
-        Override this in subclasses that create relationships.
-        
-        Returns:
-            DataFrame of relationships or empty DataFrame
-        """
-        # Default implementation returns empty DataFrame
-        return self.spark.createDataFrame([], ["from_id", "to_id", "relationship_type"])
 
 
 class ConfigurableExtractor(BaseExtractor):

@@ -527,7 +527,7 @@ class PropertyEnricher(BaseEnricher):
                 .otherwise(lit("other"))
             )
             
-            # Create property_type_id for relationships
+            # Create property_type_id for data consistency
             df_normalized = df_normalized.withColumn(
                 "property_type_id",
                 concat(lit("type_"), col("property_type_normalized"))

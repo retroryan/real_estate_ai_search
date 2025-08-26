@@ -15,8 +15,27 @@ from pyspark.sql.functions import col, lit, current_timestamp
 
 from search_pipeline.models.config import SearchPipelineConfig
 from search_pipeline.models.results import SearchIndexResult, SearchPipelineResult
+from data_pipeline.writers.elasticsearch.transformations import DataFrameTransformer
+from data_pipeline.writers.elasticsearch.models import SchemaTransformation
 
 logger = logging.getLogger(__name__)
+
+
+def truncate_message(msg: str, max_length: int = 200) -> str:
+    """
+    Truncate a message to a maximum length.
+    
+    Args:
+        msg: Message to truncate
+        max_length: Maximum length (default 200)
+    
+    Returns:
+        Truncated message
+    """
+    msg_str = str(msg)
+    if len(msg_str) > max_length:
+        return msg_str[:max_length] + f"... (truncated {len(msg_str) - max_length} chars)"
+    return msg_str
 
 
 class SearchPipelineRunner:
@@ -39,6 +58,10 @@ class SearchPipelineRunner:
         self.spark = spark
         self.config = config
         self.pipeline_id = str(uuid.uuid4())
+        
+        # Initialize DataFrame transformer for Elasticsearch compatibility
+        self.transformer = DataFrameTransformer(spark)
+        
         logger.info(f"Search pipeline runner initialized (ID: {self.pipeline_id})")
         
         # Validate configuration on initialization
@@ -107,7 +130,7 @@ class SearchPipelineRunner:
             logger.info(f"Search pipeline completed successfully\n{result.get_summary()}")
             
         except Exception as e:
-            error_msg = f"Search pipeline failed: {e}"
+            error_msg = f"Search pipeline failed: {truncate_message(str(e))}"
             logger.error(error_msg)
             result.complete(success=False, error=error_msg)
         
@@ -156,7 +179,7 @@ class SearchPipelineRunner:
             )
             
         except Exception as e:
-            error_msg = f"Failed to index {entity_type}: {e}"
+            error_msg = f"Failed to index {entity_type}: {truncate_message(str(e))}"
             logger.error(error_msg)
             result.error_messages.append(error_msg)
             
@@ -184,7 +207,26 @@ class SearchPipelineRunner:
                        .withColumn("_indexed_at", current_timestamp()) \
                        .withColumn("_pipeline_id", lit(self.pipeline_id))
         
-        # Entity-specific preparation
+        # Apply Elasticsearch compatibility transformations (decimal conversion, geo_point, etc.)
+        transform_config = SchemaTransformation(
+            convert_decimals=True,
+            add_geo_point=True,
+        )
+        
+        # Determine ID field based on entity type
+        id_field_mapping = {
+            "properties": "listing_id",
+            "neighborhoods": "neighborhood_id", 
+            "wikipedia": "page_id"
+        }
+        id_field = id_field_mapping.get(entity_type, "id")
+        
+        # Apply transformations for Elasticsearch compatibility
+        prepared_df = self.transformer.transform_for_elasticsearch(
+            prepared_df, transform_config, id_field
+        )
+        
+        # Entity-specific preparation (after ES transformations)
         if entity_type == "properties":
             prepared_df = self._prepare_properties(prepared_df)
         elif entity_type == "neighborhoods":
@@ -212,9 +254,7 @@ class SearchPipelineRunner:
             if field not in existing_fields:
                 logger.warning(f"Property field '{field}' not found in DataFrame")
         
-        # Use listing_id as document ID if configured
-        if self.config.elasticsearch.mapping_id == "listing_id":
-            df = df.withColumn("_id", col("listing_id"))
+        # ID field is already set by transformer as "id" - no need to override
         
         return df
     
@@ -228,9 +268,7 @@ class SearchPipelineRunner:
         Returns:
             Prepared DataFrame
         """
-        # Ensure required fields exist
-        if "neighborhood_id" in df.columns and self.config.elasticsearch.mapping_id == "neighborhood_id":
-            df = df.withColumn("_id", col("neighborhood_id"))
+        # ID field is already set by transformer as "id" - no need to override
         
         return df
     
@@ -244,9 +282,7 @@ class SearchPipelineRunner:
         Returns:
             Prepared DataFrame
         """
-        # Ensure required fields exist
-        if "page_id" in df.columns and self.config.elasticsearch.mapping_id == "page_id":
-            df = df.withColumn("_id", col("page_id"))
+        # ID field is already set by transformer as "id" - no need to override
         
         return df
     
@@ -264,8 +300,13 @@ class SearchPipelineRunner:
         # Add index-specific configuration
         es_conf["es.resource"] = index_name
         
-        # Log configuration for debugging
-        logger.debug(f"Elasticsearch write configuration: {es_conf}")
+        # Use "id" field for document mapping (set by transformer)
+        es_conf["es.mapping.id"] = "id"
+        
+        # Log configuration for debugging (but truncate long values)
+        debug_conf = {k: str(v)[:200] + "..." if len(str(v)) > 200 else v 
+                      for k, v in es_conf.items()}
+        logger.debug(f"Elasticsearch write configuration: {debug_conf}")
         
         # Write DataFrame to Elasticsearch
         df.write \
@@ -305,7 +346,7 @@ class SearchPipelineRunner:
             return True
             
         except Exception as e:
-            logger.error(f"Elasticsearch connection validation failed: {e}")
+            logger.error(f"Elasticsearch connection validation failed: {truncate_message(str(e))}")
             return False
     
     def get_index_stats(self, entity_type: str) -> Optional[Dict]:

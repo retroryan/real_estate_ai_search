@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from data_pipeline.config.models import PipelineConfig
 
 
-def load_configuration(sample_size: Optional[int] = None) -> PipelineConfig:
+def load_configuration(config_path: Optional[str] = None, sample_size: Optional[int] = None) -> PipelineConfig:
     """
     Load pipeline configuration with clear precedence.
     
@@ -27,6 +27,7 @@ def load_configuration(sample_size: Optional[int] = None) -> PipelineConfig:
     4. Pydantic model defaults
     
     Args:
+        config_path: Optional path to specific config file
         sample_size: Optional number of records to sample from each source
         
     Returns:
@@ -40,7 +41,7 @@ def load_configuration(sample_size: Optional[int] = None) -> PipelineConfig:
     load_dotenv()
     
     # Find and load YAML configuration
-    config_dict = _load_yaml_config()
+    config_dict = _load_yaml_config(config_path)
     
     # Apply environment variable overrides for secrets
     config_dict = _apply_environment_secrets(config_dict)
@@ -58,20 +59,35 @@ def load_configuration(sample_size: Optional[int] = None) -> PipelineConfig:
     return config
 
 
-def _load_yaml_config() -> Dict[str, Any]:
+def _load_yaml_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     """
     Load configuration from YAML file.
     
-    Searches for config.yaml in standard locations:
+    If config_path is provided, uses that specific file.
+    Otherwise searches for config.yaml in standard locations:
     1. data_pipeline/config.yaml
     2. config.yaml (current directory)
+    
+    Args:
+        config_path: Optional specific config file path
     
     Returns:
         Dictionary of configuration values
         
     Raises:
-        FileNotFoundError: If no config file found
+        FileNotFoundError: If specific config file not found
     """
+    if config_path:
+        # Use specific config file
+        path = Path(config_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        
+        with open(path, "r") as f:
+            config = yaml.safe_load(f) or {}
+            return config
+    
+    # Search standard locations
     possible_paths = [
         Path("data_pipeline/config.yaml"),
         Path("config.yaml"),
