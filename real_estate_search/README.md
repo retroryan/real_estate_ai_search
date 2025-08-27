@@ -81,7 +81,7 @@ python -m real_estate_search.management validate-embeddings
 
 ```bash
 # Elasticsearch authentication
-export ELASTIC_PASSWORD="your-elasticsearch-password"
+export ELASTICSEARCH_PASSWORD="your-elasticsearch-password"
 
 # Embedding providers (choose one)
 export OPENAI_API_KEY="your-openai-key"        # For OpenAI embeddings

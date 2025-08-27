@@ -211,7 +211,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="properties_template",
-            index_patterns=["properties*"],
+            index_patterns=["properties*", "real_estate_properties*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -230,7 +230,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="neighborhoods_template",
-            index_patterns=["neighborhoods*"],
+            index_patterns=["neighborhoods*", "real_estate_neighborhoods*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -249,7 +249,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="wikipedia_template",
-            index_patterns=["wikipedia*"],
+            index_patterns=["wikipedia*", "real_estate_wikipedia*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -317,7 +317,7 @@ class ElasticsearchIndexManager:
                 self.logger.error(f"Embedding field type incorrect in index {index_name}")
                 return False
                 
-            if embedding_field.get("dims") != 1536:
+            if embedding_field.get("dims") != 1024:
                 self.logger.error(f"Embedding dimensions incorrect in index {index_name}")
                 return False
             
