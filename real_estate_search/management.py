@@ -23,7 +23,8 @@ from .demo_queries import (
     demo_semantic_search,
     demo_multi_entity_search,
     demo_wikipedia_search,
-    demo_relationship_search
+    demo_relationship_search,
+    demo_wikipedia_fulltext
 )
 
 
@@ -456,7 +457,8 @@ class IndexManagementCLI:
             6: (demo_semantic_search, "Semantic Similarity Search"),
             7: (demo_multi_entity_search, "Multi-Entity Combined Search"),
             8: (demo_wikipedia_search, "Wikipedia Article Search"),
-            9: (demo_relationship_search, "Property-Neighborhood-Wikipedia Relationships")
+            9: (demo_relationship_search, "Property-Neighborhood-Wikipedia Relationships"),
+            10: (demo_wikipedia_fulltext, "Wikipedia Full-Text Search")
         }
         
         if demo_number not in demo_queries:
@@ -470,13 +472,20 @@ class IndexManagementCLI:
             print(f"\nRunning Demo {demo_number}: {query_name}")
             print("=" * 60)
             
-            # Add special description for demo 9
+            # Add special descriptions for specific demos
             if demo_number == 9:
                 print("\n📊 Query Architecture Overview:")
                 print("-" * 50)
                 print("This demo performs three types of relationship queries:\n")
                 print("1️⃣  Property → Neighborhood → Wikipedia")
                 print("   Starting from a property, finds its neighborhood and related articles")
+            elif demo_number == 10:
+                print("\n🔍 Full-Text Search Overview:")
+                print("-" * 50)
+                print("This demo showcases Wikipedia full-text search after HTML enrichment:\n")
+                print("• Searches across complete Wikipedia article content")
+                print("• Demonstrates various query patterns and operators")
+                print("• Shows highlighted relevant content from articles")
                 print("   Shows: Property details, neighborhood context, location Wikipedia")
                 print()
                 print("2️⃣  Neighborhood → Properties + Wikipedia") 
@@ -571,8 +580,8 @@ Examples:
         'demo_number',
         type=int,
         nargs='?',
-        choices=range(1, 10),
-        help='Demo query number to run (1-9)'
+        choices=range(1, 11),
+        help='Demo query number to run (1-10)'
     )
     
     parser.add_argument(
