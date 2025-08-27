@@ -169,18 +169,18 @@ class PropertyEnricher(BaseEnricher):
         Returns:
             DataFrame with neighborhood names added
         """
-        # Select only the fields we need from neighborhoods
+        # Select only the fields we need from neighborhoods with an alias to avoid column conflicts
         neighborhoods_lookup = self.neighborhoods_df.select(
-            col("neighborhood_id"),
+            col("neighborhood_id").alias("lookup_neighborhood_id"),
             col("name").alias("neighborhood")
         )
         
-        # Left join to add neighborhood name
+        # Left join to add neighborhood name using explicit column references
         df_with_names = df.join(
             broadcast(neighborhoods_lookup),
-            df["neighborhood_id"] == neighborhoods_lookup["neighborhood_id"],
+            df["neighborhood_id"] == neighborhoods_lookup["lookup_neighborhood_id"],
             "left"
-        ).drop(neighborhoods_lookup["neighborhood_id"])
+        ).drop("lookup_neighborhood_id")  # Drop the aliased lookup column
         
         return df_with_names
     

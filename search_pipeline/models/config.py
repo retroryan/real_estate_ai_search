@@ -178,6 +178,8 @@ class ElasticsearchConfig(BaseModel):
         Returns:
             Full index name
         """
+        if not self.index_prefix or self.index_prefix.strip() == "":
+            return entity_type
         return f"{self.index_prefix}_{entity_type}"
 
 

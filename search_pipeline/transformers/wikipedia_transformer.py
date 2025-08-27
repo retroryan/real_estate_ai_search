@@ -14,7 +14,7 @@ from pyspark.sql.functions import (
     col, lit, when, struct, array, size, split,
     to_timestamp, regexp_replace, trim, coalesce
 )
-from pyspark.sql.types import FloatType, IntegerType, TimestampType
+from pyspark.sql.types import FloatType, IntegerType, TimestampType, DoubleType, DecimalType
 
 from .base_transformer import BaseDataFrameTransformer
 
@@ -67,6 +67,9 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
         
         # Preserve embedding fields if present
         df = self._preserve_embedding_fields(df)
+        
+        # Convert decimal fields for Elasticsearch compatibility
+        df = self._convert_decimal_fields(df)
         
         return df
     
@@ -160,6 +163,16 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
         for field in embedding_fields:
             if field not in df.columns:
                 df = df.withColumn(field, lit(None))
+        
+        return df
+    
+    def _convert_decimal_fields(self, df: DataFrame) -> DataFrame:
+        """Convert ALL Decimal fields to Double for Elasticsearch compatibility."""
+        # Get schema and identify all decimal fields
+        for field in df.schema.fields:
+            if isinstance(field.dataType, DecimalType):
+                self.logger.debug(f"Converting decimal field '{field.name}' to double")
+                df = df.withColumn(field.name, col(field.name).cast(DoubleType()))
         
         return df
     

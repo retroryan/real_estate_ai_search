@@ -9,6 +9,7 @@ import json
 import logging
 import sqlite3
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
@@ -32,15 +33,16 @@ class WikipediaLoader(BaseLoader):
         """
         return WikipediaArticle.spark_schema()
     
-    def load(self, db_path: str) -> DataFrame:
+    def load(self, db_path: str, sample_size: Optional[int] = None) -> DataFrame:
         """
-        Load Wikipedia data from SQLite database.
+        Load Wikipedia data from SQLite database with optional sampling.
         
         Args:
             db_path: Path to SQLite database file
+            sample_size: Optional number of records to sample
             
         Returns:
-            DataFrame with Wikipedia articles following a clean schema
+            DataFrame with Wikipedia articles following a clean schema, optionally sampled
         """
         logger.info(f"Loading Wikipedia data from: {db_path}")
         
@@ -62,8 +64,10 @@ class WikipediaLoader(BaseLoader):
         # Transform to entity-specific schema
         result_df = self._transform_to_entity_schema(spark_df, db_path)
         
-        record_count = result_df.count()
-        logger.info(f"Successfully loaded {record_count} Wikipedia articles")
+        # Apply sampling if requested
+        if sample_size is not None and sample_size > 0:
+            result_df = result_df.limit(sample_size)
+            logger.info(f"Applied sampling: limited to {sample_size} Wikipedia articles")
         
         return result_df
     

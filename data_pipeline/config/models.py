@@ -164,7 +164,7 @@ class ElasticsearchOutputConfig(BaseModel):
         default=1000,
         description="Bulk index batch size"
     )
-    # Password comes from environment variable ELASTIC_PASSWORD
+    # Password comes from environment variable ELASTICSEARCH_PASSWORD
 
 
 class OutputConfig(BaseModel):
@@ -230,7 +230,7 @@ class OutputConfig(BaseModel):
         
         if self.elasticsearch.username:
             conf["es.net.http.auth.user"] = self.elasticsearch.username
-            password = os.environ.get('ELASTIC_PASSWORD', '')
+            password = os.environ.get('ELASTICSEARCH_PASSWORD', '')
             if password:
                 conf["es.net.http.auth.pass"] = password
         

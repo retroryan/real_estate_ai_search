@@ -14,7 +14,7 @@ from pyspark.sql.functions import (
     col, lit, when, struct, array, size, split,
     to_timestamp, regexp_replace, trim, coalesce
 )
-from pyspark.sql.types import FloatType, IntegerType, TimestampType
+from pyspark.sql.types import FloatType, IntegerType, TimestampType, DoubleType, DecimalType
 
 from .base_transformer import BaseDataFrameTransformer
 
@@ -76,54 +76,58 @@ class PropertyDataFrameTransformer(BaseDataFrameTransformer):
         # Preserve embedding fields if present
         df = self._preserve_embedding_fields(df)
         
+        # Convert decimal fields for Elasticsearch compatibility
+        df = self._convert_decimal_fields(df)
+        
         return df
     
     def _map_core_property_fields(self, df: DataFrame) -> DataFrame:
         """Map core property fields from input to output schema."""
-        return df.select(
-            # Primary ID
+        # Get all column names and select them explicitly to avoid duplicates
+        all_columns = df.columns
+        selected_columns = []
+        
+        # Add core fields first
+        selected_columns.extend([
             col("listing_id"),
-            
-            # Property type and basic info
-            self._safe_column_access(df, "property_details.property_type").alias("property_type"),
+            self._safe_column_access(df, "property_type").alias("property_type"),
             self._safe_column_access(df, "listing_price").cast(FloatType()).alias("price"),
-            self._safe_column_access(df, "property_details.bedrooms").cast(IntegerType()).alias("bedrooms"),
-            self._safe_column_access(df, "property_details.bathrooms").cast(FloatType()).alias("bathrooms"),
-            self._safe_column_access(df, "property_details.square_feet").cast(IntegerType()).alias("square_feet"),
-            self._safe_column_access(df, "property_details.year_built").cast(IntegerType()).alias("year_built"),
-            
-            # Convert lot_size from acres to square feet (1 acre = 43,560 sq ft)
-            when(
-                col("property_details.lot_size").isNotNull(),
-                (col("property_details.lot_size") * 43560).cast(IntegerType())
-            ).otherwise(lit(None)).alias("lot_size"),
-            
-            # Description and neighborhood
+            self._safe_column_access(df, "bedrooms").cast(IntegerType()).alias("bedrooms"),
+            self._safe_column_access(df, "bathrooms").cast(FloatType()).alias("bathrooms"),
+            self._safe_column_access(df, "square_feet").cast(IntegerType()).alias("square_feet"),
+            self._safe_column_access(df, "year_built").cast(IntegerType()).alias("year_built"),
+            self._safe_column_access(df, "lot_size").cast(IntegerType()).alias("lot_size"),
             self._safe_column_access(df, "description").alias("description"),
-            self._safe_column_access(df, "neighborhood_id").alias("neighborhood_id"),
-            
-            # Keep original nested objects for processing
-            col("address"),
-            col("coordinates"),
-            col("property_details"),
-            col("features"),
-            col("images"),
-            
-            # Keep other fields for further processing
-            col("*")
-        )
+            self._safe_column_access(df, "neighborhood_id").alias("neighborhood_id")
+        ])
+        
+        # Add all other columns except the ones we've already handled
+        handled_fields = {
+            "listing_id", "property_type", "listing_price", "bedrooms", 
+            "bathrooms", "square_feet", "year_built", "lot_size", 
+            "description", "neighborhood_id"
+        }
+        
+        for column_name in all_columns:
+            if column_name not in handled_fields:
+                selected_columns.append(col(column_name))
+        
+        return df.select(*selected_columns)
     
     def _create_address_object(self, df: DataFrame) -> DataFrame:
-        """Create address nested object."""
+        """Create address nested object from flattened fields."""
         address_struct = struct(
-            self._safe_column_access(df, "address.street").alias("street"),
-            self._safe_column_access(df, "address.city").alias("city"),
-            self._safe_column_access(df, "address.state").alias("state"),
-            self._safe_column_access(df, "address.zip").alias("zip_code"),
-            # Create location array from coordinates [longitude, latitude]
+            self._safe_column_access(df, "street").alias("street"),
+            self._safe_column_access(df, "city").alias("city"),
+            self._safe_column_access(df, "state").alias("state"),
+            self._safe_column_access(df, "zip_code").alias("zip_code"),
+            # Create location array from flattened coordinate fields [longitude, latitude]
             when(
-                (col("coordinates.latitude").isNotNull()) & (col("coordinates.longitude").isNotNull()),
-                array(col("coordinates.longitude"), col("coordinates.latitude"))
+                (self._safe_column_access(df, "latitude").isNotNull()) & (self._safe_column_access(df, "longitude").isNotNull()),
+                array(
+                    self._safe_column_access(df, "longitude").cast(DoubleType()), 
+                    self._safe_column_access(df, "latitude").cast(DoubleType())
+                )
             ).otherwise(lit(None)).alias("location")
         )
         
@@ -145,9 +149,10 @@ class PropertyDataFrameTransformer(BaseDataFrameTransformer):
     def _create_parking_object(self, df: DataFrame) -> DataFrame:
         """Create parking nested object."""
         parking_struct = struct(
-            self._safe_column_access(df, "property_details.garage_spaces").cast(IntegerType()).alias("spaces"),
+            self._safe_column_access(df, "garage_spaces").cast(IntegerType()).alias("spaces"),
+            lit(None).cast(IntegerType()).alias("capacity"),
             when(
-                col("property_details.garage_spaces").isNotNull() & (col("property_details.garage_spaces") > 0),
+                col("garage_spaces").isNotNull() & (col("garage_spaces") > 0),
                 lit("garage")
             ).otherwise(lit("none")).alias("type")
         )
@@ -225,15 +230,65 @@ class PropertyDataFrameTransformer(BaseDataFrameTransformer):
         
         return df
     
+    def _convert_decimal_fields(self, df: DataFrame) -> DataFrame:
+        """Convert ALL Decimal fields to Double for Elasticsearch compatibility.
+        
+        The Elasticsearch-Spark connector explicitly rejects DecimalType values.
+        This method recursively converts all decimal types in the schema.
+        """
+        from pyspark.sql.types import ArrayType, StructType, StructField
+        from pyspark.sql import functions as F
+        
+        def convert_data_type(data_type):
+            """Recursively convert DecimalType to DoubleType in schema."""
+            if isinstance(data_type, DecimalType):
+                return DoubleType()
+            elif isinstance(data_type, ArrayType):
+                return ArrayType(convert_data_type(data_type.elementType), data_type.containsNull)
+            elif isinstance(data_type, StructType):
+                return StructType([
+                    StructField(field.name, convert_data_type(field.dataType), field.nullable)
+                    for field in data_type.fields
+                ])
+            else:
+                return data_type
+        
+        # Check if any conversions are needed
+        schema_needs_conversion = False
+        new_schema_fields = []
+        
+        for field in df.schema.fields:
+            new_data_type = convert_data_type(field.dataType)
+            if new_data_type != field.dataType:
+                schema_needs_conversion = True
+                self.logger.debug(f"Schema conversion needed for field '{field.name}'")
+            new_schema_fields.append(StructField(field.name, new_data_type, field.nullable))
+        
+        if not schema_needs_conversion:
+            return df
+        
+        # Apply conversions by casting columns with the new schema
+        select_expressions = []
+        for old_field, new_field in zip(df.schema.fields, new_schema_fields):
+            if old_field.dataType != new_field.dataType:
+                self.logger.debug(f"Converting field '{old_field.name}' from {old_field.dataType} to {new_field.dataType}")
+                select_expressions.append(col(old_field.name).cast(new_field.dataType).alias(old_field.name))
+            else:
+                select_expressions.append(col(old_field.name))
+        
+        return df.select(*select_expressions)
+    
     def _validate_input(self, df: DataFrame) -> None:
         """Validate property-specific input requirements."""
         super()._validate_input(df)
         
-        # Check for required nested structures
-        if "address" not in df.columns:
-            self.logger.warning("Address object not found in input DataFrame")
+        # Check for recommended flattened address fields
+        if "street" not in df.columns and "city" not in df.columns:
+            self.logger.warning("Address fields (street, city, etc.) not found in input DataFrame")
         
-        if "property_details" not in df.columns:
-            self.logger.warning("Property details object not found in input DataFrame")
+        # Check for recommended flattened property detail fields
+        if "property_type" not in df.columns and "bedrooms" not in df.columns:
+            self.logger.warning("Property detail fields not found in input DataFrame")
         
-        self.logger.debug("Property input validation completed")
+        # Data pipeline produces flattened structure, so no nested objects expected
+        self.logger.debug("Property input validation completed for flattened schema")
