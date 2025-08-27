@@ -58,15 +58,16 @@ class BaseLoader(ABC):
         """
         pass
     
-    def load(self, path: str) -> DataFrame:
+    def load(self, path: str, sample_size: Optional[int] = None) -> DataFrame:
         """
-        Load data from JSON file(s).
+        Load data from JSON file(s) with optional sampling.
         
         Args:
             path: Path to JSON file(s), supports wildcards
+            sample_size: Optional number of records to sample
             
         Returns:
-            DataFrame with entity-specific schema
+            DataFrame with entity-specific schema, optionally sampled
         """
         entity_name = self.__class__.__name__.replace("Loader", "").lower()
         logger.info(f"Loading {entity_name} data from: {path}")
@@ -87,8 +88,10 @@ class BaseLoader(ABC):
         # Add common metadata
         entity_df = self._add_metadata(entity_df, path)
         
-        record_count = entity_df.count()
-        logger.info(f"Successfully loaded {record_count} {entity_name} records")
+        # Apply sampling if requested
+        if sample_size is not None and sample_size > 0:
+            entity_df = entity_df.limit(sample_size)
+            logger.info(f"Applied sampling: limited to {sample_size} {entity_name} records")
         
         return entity_df
     
@@ -130,9 +133,8 @@ class BaseLoader(ABC):
             entity_name: Name of entity for logging
         """
         if "_corrupt_record" in df.columns:
-            corrupt_count = df.filter(col("_corrupt_record").isNotNull()).count()
-            if corrupt_count > 0:
-                logger.warning(f"Found {corrupt_count} corrupt records in {entity_name} data")
+            # Just log that corrupt record column exists, avoid count() action
+            logger.warning(f"Corrupt record column detected in {entity_name} data")
     
     def _add_metadata(self, df: DataFrame, source_path: str) -> DataFrame:
         """

@@ -34,16 +34,18 @@ class LoadedData(BaseModel):
 class DataLoaderOrchestrator:
     """Orchestrates loading from all data sources."""
     
-    def __init__(self, spark: SparkSession, data_config: DataSourceConfig):
+    def __init__(self, spark: SparkSession, data_config: DataSourceConfig, sample_size: Optional[int] = None):
         """
         Initialize the data loader orchestrator.
         
         Args:
             spark: Active SparkSession
             data_config: Data source configuration
+            sample_size: Optional number of records to sample from each source
         """
         self.spark = spark
         self.data_config = data_config
+        self.sample_size = sample_size
         
         # Initialize individual loaders
         self.location_loader = LocationLoader(spark)
@@ -102,7 +104,7 @@ class DataLoaderOrchestrator:
         for path in self.data_config.properties_files:
             try:
                 logger.info(f"Loading properties from: {path}")
-                df = self.property_loader.load(path)
+                df = self.property_loader.load(path, self.sample_size)
                 
                 if self.property_loader.validate(df):
                     dataframes.append(df)
@@ -140,7 +142,7 @@ class DataLoaderOrchestrator:
         for path in self.data_config.neighborhoods_files:
             try:
                 logger.info(f"Loading neighborhoods from: {path}")
-                df = self.neighborhood_loader.load(path)
+                df = self.neighborhood_loader.load(path, self.sample_size)
                 
                 if self.neighborhood_loader.validate(df):
                     dataframes.append(df)
@@ -176,7 +178,7 @@ class DataLoaderOrchestrator:
         
         try:
             logger.info(f"Loading Wikipedia from: {self.data_config.wikipedia_db_path}")
-            df = self.wikipedia_loader.load(self.data_config.wikipedia_db_path)
+            df = self.wikipedia_loader.load(self.data_config.wikipedia_db_path, self.sample_size)
             
             if self.wikipedia_loader.validate(df):
                 logger.info("✓ Successfully loaded Wikipedia data")
@@ -202,6 +204,7 @@ class DataLoaderOrchestrator:
         
         try:
             logger.info(f"Loading locations from: {self.data_config.locations_file}")
+            # Note: Locations are reference data, not sampled
             df = self.location_loader.load(self.data_config.locations_file)
             
             if self.location_loader.validate(df):

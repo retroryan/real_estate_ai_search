@@ -59,8 +59,8 @@ class DataPipelineRunner:
         # Initialize Spark session with conditional Neo4j configuration
         self.spark = get_or_create_spark_session(self.config.spark, self.config)
         
-        # Initialize components
-        self.loader = DataLoaderOrchestrator(self.spark, self.config.data_sources)
+        # Initialize components with sample_size from config
+        self.loader = DataLoaderOrchestrator(self.spark, self.config.data_sources, self.config.sample_size)
         
         # Initialize entity-specific processors and enrichers
         self._init_entity_processors()
