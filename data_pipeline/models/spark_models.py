@@ -126,7 +126,7 @@ class Neighborhood(SparkModel):
     description: Optional[str] = None
     amenities: Optional[List[str]] = None
     demographics: Optional[Demographics] = None
-    wikipedia_correlations: Optional[WikipediaCorrelations] = None  # From graph_metadata in source
+    wikipedia_correlations: Optional[WikipediaCorrelations] = None
 
 
 # ============================================================================

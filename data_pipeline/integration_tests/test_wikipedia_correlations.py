@@ -56,7 +56,7 @@ def sample_neighborhood_data() -> Dict[str, Any]:
             "median_income": 85000,
             "median_age": 35.5
         },
-        "graph_metadata": {
+        "wikipedia_correlations": {
             "primary_wiki_article": {
                 "page_id": 123456,
                 "title": "Test Neighborhood, San Francisco",
@@ -101,15 +101,15 @@ class TestWikipediaCorrelations:
     
     def test_model_creation(self, sample_neighborhood_data):
         """Test that models can be created with Wikipedia correlation data."""
-        # Extract graph_metadata
-        graph_data = sample_neighborhood_data["graph_metadata"]
+        # Extract wikipedia_correlations
+        wiki_data = sample_neighborhood_data["wikipedia_correlations"]
         
         # Create WikipediaArticleReference for primary article
         primary_article = WikipediaArticleReference(
-            page_id=graph_data["primary_wiki_article"]["page_id"],
-            title=graph_data["primary_wiki_article"]["title"],
-            url=graph_data["primary_wiki_article"]["url"],
-            confidence=graph_data["primary_wiki_article"]["confidence"]
+            page_id=wiki_data["primary_wiki_article"]["page_id"],
+            title=wiki_data["primary_wiki_article"]["title"],
+            url=wiki_data["primary_wiki_article"]["url"],
+            confidence=wiki_data["primary_wiki_article"]["confidence"]
         )
         
         assert primary_article.page_id == 123456
@@ -124,7 +124,7 @@ class TestWikipediaCorrelations:
                 confidence=article["confidence"],
                 relationship=article.get("relationship")
             )
-            for article in graph_data["related_wiki_articles"]
+            for article in wiki_data["related_wiki_articles"]
         ]
         
         assert len(related_articles) == 2
@@ -133,12 +133,12 @@ class TestWikipediaCorrelations:
         # Create ParentGeography
         parent_geo = ParentGeography(
             city_wiki=WikipediaGeoReference(
-                page_id=graph_data["parent_geography"]["city_wiki"]["page_id"],
-                title=graph_data["parent_geography"]["city_wiki"]["title"]
+                page_id=wiki_data["parent_geography"]["city_wiki"]["page_id"],
+                title=wiki_data["parent_geography"]["city_wiki"]["title"]
             ),
             state_wiki=WikipediaGeoReference(
-                page_id=graph_data["parent_geography"]["state_wiki"]["page_id"],
-                title=graph_data["parent_geography"]["state_wiki"]["title"]
+                page_id=wiki_data["parent_geography"]["state_wiki"]["page_id"],
+                title=wiki_data["parent_geography"]["state_wiki"]["title"]
             )
         )
         
@@ -149,9 +149,9 @@ class TestWikipediaCorrelations:
             primary_wiki_article=primary_article,
             related_wiki_articles=related_articles,
             parent_geography=parent_geo,
-            generated_by=graph_data["generated_by"],
-            generated_at=graph_data["generated_at"],
-            source=graph_data["source"]
+            generated_by=wiki_data["generated_by"],
+            generated_at=wiki_data["generated_at"],
+            source=wiki_data["source"]
         )
         
         assert correlations.primary_wiki_article.title == "Test Neighborhood, San Francisco"
@@ -171,14 +171,14 @@ class TestWikipediaCorrelations:
             # Load data
             df = loader.load(temp_file)
             
-            # Check that wikipedia_correlations field exists (renamed from graph_metadata)
-            assert "wikipedia_correlations" in df.columns or "graph_metadata" in df.columns
+            # Check that wikipedia_correlations field exists
+            assert "wikipedia_correlations" in df.columns
             
             # Get the first row
             row = df.first()
             
-            # Check if correlations are preserved (might be under either name initially)
-            correlations = row.wikipedia_correlations if hasattr(row, 'wikipedia_correlations') else row.graph_metadata if hasattr(row, 'graph_metadata') else None
+            # Check if correlations are preserved
+            correlations = row.wikipedia_correlations if hasattr(row, 'wikipedia_correlations') else None
             
             if correlations:
                 assert correlations.primary_wiki_article.page_id == 123456
@@ -242,7 +242,7 @@ class TestWikipediaCorrelations:
             assert "wikipedia_correlations" in mapping["properties"]
             
             wiki_mapping = mapping["properties"]["wikipedia_correlations"]
-            assert wiki_mapping["type"] == "nested"
+            assert wiki_mapping["type"] == "object"
             
             # Check primary_wiki_article structure
             assert "primary_wiki_article" in wiki_mapping["properties"]
@@ -255,7 +255,7 @@ class TestWikipediaCorrelations:
             # Check related_wiki_articles structure
             assert "related_wiki_articles" in wiki_mapping["properties"]
             related = wiki_mapping["properties"]["related_wiki_articles"]
-            assert related["type"] == "nested"
+            assert related["type"] == "object"
             
             # Check wikipedia_confidence_avg field
             assert "wikipedia_confidence_avg" in mapping["properties"]

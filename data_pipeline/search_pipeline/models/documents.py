@@ -25,7 +25,7 @@ class AddressModel(BaseModel):
 
 class NeighborhoodModel(BaseModel):
     """Neighborhood object model matching Elasticsearch neighborhood mapping."""
-    id: Optional[str] = Field(None, description="Neighborhood ID")
+    neighborhood_id: Optional[str] = Field(None, description="Neighborhood ID")
     name: Optional[str] = Field(None, description="Neighborhood name")
     walkability_score: Optional[int] = Field(None, description="Walkability score (0-100)")
     school_rating: Optional[float] = Field(None, description="School rating")
@@ -96,6 +96,38 @@ class LocationScoresModel(BaseModel):
     tourist_appeal: Optional[float] = Field(None, description="Tourist appeal score")
     local_amenities: Optional[float] = Field(None, description="Local amenities score")
     overall_desirability: Optional[float] = Field(None, description="Overall desirability score")
+
+
+class WikipediaArticleReferenceModel(BaseModel):
+    """Wikipedia article reference model for correlations."""
+    page_id: Optional[int] = Field(None, description="Wikipedia page ID")
+    title: Optional[str] = Field(None, description="Article title")
+    url: Optional[str] = Field(None, description="Wikipedia URL")
+    confidence: Optional[float] = Field(None, description="Confidence score")
+    relationship: Optional[str] = Field(None, description="Relationship type")
+
+
+class ParentGeographyWikiModel(BaseModel):
+    """Parent geography Wikipedia reference."""
+    page_id: Optional[int] = Field(None, description="Wikipedia page ID")
+    title: Optional[str] = Field(None, description="Article title")
+
+
+class ParentGeographyModel(BaseModel):
+    """Parent geography references for neighborhoods."""
+    city_wiki: Optional[ParentGeographyWikiModel] = Field(None, description="City Wikipedia reference")
+    state_wiki: Optional[ParentGeographyWikiModel] = Field(None, description="State Wikipedia reference")
+
+
+class WikipediaCorrelationsModel(BaseModel):
+    """Wikipedia correlations for neighborhoods (flat object structure)."""
+    primary_wiki_article: Optional[WikipediaArticleReferenceModel] = Field(None, description="Primary Wikipedia article")
+    related_wiki_articles: List[WikipediaArticleReferenceModel] = Field(default_factory=list, description="Related Wikipedia articles")
+    parent_geography: Optional[ParentGeographyModel] = Field(None, description="Parent geography references")
+    generated_by: Optional[str] = Field(None, description="System that generated correlations")
+    generated_at: Optional[datetime] = Field(None, description="When correlations were generated")
+    source: Optional[str] = Field(None, description="Source of correlations")
+    updated_by: Optional[str] = Field(None, description="System that updated correlations")
 
 
 class BaseDocument(BaseModel):
@@ -212,6 +244,10 @@ class NeighborhoodDocument(BaseDocument):
     
     # Description
     description: Optional[str] = Field(None, description="Neighborhood description")
+    
+    # Wikipedia correlations (flat object structure)
+    wikipedia_correlations: Optional[WikipediaCorrelationsModel] = Field(None, description="Wikipedia correlations")
+    wikipedia_confidence_avg: Optional[float] = Field(None, description="Average confidence of Wikipedia correlations")
     
     # Wikipedia enrichment fields
     location_context: Optional[LocationContextModel] = Field(None, description="Location context from Wikipedia")

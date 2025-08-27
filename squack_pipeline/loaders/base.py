@@ -8,6 +8,7 @@ import duckdb
 from pydantic import BaseModel
 
 from squack_pipeline.config.settings import PipelineSettings
+from squack_pipeline.models.duckdb_models import TableIdentifier
 from squack_pipeline.utils.logging import PipelineLogger
 
 
@@ -63,7 +64,8 @@ class BaseLoader(ABC):
         if not self.connection:
             raise RuntimeError("No DuckDB connection available")
         
-        result = self.connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+        table = TableIdentifier(name=table_name)
+        result = self.connection.execute(f"SELECT COUNT(*) FROM {table.qualified_name}").fetchone()
         return result[0] if result else 0
     
     def get_sample(self, table_name: str, limit: int = 5) -> List[Dict[str, Any]]:
@@ -71,8 +73,12 @@ class BaseLoader(ABC):
         if not self.connection:
             raise RuntimeError("No DuckDB connection available")
         
+        table = TableIdentifier(name=table_name)
+        if not isinstance(limit, int) or limit <= 0:
+            raise ValueError(f"Invalid limit: {limit}")
+        
         result = self.connection.execute(
-            f"SELECT * FROM {table_name} LIMIT {limit}"
+            f"SELECT * FROM {table.qualified_name} LIMIT {limit}"
         ).fetchall()
         
         # Get column names
@@ -86,9 +92,10 @@ class BaseLoader(ABC):
         if not self.connection:
             raise RuntimeError("No DuckDB connection available")
         
+        # Use parameterized query for safety
         result = self.connection.execute(
-            f"SELECT COUNT(*) FROM information_schema.tables "
-            f"WHERE table_name = '{table_name}'"
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?",
+            (table_name,)
         ).fetchone()
         
         return result[0] > 0 if result else False

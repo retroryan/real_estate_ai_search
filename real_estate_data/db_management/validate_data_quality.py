@@ -254,8 +254,8 @@ class DataQualityValidator:
                 })
             
             # Check Wikipedia data consistency
-            if 'graph_metadata' in nb:
-                primary = nb['graph_metadata'].get('primary_wiki_article')
+            if 'wikipedia_correlations' in nb:
+                primary = nb['wikipedia_correlations'].get('primary_wiki_article')
                 if primary and primary.get('page_id'):
                     cursor.execute("""
                         SELECT COUNT(*) as count

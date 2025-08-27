@@ -61,8 +61,8 @@ class ParentGeography(BaseModel):
     state_wiki: Dict[str, object]
 
 
-class GraphMetadata(BaseModel):
-    """Graph relationship metadata."""
+class WikipediaCorrelations(BaseModel):
+    """Wikipedia correlation metadata."""
     
     model_config = ConfigDict(strict=True)
     
@@ -97,4 +97,4 @@ class Neighborhood(BaseModel):
     median_home_price: float = Field(gt=0)
     price_trend: str
     demographics: Demographics
-    graph_metadata: Optional[GraphMetadata] = None
+    wikipedia_correlations: Optional[WikipediaCorrelations] = None

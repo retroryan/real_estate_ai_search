@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from real_estate_search.config.config import AppConfig
+from real_estate_search.config import AppConfig
 from real_estate_search.container import DependencyContainer
 from real_estate_search.search.models import SearchRequest, SearchResponse
 

@@ -33,11 +33,11 @@ def test_yaml_config_loading():
         settings = PipelineSettings.load_from_yaml(config_path)
         
         # Validate key configuration sections
-        if not hasattr(settings, 'embedding'):
+        if not settings.embedding:
             logger.error("❌ No embedding configuration found")
             return False
         
-        if not hasattr(settings, 'processing'):
+        if not settings.processing:
             logger.error("❌ No processing configuration found")
             return False
         

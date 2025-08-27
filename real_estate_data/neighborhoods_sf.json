@@ -42,7 +42,7 @@
       "population": 20754,
       "median_household_income": 154264
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 1978628,
         "title": "Pacific Heights, San Francisco",
@@ -132,7 +132,7 @@
       "population": 54000,
       "hispanic_percentage": 33
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 525516,
         "title": "Mission District, San Francisco",
@@ -213,7 +213,7 @@
       "primary_age_group": "35-65",
       "vibe": "suburban family"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 350903,
         "title": "Sunset District, San Francisco",
@@ -293,7 +293,7 @@
       "primary_age_group": "25-35",
       "vibe": "young professional"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 14084492,
         "title": "Downtown San Francisco",
@@ -373,7 +373,7 @@
       "primary_age_group": "30-45",
       "vibe": "family suburban"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 351344,
         "title": "Noe Valley, San Francisco",
@@ -454,7 +454,7 @@
       "vibe": "diverse cultural hub",
       "population": 5064
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 3931239,
         "title": "Temescal, Oakland, California",
@@ -538,7 +538,7 @@
       "primary_age_group": "30-55",
       "vibe": "upscale family community"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 2229448,
         "title": "Rockridge, Oakland, California",
@@ -622,7 +622,7 @@
       "primary_age_group": "35-60",
       "vibe": "historic cultural district"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 107783,
         "title": "Salinas, California",
@@ -706,7 +706,7 @@
       "primary_age_group": "30-55",
       "vibe": "suburban family community"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 107783,
         "title": "Salinas, California",
@@ -775,7 +775,7 @@
       "primary_age_group": "30-50",
       "vibe": "charming family neighborhood"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 8887170,
         "title": "Willow Glen, San Jose",
@@ -852,7 +852,7 @@
       "primary_age_group": "25-40",
       "vibe": "upscale urban lifestyle"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 2307788,
         "title": "Santana Row",

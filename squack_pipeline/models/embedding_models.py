@@ -1,10 +1,20 @@
 """Pydantic models for embedding data structures."""
 
 import json
+from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
+
+
+class DecimalJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle Decimal types."""
+    
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
 
 
 class EmbeddingMetadata(BaseModel):
@@ -73,7 +83,7 @@ class EmbeddingBatch(BaseModel):
             'source_type': [node.source_type for node in self.nodes],
             'chunk_index': [node.chunk_index for node in self.nodes],
             'created_at': [node.created_at.isoformat() for node in self.nodes],
-            'metadata': [json.dumps(node.metadata) if node.metadata else '{}' for node in self.nodes]
+            'metadata': [json.dumps(node.metadata, cls=DecimalJSONEncoder) if node.metadata else '{}' for node in self.nodes]
         }
     
     def save_metadata(self, metadata_path: Path) -> None:

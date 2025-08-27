@@ -53,7 +53,7 @@ class EmbeddingPipeline:
         try:
             # Create embedding model
             self.embed_model = EmbeddingFactory.create_from_config(self.config.embedding)
-            provider_name = self.config.embedding.provider.value if hasattr(self.config.embedding.provider, 'value') else str(self.config.embedding.provider)
+            provider_name = self.config.embedding.provider.value
             self.logger.info(f"Created embedding model: {provider_name}")
             
             # Create document converter

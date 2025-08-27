@@ -1,5 +1,26 @@
-"""Configuration module for real estate search."""
+"""
+Configuration module for real estate search application.
+Provides comprehensive Pydantic-based configuration management.
+"""
 
-from .settings import Settings, settings
+from .config import (
+    AppConfig,
+    ElasticsearchConfig,
+    IndexConfig,
+    SearchConfig,
+    IndexingConfig,
+    LoggingConfig,
+    DataConfig,
+    Environment
+)
 
-__all__ = ['Settings', 'settings']
+__all__ = [
+    "AppConfig",
+    "ElasticsearchConfig", 
+    "IndexConfig",
+    "SearchConfig",
+    "IndexingConfig",
+    "LoggingConfig",
+    "DataConfig",
+    "Environment"
+]

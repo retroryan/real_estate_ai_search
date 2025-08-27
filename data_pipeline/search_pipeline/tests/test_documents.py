@@ -7,7 +7,7 @@ and validation.
 
 import pytest
 from datetime import datetime
-from search_pipeline.models.documents import (
+from data_pipeline.search_pipeline.models.documents import (
     PropertyDocument,
     NeighborhoodDocument,
     WikipediaDocument,

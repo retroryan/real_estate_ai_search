@@ -205,7 +205,7 @@ class PipelineFork:
             logger.info("🔍 Processing search path (Elasticsearch)")
             try:
                 if spark and search_config:
-                    from search_pipeline.core.search_runner import SearchPipelineRunner
+                    from data_pipeline.search_pipeline.core.search_runner import SearchPipelineRunner
                     
                     search_runner = SearchPipelineRunner(spark, search_config)
                     search_result = search_runner.process(processed_entities)

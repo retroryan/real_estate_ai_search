@@ -9,6 +9,7 @@ from llama_index.core.schema import TextNode
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.writers.parquet_writer import ParquetWriter
 from squack_pipeline.models import EmbeddingBatch, EmbeddingMetadata
+from squack_pipeline.models.duckdb_models import TableIdentifier
 from squack_pipeline.utils.logging import PipelineLogger, log_execution_time
 
 
@@ -47,8 +48,9 @@ class EmbeddingWriter(ParquetWriter):
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Create temporary table for nodes
-        temp_table = f"temp_embeddings_{int(np.random.rand() * 1e9)}"
+        # Create temporary table for nodes with safe identifier
+        temp_table_name = f"temp_embeddings_{int(np.random.rand() * 1e9)}"
+        temp_table = TableIdentifier(name=temp_table_name)
         
         try:
             # Prepare node data for insertion
@@ -59,7 +61,7 @@ class EmbeddingWriter(ParquetWriter):
             
             # Create temporary table
             create_query = f"""
-            CREATE TABLE {temp_table} (
+            CREATE TABLE {temp_table.qualified_name} (
                 {', '.join([f'{col} {dtype}' for col, dtype in schema.items()])}
             )
             """
@@ -69,17 +71,17 @@ class EmbeddingWriter(ParquetWriter):
             if include_embeddings:
                 # For embeddings, we'll store as array or JSON
                 insert_query = f"""
-                INSERT INTO {temp_table} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO {temp_table.qualified_name} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
             else:
                 insert_query = f"""
-                INSERT INTO {temp_table} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO {temp_table.qualified_name} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
             
             self.connection.executemany(insert_query, node_records)
             
             # Write to Parquet
-            parquet_path = self.write(temp_table, output_path)
+            parquet_path = self.write(temp_table.name, output_path)
             
             # Log statistics
             node_count = len(nodes)
@@ -89,13 +91,13 @@ class EmbeddingWriter(ParquetWriter):
             )
             
             # Clean up temporary table
-            self.connection.execute(f"DROP TABLE IF EXISTS {temp_table}")
+            self.connection.execute(f"DROP TABLE IF EXISTS {temp_table.qualified_name}")
             
             return parquet_path
             
         except Exception as e:
             # Clean up on error
-            self.connection.execute(f"DROP TABLE IF EXISTS {temp_table}")
+            self.connection.execute(f"DROP TABLE IF EXISTS {temp_table.qualified_name}")
             self.logger.error(f"Failed to write embedded nodes: {e}")
             raise
     
@@ -332,13 +334,14 @@ class EmbeddingWriter(ParquetWriter):
         # Convert to Parquet-ready data
         parquet_data = embedding_batch.to_parquet_data()
         
-        # Create temporary table
-        temp_table = f"temp_embeddings_{int(np.random.rand() * 1e9)}"
+        # Create temporary table with safe identifier
+        temp_table_name = f"temp_embeddings_{int(np.random.rand() * 1e9)}"
+        temp_table = TableIdentifier(name=temp_table_name)
         
         try:
             # Create table with proper schema
             create_sql = f"""
-            CREATE TABLE {temp_table} (
+            CREATE TABLE {temp_table.qualified_name} (
                 node_id VARCHAR,
                 text VARCHAR,
                 embedding JSON,
@@ -354,7 +357,7 @@ class EmbeddingWriter(ParquetWriter):
             # Insert data
             for i in range(len(parquet_data['node_id'])):
                 insert_sql = f"""
-                INSERT INTO {temp_table} VALUES (
+                INSERT INTO {temp_table.qualified_name} VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """
@@ -370,9 +373,9 @@ class EmbeddingWriter(ParquetWriter):
                 ])
             
             # Write to Parquet
-            compression = self.settings.parquet.compression.value if hasattr(self.settings.parquet.compression, 'value') else str(self.settings.parquet.compression)
+            compression = str(self.settings.parquet.compression)
             copy_sql = f"""
-            COPY (SELECT * FROM {temp_table})
+            COPY (SELECT * FROM {temp_table.qualified_name})
             TO '{output_path}' 
             (FORMAT PARQUET, COMPRESSION '{compression}')
             """
@@ -397,6 +400,6 @@ class EmbeddingWriter(ParquetWriter):
         finally:
             # Clean up temporary table
             try:
-                self.connection.execute(f"DROP TABLE IF EXISTS {temp_table}")
+                self.connection.execute(f"DROP TABLE IF EXISTS {temp_table.qualified_name}")
             except Exception as e:
                 self.logger.warning(f"Failed to cleanup temporary table: {e}")

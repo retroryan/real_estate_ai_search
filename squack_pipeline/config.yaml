@@ -60,7 +60,7 @@ output:
   # List of enabled output destinations
   enabled_destinations:
     - parquet
-    # - elasticsearch  # Uncomment to enable Elasticsearch output
+    - elasticsearch  # Enabled for Elasticsearch output
   
   # Elasticsearch configuration (used when elasticsearch is enabled)
   elasticsearch:

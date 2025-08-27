@@ -7,7 +7,7 @@ from squack_pipeline.models.enriched import (
 )
 from squack_pipeline.models.location import (
     Demographics,
-    GraphMetadata,
+    WikipediaCorrelations,
     Location,
     Neighborhood,
     NeighborhoodCharacteristics,
@@ -54,7 +54,7 @@ __all__ = [
     "Demographics",
     "WikiArticle",
     "ParentGeography",
-    "GraphMetadata",
+    "WikipediaCorrelations",
     # Wikipedia models
     "WikipediaArticle",
     # Enriched models

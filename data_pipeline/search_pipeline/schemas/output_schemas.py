@@ -1,14 +1,14 @@
 """Output schema definitions for search pipeline transformations.
 
 These schemas define the structure of documents that will be indexed to Elasticsearch.
-They re-export the existing document models from search_pipeline.models.documents
+They re-export the existing document models from data_pipeline.search_pipeline.models.documents
 to provide a clear interface for transformers.
 
 All schemas match the Elasticsearch mappings exactly to ensure proper indexing.
 """
 
 # Re-export document models as output schemas
-from search_pipeline.models.documents import (
+from data_pipeline.search_pipeline.models.documents import (
     BaseDocument,
     PropertyDocument,
     NeighborhoodDocument,

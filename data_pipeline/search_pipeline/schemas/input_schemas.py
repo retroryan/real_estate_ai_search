@@ -120,8 +120,8 @@ class NeighborhoodDemographicsInput(BaseModel):
     median_household_income: Optional[int] = Field(None, description="Median household income")
 
 
-class GraphMetadataInput(BaseModel):
-    """Graph metadata input model."""
+class WikipediaCorrelationsInput(BaseModel):
+    """Wikipedia correlations input model."""
     primary_wiki_article: Optional[Dict[str, Any]] = Field(None, description="Primary Wikipedia article")
 
 
@@ -160,8 +160,8 @@ class NeighborhoodInput(BaseModel):
     # Demographics
     demographics: Optional[NeighborhoodDemographicsInput] = Field(None, description="Demographics object")
     
-    # Graph metadata
-    graph_metadata: Optional[GraphMetadataInput] = Field(None, description="Graph metadata")
+    # Wikipedia correlations
+    wikipedia_correlations: Optional[WikipediaCorrelationsInput] = Field(None, description="Wikipedia correlations")
     
     # Enrichment fields (may be present)
     enriched_search_text: Optional[str] = Field(None, description="Enriched text for search")

@@ -41,7 +41,7 @@
       "vibe": "historic mountain charm",
       "city_population": 8396
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 151252,
         "title": "Park City, Utah",
@@ -124,7 +124,7 @@
       "primary_age_group": "45-65",
       "vibe": "exclusive luxury"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 748238,
         "title": "Deer Valley",
@@ -207,7 +207,7 @@
       "primary_age_group": "30-50",
       "vibe": "family community"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": null,
       "related_wiki_articles": [
         {
@@ -292,7 +292,7 @@
       "primary_age_group": "40-60",
       "vibe": "private club"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": null,
       "related_wiki_articles": [
         {
@@ -370,7 +370,7 @@
       "primary_age_group": "35-55",
       "vibe": "resort convenience"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 5680177,
         "title": "Park City Mountain Resort",
@@ -454,7 +454,7 @@
       "primary_age_group": "35-65",
       "vibe": "rural mountain"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 137122,
         "title": "Summit Park, Utah",
@@ -539,7 +539,7 @@
       "primary_age_group": "30-60",
       "vibe": "small town authentic"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 137114,
         "title": "Coalville, Utah",
@@ -625,7 +625,7 @@
       "primary_age_group": "25-55",
       "vibe": "rural agricultural"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 31716,
         "title": "Oakley, Utah",
@@ -711,7 +711,7 @@
       "primary_age_group": "30-60",
       "vibe": "pastoral mountain"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 31716,
         "title": "Kamas, Utah",
@@ -810,7 +810,7 @@
       "primary_age_group": "35-65",
       "vibe": "valley recreation"
     },
-    "graph_metadata": {
+    "wikipedia_correlations": {
       "primary_wiki_article": {
         "page_id": 137179,
         "title": "Heber City, Utah",

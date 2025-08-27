@@ -47,8 +47,10 @@ class ElasticsearchWriter:
     def _create_client(self) -> Elasticsearch:
         """Create Elasticsearch client with configuration."""
         client_config = {
-            'hosts': [{'host': self.config.host, 'port': self.config.port}],
-            'timeout': self.config.timeout,
+            'hosts': [{'host': self.config.host, 'port': self.config.port, 'scheme': 'http'}],
+            'request_timeout': self.config.timeout,
+            'max_retries': 3,
+            'retry_on_timeout': True,
         }
         
         # Add authentication if configured
