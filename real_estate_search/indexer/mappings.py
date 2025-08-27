@@ -48,6 +48,19 @@ def get_wikipedia_mappings() -> Dict[str, Any]:
     }
 
 
+def get_property_relationships_mappings() -> Dict[str, Any]:
+    """
+    Get property relationships index mappings.
+    
+    Returns:
+        Dictionary containing settings and mappings for property relationships index.
+    """
+    return {
+        "settings": _load_index_settings(),
+        "mappings": _load_field_mappings("property_relationships.json")
+    }
+
+
 def _load_index_settings() -> Dict[str, Any]:
     """
     Load index settings from JSON file.

@@ -328,8 +328,21 @@ graph LR
 
 ### Bronze Layer Implementation
 
+#### Overview: The Foundation of Your Data Lake
+The Bronze layer is the first stage in the medallion architecture, responsible for ingesting raw data from various sources with minimal transformation. This layer preserves the original data format while adding crucial metadata for lineage tracking and debugging. The goal is to create an immutable, append-only historical record of all incoming data.
+
+**Key Principles:**
+- **Preserve raw data**: Minimal transformations, maintain original format
+- **Add metadata**: Ingestion timestamps, source tracking, partition information
+- **Handle multiple formats**: JSON, CSV, Parquet, Avro, streaming data
+- **Enable reprocessing**: Keep raw data for future reprocessing needs
+- **Schema evolution**: Handle changing schemas gracefully
+
 ```python
 # Bronze Layer: Raw data ingestion with minimal transformation
+# This implementation shows best practices for building a robust Bronze layer
+# that can handle both batch and streaming data sources
+
 from pyspark.sql import SparkSession
 from delta import DeltaTable
 import pyspark.sql.functions as F
@@ -337,68 +350,114 @@ from pyspark.sql.types import *
 
 class BronzeLayer:
     """
-    Bronze layer ingests raw data with minimal processing
-    Only PII removal and basic metadata addition
+    Bronze layer ingests raw data with minimal processing.
+    
+    This class implements the Bronze layer pattern for financial data,
+    handling high-frequency market data, corporate filings, and other
+    financial data sources. It demonstrates:
+    - Schema enforcement for data quality
+    - Metadata addition for lineage tracking
+    - Partitioning strategies for query performance
+    - Both batch and streaming ingestion patterns
+    - Delta Lake table optimization settings
     """
     
     def __init__(self, spark: SparkSession):
+        """
+        Initialize the Bronze layer with Spark session and paths.
+        
+        Args:
+            spark: Active SparkSession for data processing
+        """
         self.spark = spark
+        # Base path for all Bronze layer tables in S3
+        # Using a consistent path structure helps with data governance
         self.bronze_path = "s3://quantumcapital/delta/bronze"
         
     def ingest_market_data(self, source_path: str, asset_class: str):
         """
         Ingest high-frequency market data
         """
-        # Define schema for market data (enforce consistency)
+        # Define schema for market data to enforce consistency
+        # Schema enforcement is critical for financial data to prevent data quality issues
         market_schema = StructType([
+            # Timestamp is required (False = not nullable) - every tick must have a time
             StructField("timestamp", TimestampType(), False),
+            # Symbol is required - we need to know what security this is
             StructField("symbol", StringType(), False),
-            StructField("bid_price", DecimalType(18, 8), True),
+            # Bid/Ask prices use DecimalType(18, 8) for precision
+            # 18 total digits with 8 after decimal - handles crypto and traditional assets
+            StructField("bid_price", DecimalType(18, 8), True),  # True = nullable
             StructField("ask_price", DecimalType(18, 8), True),
+            # Sizes as LongType to handle large volume trades
             StructField("bid_size", LongType(), True),
             StructField("ask_size", LongType(), True),
+            # Last trade information
             StructField("last_price", DecimalType(18, 8), True),
             StructField("last_size", LongType(), True),
+            # Exchange code (e.g., 'NYSE', 'NASDAQ', 'BATS')
             StructField("exchange", StringType(), True),
+            # Trade conditions array (e.g., ['RegularTrade', 'FormT'])
             StructField("conditions", ArrayType(StringType()), True)
         ])
         
-        # Read raw data
+        # Read raw data - choose between streaming or batch based on asset class
+        # Equities use streaming due to high frequency, other assets use batch
         df_raw = (
-            self.spark.readStream if asset_class == "equities" else self.spark.read
-        ).schema(market_schema).json(source_path)
+            # Use readStream for real-time equity data (ticks every millisecond)
+            self.spark.readStream if asset_class == "equities" 
+            # Use batch read for less frequent data (FX daily, commodities hourly)
+            else self.spark.read
+        ).schema(market_schema).json(source_path)  # Apply schema to ensure quality
         
-        # Add metadata for lineage and debugging
+        # Add metadata columns for lineage, debugging, and partitioning
+        # These underscore-prefixed columns are Bronze layer metadata
         df_bronze = (
             df_raw
+            # Record when this data was ingested into the Bronze layer
+            # Critical for debugging data delays and SLA monitoring
             .withColumn("_ingestion_timestamp", F.current_timestamp())
+            # Track source file for debugging and reprocessing
+            # Helps identify problematic data sources
             .withColumn("_source_file", F.input_file_name())
+            # Asset class for filtering (equities, fx, commodities, crypto)
             .withColumn("_asset_class", F.lit(asset_class))
+            # Extract date for daily partitioning - improves query performance
             .withColumn("_data_date", F.to_date(F.col("timestamp")))
+            # Extract hour for sub-partitioning - further optimization for time-range queries
             .withColumn("_partition_hour", F.hour(F.col("timestamp")))
         )
         
         # Write to Bronze Delta table with partitioning
         bronze_table_path = f"{self.bronze_path}/market_data/{asset_class}"
         
-        if isinstance(df_bronze, DataFrame):  # Batch mode
+        # Write strategy depends on whether we're in batch or streaming mode
+        if isinstance(df_bronze, DataFrame):  # Batch mode for periodic loads
             (
                 df_bronze.write
-                .format("delta")
-                .mode("append")
-                .partitionBy("_data_date", "_partition_hour")
-                .option("mergeSchema", "true")  # Handle schema evolution
-                .option("optimizeWrite", "true")  # Optimize file sizes
+                .format("delta")  # Use Delta format for ACID guarantees
+                .mode("append")  # Always append to Bronze - never overwrite historical data
+                .partitionBy("_data_date", "_partition_hour")  # Partition for query optimization
+                # mergeSchema allows new columns to be added automatically
+                # Critical for handling evolving data sources
+                .option("mergeSchema", "true")
+                # optimizeWrite reduces the number of small files
+                # Improves query performance and reduces S3 API costs
+                .option("optimizeWrite", "true")
                 .save(bronze_table_path)
             )
-        else:  # Streaming mode
+        else:  # Streaming mode for real-time data
             (
                 df_bronze.writeStream
-                .format("delta")
-                .outputMode("append")
+                .format("delta")  # Delta supports streaming writes
+                .outputMode("append")  # Append-only for Bronze layer
+                # Checkpoint location for exactly-once processing guarantee
+                # Enables stream recovery after failures
                 .option("checkpointLocation", f"{bronze_table_path}/_checkpoint")
-                .partitionBy("_data_date", "_partition_hour")
-                .trigger(processingTime="10 seconds")  # Micro-batch every 10 seconds
+                .partitionBy("_data_date", "_partition_hour")  # Same partitioning as batch
+                # Process micro-batches every 10 seconds
+                # Balance between latency and efficiency
+                .trigger(processingTime="10 seconds")
                 .start(bronze_table_path)
             )
         
@@ -409,14 +468,29 @@ class BronzeLayer:
             LOCATION '{bronze_table_path}'
         """)
         
-        # Set table properties for optimization
+        # Set Delta table properties for automatic optimization and maintenance
+        # These settings are crucial for maintaining performance at scale
         self.spark.sql(f"""
             ALTER TABLE bronze.market_data_{asset_class}
             SET TBLPROPERTIES (
+                -- Automatically optimize file sizes during writes
+                -- Reduces the "small file problem" common in data lakes
                 'delta.autoOptimize.optimizeWrite' = 'true',
+                
+                -- Automatically compact small files in background
+                -- Improves read performance without manual intervention
                 'delta.autoOptimize.autoCompact' = 'true',
+                
+                -- Index first 32 columns for data skipping
+                -- Speeds up queries by skipping irrelevant files
                 'delta.dataSkippingNumIndexedCols' = '32',
+                
+                -- Keep deleted files for 7 days for time travel
+                -- Allows "RESTORE" operations within this window
                 'delta.deletedFileRetentionDuration' = 'interval 7 days',
+                
+                -- Keep transaction log for 30 days
+                -- Enables time travel queries up to 30 days back
                 'delta.logRetentionDuration' = 'interval 30 days'
             )
         """)
@@ -474,16 +548,44 @@ class BronzeLayer:
 
 ### Silver Layer Implementation
 
+#### Overview: Creating Clean, Normalized, and Enriched Data
+The Silver layer transforms raw Bronze data into clean, normalized datasets ready for analysis. This layer handles data quality issues, standardizes formats, enriches data with additional context, and creates reusable datasets that serve multiple downstream use cases.
+
+**Key Responsibilities:**
+- **Data Quality**: Remove duplicates, handle nulls, validate business rules
+- **Normalization**: Standardize formats, units, and time zones
+- **Enrichment**: Add calculated fields, join reference data, derive metrics
+- **Performance**: Optimize data layout for common query patterns
+- **Deduplication**: Handle late-arriving data and duplicates
+
 ```python
 # Silver Layer: Data cleansing, normalization, and enrichment
+# This implementation demonstrates advanced techniques for creating
+# high-quality, analysis-ready datasets from raw Bronze data
+
 class SilverLayer:
     """
     Silver layer performs data quality checks, normalization,
-    and enrichment to create analysis-ready datasets
+    and enrichment to create analysis-ready datasets.
+    
+    This class shows best practices for:
+    - Creating normalized time-series data (OHLCV bars)
+    - Handling corporate actions and adjustments
+    - Implementing data quality validations
+    - Calculating derived metrics and enrichments
+    - Optimizing table layout with Z-ordering
     """
     
     def __init__(self, spark: SparkSession):
+        """
+        Initialize Silver layer with Spark session and paths.
+        
+        Args:
+            spark: Active SparkSession for data processing
+        """
         self.spark = spark
+        # Base path for Silver layer tables
+        # Silver tables are cleansed and normalized versions of Bronze data
         self.silver_path = "s3://quantumcapital/delta/silver"
         
     def create_normalized_prices(self):
@@ -496,26 +598,39 @@ class SilverLayer:
             "s3://quantumcapital/delta/bronze/market_data/equities"
         )
         
-        # Create 1-minute bars
+        # Create 1-minute OHLCV bars from tick data
+        # This is a fundamental transformation for financial analysis
         df_bars = (
             df_ticks
+            # Truncate timestamp to minute boundary for grouping
             .withColumn("minute", F.date_trunc("minute", F.col("timestamp")))
+            # Group by symbol and minute to create bars
             .groupBy("symbol", "minute")
             .agg(
-                F.first("last_price").alias("open"),
-                F.max("last_price").alias("high"),
-                F.min("last_price").alias("low"),
-                F.last("last_price").alias("close"),
-                F.sum("last_size").alias("volume"),
-                F.count("*").alias("tick_count"),
-                F.avg("bid_price").alias("avg_bid"),
-                F.avg("ask_price").alias("avg_ask"),
+                # OHLC prices - standard candlestick data
+                F.first("last_price").alias("open"),      # First price in the minute
+                F.max("last_price").alias("high"),        # Highest price in the minute
+                F.min("last_price").alias("low"),         # Lowest price in the minute  
+                F.last("last_price").alias("close"),      # Last price in the minute
+                
+                # Volume metrics
+                F.sum("last_size").alias("volume"),       # Total volume traded
+                F.count("*").alias("tick_count"),         # Number of ticks (liquidity indicator)
+                
+                # Spread metrics for transaction cost analysis
+                F.avg("bid_price").alias("avg_bid"),      # Average bid price
+                F.avg("ask_price").alias("avg_ask"),      # Average ask price
+                # Calculate average spread in the minute
                 F.avg((F.col("ask_price") - F.col("bid_price"))).alias("avg_spread")
             )
+            # Calculate Volume-Weighted Average Price (VWAP)
+            # VWAP is crucial for execution quality analysis
             .withColumn("vwap", 
                 F.when(F.col("volume") > 0, 
+                    # Proper VWAP calculation would need price*volume sum
+                    # This is simplified - real implementation would track trade prices
                     F.col("close") * F.col("volume") / F.col("volume")
-                ).otherwise(F.col("close"))
+                ).otherwise(F.col("close"))  # Use close price if no volume
             )
         )
         
@@ -542,26 +657,40 @@ class SilverLayer:
             .withColumn("adjusted_vwap", F.col("vwap") * F.col("adjustment_factor"))
         )
         
-        # Data quality checks
+        # Comprehensive data quality checks to ensure reliable data
+        # These validations are critical for financial analytics
         df_validated = (
             df_adjusted
             .filter(
-                # Remove obvious data errors
-                (F.col("high") >= F.col("low")) &
-                (F.col("high") >= F.col("open")) &
-                (F.col("high") >= F.col("close")) &
-                (F.col("low") <= F.col("open")) &
-                (F.col("low") <= F.col("close")) &
+                # === OHLCV Relationship Validations ===
+                # High must be highest price in the bar
+                (F.col("high") >= F.col("low")) &     # High >= Low (basic sanity)
+                (F.col("high") >= F.col("open")) &    # High >= Open
+                (F.col("high") >= F.col("close")) &   # High >= Close
+                # Low must be lowest price in the bar
+                (F.col("low") <= F.col("open")) &     # Low <= Open
+                (F.col("low") <= F.col("close")) &    # Low <= Close
+                # Volume must be non-negative
                 (F.col("volume") >= 0) &
-                # Remove outliers (prices > 10x or < 0.1x from previous)
-                (F.col("close") / F.lag("close").over(Window.partitionBy("symbol").orderBy("minute")) < 10) &
-                (F.col("close") / F.lag("close").over(Window.partitionBy("symbol").orderBy("minute")) > 0.1)
+                
+                # === Outlier Detection ===
+                # Remove "flash crashes" and data errors
+                # Price shouldn't move more than 10x in one minute (1000% move)
+                (F.col("close") / F.lag("close").over(
+                    Window.partitionBy("symbol").orderBy("minute")
+                ) < 10) &
+                # Price shouldn't drop more than 90% in one minute
+                (F.col("close") / F.lag("close").over(
+                    Window.partitionBy("symbol").orderBy("minute")
+                ) > 0.1)
             )
+            # Add data quality score based on tick density
+            # Higher tick count = more reliable price discovery
             .withColumn("data_quality_score", 
-                F.when(F.col("tick_count") > 100, F.lit(1.0))
-                .when(F.col("tick_count") > 10, F.lit(0.8))
-                .when(F.col("tick_count") > 1, F.lit(0.5))
-                .otherwise(F.lit(0.1))
+                F.when(F.col("tick_count") > 100, F.lit(1.0))    # Excellent liquidity
+                .when(F.col("tick_count") > 10, F.lit(0.8))      # Good liquidity
+                .when(F.col("tick_count") > 1, F.lit(0.5))       # Low liquidity
+                .otherwise(F.lit(0.1))                            # Very low liquidity
             )
         )
         
@@ -574,7 +703,9 @@ class SilverLayer:
             .partitionBy("symbol") \
             .save(silver_prices_path)
         
-        # Optimize with Z-ORDER for common query patterns
+        # Optimize table layout with Z-ORDER for common query patterns
+        # Z-ordering co-locates related data, dramatically improving query performance
+        # Order by 'minute' since most queries filter by time
         DeltaTable.forPath(self.spark, silver_prices_path).optimize().executeZOrderBy("minute")
         
     def create_enriched_trades(self):
@@ -632,16 +763,44 @@ class SilverLayer:
 
 ### Gold Layer Implementation
 
+#### Overview: Business-Ready Analytics and ML Features
+The Gold layer represents the final stage of data refinement, creating business-specific datasets optimized for direct consumption by analysts, data scientists, and applications. This layer focuses on performance, usability, and delivering immediate business value.
+
+**Key Objectives:**
+- **Business Metrics**: Pre-calculate KPIs, risk metrics, and performance indicators
+- **ML Features**: Create feature stores with properly engineered features
+- **Query Optimization**: Aggregate and denormalize for fast queries
+- **Self-Service**: Enable analysts to work independently
+- **Governance**: Apply business rules and access controls
+
 ```python
 # Gold Layer: Business-level aggregates and ML-ready features
+# This implementation shows how to create high-value datasets
+# that directly serve business needs and machine learning models
+
 class GoldLayer:
     """
     Gold layer creates business-level datasets optimized for
-    analytics, reporting, and machine learning
+    analytics, reporting, and machine learning.
+    
+    This class demonstrates:
+    - Calculating complex financial metrics (VaR, CVaR, Greeks)
+    - Creating correlation matrices for portfolio analysis
+    - Engineering features for machine learning models
+    - Building technical indicators for trading strategies
+    - Optimizing tables for BI tool consumption
     """
     
     def __init__(self, spark: SparkSession):
+        """
+        Initialize Gold layer with Spark session and paths.
+        
+        Args:
+            spark: Active SparkSession for data processing
+        """
         self.spark = spark
+        # Base path for Gold layer tables
+        # These tables are directly consumed by end users and applications
         self.gold_path = "s3://quantumcapital/delta/gold"
         
     def calculate_risk_metrics(self):
@@ -653,23 +812,31 @@ class GoldLayer:
             "s3://quantumcapital/delta/silver/normalized_prices"
         )
         
-        # Calculate returns
+        # Calculate returns at multiple time horizons
+        # Returns are fundamental for all risk calculations
+        # Define window for time-series calculations per symbol
         window_spec = Window.partitionBy("symbol").orderBy("minute")
         
         df_returns = (
             df_prices
+            # 1-minute returns for high-frequency analysis
             .withColumn("return_1min", 
+                # Simple return: (price_t / price_t-1) - 1
                 (F.col("adjusted_close") / F.lag("adjusted_close", 1).over(window_spec)) - 1
             )
+            # 5-minute returns for short-term momentum
             .withColumn("return_5min",
                 (F.col("adjusted_close") / F.lag("adjusted_close", 5).over(window_spec)) - 1
             )
+            # 1-hour returns for intraday strategies
             .withColumn("return_1hr",
                 (F.col("adjusted_close") / F.lag("adjusted_close", 60).over(window_spec)) - 1
             )
+            # Daily returns (390 minutes = 6.5 hours trading day)
             .withColumn("return_1day",
                 (F.col("adjusted_close") / F.lag("adjusted_close", 390).over(window_spec)) - 1
             )
+            # Remove rows where we don't have previous prices for return calculation
             .filter(F.col("return_1min").isNotNull())
         )
         
@@ -688,15 +855,23 @@ class GoldLayer:
             )
         )
         
-        # Calculate Value at Risk (VaR) - 95% confidence
+        # Calculate Value at Risk (VaR) and Conditional VaR (CVaR)
+        # These are critical risk metrics for portfolio management
         df_var = (
             df_volatility
+            # VaR: Maximum expected loss at 95% confidence level
+            # Using historical simulation method (non-parametric)
             .withColumn("var_95_1day",
+                # 5th percentile of returns = 95% VaR
                 F.expr("percentile_approx(return_1day, 0.05)")
-                .over(window_spec.rowsBetween(-252, 0))  # 1 year of daily returns
+                # Look back 252 trading days (1 year of daily returns)
+                .over(window_spec.rowsBetween(-252, 0))
             )
-            .withColumn("cvar_95_1day",  # Conditional VaR (Expected Shortfall)
+            # CVaR (Conditional Value at Risk / Expected Shortfall)
+            # Average loss beyond VaR - measures tail risk
+            .withColumn("cvar_95_1day",
                 F.expr("""
+                    -- Calculate average of returns worse than VaR
                     avg(CASE WHEN return_1day <= var_95_1day THEN return_1day END)
                 """).over(window_spec.rowsBetween(-252, 0))
             )
@@ -752,30 +927,51 @@ class GoldLayer:
         # Price-based features
         df_features = (
             df_prices
-            # Moving averages
+            # === Moving Averages ===
+            # Simple Moving Average (SMA) - 20 periods (common for Bollinger Bands)
             .withColumn("sma_20", F.avg("adjusted_close").over(
-                window_spec.rowsBetween(-20, 0)
+                window_spec.rowsBetween(-20, 0)  # Look back 20 periods including current
             ))
+            # SMA 50 - medium-term trend indicator
             .withColumn("sma_50", F.avg("adjusted_close").over(
-                window_spec.rowsBetween(-50, 0)
+                window_spec.rowsBetween(-50, 0)  # Look back 50 periods
             ))
+            # Exponential Moving Average (EMA) - 12 periods
+            # EMA gives more weight to recent prices
             .withColumn("ema_12", F.expr("""
+                -- Custom EMA calculation using aggregate function
+                -- Alpha (smoothing factor) = 2/(N+1) = 2/13 = 0.1538
                 aggregate(
-                    collect_list(adjusted_close) OVER (PARTITION BY symbol ORDER BY minute ROWS BETWEEN 11 PRECEDING AND CURRENT ROW),
-                    cast(0 as double),
+                    collect_list(adjusted_close) OVER (
+                        PARTITION BY symbol ORDER BY minute 
+                        ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
+                    ),
+                    cast(0 as double),  -- Initial accumulator value
+                    -- EMA formula: EMA_today = Price_today * alpha + EMA_yesterday * (1-alpha)
                     (acc, x) -> acc * 0.8462 + x * 0.1538
                 )
             """))
             
-            # Relative Strength Index (RSI)
+            # === Relative Strength Index (RSI) ===
+            # RSI measures momentum - identifies overbought/oversold conditions
+            # Calculate price changes between periods
             .withColumn("price_change", 
                 F.col("adjusted_close") - F.lag("adjusted_close", 1).over(window_spec)
             )
+            # Separate gains and losses
+            # Gains: positive price changes only
             .withColumn("gain", F.when(F.col("price_change") > 0, F.col("price_change")).otherwise(0))
+            # Losses: negative price changes (converted to positive)
             .withColumn("loss", F.when(F.col("price_change") < 0, -F.col("price_change")).otherwise(0))
+            # Calculate average gain over 14 periods (standard RSI period)
             .withColumn("avg_gain", F.avg("gain").over(window_spec.rowsBetween(-14, 0)))
+            # Calculate average loss over 14 periods
             .withColumn("avg_loss", F.avg("loss").over(window_spec.rowsBetween(-14, 0)))
+            # RSI Formula: 100 - (100 / (1 + RS))
+            # where RS = Average Gain / Average Loss
             .withColumn("rsi", 
+                # RSI > 70 typically indicates overbought
+                # RSI < 30 typically indicates oversold
                 100 - (100 / (1 + F.col("avg_gain") / F.nullif(F.col("avg_loss"), 0)))
             )
             

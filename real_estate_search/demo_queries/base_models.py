@@ -51,6 +51,18 @@ class PropertyType(str, Enum):
     MULTI_FAMILY = "Multi-Family"
     LAND = "Land"
     OTHER = "Other"
+    
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case variations and unknown values."""
+        if value:
+            # Try case-insensitive match
+            value_lower = str(value).lower()
+            for member in cls:
+                if member.value.lower() == value_lower:
+                    return member
+        # Default to OTHER for unknown types
+        return cls.OTHER
 
 
 class QueryType(str, Enum):
@@ -93,15 +105,17 @@ class TimestampedModel(BaseModel):
 
 class ScoredModel(BaseModel):
     """Base model for entities with Elasticsearch scores."""
-    _score: Optional[float] = Field(None, ge=0, description="Elasticsearch relevance score")
-    _index: Optional[str] = Field(None, description="Source index")
-    _id: Optional[str] = Field(None, description="Document ID")
+    score: Optional[float] = Field(None, alias="_score", ge=0, description="Elasticsearch relevance score")
+    index: Optional[str] = Field(None, alias="_index", description="Source index")
+    id: Optional[str] = Field(None, alias="_id", description="Document ID")
+    
+    model_config = ConfigDict(populate_by_name=True)
     
     @computed_field  # type: ignore
     @property
     def has_score(self) -> bool:
         """Check if this entity has a relevance score."""
-        return self._score is not None and self._score > 0
+        return self.score is not None and self.score > 0
 
 
 # ============================================================================
@@ -133,13 +147,30 @@ class Address(BaseModel):
     street: Optional[str] = Field(None, description="Street address")
     unit: Optional[str] = Field(None, description="Unit/Apt number")
     city: Optional[str] = Field(None, description="City name")
-    state: Optional[str] = Field(None, min_length=2, max_length=2, description="State code")
+    state: Optional[str] = Field(None, description="State code or name")
     zip_code: Optional[str] = Field(None, pattern=r"^\d{5}(-\d{4})?$", description="ZIP code")
     county: Optional[str] = Field(None, description="County name")
     country: str = Field("US", description="Country code")
-    location: Optional[GeoPoint] = Field(None, description="Geographic coordinates")
+    location: Optional[Union[GeoPoint, List[float], Dict[str, float]]] = Field(None, description="Geographic coordinates")
     
     model_config = ConfigDict(extra="ignore")
+    
+    @field_validator('location', mode='before')
+    def convert_location(cls, v):
+        """Convert various location formats to GeoPoint."""
+        if v is None:
+            return None
+        if isinstance(v, GeoPoint):
+            return v
+        if isinstance(v, list) and len(v) == 2:
+            # Elasticsearch returns [lon, lat]
+            return GeoPoint(lon=v[0], lat=v[1])
+        if isinstance(v, dict):
+            if 'lat' in v and 'lon' in v:
+                return GeoPoint(lat=v['lat'], lon=v['lon'])
+            elif 'latitude' in v and 'longitude' in v:
+                return GeoPoint(lat=v['latitude'], lon=v['longitude'])
+        return v
     
     @computed_field  # type: ignore
     @property
@@ -208,7 +239,7 @@ class PropertyListing(BaseModel):
     tax_annual: Optional[float] = Field(None, ge=0, description="Annual property tax")
     
     # Features
-    features: PropertyFeatures = Field(default_factory=PropertyFeatures, description="Property features")
+    features: Optional[PropertyFeatures] = Field(None, description="Property features")
     amenities: List[str] = Field(default_factory=list, description="List of amenities")
     
     # Descriptions
@@ -226,10 +257,10 @@ class PropertyListing(BaseModel):
     virtual_tour_url: Optional[str] = Field(None, description="Virtual tour URL")
     
     # Scoring and metadata
-    _score: Optional[float] = Field(None, description="Search relevance score")
-    _highlights: Optional[Dict[str, List[str]]] = Field(None, description="Search highlights")
+    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
+    highlights: Optional[Dict[str, List[str]]] = Field(None, alias="_highlights", description="Search highlights")
     
-    model_config = ConfigDict(extra="ignore", use_enum_values=True)
+    model_config = ConfigDict(extra="ignore", use_enum_values=True, populate_by_name=True)
     
     @computed_field  # type: ignore
     @property
@@ -244,14 +275,19 @@ class PropertyListing(BaseModel):
     def summary(self) -> str:
         """Generate property summary."""
         parts = []
-        if self.features.bedrooms:
-            parts.append(f"{self.features.bedrooms} bed")
-        if self.features.bathrooms:
-            parts.append(f"{self.features.bathrooms} bath")
-        if self.features.square_feet:
-            parts.append(f"{self.features.square_feet:,} sqft")
+        if self.features:
+            if self.features.bedrooms:
+                parts.append(f"{self.features.bedrooms} bed")
+            if self.features.bathrooms:
+                parts.append(f"{self.features.bathrooms} bath")
+            if self.features.square_feet:
+                parts.append(f"{self.features.square_feet:,} sqft")
         if self.property_type:
-            parts.append(self.property_type.value)
+            # Handle both enum and string
+            if isinstance(self.property_type, PropertyType):
+                parts.append(self.property_type.value)
+            else:
+                parts.append(str(self.property_type))
         return " | ".join(parts) if parts else "Property details not available"
 
 
@@ -290,8 +326,8 @@ class Neighborhood(BaseModel):
     name: str = Field(..., description="Neighborhood name")
     
     # Location
-    city: str = Field(..., description="City name")
-    state: str = Field(..., min_length=2, max_length=2, description="State code")
+    city: Optional[str] = Field(None, description="City name")
+    state: Optional[str] = Field(None, description="State code or name")
     county: Optional[str] = Field(None, description="County name")
     boundaries: Optional[Dict[str, Any]] = Field(None, description="Geographic boundaries")
     center_point: Optional[GeoPoint] = Field(None, description="Center coordinates")
@@ -322,9 +358,9 @@ class Neighborhood(BaseModel):
     wikipedia_correlations: Optional[Dict[str, Any]] = Field(None, description="Related Wikipedia articles")
     
     # Metadata
-    _score: Optional[float] = Field(None, description="Search relevance score")
+    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
     
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     
     @computed_field  # type: ignore
     @property
@@ -362,11 +398,11 @@ class WikipediaArticle(BaseModel):
     content_category: Optional[str] = Field(None, description="Content category")
     
     # Metadata
-    _score: Optional[float] = Field(None, description="Search relevance score")
-    _relationship: Optional[str] = Field(None, description="Relationship to parent entity")
-    _confidence: Optional[float] = Field(None, ge=0, le=1, description="Relationship confidence")
+    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
+    relationship: Optional[str] = Field(None, alias="_relationship", description="Relationship to parent entity")
+    confidence: Optional[float] = Field(None, alias="_confidence", ge=0, le=1, description="Relationship confidence")
     
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     
     @computed_field  # type: ignore
     @property
@@ -428,43 +464,68 @@ class AggregationResult(BaseModel):
 
 class SearchHit(BaseModel):
     """Individual search hit from Elasticsearch."""
-    _index: str = Field(..., description="Index name")
-    _id: str = Field(..., description="Document ID")
-    _score: Optional[float] = Field(None, description="Relevance score")
-    _source: Dict[str, Any] = Field(..., description="Document source")
+    index: str = Field(..., alias="_index", description="Index name")
+    id: str = Field(..., alias="_id", description="Document ID")
+    score: Optional[float] = Field(None, alias="_score", description="Relevance score")
+    source: Dict[str, Any] = Field(..., alias="_source", description="Document source")
     highlight: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted fields")
     
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
     
     def to_entity(self) -> Optional[Union[PropertyListing, Neighborhood, WikipediaArticle]]:
         """Convert to appropriate entity type based on index."""
         try:
-            source = self._source.copy()
-            if self._score is not None:
-                source['_score'] = self._score
+            source = self.source.copy()
+            if self.score is not None:
+                source['_score'] = self.score
             
-            if self._index == IndexName.PROPERTIES.value:
+            if self.index == IndexName.PROPERTIES.value:
+                # Fix property type mapping
+                if 'property_type' in source:
+                    pt = source['property_type']
+                    if isinstance(pt, str):
+                        # Map common variations
+                        pt_lower = pt.lower()
+                        if pt_lower == 'single-family' or pt_lower == 'single family':
+                            source['property_type'] = 'Single Family'
+                        elif pt_lower == 'condo':
+                            source['property_type'] = 'Condo'
+                        elif pt_lower == 'townhouse':
+                            source['property_type'] = 'Townhouse'
+                        elif pt_lower == 'multi-family':
+                            source['property_type'] = 'Multi-Family'
+                        else:
+                            source['property_type'] = 'Other'
+                
                 # Handle nested address structure
                 if 'address' in source and isinstance(source['address'], dict):
                     source['address'] = Address(**source['address'])
-                if 'features' not in source:
-                    # Extract features from top-level fields
-                    source['features'] = PropertyFeatures(
-                        bedrooms=source.get('bedrooms'),
-                        bathrooms=source.get('bathrooms'),
-                        square_feet=source.get('square_feet'),
-                        year_built=source.get('year_built')
-                    )
+                    
+                # Handle features field (list of amenities in Elasticsearch)
+                if 'features' in source and isinstance(source['features'], list):
+                    # Move features list to amenities
+                    if not source.get('amenities'):
+                        source['amenities'] = source['features']
+                    source.pop('features', None)
+                
+                # Create PropertyFeatures from top-level fields
+                source['features'] = PropertyFeatures(
+                    bedrooms=source.get('bedrooms'),
+                    bathrooms=source.get('bathrooms'),
+                    square_feet=source.get('square_feet'),
+                    year_built=source.get('year_built')
+                )
+                
                 return PropertyListing(**source)
             
-            elif self._index == IndexName.NEIGHBORHOODS.value:
+            elif self.index == IndexName.NEIGHBORHOODS.value:
                 if 'demographics' in source and isinstance(source['demographics'], dict):
                     source['demographics'] = Demographics(**source['demographics'])
                 if 'school_ratings' in source and isinstance(source['school_ratings'], dict):
                     source['school_ratings'] = SchoolRatings(**source['school_ratings'])
                 return Neighborhood(**source)
             
-            elif self._index == IndexName.WIKIPEDIA.value:
+            elif self.index == IndexName.WIKIPEDIA.value:
                 return WikipediaArticle(**source)
             
         except Exception as e:
@@ -482,7 +543,7 @@ class SearchRequest(BaseModel):
     sort: Optional[List[Dict[str, Any]]] = Field(None, description="Sort criteria")
     aggs: Optional[Dict[str, Any]] = Field(None, description="Aggregations")
     highlight: Optional[Dict[str, Any]] = Field(None, description="Highlight configuration")
-    _source: Optional[Union[bool, List[str], Dict[str, Any]]] = Field(True, description="Source filtering")
+    source: Optional[Union[bool, List[str], Dict[str, Any]]] = Field(True, alias="_source", description="Source filtering")
     
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     
@@ -500,8 +561,8 @@ class SearchRequest(BaseModel):
             query_dict["aggs"] = self.aggs
         if self.highlight:
             query_dict["highlight"] = self.highlight
-        if self._source is not None:
-            query_dict["_source"] = self._source
+        if self.source is not None:
+            query_dict["_source"] = self.source
             
         return query_dict
 

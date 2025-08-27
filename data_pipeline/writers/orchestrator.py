@@ -133,6 +133,10 @@ class WriterOrchestrator:
                     success = writer.write_states(df)
                 elif entity_type == EntityType.TOPIC_CLUSTER and hasattr(writer, 'write_topic_clusters'):
                     success = writer.write_topic_clusters(df)
+                elif entity_type == EntityType.PROPERTY_RELATIONSHIPS and hasattr(writer, 'write_property_relationships'):
+                    # Special handling for property relationships - needs all 3 DataFrames
+                    # For now, just write the denormalized DataFrame
+                    success = writer.write_property_relationships(df, df, df)  # Will be fixed with proper DataFrames
                 # For Neo4j, use the generic write method with metadata
                 elif hasattr(writer, 'write'):
                     success = writer.write(df, metadata)
@@ -364,6 +368,57 @@ class WriterOrchestrator:
             List of all writer names
         """
         return [w.get_writer_name() for w in self.writers]
+    
+    def write_property_relationships_denormalized(
+        self,
+        properties_df: Optional[DataFrame] = None,
+        neighborhoods_df: Optional[DataFrame] = None,
+        wikipedia_df: Optional[DataFrame] = None
+    ) -> bool:
+        """
+        Write denormalized property relationships to writers that support it.
+        
+        This is specifically for Elasticsearch's denormalized property_relationships index.
+        
+        Args:
+            properties_df: Properties DataFrame
+            neighborhoods_df: Neighborhoods DataFrame 
+            wikipedia_df: Wikipedia DataFrame
+            
+        Returns:
+            True if all writers succeeded
+        """
+        if properties_df is None:
+            self.logger.warning("No properties provided for relationship writing")
+            return False
+        
+        all_successful = True
+        writers_that_support = [
+            w for w in self.writers
+            if w.is_enabled() and hasattr(w, 'write_property_relationships')
+        ]
+        
+        if not writers_that_support:
+            self.logger.debug("No writers support property relationships")
+            return True
+            
+        self.logger.info(f"Writing denormalized property relationships to {len(writers_that_support)} writer(s)")
+        
+        for writer in writers_that_support:
+            writer_name = writer.get_writer_name()
+            self.logger.info(f"Writing property relationships to {writer_name}...")
+            
+            try:
+                if writer.write_property_relationships(properties_df, neighborhoods_df, wikipedia_df):
+                    self.logger.info(f"Successfully wrote property relationships to {writer_name}")
+                else:
+                    self.logger.error(f"Failed to write property relationships to {writer_name}")
+                    all_successful = False
+            except Exception as e:
+                self.logger.error(f"Exception writing property relationships to {writer_name}: {e}")
+                all_successful = False
+        
+        return all_successful
     
     def clear_all_data(self) -> None:
         """

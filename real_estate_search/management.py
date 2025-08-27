@@ -26,6 +26,7 @@ from .demo_queries import (
     demo_relationship_search,
     demo_wikipedia_fulltext
 )
+from .demo_queries.demo_single_query_relationships import demo_simplified_relationships
 
 
 def setup_logging(log_level: str = "INFO"):
@@ -90,7 +91,8 @@ class IndexManagementCLI:
             indices_to_delete = [
                 IndexName.PROPERTIES, IndexName.TEST_PROPERTIES,
                 IndexName.NEIGHBORHOODS, IndexName.TEST_NEIGHBORHOODS,
-                IndexName.WIKIPEDIA, IndexName.TEST_WIKIPEDIA
+                IndexName.WIKIPEDIA, IndexName.TEST_WIKIPEDIA,
+                IndexName.PROPERTY_RELATIONSHIPS, IndexName.TEST_PROPERTY_RELATIONSHIPS
             ]
             for index_name in indices_to_delete:
                 try:
@@ -458,7 +460,8 @@ class IndexManagementCLI:
             7: (demo_multi_entity_search, "Multi-Entity Combined Search"),
             8: (demo_wikipedia_search, "Wikipedia Article Search"),
             9: (demo_relationship_search, "Property-Neighborhood-Wikipedia Relationships"),
-            10: (demo_wikipedia_fulltext, "Wikipedia Full-Text Search")
+            10: (demo_wikipedia_fulltext, "Wikipedia Full-Text Search"),
+            11: (demo_simplified_relationships, "Simplified Single-Query Relationships")
         }
         
         if demo_number not in demo_queries:
@@ -535,7 +538,9 @@ class IndexManagementCLI:
             (6, "Semantic Similarity Search", "Find similar properties using embeddings"),
             (7, "Multi-Entity Combined Search", "Search across all entity types"),
             (8, "Wikipedia Article Search", "Search Wikipedia with location filters"),
-            (9, "Property-Neighborhood-Wikipedia Relationships", "Demonstrates entity linking across indices")
+            (9, "Property-Neighborhood-Wikipedia Relationships", "Demonstrates entity linking across indices"),
+            (10, "Wikipedia Full-Text Search", "Full-text search across Wikipedia articles"),
+            (11, "Simplified Single-Query Relationships", "Denormalized index for single-query retrieval")
         ]
         
         for num, name, description in demos:
@@ -580,8 +585,8 @@ Examples:
         'demo_number',
         type=int,
         nargs='?',
-        choices=range(1, 11),
-        help='Demo query number to run (1-10)'
+        choices=range(1, 12),
+        help='Demo query number to run (1-11)'
     )
     
     parser.add_argument(
@@ -651,7 +656,7 @@ Examples:
             elif args.demo_number:
                 success = cli.run_demo_query(args.demo_number, verbose=args.verbose)
             else:
-                print("Please specify a demo number (1-9) or use --list to see available demos")
+                print("Please specify a demo number (1-11) or use --list to see available demos")
                 print("Example: python -m real_estate_search.management demo 1")
                 success = False
         

@@ -1,19 +1,700 @@
-"""Core property search demo queries using direct Elasticsearch DSL."""
+"""
+Refactored property search demo queries with Pydantic models and comprehensive documentation.
 
-from typing import Dict, Any, Optional, List
+This module demonstrates fundamental Elasticsearch property search patterns:
+1. Full-text search with multi-match queries
+2. Filtered searches combining text and criteria
+3. Range queries for numeric fields
+4. Geo-distance searches for location-based queries
+5. Complex boolean queries with multiple conditions
+
+ELASTICSEARCH CONCEPTS DEMONSTRATED:
+- Query vs Filter context (scoring vs non-scoring)
+- Field boosting for relevance tuning
+- Fuzzy matching for typo tolerance
+- Aggregations for faceted search
+- Geo queries for location-based search
+- Highlighting for search result context
+- Source filtering for performance optimization
+"""
+
+from typing import Dict, Any, Optional, List, Tuple
+from datetime import datetime
 from elasticsearch import Elasticsearch
 import logging
 
-from .models import (
-    DemoQueryResult,
-    PropertySearchParams,
-    PropertyFilterParams,
-    GeoSearchParams
+from .base_models import (
+    PropertyListing,
+    SearchRequest,
+    SearchResponse,
+    BoolQuery,
+    QueryClause,
+    QueryType,
+    PropertyType,
+    Address,
+    GeoPoint,
+    TypedDemoResult,
+    AggregationType,
+    AggregationResult,
+    BucketAggregation,
+    StatsAggregation
 )
+from .models import DemoQueryResult
 
 logger = logging.getLogger(__name__)
 
 
+class PropertyQueryBuilder:
+    """
+    Builder class for constructing property search queries.
+    
+    This class encapsulates the logic for building various types of
+    Elasticsearch queries for property searches, from simple text searches
+    to complex geo-spatial and filtered queries.
+    """
+    
+    @staticmethod
+    def basic_search(
+        query_text: str,
+        size: int = 10,
+        highlight: bool = True
+    ) -> SearchRequest:
+        """
+        Build a basic property search query using multi-match.
+        
+        ELASTICSEARCH CONCEPTS:
+        1. MULTI-MATCH QUERY:
+           - Searches text across multiple fields simultaneously
+           - More flexible than single-field match queries
+           - Supports different matching strategies
+        
+        2. FIELD BOOSTING:
+           - description^2 gives 2x weight to description matches
+           - Influences relevance scoring, not filtering
+           - Critical for tuning search result quality
+        
+        3. FUZZINESS:
+           - AUTO adapts based on term length
+           - Handles typos and variations
+           - Essential for user-friendly search
+        
+        Args:
+            query_text: Text to search for
+            size: Maximum results to return
+            highlight: Whether to include highlighting
+            
+        Returns:
+            SearchRequest configured for basic text search
+        """
+        query: Dict[str, Any] = {
+            "multi_match": {
+                "query": query_text,
+                "fields": [
+                    "description^2",      # Primary content field
+                    "amenities^1.5",      # Important features
+                    "address.street",     # Location context
+                    "address.city",       # City search
+                    "neighborhood_id"     # Neighborhood association
+                ],
+                "type": "best_fields",   # Use best matching field's score
+                "fuzziness": "AUTO",      # Adaptive fuzzy matching
+                "prefix_length": 2,       # Minimum exact prefix
+                "operator": "OR"          # Match ANY term (vs AND for ALL)
+            }
+        }
+        
+        request = SearchRequest(
+            index="properties",
+            query=query,
+            size=size,
+            source=[  # Only return needed fields
+                "listing_id", "property_type", "price", 
+                "bedrooms", "bathrooms", "square_feet",
+                "address", "description", "amenities"
+            ]
+        )
+        
+        if highlight:
+            request.highlight = {
+                "fields": {
+                    "description": {"fragment_size": 150},
+                    "amenities": {"fragment_size": 100}
+                },
+                "pre_tags": ["<em>"],
+                "post_tags": ["</em>"]
+            }
+        
+        return request
+    
+    @staticmethod
+    def filtered_search(
+        property_type: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_bedrooms: Optional[int] = None,
+        min_bathrooms: Optional[float] = None,
+        amenities: Optional[List[str]] = None,
+        size: int = 10
+    ) -> SearchRequest:
+        """
+        Build a filtered property search query.
+        
+        ELASTICSEARCH CONCEPTS:
+        1. BOOL QUERY:
+           - Combines multiple query clauses with boolean logic
+           - filter: Must match but doesn't affect score (cached)
+           - must: Must match and affects score
+           - should: Optional matches that boost score
+        
+        2. FILTER CONTEXT:
+           - Used for yes/no questions (has 3 bedrooms?)
+           - Results are cached for performance
+           - No relevance scores calculated
+        
+        3. RANGE QUERIES:
+           - gte/lte for inclusive bounds
+           - gt/lt for exclusive bounds
+           - Works with numbers, dates, strings
+        
+        Args:
+            property_type: Filter by property type
+            min_price: Minimum price filter
+            max_price: Maximum price filter
+            min_bedrooms: Minimum bedrooms
+            min_bathrooms: Minimum bathrooms
+            amenities: Required amenities
+            size: Maximum results
+            
+        Returns:
+            SearchRequest with filter criteria
+        """
+        bool_query = BoolQuery()
+        
+        # Build filter clauses (non-scoring, cached)
+        filters: List[Dict[str, Any]] = []
+        
+        if property_type:
+            # Normalize property type to match data format
+            pt_normalized = property_type.lower().replace(' ', '-')
+            filters.append({"term": {"property_type": pt_normalized}})
+        
+        if min_price is not None or max_price is not None:
+            range_clause: Dict[str, Any] = {}
+            if min_price is not None:
+                range_clause["gte"] = min_price
+            if max_price is not None:
+                range_clause["lte"] = max_price
+            filters.append({"range": {"price": range_clause}})
+        
+        if min_bedrooms is not None:
+            filters.append({"range": {"bedrooms": {"gte": min_bedrooms}}})
+        
+        if min_bathrooms is not None:
+            filters.append({"range": {"bathrooms": {"gte": min_bathrooms}}})
+        
+        if amenities:
+            # Each amenity must exist
+            for amenity in amenities:
+                filters.append({"match": {"amenities": amenity}})
+        
+        # Use match_all if no filters (returns everything)
+        if filters:
+            query = {
+                "bool": {
+                    "filter": filters
+                }
+            }
+        else:
+            query = {"match_all": {}}
+        
+        return SearchRequest(
+            index="properties",
+            query=query,
+            size=size,
+            sort=[{"price": {"order": "asc"}}],  # Sort by price when filtering
+            source=True  # Return all fields
+        )
+    
+    @staticmethod
+    def geo_search(
+        center_lat: float,
+        center_lon: float,
+        radius_km: float = 5.0,
+        property_type: Optional[str] = None,
+        max_price: Optional[float] = None,
+        size: int = 10
+    ) -> SearchRequest:
+        """
+        Build a geo-distance property search query.
+        
+        ELASTICSEARCH CONCEPTS:
+        1. GEO_DISTANCE QUERY:
+           - Filters documents within radius of a point
+           - Requires geo_point field mapping
+           - Supports various distance units (km, mi, m)
+        
+        2. DISTANCE CALCULATION:
+           - arc: Most accurate, slowest (default)
+           - plane: Faster, less accurate for large distances
+           - Distance returned in sort for display
+        
+        3. COMBINED FILTERING:
+           - Geo filter reduces search space first
+           - Additional filters apply within radius
+           - Order matters for performance
+        
+        Args:
+            center_lat: Center point latitude
+            center_lon: Center point longitude
+            radius_km: Search radius in kilometers
+            property_type: Optional property type filter
+            max_price: Optional maximum price
+            size: Maximum results
+            
+        Returns:
+            SearchRequest for geo-distance search
+        """
+        filters = [
+            {
+                "geo_distance": {
+                    "distance": f"{radius_km}km",
+                    "address.location": {
+                        "lat": center_lat,
+                        "lon": center_lon
+                    }
+                }
+            }
+        ]
+        
+        if property_type:
+            # Normalize property type to match data format
+            pt_normalized = property_type.lower().replace(' ', '-')
+            filters.append({"term": {"property_type": pt_normalized}})
+        
+        if max_price is not None:
+            filters.append({"range": {"price": {"lte": max_price}}})
+        
+        query = {
+            "bool": {
+                "filter": filters
+            }
+        }
+        
+        # Sort by distance from center point
+        sort = [
+            {
+                "_geo_distance": {
+                    "address.location": {
+                        "lat": center_lat,
+                        "lon": center_lon
+                    },
+                    "order": "asc",
+                    "unit": "km",
+                    "distance_type": "arc"
+                }
+            }
+        ]
+        
+        return SearchRequest(
+            index="properties",
+            query=query,
+            size=size,
+            sort=sort,
+            source=True
+        )
+    
+    @staticmethod
+    def price_range_with_stats(
+        min_price: float,
+        max_price: float,
+        include_stats: bool = True
+    ) -> SearchRequest:
+        """
+        Build a price range query with statistical aggregations.
+        
+        ELASTICSEARCH CONCEPTS:
+        1. AGGREGATIONS:
+           - Calculate metrics across matching documents
+           - Don't affect search results, add metadata
+           - Can be nested for complex analytics
+        
+        2. STATS AGGREGATION:
+           - Returns min, max, avg, sum, count
+           - Single pass calculation for efficiency
+           - Useful for result set context
+        
+        3. HISTOGRAM AGGREGATION:
+           - Buckets data into intervals
+           - Fixed or automatic interval sizing
+           - Great for price distribution visualization
+        
+        Args:
+            min_price: Minimum price
+            max_price: Maximum price
+            include_stats: Whether to include aggregations
+            
+        Returns:
+            SearchRequest with price range and optional stats
+        """
+        query = {
+            "range": {
+                "price": {
+                    "gte": min_price,
+                    "lte": max_price
+                }
+            }
+        }
+        
+        aggs = None
+        if include_stats:
+            aggs = {
+                "price_stats": {
+                    "stats": {
+                        "field": "price"
+                    }
+                },
+                "price_histogram": {
+                    "histogram": {
+                        "field": "price",
+                        "interval": 100000,  # $100k buckets
+                        "min_doc_count": 1  # Only return non-empty buckets
+                    }
+                },
+                "property_types": {
+                    "terms": {
+                        "field": "property_type.keyword",
+                        "size": 10
+                    }
+                },
+                "bedroom_stats": {
+                    "stats": {
+                        "field": "bedrooms"
+                    }
+                }
+            }
+        
+        return SearchRequest(
+            index="properties",
+            query=query,
+            size=20,
+            aggs=aggs,
+            sort=[{"price": {"order": "asc"}}],
+            source=True
+        )
+
+
+class PropertySearchDemo:
+    """
+    Demo class for property searches using Pydantic models.
+    
+    This class demonstrates best practices for:
+    - Executing Elasticsearch queries with proper error handling
+    - Converting responses to strongly-typed entities
+    - Building complex search workflows
+    - Providing useful search metadata
+    """
+    
+    def __init__(self, es_client: Elasticsearch):
+        """Initialize with Elasticsearch client."""
+        self.es_client = es_client
+        self.query_builder = PropertyQueryBuilder()
+    
+    def execute_search(self, request: SearchRequest) -> Tuple[Optional[SearchResponse], int]:
+        """
+        Execute a search request and measure timing.
+        
+        Args:
+            request: SearchRequest to execute
+            
+        Returns:
+            Tuple of (SearchResponse or None, execution time in ms)
+        """
+        import time
+        start_time = time.time()
+        
+        try:
+            response = self.es_client.search(
+                index=request.index,
+                body=request.to_dict()
+            )
+            execution_time = int((time.time() - start_time) * 1000)
+            return SearchResponse.from_elasticsearch(response), execution_time
+            
+        except Exception as e:
+            logger.error(f"Search execution failed: {e}")
+            execution_time = int((time.time() - start_time) * 1000)
+            return None, execution_time
+    
+    def demo_basic_search(
+        self,
+        query_text: str = "modern home with pool"
+    ) -> DemoQueryResult:
+        """
+        Execute basic property search demo.
+        
+        This demonstrates:
+        - Full-text search across multiple fields
+        - Field boosting for relevance
+        - Fuzzy matching for user-friendly search
+        - Result highlighting
+        
+        Args:
+            query_text: Search query
+            
+        Returns:
+            DemoQueryResult with typed property entities
+        """
+        request = self.query_builder.basic_search(query_text)
+        response, exec_time = self.execute_search(request)
+        
+        if not response:
+            return DemoQueryResult(
+                query_name="Basic Property Search",
+                execution_time_ms=exec_time,
+                total_hits=0,
+                returned_hits=0,
+                results=[],
+                query_dsl=request.to_dict()
+            )
+        
+        # Convert to typed entities
+        properties = response.to_entities()
+        
+        # Convert to legacy format for compatibility
+        results = []
+        for prop in properties:
+            if isinstance(prop, PropertyListing):
+                result = prop.model_dump(exclude_none=True)
+                # Add highlights if available
+                for hit in response.hits:
+                    if hit.source.get('listing_id') == prop.listing_id:
+                        if hit.highlight:
+                            result['_highlights'] = hit.highlight
+                        break
+                results.append(result)
+        
+        return DemoQueryResult(
+            query_name=f"Basic Property Search: '{query_text}'",
+            execution_time_ms=exec_time,
+            total_hits=response.total_hits,
+            returned_hits=len(results),
+            results=results,
+            query_dsl=request.to_dict(),
+            explanation=f"Searched for '{query_text}' across description, amenities, and address fields with fuzzy matching"
+        )
+    
+    def demo_filtered_search(
+        self,
+        property_type: str = "Single Family",
+        min_price: float = 300000,
+        max_price: float = 800000,
+        min_bedrooms: int = 3,
+        min_bathrooms: float = 2.0
+    ) -> DemoQueryResult:
+        """
+        Execute filtered property search demo.
+        
+        This demonstrates:
+        - Filter context for non-scoring criteria
+        - Range queries for numeric fields
+        - Combining multiple filter conditions
+        - Efficient caching of filter results
+        
+        Args:
+            property_type: Type of property
+            min_price: Minimum price
+            max_price: Maximum price  
+            min_bedrooms: Minimum bedrooms
+            min_bathrooms: Minimum bathrooms
+            
+        Returns:
+            DemoQueryResult with filtered properties
+        """
+        request = self.query_builder.filtered_search(
+            property_type=property_type,
+            min_price=min_price,
+            max_price=max_price,
+            min_bedrooms=min_bedrooms,
+            min_bathrooms=min_bathrooms
+        )
+        
+        response, exec_time = self.execute_search(request)
+        
+        if not response:
+            return DemoQueryResult(
+                query_name="Filtered Property Search",
+                execution_time_ms=exec_time,
+                total_hits=0,
+                returned_hits=0,
+                results=[],
+                query_dsl=request.to_dict()
+            )
+        
+        # Convert to typed entities
+        properties = response.to_entities()
+        results = [prop.model_dump(exclude_none=True) for prop in properties 
+                  if isinstance(prop, PropertyListing)]
+        
+        return DemoQueryResult(
+            query_name="Filtered Property Search",
+            execution_time_ms=exec_time,
+            total_hits=response.total_hits,
+            returned_hits=len(results),
+            results=results,
+            query_dsl=request.to_dict(),
+            explanation=f"Properties: {property_type}, ${min_price:,.0f}-${max_price:,.0f}, {min_bedrooms}+ beds, {min_bathrooms}+ baths"
+        )
+    
+    def demo_geo_search(
+        self,
+        center_lat: float = 37.7749,  # San Francisco
+        center_lon: float = -122.4194,
+        radius_km: float = 5.0,
+        max_price: Optional[float] = 1000000
+    ) -> DemoQueryResult:
+        """
+        Execute geo-distance search demo.
+        
+        This demonstrates:
+        - Geo-distance filtering
+        - Sorting by distance
+        - Combining geo and other filters
+        - Distance calculation in results
+        
+        Args:
+            center_lat: Center latitude
+            center_lon: Center longitude
+            radius_km: Search radius in km
+            max_price: Optional price limit
+            
+        Returns:
+            DemoQueryResult with nearby properties
+        """
+        request = self.query_builder.geo_search(
+            center_lat=center_lat,
+            center_lon=center_lon,
+            radius_km=radius_km,
+            max_price=max_price
+        )
+        
+        response, exec_time = self.execute_search(request)
+        
+        if not response:
+            return DemoQueryResult(
+                query_name="Geo-Distance Property Search",
+                execution_time_ms=exec_time,
+                total_hits=0,
+                returned_hits=0,
+                results=[],
+                query_dsl=request.to_dict()
+            )
+        
+        # Convert to typed entities with distance
+        properties = response.to_entities()
+        results = []
+        for i, prop in enumerate(properties):
+            if isinstance(prop, PropertyListing):
+                result = prop.model_dump(exclude_none=True)
+                # Add distance from sort values
+                if i < len(response.hits) and hasattr(response.hits[i], 'sort'):
+                    result['_distance_km'] = response.hits[i].sort[0] if response.hits[i].sort else None
+                results.append(result)
+        
+        return DemoQueryResult(
+            query_name="Geo-Distance Property Search",
+            execution_time_ms=exec_time,
+            total_hits=response.total_hits,
+            returned_hits=len(results),
+            results=results,
+            query_dsl=request.to_dict(),
+            explanation=f"Properties within {radius_km}km of ({center_lat}, {center_lon})"
+        )
+    
+    def demo_price_range_with_analytics(
+        self,
+        min_price: float = 400000,
+        max_price: float = 800000
+    ) -> DemoQueryResult:
+        """
+        Execute price range search with analytics.
+        
+        This demonstrates:
+        - Range queries for price filtering
+        - Statistical aggregations
+        - Histogram aggregations for distribution
+        - Terms aggregations for categories
+        
+        Args:
+            min_price: Minimum price
+            max_price: Maximum price
+            
+        Returns:
+            DemoQueryResult with properties and statistics
+        """
+        request = self.query_builder.price_range_with_stats(
+            min_price=min_price,
+            max_price=max_price,
+            include_stats=True
+        )
+        
+        response, exec_time = self.execute_search(request)
+        
+        if not response:
+            return DemoQueryResult(
+                query_name="Price Range Search with Analytics",
+                execution_time_ms=exec_time,
+                total_hits=0,
+                returned_hits=0,
+                results=[],
+                query_dsl=request.to_dict()
+            )
+        
+        # Convert properties
+        properties = response.to_entities()
+        results = [prop.model_dump(exclude_none=True) for prop in properties 
+                  if isinstance(prop, PropertyListing)]
+        
+        # Process aggregations - keep as dict for compatibility
+        aggregations = None
+        if response.aggregations:
+            aggregations = {}
+            
+            # Price statistics
+            if 'price_stats' in response.aggregations:
+                stats = response.aggregations['price_stats']
+                aggregations['price_stats'] = {
+                    "min": stats.get('min', 0),
+                    "max": stats.get('max', 0),
+                    "avg": stats.get('avg', 0),
+                    "sum": stats.get('sum', 0),
+                    "count": stats.get('count', 0)
+                }
+            
+            # Property type distribution
+            if 'property_types' in response.aggregations:
+                aggregations['property_types'] = response.aggregations['property_types']
+            
+            # Price histogram
+            if 'price_histogram' in response.aggregations:
+                aggregations['price_histogram'] = response.aggregations['price_histogram']
+            
+            # Bedroom stats
+            if 'bedroom_stats' in response.aggregations:
+                aggregations['bedroom_stats'] = response.aggregations['bedroom_stats']
+        
+        return DemoQueryResult(
+            query_name="Price Range Search with Analytics",
+            execution_time_ms=exec_time,
+            total_hits=response.total_hits,
+            returned_hits=len(results),
+            results=results,
+            query_dsl=request.to_dict(),
+            aggregations=aggregations,
+            explanation=f"Properties ${min_price:,.0f}-${max_price:,.0f} with statistical analysis"
+        )
+
+
+# Public API functions for backward compatibility
 def demo_basic_property_search(
     es_client: Elasticsearch,
     query_text: str = "family home with pool",
@@ -22,346 +703,79 @@ def demo_basic_property_search(
     """
     Demo 1: Basic property search using multi-match query.
     
-    ELASTICSEARCH CONCEPTS:
-    - LEAF QUERY CLAUSE: multi_match is a leaf query that searches for text
-    - QUERY CONTEXT: This runs in query context, calculating relevance scores
-    - FIELD BOOSTING: Using ^ operator to weight field importance
-    - FUZZY MATCHING: Handles typos and variations
-    
-    Searches across description, features, amenities, and location fields
-    with field boosting and fuzzy matching.
-    
-    Args:
-        es_client: Elasticsearch client
-        query_text: Search query text
-        size: Number of results to return
-        
-    Returns:
-        DemoQueryResult with search results
+    Refactored to use Pydantic models for type safety.
+    See PropertySearchDemo.demo_basic_search for implementation.
     """
-    query = {
-        "query": {
-            # MULTI_MATCH QUERY: A leaf query clause that searches text across multiple fields
-            # This is one of the most versatile full-text queries in Elasticsearch
-            "multi_match": {
-                "query": query_text,  # The text to search for
-                
-                # FIELD BOOSTING: Fields with ^ boost scores when matches are found
-                # Higher boost = more important for relevance ranking
-                "fields": [
-                    "description^2",      # 2x boost - property descriptions are most important
-                    "features^1.5",       # 1.5x boost - features are quite important
-                    "amenities",          # 1x boost (default) - standard importance
-                    "address.city",       # Nested field search for location
-                    "address.street",     # Another nested field
-                    "neighborhood_name"   # Neighborhood context
-                ],
-                
-                # QUERY TYPE: "best_fields" finds the best matching field for each document
-                # Other options: "most_fields", "cross_fields", "phrase", "phrase_prefix"
-                "type": "best_fields",
-                
-                # FUZZINESS: Allows matching with typos/variations
-                # "AUTO" adjusts fuzziness based on term length (recommended)
-                # 0-2 chars: must match exactly
-                # 3-5 chars: one edit allowed  
-                # >5 chars: two edits allowed
-                "fuzziness": "AUTO",
-                
-                # PREFIX_LENGTH: Number of initial characters that must match exactly
-                # Prevents excessive fuzzy matches on short prefixes
-                "prefix_length": 2
-            }
-        },
-        
-        # RESULT SIZE: Maximum number of documents to return
-        "size": size,
-        
-        # SOURCE FILTERING: Specify which fields to include in results
-        # Reduces network overhead by excluding unnecessary fields
-        "_source": [
-            "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-            "square_feet", "address", "description", "features"
-        ],
-        
-        # HIGHLIGHTING: Shows matched text fragments with emphasis
-        # Helps users understand why documents matched
-        "highlight": {
-            "fields": {
-                "description": {},  # Default highlighter settings
-                "features": {}      # Will wrap matches in <em> tags
-            }
-        }
-    }
-    
-    try:
-        response = es_client.search(index="properties", body=query)
-        
-        results = []
-        for hit in response['hits']['hits']:
-            source = hit['_source']
-            if 'highlight' in hit:
-                source['_highlights'] = hit['highlight']
-            results.append(source)
-        
-        return DemoQueryResult(
-            query_name="Basic Property Search",
-            execution_time_ms=response.get('took', 0),
-            total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=results,
-            query_dsl=query
-        )
-    except Exception as e:
-        logger.error(f"Error in basic property search: {e}")
-        return DemoQueryResult(
-            query_name="Basic Property Search",
-            execution_time_ms=0,
-            total_hits=0,
-            returned_hits=0,
-            results=[],
-            query_dsl=query
-        )
+    demo = PropertySearchDemo(es_client)
+    return demo.demo_basic_search(query_text)
 
 
-def demo_property_filter(
+def demo_filtered_property_search(
     es_client: Elasticsearch,
-    property_type: Optional[str] = "condo",
-    min_bedrooms: Optional[int] = 2,
-    max_price: Optional[float] = 750000,
-    cities: Optional[List[str]] = None,
-    features: Optional[List[str]] = None,
-    size: int = 10
+    property_type: str = "Single Family",
+    min_price: float = 300000,
+    max_price: float = 800000,
+    min_bedrooms: int = 3,
+    min_bathrooms: float = 2.0,
+    amenities: Optional[List[str]] = None
 ) -> DemoQueryResult:
     """
-    Demo 2: Property filter search with multiple criteria.
+    Demo 2: Filtered property search with multiple criteria.
     
-    Demonstrates bool query with multiple filter conditions for
-    property type, bedrooms, price range, location, and features.
-    
-    Args:
-        es_client: Elasticsearch client
-        property_type: Type of property to filter
-        min_bedrooms: Minimum number of bedrooms
-        max_price: Maximum price
-        cities: List of cities to filter
-        features: Required features
-        size: Number of results
-        
-    Returns:
-        DemoQueryResult with filtered results
+    Refactored to use Pydantic models for type safety.
+    See PropertySearchDemo.demo_filtered_search for implementation.
     """
-    # Build filter conditions dynamically based on provided criteria
-    filters = []
-    
-    if property_type:
-        # TERM QUERY: Exact match on keyword field (not analyzed)
-        # .keyword suffix uses the keyword analyzer for exact matching
-        filters.append({"term": {"property_type.keyword": property_type}})
-    
-    if min_bedrooms is not None:
-        # RANGE QUERY: Numeric range filter
-        # gte = greater than or equal, also supports gt, lt, lte
-        filters.append({"range": {"bedrooms": {"gte": min_bedrooms}}})
-    
-    if max_price is not None:
-        # RANGE QUERY: Upper bound price filter
-        # lte = less than or equal
-        filters.append({"range": {"price": {"lte": max_price}}})
-    
-    if cities:
-        # TERMS QUERY: Match any value in the list (OR operation)
-        # Like SQL's IN clause
-        filters.append({"terms": {"address.city.keyword": cities}})
-    
-    if features:
-        # Multiple TERM queries create an AND condition when in same filter array
-        for feature in features:
-            filters.append({"term": {"features": feature.lower()}})
-    
-    query = {
-        "query": {
-            # BOOL QUERY: Compound query clause for combining multiple queries
-            # The Swiss Army knife of Elasticsearch queries
-            "bool": {
-                # FILTER CONTEXT: Queries here don't calculate scores
-                # - Faster than query context (cacheable)
-                # - Used for yes/no questions
-                # - All conditions must match (AND logic)
-                "filter": filters
-                
-                # Other bool query clauses (not used here):
-                # "must": [] - Query context, affects score, AND logic
-                # "should": [] - Query context, affects score, OR logic
-                # "must_not": [] - Filter context, excludes documents
-            }
-        } if filters else {"match_all": {}},  # Fallback if no filters
-        
-        "size": size,
-        
-        "_source": [
-            "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-            "square_feet", "address", "features", "amenities"
-        ],
-        
-        # SORTING: Define sort order for results
-        "sort": [
-            {"price": {"order": "asc"}},  # Primary sort: lowest price first
-            "_score"  # Secondary sort: relevance (though filters don't generate scores)
-        ]
-    }
-    
-    try:
-        response = es_client.search(index="properties", body=query)
-        
-        results = []
-        for hit in response['hits']['hits']:
-            results.append(hit['_source'])
-        
-        return DemoQueryResult(
-            query_name=f"Property Filter (type={property_type}, beds>={min_bedrooms}, price<=${max_price})",
-            execution_time_ms=response.get('took', 0),
-            total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=results,
-            query_dsl=query
-        )
-    except Exception as e:
-        logger.error(f"Error in property filter search: {e}")
-        return DemoQueryResult(
-            query_name="Property Filter",
-            execution_time_ms=0,
-            total_hits=0,
-            returned_hits=0,
-            results=[],
-            query_dsl=query
-        )
+    demo = PropertySearchDemo(es_client)
+    return demo.demo_filtered_search(
+        property_type=property_type,
+        min_price=min_price,
+        max_price=max_price,
+        min_bedrooms=min_bedrooms,
+        min_bathrooms=min_bathrooms
+    )
 
 
-def demo_geo_search(
+def demo_geo_distance_search(
     es_client: Elasticsearch,
-    latitude: float = 37.7749,
-    longitude: float = -122.4194,
-    distance: str = "5km",
-    size: int = 10
+    center_lat: float = 37.7749,
+    center_lon: float = -122.4194,
+    radius_km: float = 5.0,
+    property_type: Optional[str] = None,
+    max_price: Optional[float] = None
 ) -> DemoQueryResult:
     """
-    Demo 3: Geographic distance search.
+    Demo 3: Geo-distance search for properties near a location.
     
-    Finds properties within a specified distance from a geographic point,
-    sorted by distance from the center point.
-    
-    Args:
-        es_client: Elasticsearch client
-        latitude: Center point latitude (default: San Francisco)
-        longitude: Center point longitude
-        distance: Search radius (e.g., '5km', '10mi')
-        size: Number of results
-        
-    Returns:
-        DemoQueryResult with geo-filtered results
+    Refactored to use Pydantic models for type safety.
+    See PropertySearchDemo.demo_geo_search for implementation.
     """
-    query = {
-        "query": {
-            # COMPOUND QUERY: Bool query wraps our geo filter
-            "bool": {
-                # FILTER CONTEXT: Geo queries often run in filter context
-                # No scoring needed - either within distance or not
-                "filter": {
-                    # GEO_DISTANCE QUERY: Special query type for geographic data
-                    # Requires geo_point field mapping
-                    "geo_distance": {
-                        # DISTANCE: Can use various units (km, mi, m, yd, ft)
-                        "distance": distance,
-                        
-                        # GEO_POINT FIELD: Must be mapped as geo_point type
-                        "address.location": {
-                            "lat": latitude,
-                            "lon": longitude
-                        }
-                        # Alternative formats:
-                        # "address.location": "40.715,-74.011"  # String
-                        # "address.location": [lon, lat]        # Array (note: lon first!)
-                        # "address.location": {"lat": 40.715, "lon": -74.011}  # Object
-                    }
-                }
-            }
-        },
-        
-        # GEO SORTING: Sort by distance from a point
-        "sort": [
-            {
-                "_geo_distance": {
-                    # Reference point for distance calculation
-                    "address.location": {
-                        "lat": latitude,
-                        "lon": longitude
-                    },
-                    "unit": "km",  # Unit for sort values
-                    "order": "asc"  # Nearest first
-                    
-                    # Other options:
-                    # "mode": "min" - For fields with multiple geo points
-                    # "distance_type": "arc" (default) or "plane" (faster, less accurate)
-                }
-            }
-        ],
-        
-        "size": size,
-        
-        "_source": [
-            "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-            "address", "description"
-        ],
-        
-        # SCRIPT FIELDS: Computed fields using Painless scripting language
-        # Calculate values at query time without storing them
-        "script_fields": {
-            "distance_km": {
-                "script": {
-                    # SCRIPT PARAMETERS: Pass values safely to scripts
-                    "params": {
-                        "lat": latitude,
-                        "lon": longitude
-                    },
-                    # PAINLESS SCRIPT: Elasticsearch's scripting language
-                    # arcDistance returns distance in meters
-                    "source": """
-                        if (doc['address.location'].size() == 0) return null;
-                        return doc['address.location'].arcDistance(params.lat, params.lon) / 1000.0;
-                    """
-                }
-            }
-        }
-    }
+    demo = PropertySearchDemo(es_client)
+    return demo.demo_geo_search(
+        center_lat=center_lat,
+        center_lon=center_lon,
+        radius_km=radius_km,
+        max_price=max_price
+    )
+
+
+def demo_price_range_search(
+    es_client: Elasticsearch,
+    min_price: float = 400000,
+    max_price: float = 800000
+) -> DemoQueryResult:
+    """
+    Demo 4: Price range search with aggregation statistics.
     
-    try:
-        response = es_client.search(index="properties", body=query)
-        
-        results = []
-        for hit in response['hits']['hits']:
-            result = hit['_source']
-            if 'fields' in hit and 'distance_km' in hit['fields']:
-                result['_distance_km'] = hit['fields']['distance_km'][0] if hit['fields']['distance_km'] else None
-            if 'sort' in hit:
-                result['_sort_distance'] = hit['sort'][0]
-            results.append(result)
-        
-        return DemoQueryResult(
-            query_name=f"Geo-Distance Search (within {distance} of {latitude:.4f},{longitude:.4f})",
-            execution_time_ms=response.get('took', 0),
-            total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=results,
-            query_dsl=query
-        )
-    except Exception as e:
-        logger.error(f"Error in geo-distance search: {e}")
-        return DemoQueryResult(
-            query_name="Geo-Distance Search",
-            execution_time_ms=0,
-            total_hits=0,
-            returned_hits=0,
-            results=[],
-            query_dsl=query
-        )
+    Refactored to use Pydantic models for type safety.
+    See PropertySearchDemo.demo_price_range_with_analytics for implementation.
+    """
+    demo = PropertySearchDemo(es_client)
+    return demo.demo_price_range_with_analytics(
+        min_price=min_price,
+        max_price=max_price
+    )
+
+
+# Aliases for backward compatibility with existing imports
+demo_property_filter = demo_filtered_property_search
+demo_geo_search = demo_geo_distance_search

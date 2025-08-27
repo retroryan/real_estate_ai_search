@@ -141,7 +141,11 @@ class DataPipelineRunner:
             from data_pipeline.writers.neo4j import Neo4jOrchestrator
             writers.append(Neo4jOrchestrator(self.config.output.neo4j, self.spark))
         
-        
+        # Add Elasticsearch writer if enabled
+        if "elasticsearch" in self.config.output.enabled_destinations:
+            logger.info("Initializing Elasticsearch writer")
+            from data_pipeline.writers.elasticsearch.orchestrator import ElasticsearchOrchestrator
+            writers.append(ElasticsearchOrchestrator(self.config.output.elasticsearch, self.spark))
         
         if writers:
             logger.info(f"Initialized {len(writers)} writer(s): {[w.get_writer_name() for w in writers]}")
@@ -654,8 +658,29 @@ class DataPipelineRunner:
                 logger.error(f"⚠️ Entity node write had failures: {failed_entities}")
                 # Continue to try relationships even if some writes failed
             
+            # Write denormalized property relationships for Elasticsearch
+            properties_df = output_dataframes.get("properties")
+            neighborhoods_df = output_dataframes.get("neighborhoods")
+            wikipedia_df = output_dataframes.get("wikipedia")
+            
+            if properties_df is not None and neighborhoods_df is not None:
+                logger.info("")
+                logger.info("🔗 Writing denormalized property relationships...")
+                try:
+                    success = self.writer_orchestrator.write_property_relationships_denormalized(
+                        properties_df=properties_df,
+                        neighborhoods_df=neighborhoods_df,
+                        wikipedia_df=wikipedia_df
+                    )
+                    if success:
+                        logger.info("   ✓ Property relationships written successfully")
+                    else:
+                        logger.warning("   ⚠️ Property relationships write had issues")
+                except Exception as e:
+                    logger.error(f"   ✗ Failed to write property relationships: {e}")
+            
             # Entity writing complete
-            # Note: Relationships are created in a separate Neo4j orchestration step:
+            # Note: Neo4j relationships are created in a separate orchestration step:
             # python -m graph_real_estate build-relationships
             
             # Log summary of entity writing only

@@ -1090,6 +1090,16 @@ sequenceDiagram
 
 ### Production Write Pipeline Example with Comprehensive Comments
 
+**Overview:**
+This section demonstrates a complete production-ready document ingestion pipeline for financial documents. The pipeline shows how raw documents flow through multiple processing stages: from initial API receipt, through text extraction from PDFs, NLP enrichment with financial metrics extraction, ML-based embedding generation, to final storage with derived fields. This real-world example illustrates how Elasticsearch's ingest pipelines transform unstructured financial filings into searchable, analytics-ready documents with structured metadata, making them instantly queryable for complex financial analysis.
+
+**Where This Code Runs:**
+- **Initial Document Structure**: Application server (Python/Java microservice) that receives documents from external APIs or file uploads
+- **Enriched Request**: API Gateway layer (Kong, AWS API Gateway) that adds metadata and routing
+- **Ingest Pipeline Definition**: One-time setup via Elasticsearch REST API, typically deployed via CI/CD pipeline (Terraform, Ansible)
+- **Pipeline Execution**: Runs on Elasticsearch ingest nodes automatically when documents are indexed
+- **Typical Deployment**: Part of a data ingestion microservice that processes financial documents in real-time or batch mode
+
 ```python
 # Step 1: Document arrives via API with initial structure
 document = {
@@ -1304,6 +1314,19 @@ PUT _ingest/pipeline/financial_filing_pipeline
 
 #### Example 1: Point Lookup Query - The Simplest and Fastest Query Type
 
+**Overview:**
+Point lookup queries retrieve a single document by its unique identifier (_id field). This is Elasticsearch's fastest query type because it bypasses the search phase entirely - the system calculates exactly which shard contains the document using the same hashing algorithm used during indexing. This makes it ideal for retrieving known documents like user profiles, product details, or specific financial filings. Response times are typically under 10ms even in multi-terabyte clusters.
+
+**What this query does:**
+Directly fetches a specific SEC filing document using its EDGAR filing ID without any searching or scoring.
+
+**Where This Code Runs:**
+- **Execution Context**: Application backend service (REST API endpoint)
+- **Typical Usage**: Document detail pages, API responses for specific records
+- **Infrastructure**: Runs through coordinating nodes, routed to specific data node
+- **Common Implementations**: GET /api/filings/{id} endpoint in a Spring Boot or FastAPI service
+- **Performance Layer**: Often cached in Redis/Memcached after first retrieval
+
 **The Query:**
 ```json
 GET /financial_filings/_doc/0000320193-24-000045
@@ -1345,6 +1368,21 @@ This is a direct document retrieval by its unique ID. It's the fastest possible 
 ```
 
 #### Example 2: Complex Search Query with Full Explanations
+
+**Overview:**
+This example demonstrates a sophisticated multi-criteria search combining full-text search, date ranges, filters, and aggregations. It showcases Elasticsearch's ability to handle complex business requirements in a single query. The query searches for AI-related content in recent financial filings from major tech companies with significant revenue, while simultaneously computing statistical analyses. This pattern is typical in financial intelligence platforms where analysts need to find specific topics within constraints and immediately see aggregate patterns.
+
+**What this query does:**
+Finds all 2024 financial filings from Apple, Google, Microsoft, or Amazon that mention both "artificial intelligence" and "machine learning", have revenue over $10 billion, with bonus scoring for "generative AI" mentions, plus statistical breakdowns by company and revenue distribution.
+
+**Where This Code Runs:**
+- **Execution Context**: Search service layer in a microservices architecture
+- **Typical Frontend**: React/Angular dashboard making AJAX calls to search API
+- **Backend Service**: Node.js/Python search service with Elasticsearch client
+- **Infrastructure Path**: Load balancer → API Gateway → Search Service → Coordinating Nodes → Data Nodes
+- **Common Use Cases**: Analyst workbenches, research portals, compliance monitoring dashboards
+- **Caching Strategy**: Results often cached for common queries using query hash as key
+
 ```json
 POST /financial_filings/_search
 {
@@ -1465,6 +1503,20 @@ POST /financial_filings/_search
 
 #### Example 3: Fuzzy Search Query - Handling Typos and Misspellings
 
+**Overview:**
+Fuzzy search enables Elasticsearch to find documents even when search terms contain spelling mistakes or typos. Using Levenshtein distance (edit distance) algorithms, it calculates how many single-character edits (insertions, deletions, substitutions) are needed to transform one word into another. This is essential for user-facing search interfaces where typos are common, especially on mobile devices or for complex technical/financial terms. The query intelligently adjusts fuzziness based on word length to balance between catching typos and preventing false matches.
+
+**What this query does:**
+Searches for documents about "artificial intelligence microsoft" but will still find results even if users type "artificail inteligence microsoft" or similar variations, with automatic typo correction.
+
+**Where This Code Runs:**
+- **Execution Context**: User-facing search APIs, autocomplete services
+- **Typical Frontend**: Search box in web/mobile applications
+- **Backend Implementation**: Search suggestion service, often with debouncing
+- **Infrastructure**: Usually runs on dedicated search cluster or search-optimized nodes
+- **Common Patterns**: Combined with suggestion API for "Did you mean?" features
+- **Performance Considerations**: Often limited to specific high-value fields to control latency
+
 **The Query:**
 ```json
 POST /financial_filings/_search
@@ -1512,6 +1564,20 @@ This query finds documents even when users make spelling mistakes. It uses Leven
 - Consider using suggest API for better typo handling
 
 #### Example 4: Phrase Search with Proximity - Finding Related Terms Near Each Other
+
+**Overview:**
+Phrase search with proximity (slop) finds documents where specified terms appear near each other, even if not directly adjacent. The "slop" parameter defines how many positions terms can be apart while still matching. This is powerful for finding conceptually related content where exact phrases may vary - for example, "revenue growth" might appear as "revenue showed strong growth" in actual documents. The query maintains the semantic relationship between terms while allowing for natural language variations.
+
+**What this query does:**
+Finds documents where "revenue" and "growth" appear within 3 words of each other, matching variations like "revenue growth", "revenue showed strong growth", or "revenue in Q3 showed growth", with English stemming to also match "revenues grew".
+
+**Where This Code Runs:**
+- **Execution Context**: Advanced search features in research applications
+- **Typical Usage**: Legal document search, patent search, financial research tools
+- **Backend Service**: Often part of a "query builder" service that constructs complex queries
+- **Infrastructure**: Runs on data nodes with positional index enabled
+- **Index Requirements**: Fields must be indexed with positions (default for text fields)
+- **Common UI Pattern**: Advanced search forms with "near" or "within N words" options
 
 **The Query:**
 ```json
@@ -1568,6 +1634,20 @@ POST /financial_filings/_search
 5. Final score = base relevance * (1 / (1 + slop_distance))
 
 #### Example 5: Multi-Field Boosted Search - Prioritizing Important Fields
+
+**Overview:**
+Multi-field searching with field-specific boosting allows fine-tuned relevance control by searching across multiple fields simultaneously while giving different weight to matches in each field. This reflects real-world importance - a company name match is typically more relevant than a match deep in document text. The query uses sophisticated scoring algorithms to combine results from multiple fields, with a tie-breaker parameter to reward documents matching multiple fields. This pattern is essential for enterprise search where document structure carries semantic meaning.
+
+**What this query does:**
+Searches for "Apple quarterly earnings" across company name (5x boost), summary (3x boost), full text (1x), topics (2x boost), and ticker (4x boost), prioritizing matches in more important fields while still considering all content.
+
+**Where This Code Runs:**
+- **Execution Context**: Main search functionality in enterprise applications
+- **Typical Implementation**: Search relevance service with tunable parameters
+- **Configuration**: Boost values often stored in configuration files/database for A/B testing
+- **Infrastructure**: Coordinating nodes distribute to all shards, aggregate scores
+- **Tuning Process**: Data science teams analyze click-through rates to optimize boosts
+- **Common Pattern**: Different boost profiles for different user types (analyst vs executive)
 
 **The Query:**
 ```json
@@ -1628,6 +1708,20 @@ Document A ranks higher due to field boosting
 ```
 
 #### Example 6: Nested Object Query - Searching Within Arrays of Objects
+
+**Overview:**
+Nested queries maintain the relationship between fields within objects in arrays, solving the "cross-object matching" problem in Elasticsearch. Without nested types, Elasticsearch flattens arrays, losing the connection between fields in the same object. This query type is crucial for documents with structured sub-documents like financial report sections, product variations, or transaction records. It allows precise searching within specific array elements while maintaining document-level scoring, essential for complex structured data.
+
+**What this query does:**
+Finds financial filings where the "Risk Factors" section specifically mentions "cybersecurity" and "data breach" together, ensuring both terms appear in the same section rather than scattered across different sections.
+
+**Where This Code Runs:**
+- **Execution Context**: Document analysis services, compliance scanning systems
+- **Data Pipeline Stage**: Post-processing after document parsing splits into sections
+- **Index Setup**: Requires nested mapping defined during index creation
+- **Infrastructure Impact**: Nested documents increase index size and query complexity
+- **Common Applications**: E-commerce (product variants), HR systems (employee skills), financial reports (sections)
+- **Performance Note**: Each nested object is indexed as separate hidden document
 
 **The Query:**
 ```json
@@ -1702,6 +1796,21 @@ Would incorrectly match a query for `title:"Revenue" AND content:"volatility"` b
 Nested queries maintain the relationship between fields in the same object.
 
 #### Example 7: Aggregation-Heavy Analytics Query - Business Intelligence
+
+**Overview:**
+This comprehensive analytics query demonstrates Elasticsearch's ability to perform complex multi-level aggregations for business intelligence. It combines filtering, grouping, statistical calculations, percentiles, moving averages, and correlations in a single request. The query showcases nested aggregations (aggregations within aggregations) to create rich analytical insights, similar to SQL GROUP BY with multiple levels but executed across distributed shards in parallel. This pattern powers executive dashboards and financial analytics platforms.
+
+**What this query does:**
+Analyzes 2024 financial filings from Technology and Healthcare sectors, computing total revenue by sector, statistical distributions, percentile breakdowns, top 5 companies per sector with quarterly revenue trends and moving averages, plus profit margin correlations with P/E ratios - all in one query.
+
+**Where This Code Runs:**
+- **Execution Context**: Business intelligence services, reporting microservices
+- **Typical Frontend**: Grafana, Kibana, custom React dashboards with charts
+- **Backend Pattern**: Often wrapped in GraphQL resolvers or REST endpoints
+- **Infrastructure Requirements**: High-memory coordinating nodes for aggregation processing
+- **Caching Strategy**: Results cached with TTL based on data update frequency
+- **Common Optimizations**: Pre-aggregated indices for frequently-accessed metrics
+- **Scheduling**: Often run as scheduled jobs for executive daily reports
 
 **The Query:**
 ```json
@@ -1835,6 +1944,21 @@ POST /financial_filings/_search
 
 #### Example 8: Geo-Distance Query - Location-Based Search
 
+**Overview:**
+Geo-distance queries enable location-based searching by finding documents within a specified radius of a geographic point. Elasticsearch uses optimized spatial indexing (like geohash and quadtree) to efficiently search millions of locations. The query supports multiple distance units and calculation methods, with optimizations like bounding box pre-filtering to eliminate distant points before expensive distance calculations. This powers store locators, proximity searches, and geographic analytics in financial applications.
+
+**What this query does:**
+Finds all financial services companies with headquarters within 50 kilometers of San Francisco, sorted by distance, with results grouped into distance rings (walking distance, close, commute distance, regional) for geographic distribution analysis.
+
+**Where This Code Runs:**
+- **Execution Context**: Location services API, mobile app backends
+- **Typical Usage**: Store locators, ATM finders, office directories
+- **Frontend Integration**: Usually triggered from map interfaces (Google Maps, Mapbox)
+- **Infrastructure Setup**: Requires geo_point mapping and spatial indexing
+- **Data Pipeline**: Geocoding service converts addresses to lat/lon during ingestion
+- **Performance Layer**: Often combined with tile-based caching for map applications
+- **Common Pattern**: Results served to mapping libraries for visualization
+
 **The Query:**
 ```json
 POST /company_locations/_search
@@ -1930,6 +2054,21 @@ POST /company_locations/_search
 
 #### Example 9: Scroll API for Large Result Sets - Batch Processing
 
+**Overview:**
+The Scroll API enables efficient retrieval of large result sets that exceed normal pagination limits (10,000 documents). It maintains a consistent "point-in-time" snapshot of the index, ensuring data consistency even as new documents are added. This is essential for data exports, batch processing, or feeding data into machine learning pipelines. Unlike regular searches that are stateless, scroll maintains server-side state to efficiently iterate through millions of documents without the deep pagination performance penalties.
+
+**What this query does:**
+Initiates a scrolling search to export all financial filings in batches of 1,000 documents, maintaining a consistent view of the data for 5 minutes per batch, optimized for sequential processing rather than random access.
+
+**Where This Code Runs:**
+- **Execution Context**: Batch processing jobs, ETL pipelines, data export services
+- **Typical Implementation**: Python/Java batch jobs running on schedule (Airflow, Jenkins)
+- **Infrastructure**: Dedicated background processing nodes to avoid impacting real-time queries
+- **Common Use Cases**: Nightly exports to data warehouse, ML training data extraction
+- **Resource Management**: Scroll contexts consume memory, must be explicitly closed
+- **Alternative Pattern**: Point-in-time + search_after for stateless pagination (ES 7.10+)
+- **Monitoring**: Track open scroll contexts to prevent memory leaks
+
 **Initial Query:**
 ```json
 POST /financial_filings/_search?scroll=5m
@@ -1982,6 +2121,21 @@ POST /_search/scroll
 ```
 
 #### Example 10: Percolate Query - Reverse Search (Match Documents Against Stored Queries)
+
+**Overview:**
+Percolate queries reverse the traditional search model: instead of searching documents with a query, you match a document against a collection of stored queries. This powers alerting systems, content classification, and subscription matching. When a new document arrives, Elasticsearch can instantly identify which saved searches/alerts it would match. This eliminates the need to run thousands of searches repeatedly and enables real-time alerting at scale. It's particularly powerful for financial compliance monitoring and market intelligence alerts.
+
+**What this query does:**
+Stores alert criteria for Apple revenue exceeding $100 billion with "record breaking" mentions, then checks which alerts are triggered when new financial documents arrive, enabling instant notification to relevant analysts.
+
+**Where This Code Runs:**
+- **Execution Context**: Real-time stream processing (Kafka consumers, AWS Lambda)
+- **Alert Storage**: Percolator queries stored during user alert creation in web UI
+- **Trigger Point**: Document ingestion pipeline after enrichment
+- **Infrastructure**: Dedicated percolator index separate from main document indices
+- **Notification Pipeline**: Matches trigger SNS/SQS/RabbitMQ to notification service
+- **Common Pattern**: User preferences UI → Store percolator → Match on ingest → Send notifications
+- **Scale Considerations**: Thousands of stored queries evaluated per document
 
 **Store a Percolator Query:**
 ```json
@@ -2046,6 +2200,21 @@ POST /financial_alerts/_search
 - Subscription matching: Connect users to relevant content
 
 #### Example 11: Vector Similarity Search - Semantic/AI Search
+
+**Overview:**
+Vector similarity search (k-nearest neighbor) enables semantic search by finding documents with similar meaning rather than just matching keywords. Documents and queries are converted to high-dimensional vectors using ML models (like BERT), then compared using distance metrics (cosine similarity, Euclidean distance). This powers AI-driven search that understands context and meaning, finding relevant documents even when they use different terminology. The example shows hybrid search combining vectors with traditional keywords for optimal relevance.
+
+**What this query does:**
+Finds the 50 most semantically similar financial documents to a query vector (from an ML model), filtered to 2024 technology sector filings, with additional keyword boosting for "artificial intelligence" mentions, using reciprocal rank fusion to combine vector and text scores.
+
+**Where This Code Runs:**
+- **Execution Context**: AI-powered search services, semantic search APIs
+- **Vector Generation**: Separate ML service (Python with transformers library) creates vectors
+- **Infrastructure Path**: Query → Embedding Service → Vector Search → Result Reranking
+- **Index Preparation**: Documents pre-processed through BERT/GPT models during ingestion
+- **Hardware Requirements**: ML nodes with GPUs for real-time embedding generation
+- **Common Architecture**: Microservice pattern with embedding cache (Redis)
+- **Performance Notes**: First query slow (embedding generation), subsequent queries use cache
 
 **The Query:**
 ```json
@@ -2141,6 +2310,21 @@ ef: 100  # Search-time accuracy (higher = slower but more accurate)
 - Combining with keywords improves relevance
 
 #### Example 12: Parent-Child Relationship Query - Hierarchical Data
+
+**Overview:**
+Parent-child queries model hierarchical relationships between documents, enabling queries that traverse these relationships. Unlike nested documents which are stored together, parent-child documents are separate but linked, allowing independent updates while maintaining relationships. This is ideal for modeling corporate structures (company-subsidiary), document hierarchies (report-section), or any scenario where related entities need independent lifecycle management. The query can traverse relationships in both directions with sophisticated scoring models.
+
+**What this query does:**
+Finds parent companies that have at least 2 profitable operational subsidiaries, aggregating subsidiary scores to rank parent companies by the total profitability of their subsidiary portfolio, with details of the top 5 profitable subsidiaries included.
+
+**Where This Code Runs:**
+- **Execution Context**: Corporate intelligence platforms, M&A analysis tools
+- **Index Setup**: Requires join field mapping established at index creation
+- **Data Pipeline**: Separate ingestion flows for parent and child documents
+- **Infrastructure Note**: Parents and children must be on same shard (routing required)
+- **Common Use Cases**: Organizational charts, document collections, product catalogs
+- **Update Pattern**: Children updated independently without reindexing parent
+- **Performance Trade-off**: Slower queries but more flexible than nested for updates
 
 **The Query:**
 ```json

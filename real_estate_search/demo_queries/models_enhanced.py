@@ -99,13 +99,14 @@ class PropertyEntity(BaseModel):
     description: Optional[str] = Field(None, description="Property description")
     
     # Metadata
-    _entity_type: Literal[EntityType.PROPERTY] = Field(
+    entity_type: Literal[EntityType.PROPERTY] = Field(
         EntityType.PROPERTY,
+        alias="_entity_type",
         description="Entity type identifier"
     )
-    _score: Optional[float] = Field(None, description="Elasticsearch relevance score")
+    score: Optional[float] = Field(None, alias="_score", description="Elasticsearch relevance score")
     
-    model_config = ConfigDict(extra="allow", use_enum_values=True)
+    model_config = ConfigDict(extra="allow", use_enum_values=True, populate_by_name=True)
 
 
 class NeighborhoodEntity(BaseModel):
@@ -135,13 +136,14 @@ class NeighborhoodEntity(BaseModel):
     )
     
     # Metadata
-    _entity_type: Literal[EntityType.NEIGHBORHOOD] = Field(
+    entity_type: Literal[EntityType.NEIGHBORHOOD] = Field(
         EntityType.NEIGHBORHOOD,
+        alias="_entity_type",
         description="Entity type identifier"
     )
-    _score: Optional[float] = Field(None, description="Elasticsearch relevance score")
+    score: Optional[float] = Field(None, alias="_score", description="Elasticsearch relevance score")
     
-    model_config = ConfigDict(extra="allow", use_enum_values=True)
+    model_config = ConfigDict(extra="allow", use_enum_values=True, populate_by_name=True)
     
     @computed_field  # type: ignore
     @property
@@ -197,24 +199,27 @@ class WikipediaEntity(BaseModel):
     url: Optional[str] = Field(None, description="Wikipedia article URL")
     
     # Relationship metadata (added during query processing)
-    _entity_type: EntityType = Field(
+    entity_type: EntityType = Field(
         EntityType.WIKIPEDIA,
+        alias="_entity_type",
         description="Entity type identifier"
     )
-    _relationship: Optional[RelationshipType] = Field(
+    relationship: Optional[RelationshipType] = Field(
         None,
+        alias="_relationship",
         description="Type of relationship to parent entity"
     )
-    _confidence: Optional[float] = Field(
+    confidence: Optional[float] = Field(
         None,
+        alias="_confidence",
         ge=0.0, le=1.0,
         description="Confidence score for relationship"
     )
-    _score: Optional[float] = Field(None, description="Elasticsearch relevance score")
+    score: Optional[float] = Field(None, alias="_score", description="Elasticsearch relevance score")
     
-    model_config = ConfigDict(extra="allow", use_enum_values=True)
+    model_config = ConfigDict(extra="allow", use_enum_values=True, populate_by_name=True)
     
-    @field_validator('_entity_type', mode='before')
+    @field_validator('entity_type', mode='before')
     def normalize_entity_type(cls, v):
         """Handle various wikipedia entity type formats."""
         if isinstance(v, str):
@@ -235,15 +240,15 @@ class SearchResult(BaseModel):
     """
     entity: Union[PropertyEntity, NeighborhoodEntity, WikipediaEntity] = Field(
         ...,
-        discriminator='_entity_type',
+        discriminator='entity_type',
         description="The search result entity"
     )
     
     @computed_field  # type: ignore
     @property
-    def entity_type(self) -> EntityType:
+    def get_entity_type(self) -> EntityType:
         """Get the entity type."""
-        return self.entity._entity_type
+        return self.entity.entity_type
     
     @computed_field  # type: ignore
     @property
@@ -264,13 +269,13 @@ class ElasticsearchHit(BaseModel):
     
     This provides type safety when processing Elasticsearch responses.
     """
-    _index: str = Field(..., description="Index name")
-    _id: str = Field(..., description="Document ID")
-    _score: Optional[float] = Field(None, description="Relevance score")
-    _source: Dict[str, Any] = Field(..., description="Document source")
+    index: str = Field(..., alias="_index", description="Index name")
+    id: str = Field(..., alias="_id", description="Document ID")
+    score: Optional[float] = Field(None, alias="_score", description="Relevance score")
+    source: Dict[str, Any] = Field(..., alias="_source", description="Document source")
     highlight: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted fields")
     
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
     
     def to_entity(self) -> Optional[Union[PropertyEntity, NeighborhoodEntity, WikipediaEntity]]:
         """
@@ -279,20 +284,20 @@ class ElasticsearchHit(BaseModel):
         This method examines the index name and source data to determine
         the correct entity type and returns a validated Pydantic model.
         """
-        source = self._source.copy()
+        source = self.source.copy()
         
         # Add score if available
-        if self._score is not None:
-            source['_score'] = self._score
+        if self.score is not None:
+            source['_score'] = self.score
         
         # Determine entity type based on index
-        if self._index == "properties":
+        if self.index == "properties":
             source['_entity_type'] = EntityType.PROPERTY
             return PropertyEntity(**source)
-        elif self._index == "neighborhoods":
+        elif self.index == "neighborhoods":
             source['_entity_type'] = EntityType.NEIGHBORHOOD
             return NeighborhoodEntity(**source)
-        elif self._index == "wikipedia":
+        elif self.index == "wikipedia":
             # Default to wikipedia, will be refined based on context
             if '_entity_type' not in source:
                 source['_entity_type'] = EntityType.WIKIPEDIA

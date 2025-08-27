@@ -402,9 +402,8 @@ def demo_wikipedia_search(
             # NESTED BOOL: OR condition within AND
             "bool": {
                 "should": [  # OR - match any of these
-                    {"term": {"city.keyword": city}},
-                    {"term": {"best_city_standardized.keyword": city.lower()}},
-                    {"match": {"location": city}}  # Fuzzy match on location field
+                    {"match": {"city": city}},  # Match city field
+                    {"match": {"title": city}}  # Also check title for city name
                 ],
                 "minimum_should_match": 1  # At least one must match
             }
@@ -414,16 +413,16 @@ def demo_wikipedia_search(
         filter_clauses.append({
             "bool": {
                 "should": [
-                    {"term": {"state.keyword": state}},
-                    {"term": {"best_state_standardized.keyword": state.lower()}}
+                    {"match": {"state": state}},  # Match state field
+                    {"term": {"state": state.upper()}}  # Also try uppercase (UT vs Utah)
                 ],
                 "minimum_should_match": 1
             }
         })
     
-    # Ensure articles have location data
+    # Ensure articles have city data  
     filter_clauses.append({
-        "exists": {"field": "location"}  # Only articles with location field
+        "exists": {"field": "city"}  # Only articles with city field
     })
     
     query = {
