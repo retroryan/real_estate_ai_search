@@ -37,7 +37,7 @@ class ElasticsearchConfig(BaseModel):
         if self.username is None:
             self.username = os.getenv("ES_USERNAME") or os.getenv("ELASTICSEARCH_USERNAME")
         if self.password is None:
-            self.password = os.getenv("ES_PASSWORD") or os.getenv("ELASTICSEARCH_PASSWORD") or os.getenv("ELASTIC_PASSWORD")
+            self.password = os.getenv("ES_PASSWORD") or os.getenv("ELASTICSEARCH_PASSWORD")
         if self.api_key is None:
             self.api_key = os.getenv("ES_API_KEY") or os.getenv("ELASTICSEARCH_API_KEY")
 

@@ -39,7 +39,7 @@ class ElasticsearchSettings(BaseSettings):
             retry_on_timeout=os.getenv('ES_RETRY_ON_TIMEOUT', 'true').lower() == 'true',
             max_retries=int(os.getenv('ES_MAX_RETRIES', '3')),
             username=os.getenv('ES_USERNAME') or os.getenv('ELASTICSEARCH_USERNAME'),
-            password=os.getenv('ES_PASSWORD') or os.getenv('ELASTICSEARCH_PASSWORD') or os.getenv('ELASTIC_PASSWORD'),
+            password=os.getenv('ES_PASSWORD') or os.getenv('ELASTICSEARCH_PASSWORD'),
             verify_certs=os.getenv('ES_VERIFY_CERTS', 'false').lower() == 'true',
             ca_certs=os.getenv('ES_CA_CERTS')
         )
