@@ -9,9 +9,9 @@ using common property_finder_models for validation.
 import logging
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, when, lit
 
-from data_pipeline.models.spark_models import Neighborhood
+from data_pipeline.models.spark_models import Neighborhood, WikipediaCorrelations
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class NeighborhoodLoader(BaseLoader):
     def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
         Transform raw neighborhood data to neighborhood-specific schema.
+        Preserves Wikipedia correlations from graph_metadata field.
         
         Args:
             df: Raw neighborhood DataFrame
@@ -41,19 +42,26 @@ class NeighborhoodLoader(BaseLoader):
         Returns:
             DataFrame conforming to neighborhood-specific schema
         """
+        # Check if graph_metadata exists in the schema
+        has_graph_metadata = "graph_metadata" in df.columns
+        
+        if has_graph_metadata:
+            # Rename graph_metadata to wikipedia_correlations
+            df = df.withColumnRenamed("graph_metadata", "wikipedia_correlations")
+        else:
+            # Add null wikipedia_correlations if not present
+            df = df.withColumn("wikipedia_correlations", lit(None))
+        
+        # Select all fields defined in the Neighborhood model
         return df.select(
-            # Core neighborhood fields
             col("neighborhood_id"),
             col("name"),
             col("city"),
             col("state"),
             col("description"),
             col("amenities"),
-            
-            # Extract demographics from nested structure
-            col("demographics.population").alias("population"),
-            col("demographics.median_income").alias("median_income"), 
-            col("demographics.median_age").alias("median_age")
+            col("demographics"),  # Keep demographics as nested structure
+            col("wikipedia_correlations")  # Preserve Wikipedia correlations
         )
     
     def validate(self, df: DataFrame) -> bool:

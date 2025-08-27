@@ -6,8 +6,8 @@ data to Elasticsearch, separate from the graph processing pipeline.
 It receives DataFrames from the pipeline fork and processes them for search.
 """
 
-from search_pipeline.core.search_runner import SearchPipelineRunner
-from search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig
+from data_pipeline.search_pipeline.core.search_runner import SearchPipelineRunner
+from data_pipeline.search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig
 
 __all__ = [
     "SearchPipelineRunner",

@@ -20,6 +20,8 @@ from pyspark.sql.functions import (
     trim,
     upper,
     when,
+    avg,
+    size,
 )
 
 from .base_enricher import BaseEnricher
@@ -91,6 +93,10 @@ class NeighborhoodEnricher(BaseEnricher):
         enriched_df = self.add_correlation_ids(enriched_df, "neighborhood_correlation_id")
         logger.info("Added correlation IDs to neighborhoods")
         
+        # Preserve and process Wikipedia correlations
+        enriched_df = self._preserve_wikipedia_correlations(enriched_df)
+        logger.info("Preserved Wikipedia correlations")
+        
         # Normalize location names - always enabled
         enriched_df = self._normalize_locations(enriched_df)
         logger.info("Normalized neighborhood locations")
@@ -118,6 +124,37 @@ class NeighborhoodEnricher(BaseEnricher):
         # Validate enrichment
         return self.validate_enrichment(enriched_df, entity_name="Neighborhood")
     
+    
+    def _preserve_wikipedia_correlations(self, df: DataFrame) -> DataFrame:
+        """
+        Preserve Wikipedia correlations and calculate confidence metrics.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with preserved wikipedia_correlations and confidence metrics
+        """
+        # Check if wikipedia_correlations exists
+        if "wikipedia_correlations" not in df.columns:
+            logger.info("No wikipedia_correlations field found")
+            return df.withColumn("wikipedia_confidence_avg", lit(0.0))
+        
+        # Calculate average confidence from primary and related articles
+        df_with_confidence = df.withColumn(
+            "wikipedia_confidence_avg",
+            when(
+                col("wikipedia_correlations").isNotNull(),
+                # Get confidence from primary article (if exists)
+                coalesce(
+                    col("wikipedia_correlations.primary_wiki_article.confidence"),
+                    lit(0.0)
+                )
+            ).otherwise(lit(0.0))
+        )
+        
+        logger.info("Calculated average Wikipedia confidence score")
+        return df_with_confidence
     
     def _normalize_locations(self, df: DataFrame) -> DataFrame:
         """
@@ -217,7 +254,7 @@ class NeighborhoodEnricher(BaseEnricher):
     
     def _calculate_quality_scores(self, df: DataFrame) -> DataFrame:
         """
-        Calculate neighborhood data quality scores.
+        Calculate neighborhood data quality scores including Wikipedia confidence.
         
         Args:
             df: Input DataFrame
@@ -225,24 +262,31 @@ class NeighborhoodEnricher(BaseEnricher):
         Returns:
             DataFrame with quality scores
         """
+        # Check if wikipedia_confidence_avg exists
+        has_wiki_confidence = "wikipedia_confidence_avg" in df.columns
+        
         # Neighborhood-specific quality score calculation
         quality_expr = (
-            # Essential fields (40% weight)
+            # Essential fields (35% weight)
             (when(col("neighborhood_id").isNotNull(), 0.1).otherwise(0.0)) +
-            (when(col("neighborhood_name_normalized").isNotNull(), 0.15).otherwise(0.0)) +
+            (when(col("neighborhood_name_normalized").isNotNull(), 0.1).otherwise(0.0)) +
             (when(col("city").isNotNull(), 0.1).otherwise(0.0)) +
             (when(col("state").isNotNull(), 0.05).otherwise(0.0)) +
             
-            # Demographics (25% weight)
-            (when(col("population_validated").isNotNull(), 0.08).otherwise(0.0)) +
-            (when(col("median_income_validated").isNotNull(), 0.08).otherwise(0.0)) +
-            (when(col("median_age_validated").isNotNull(), 0.09).otherwise(0.0)) +
+            # Demographics (20% weight)
+            (when(col("population_validated").isNotNull(), 0.07).otherwise(0.0)) +
+            (when(col("median_income_validated").isNotNull(), 0.07).otherwise(0.0)) +
+            (when(col("median_age_validated").isNotNull(), 0.06).otherwise(0.0)) +
             
-            # Amenities (20% weight)
-            (when(col("amenities").isNotNull() & (expr("size(amenities)") > 0), 0.2).otherwise(0.0)) +
+            # Amenities (15% weight)
+            (when(col("amenities").isNotNull() & (expr("size(amenities)") > 0), 0.15).otherwise(0.0)) +
             
             # Description (15% weight)
-            (when(col("description").isNotNull() & (col("description") != ""), 0.15).otherwise(0.0))
+            (when(col("description").isNotNull() & (col("description") != ""), 0.15).otherwise(0.0)) +
+            
+            # Wikipedia confidence (15% weight)
+            (when(col("wikipedia_confidence_avg").isNotNull(), 
+                  col("wikipedia_confidence_avg") * 0.15).otherwise(0.0) if has_wiki_confidence else 0.0)
         )
         
         # Apply quality score

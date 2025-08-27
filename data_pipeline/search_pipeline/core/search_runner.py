@@ -12,9 +12,9 @@ from typing import Dict, List, Optional, Any
 
 from pyspark.sql import DataFrame, SparkSession
 
-from search_pipeline.models.config import SearchPipelineConfig
-from search_pipeline.models.results import SearchIndexResult, SearchPipelineResult
-from search_pipeline.transformers import (
+from data_pipeline.search_pipeline.models.config import SearchPipelineConfig
+from data_pipeline.search_pipeline.models.results import SearchIndexResult, SearchPipelineResult
+from data_pipeline.search_pipeline.transformers import (
     PropertyDataFrameTransformer,
     NeighborhoodDataFrameTransformer,
     WikipediaDataFrameTransformer

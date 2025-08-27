@@ -75,6 +75,22 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
     
     def _map_core_wikipedia_fields(self, df: DataFrame) -> DataFrame:
         """Map core Wikipedia fields from input to output schema."""
+        # Check what content field is available
+        if "short_summary" in df.columns or "long_summary" in df.columns:
+            # Use summaries if available (actual data structure)
+            summary_col = self._safe_column_access(df, "short_summary").alias("summary")
+            content_col = self._safe_column_access(df, "long_summary").alias("content")
+        else:
+            # Fallback to summary/content fields
+            summary_col = self._safe_column_access(df, "summary").alias("summary")
+            content_col = self._safe_column_access(df, "content").alias("content")
+            
+        # Get all columns except the ones we're explicitly handling
+        exclude_cols = ["page_id", "title", "url", "summary", "content", "city", "state", 
+                       "best_city", "best_state", "latitude", "longitude", "key_topics", 
+                       "topics", "last_modified", "short_summary", "long_summary"]
+        other_cols = [col(c) for c in df.columns if c not in exclude_cols]
+        
         return df.select(
             # Primary ID and core fields
             col("page_id").cast(IntegerType()),
@@ -82,20 +98,29 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
             self._safe_column_access(df, "url").alias("url"),
             
             # Content fields
-            self._safe_column_access(df, "summary").alias("summary"),
-            self._safe_column_access(df, "content").alias("content"),
+            summary_col,
+            content_col,
             
-            # Location fields
-            self._safe_column_access(df, "city").alias("city"),
-            self._safe_column_access(df, "state").alias("state"),
+            # Location fields (use best_city and best_state if city/state not available)
+            coalesce(
+                self._safe_column_access(df, "city"),
+                self._safe_column_access(df, "best_city")
+            ).alias("city"),
+            coalesce(
+                self._safe_column_access(df, "state"),
+                self._safe_column_access(df, "best_state")
+            ).alias("state"),
             
-            # Keep original nested objects for processing
-            col("coordinates"),
-            col("topics"),
-            col("last_modified"),
+            # Keep latitude/longitude for creating location
+            self._safe_column_access(df, "latitude").alias("latitude"),
+            self._safe_column_access(df, "longitude").alias("longitude"),
             
-            # Keep all other fields for further processing
-            col("*")
+            # Keep topics if exists (otherwise will be handled later)
+            self._safe_column_access(df, "key_topics").alias("topics"),
+            self._safe_column_access(df, "last_modified").alias("last_modified"),
+            
+            # Keep other fields for further processing
+            *other_cols
         )
     
     def _create_address_object(self, df: DataFrame) -> DataFrame:
@@ -106,10 +131,10 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
             self._safe_column_access(df, "city").alias("city"),
             self._safe_column_access(df, "state").alias("state"),
             lit(None).alias("zip_code"),  # ZIP not typically available
-            # Create location array from coordinates [longitude, latitude]
+            # Create location array from latitude/longitude [longitude, latitude]
             when(
-                (col("coordinates.latitude").isNotNull()) & (col("coordinates.longitude").isNotNull()),
-                array(col("coordinates.longitude"), col("coordinates.latitude"))
+                (col("latitude").isNotNull()) & (col("longitude").isNotNull()),
+                array(col("longitude"), col("latitude"))
             ).otherwise(lit(None)).alias("location")
         )
         
@@ -123,10 +148,14 @@ class WikipediaDataFrameTransformer(BaseDataFrameTransformer):
     
     def _map_topics_and_metadata(self, df: DataFrame) -> DataFrame:
         """Map topics and metadata fields."""
-        # Handle topics array
-        df = df.withColumn("topics",
-                          when(col("topics").isNotNull(), col("topics"))
-                          .otherwise(array().cast("array<string>")))
+        # Handle topics array - the field was already renamed in core mapping
+        # Just ensure it's an array
+        if "topics" not in df.columns:
+            df = df.withColumn("topics", array().cast("array<string>"))
+        else:
+            df = df.withColumn("topics",
+                              when(col("topics").isNotNull(), col("topics"))
+                              .otherwise(array().cast("array<string>")))
         
         # Handle last_modified date
         df = df.withColumn("last_modified",

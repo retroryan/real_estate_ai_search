@@ -1,37 +1,27 @@
 #!/usr/bin/env python3
 """
-Setup script - backward compatibility wrapper for main.py.
-Use 'python main.py --mode ingest' instead for new code.
+Setup script - DEPRECATED
+Data ingestion has been moved to data_pipeline.
+Use 'python -m data_pipeline' to index data.
 """
 
-import subprocess
 import sys
-import argparse
-from pathlib import Path
 
 
 def main():
-    """Wrapper that calls main.py with appropriate arguments."""
-    parser = argparse.ArgumentParser(
-        description="Setup index (deprecated - use main.py directly)"
-    )
-    parser.add_argument('--recreate', action='store_true', help='Recreate index')
-    parser.add_argument('--test-data', action='store_true', help='Use test data (not implemented)')
-    args = parser.parse_args()
-    
-    # Build command for main.py
-    main_path = Path(__file__).parent.parent / "main.py"
-    cmd = [sys.executable, str(main_path), "--mode", "ingest"]
-    
-    if args.recreate:
-        cmd.append("--recreate")
-    
-    if args.test_data:
-        print("Warning: --test-data flag is not implemented in new architecture")
-    
-    # Execute main.py
-    result = subprocess.run(cmd)
-    sys.exit(result.returncode)
+    """Inform user about data_pipeline."""
+    print("=" * 60)
+    print("DEPRECATED: Ingestion has been moved to data_pipeline")
+    print("=" * 60)
+    print()
+    print("To index data, please run:")
+    print("  cd ../")
+    print("  python -m data_pipeline")
+    print()
+    print("The real_estate_search application now works with")
+    print("pre-indexed data from the data_pipeline.")
+    print()
+    sys.exit(1)
 
 
 if __name__ == "__main__":

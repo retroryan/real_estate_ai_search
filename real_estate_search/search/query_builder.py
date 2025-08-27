@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import structlog
 
-from indexer.enums import FieldName, PropertyType, PropertyStatus
+from real_estate_search.indexer.enums import FieldName, PropertyType, PropertyStatus
 from .models import SearchFilters, GeoSearchParams
 from .enums import (
     QueryOperator,

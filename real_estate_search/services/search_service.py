@@ -7,13 +7,13 @@ from typing import List, Dict, Any, Optional
 import logging
 import time
 
-from repositories.property_repository import PropertyRepository
-from search.models import (
+from real_estate_search.repositories.property_repository import PropertyRepository
+from real_estate_search.search.models import (
     SearchRequest, SearchResponse, SearchFilters, PropertyHit,
     GeoSearchParams, Aggregation, BucketAggregation, StatsAggregation
 )
-from search.enums import QueryType, AggregationName
-from indexer.models import Property, Address, Neighborhood
+from real_estate_search.search.enums import QueryType, AggregationName
+from real_estate_search.indexer.models import Property, Address, Neighborhood
 
 logger = logging.getLogger(__name__)
 
@@ -392,7 +392,7 @@ class SearchService:
     
     def _build_sort(self, sort_by) -> List[Dict[str, Any]]:
         """Build sort configuration."""
-        from indexer.enums import SortOrder
+        from real_estate_search.indexer.enums import SortOrder
         
         if sort_by == SortOrder.PRICE_ASC:
             return [{"price": "asc"}]
@@ -433,9 +433,22 @@ class SearchService:
             # Safely create Address
             address_data = property_data.get('address', {})
             if address_data:
-                if 'location' in address_data and isinstance(address_data['location'], dict):
-                    from indexer.models import GeoLocation
-                    address_data['location'] = GeoLocation(**address_data['location'])
+                # Handle location field - can be array [lon, lat] or object
+                if 'location' in address_data:
+                    location_val = address_data['location']
+                    if isinstance(location_val, list) and len(location_val) == 2:
+                        from real_estate_search.indexer.models import GeoLocation
+                        address_data['location'] = GeoLocation(lon=location_val[0], lat=location_val[1])
+                    elif isinstance(location_val, dict):
+                        from real_estate_search.indexer.models import GeoLocation
+                        address_data['location'] = GeoLocation(**location_val)
+                
+                # Handle state field - truncate if needed
+                if 'state' in address_data and len(address_data['state']) > 2:
+                    # Try to convert full state name to abbreviation
+                    state_map = {'California': 'CA', 'Utah': 'UT'}
+                    address_data['state'] = state_map.get(address_data['state'], address_data['state'][:2].upper())
+                
                 address = Address(**address_data)
                 property_data['address'] = address
             
@@ -448,6 +461,14 @@ class SearchService:
                     # Skip invalid neighborhood data
                     property_data.pop('neighborhood', None)
             
+            # Normalize property type
+            if 'property_type' in property_data:
+                # Replace hyphens with underscores
+                property_data['property_type'] = property_data['property_type'].replace('-', '_')
+                # Normalize townhome to townhouse
+                if property_data['property_type'] == 'townhome':
+                    property_data['property_type'] = 'townhouse'
+            
             # Filter to valid Property fields to avoid validation errors
             valid_fields = {
                 'listing_id', 'property_type', 'price', 'bedrooms', 'bathrooms',
@@ -458,9 +479,12 @@ class SearchService:
                 'days_on_market', 'price_per_sqft'
             }
             
+            # Remove date fields that might have timezone issues
+            date_fields = ['listing_date', 'last_updated']
+            
             clean_property_data = {
                 k: v for k, v in property_data.items()
-                if k in valid_fields and v is not None
+                if k in valid_fields and v is not None and k not in date_fields
             }
             
             # Create Property object with error handling
@@ -517,8 +541,7 @@ class SearchService:
             size=request.size,
             total_pages=total_pages,
             took_ms=took_ms,
-            aggregations=aggregations,
-            request=request
+            aggregations=aggregations
         )
     
     def _process_aggregations(

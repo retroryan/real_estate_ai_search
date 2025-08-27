@@ -179,9 +179,6 @@ class ElasticsearchIndexManager:
             template_body = {
                 "index_patterns": template.index_patterns,
                 "priority": template.priority,
-                "data_stream": {
-                    "failure_store": True
-                },
                 "template": {
                     "settings": template.settings,
                     "mappings": template.mappings

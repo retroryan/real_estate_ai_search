@@ -1,5 +1,6 @@
 # SQUACK Pipeline Configuration
 # Core configuration for DuckDB-based real estate data processing pipeline
+# Use environment variables for: VOYAGE_API_KEY, ELASTICSEARCH_PASSWORD
 
 name: squack_pipeline
 version: 1.0.0
@@ -53,6 +54,23 @@ processing:
   # Semantic chunking parameters (for better real estate content splitting)
   breakpoint_percentile: 90
   buffer_size: 2
+
+# Output Configuration
+output:
+  # List of enabled output destinations
+  enabled_destinations:
+    - parquet
+    # - elasticsearch  # Uncomment to enable Elasticsearch output
+  
+  # Elasticsearch configuration (used when elasticsearch is enabled)
+  elasticsearch:
+    host: localhost
+    port: 9200
+    index_prefix: squack_demo
+    bulk_size: 500
+    username: elastic  # Default username
+    # Password from ELASTICSEARCH_PASSWORD environment variable
+    timeout: 30
 
 # Medallion Architecture Configuration
 medallion:

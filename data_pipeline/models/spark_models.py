@@ -71,6 +71,42 @@ class Property(SparkModel):
 
 
 # ============================================================================
+# Wikipedia Correlation Models
+# ============================================================================
+
+class WikipediaArticleReference(BaseModel):
+    """Wikipedia article reference with confidence score."""
+    page_id: int
+    title: str
+    url: str
+    confidence: float
+    relationship: Optional[str] = None  # e.g., "neighborhood", "park", "landmark", "reference"
+
+
+class WikipediaGeoReference(BaseModel):
+    """Simple Wikipedia reference for geographic entities."""
+    page_id: int
+    title: str
+
+
+class ParentGeography(BaseModel):
+    """Parent geographic Wikipedia references."""
+    city_wiki: WikipediaGeoReference
+    state_wiki: WikipediaGeoReference
+
+
+class WikipediaCorrelations(BaseModel):
+    """Container for all Wikipedia correlation data."""
+    primary_wiki_article: WikipediaArticleReference
+    related_wiki_articles: List[WikipediaArticleReference] = Field(default_factory=list)
+    parent_geography: ParentGeography
+    generated_by: str
+    generated_at: str
+    source: str
+    updated_by: Optional[str] = None
+
+
+# ============================================================================
 # Neighborhood Models
 # ============================================================================
 
@@ -82,7 +118,7 @@ class Demographics(BaseModel):
 
 
 class Neighborhood(SparkModel):
-    """Neighborhood model with demographics."""
+    """Neighborhood model with demographics and Wikipedia correlations."""
     neighborhood_id: str
     name: Optional[str] = None
     city: Optional[str] = None
@@ -90,6 +126,7 @@ class Neighborhood(SparkModel):
     description: Optional[str] = None
     amenities: Optional[List[str]] = None
     demographics: Optional[Demographics] = None
+    wikipedia_correlations: Optional[WikipediaCorrelations] = None  # From graph_metadata in source
 
 
 # ============================================================================
@@ -206,3 +243,11 @@ class FlattenedNeighborhood(SparkModel):
     population: Optional[int] = None
     median_income: Optional[Decimal] = Field(None, max_digits=10, decimal_places=2)
     median_age: Optional[float] = None
+    
+    # Denormalized Wikipedia correlation fields
+    primary_wikipedia_page_id: Optional[int] = None
+    primary_wikipedia_title: Optional[str] = None
+    primary_wikipedia_confidence: Optional[float] = None
+    
+    # Full correlations preserved for Elasticsearch nested object
+    wikipedia_correlations: Optional[WikipediaCorrelations] = None
