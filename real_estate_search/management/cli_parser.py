@@ -1,0 +1,147 @@
+"""
+CLI argument parser for management commands.
+"""
+
+import argparse
+from pathlib import Path
+from typing import Optional
+
+from .models import CLIArguments, CommandType, LogLevel
+
+
+class CLIParser:
+    """Handles CLI argument parsing."""
+    
+    @staticmethod
+    def create_parser() -> argparse.ArgumentParser:
+        """
+        Create and configure the argument parser.
+        
+        Returns:
+            Configured ArgumentParser
+        """
+        parser = argparse.ArgumentParser(
+            description="Elasticsearch Index Management for Real Estate Search",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  python -m real_estate_search.management setup-indices
+  python -m real_estate_search.management setup-indices --clear    # Reset and recreate indices
+  python -m real_estate_search.management validate-indices
+  python -m real_estate_search.management validate-embeddings     # Check vector embedding coverage
+  python -m real_estate_search.management list-indices
+  python -m real_estate_search.management delete-test-indices
+  python -m real_estate_search.management demo --list           # List all demo queries
+  python -m real_estate_search.management demo 1                # Run demo query 1
+  python -m real_estate_search.management demo 2 --verbose      # Run demo 2 with query DSL
+            """
+        )
+        
+        parser.add_argument(
+            'command',
+            choices=[cmd.value for cmd in CommandType],
+            help='Management command to execute'
+        )
+        
+        parser.add_argument(
+            'demo_number',
+            type=int,
+            nargs='?',
+            choices=range(1, 12),
+            help='Demo query number to run (1-11)'
+        )
+        
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            help='For setup-indices: Delete existing indices first (complete reset for demo)'
+        )
+        
+        parser.add_argument(
+            '--list',
+            action='store_true',
+            help='For demo: List all available demo queries'
+        )
+        
+        parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='For demo: Show detailed query DSL'
+        )
+        
+        parser.add_argument(
+            '--config',
+            type=Path,
+            default=Path("config.yaml"),
+            help='Configuration file path (default: config.yaml)'
+        )
+        
+        parser.add_argument(
+            '--log-level',
+            choices=[level.value for level in LogLevel],
+            default=LogLevel.INFO.value,
+            help='Logging level (default: INFO)'
+        )
+        
+        return parser
+    
+    @staticmethod
+    def parse_args(args: Optional[list] = None) -> CLIArguments:
+        """
+        Parse command-line arguments.
+        
+        Args:
+            args: Optional list of arguments (for testing)
+            
+        Returns:
+            Parsed CLI arguments as Pydantic model
+        """
+        parser = CLIParser.create_parser()
+        parsed_args = parser.parse_args(args)
+        
+        # Convert to Pydantic model
+        cli_args = CLIArguments(
+            command=CommandType(parsed_args.command),
+            demo_number=parsed_args.demo_number,
+            clear=parsed_args.clear,
+            list=parsed_args.list,
+            verbose=parsed_args.verbose,
+            config_path=str(parsed_args.config),
+            log_level=LogLevel(parsed_args.log_level)
+        )
+        
+        return cli_args
+    
+    @staticmethod
+    def validate_args(args: CLIArguments) -> Optional[str]:
+        """
+        Validate parsed arguments for logical consistency.
+        
+        Args:
+            args: Parsed CLI arguments
+            
+        Returns:
+            Error message if validation fails, None otherwise
+        """
+        # Demo command specific validation
+        if args.command == CommandType.DEMO:
+            if not args.list and not args.demo_number:
+                return "Please specify a demo number (1-11) or use --list to see available demos"
+        
+        # Clear flag only valid for setup-indices
+        if args.clear and args.command != CommandType.SETUP_INDICES:
+            return "--clear flag is only valid for setup-indices command"
+        
+        # List flag only valid for demo command
+        if args.list and args.command != CommandType.DEMO:
+            return "--list flag is only valid for demo command"
+        
+        # Verbose flag only valid for demo command
+        if args.verbose and args.command != CommandType.DEMO:
+            return "--verbose flag is only valid for demo command"
+        
+        # Demo number only valid for demo command
+        if args.demo_number and args.command != CommandType.DEMO:
+            return "Demo number is only valid for demo command"
+        
+        return None

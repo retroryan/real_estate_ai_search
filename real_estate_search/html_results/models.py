@@ -42,6 +42,7 @@ class HTMLDocument(BaseModel):
     highlights: List[HTMLHighlight] = Field(default_factory=list, description="Highlighted text fragments")
     summary: Optional[str] = Field(None, description="Document summary")
     url: Optional[str] = Field(None, description="URL to the document if available")
+    local_html_file: Optional[str] = Field(None, description="Path to locally saved HTML file")
     
     model_config = ConfigDict(frozen=True)
     

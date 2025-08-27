@@ -82,6 +82,49 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             margin-top: 5px;
         }
         
+        .scoring-explanation {
+            background: linear-gradient(135deg, #e7f3ff 0%, #f0e7ff 100%);
+            border-left: 4px solid #667eea;
+            padding: 25px 30px;
+            margin: 30px 40px;
+            border-radius: 8px;
+        }
+        
+        .scoring-explanation h2 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .scoring-explanation p {
+            color: #4a5568;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+        
+        .scoring-explanation ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        .scoring-explanation li {
+            color: #4a5568;
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        
+        .scoring-explanation code {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #667eea;
+        }
+        
         .content {
             padding: 40px;
         }
@@ -320,6 +363,60 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
         </div>
         
+        <div class="scoring-explanation">
+            <h2>📊 Understanding Elasticsearch Relevance Scores</h2>
+            <p>
+                <strong>What do these scores mean?</strong> Elasticsearch calculates a relevance score for each document 
+                that matches your search query. Higher scores indicate better matches based on sophisticated ranking algorithms.
+            </p>
+            
+            <p>
+                <strong>How Scoring Works:</strong>
+            </p>
+            <ul>
+                <li><strong>TF-IDF Algorithm:</strong> The foundation of scoring uses Term Frequency (how often a term appears in a document) 
+                    and Inverse Document Frequency (how rare the term is across all documents). Common words like "the" have low scores, 
+                    while rare, specific terms score higher.</li>
+                
+                <li><strong>BM25 Scoring:</strong> Elasticsearch uses BM25 by default, an advanced version of TF-IDF that includes:
+                    <ul style="margin-top: 5px;">
+                        <li>Document length normalization (shorter docs aren't unfairly penalized)</li>
+                        <li>Diminishing returns for term frequency (10 occurrences isn't 10x better than 1)</li>
+                        <li>Tunable parameters for fine-tuning relevance</li>
+                    </ul>
+                </li>
+                
+                <li><strong>Field Boosting:</strong> Different fields can have different importance. In these queries:
+                    <ul style="margin-top: 5px;">
+                        <li><code>title^2</code> means title matches are 2x more important</li>
+                        <li><code>summary^1.5</code> gives summary matches 1.5x weight</li>
+                        <li>Content fields have standard weight (1.0)</li>
+                    </ul>
+                </li>
+                
+                <li><strong>Query Types Affect Scoring:</strong>
+                    <ul style="margin-top: 5px;">
+                        <li><strong>Match queries:</strong> Full-text search with analysis and scoring</li>
+                        <li><strong>Phrase queries:</strong> Exact phrase matches score higher</li>
+                        <li><strong>Bool queries:</strong> Combine multiple conditions with must/should/filter</li>
+                        <li><strong>Multi-match:</strong> Search across multiple fields simultaneously</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <p>
+                <strong>Score Interpretation:</strong> Scores are relative within a single search. A score of 28.59 in one search 
+                isn't directly comparable to 28.59 in another search. What matters is the relative ranking - documents with 
+                higher scores are more relevant to your specific query.
+            </p>
+            
+            <p>
+                <strong>Pro Tip:</strong> The <code>_score</code> field is calculated in real-time for each query. 
+                Elasticsearch doesn't store pre-computed relevance scores because they depend entirely on the search terms, 
+                query structure, and the current state of the index.
+            </p>
+        </div>
+        
         <div class="content">
             {% for query in queries %}
             <div class="query-section">
@@ -360,6 +457,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                                     {% if doc.url %}
                                     <div class="doc-meta-item">
                                         🔗 <a href="{{ doc.url }}" target="_blank" style="color: #667eea;">View on Wikipedia</a>
+                                    </div>
+                                    {% endif %}
+                                    {% if doc.local_html_file %}
+                                    <div class="doc-meta-item">
+                                        📄 <a href="{{ doc.local_html_file }}" target="_blank" style="color: #28a745;">View Full Article (Local)</a>
                                     </div>
                                     {% endif %}
                                 </div>

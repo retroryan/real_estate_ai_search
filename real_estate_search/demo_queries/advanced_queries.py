@@ -168,12 +168,25 @@ def demo_semantic_search(
         query_name = f"Semantic Similarity Search - Finding properties similar to: {street}, {city} ({prop_type}, {price_fmt})"
         
         return DemoQueryResult(
-            query_name=query_name,
+            query_name="Demo 6: " + query_name,
+            query_description=f"Finds properties semantically similar to reference property {reference_property_id} using AI embeddings and vector similarity",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),
             results=results,
-            query_dsl=query
+            query_dsl=query,
+            es_features=[
+                "KNN Search - K-nearest neighbors for efficient vector similarity search",
+                "Dense Vectors - 1024-dimensional embeddings for semantic understanding (voyage-3 model)",
+                "Cosine Similarity - Vector distance metric for finding similar properties",
+                "Function Score Query - Random sampling to find reference property",
+                "Bool Query - Exclude reference property from results",
+                "Vector Search at Scale - Efficient similarity search on large datasets"
+            ],
+            indexes_used=[
+                "properties index - Real estate listings with AI embeddings",
+                f"Searching for {size} properties most similar to reference property"
+            ]
         )
     except Exception as e:
         logger.error(f"Error in semantic search: {e}")
@@ -319,13 +332,28 @@ def demo_multi_entity_search(
             aggregations = response['aggregations']
         
         return DemoQueryResult(
-            query_name=f"Multi-Entity Search: '{query_text}' (searching: {indices})",
+            query_name=f"Demo 7: Multi-Entity Search - '{query_text}'",
+            query_description=f"Unified search across properties, neighborhoods, and Wikipedia articles for '{query_text}', combining results from multiple data sources",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),
             results=results,
             aggregations=aggregations,
-            query_dsl=query
+            query_dsl=query,
+            es_features=[
+                "Multi-Index Search - Query multiple indices in single request",
+                "Cross-Index Ranking - Unified relevance scoring across different entity types",
+                "Field Boosting - Weight different fields by importance (title^3, description^2)",
+                "Index Aggregation - Count results by source index",
+                "Highlighting - Show matching content snippets",
+                "Fuzzy Matching - Handle typos with AUTO fuzziness"
+            ],
+            indexes_used=[
+                "properties index - Real estate property listings",
+                "neighborhoods index - Neighborhood demographics and descriptions",
+                "wikipedia index - Geographic Wikipedia articles",
+                f"Searching {indices} indices simultaneously"
+            ]
         )
     except Exception as e:
         logger.error(f"Error in multi-entity search: {e}")
@@ -495,12 +523,26 @@ def demo_wikipedia_search(
             results.append(result)
         
         return DemoQueryResult(
-            query_name=f"Wikipedia Search",
+            query_name=f"Demo 8: Wikipedia Location & Topic Search",
+            query_description=f"Searches Wikipedia articles about {', '.join(topics)} in {city}, {state}, demonstrating complex filtering and boosting strategies",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),
             results=results,
-            query_dsl=query
+            query_dsl=query,
+            es_features=[
+                "Complex Bool Query - Combining must, filter, and should clauses",
+                "Query vs Filter Context - Scoring vs non-scoring clauses",
+                "Nested Bool Queries - OR conditions within AND logic",
+                "Exists Query - Filter documents with specific fields",
+                "Multi-Field Sorting - Primary (_score) and secondary (quality) sorts",
+                "Boosting Strategies - Prefer high-quality and comprehensive articles",
+                "Field-Specific Highlighting - Different fragment sizes per field"
+            ],
+            indexes_used=[
+                "wikipedia index - Curated Wikipedia articles with location data",
+                f"Filtering for articles in {city}, {state} about {', '.join(topics)}"
+            ]
         )
     except Exception as e:
         logger.error(f"Error in Wikipedia search: {e}")
