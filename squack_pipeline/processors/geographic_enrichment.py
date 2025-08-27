@@ -28,6 +28,33 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
             'san_jose_downtown': {'lat': 37.3382, 'lon': -121.8863, 'name': 'San Jose Downtown'}
         }
     
+    def process(self, input_table: str) -> str:
+        """Override process to create properly named enriched table."""
+        if not self.connection:
+            raise RuntimeError("No DuckDB connection available")
+        
+        # Generate output table name with proper prefix
+        import time
+        timestamp = int(time.time())
+        output_table = f"property_enriched_{timestamp}"
+        
+        # Get transformation query
+        transformation_query = self.get_transformation_query(input_table)
+        
+        # Create output table from transformation
+        self.create_table_from_query(output_table, transformation_query)
+        
+        # Update metrics
+        input_count = self.count_records(input_table)
+        output_count = self.count_records(output_table)
+        
+        self.logger.info(
+            f"Transformed {input_count} records to {output_count} records "
+            f"in {output_table}"
+        )
+        
+        return output_table
+    
     @log_execution_time
     def get_transformation_query(self, input_table: str) -> str:
         """Get SQL transformation query for geographic enrichment."""
@@ -36,14 +63,14 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
         for key, point in self.reference_points.items():
             calc = f"""
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL
                 THEN ROUND(
                     111.045 * DEGREES(ACOS(
                         LEAST(1.0, 
-                            COS(RADIANS(coordinates.latitude)) * 
+                            COS(RADIANS(t.latitude)) * 
                             COS(RADIANS({point['lat']})) * 
-                            COS(RADIANS(coordinates.longitude) - RADIANS({point['lon']})) +
-                            SIN(RADIANS(coordinates.latitude)) * 
+                            COS(RADIANS(t.longitude) - RADIANS({point['lon']})) +
+                            SIN(RADIANS(t.latitude)) * 
                             SIN(RADIANS({point['lat']}))
                         )
                     )), 2
@@ -57,48 +84,48 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
         return f"""
         SELECT 
             -- Original data
-            *,
+            t.*,
             
             -- GEOGRAPHIC ENRICHMENT: Distance Calculations
             {distance_fields},
             
             -- Closest major city
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL THEN
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL THEN
                     (SELECT city_name FROM (
                         SELECT 'San Francisco' as city_name, 
                                111.045 * DEGREES(ACOS(
                                    LEAST(1.0, 
-                                       COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.7749)) * 
-                                       COS(RADIANS(coordinates.longitude) - RADIANS(-122.4194)) +
-                                       SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.7749))
+                                       COS(RADIANS(t.latitude)) * COS(RADIANS(37.7749)) * 
+                                       COS(RADIANS(t.longitude) - RADIANS(-122.4194)) +
+                                       SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.7749))
                                    )
                                )) as distance
                         UNION ALL
                         SELECT 'Oakland' as city_name,
                                111.045 * DEGREES(ACOS(
                                    LEAST(1.0, 
-                                       COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.8044)) * 
-                                       COS(RADIANS(coordinates.longitude) - RADIANS(-122.2712)) +
-                                       SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.8044))
+                                       COS(RADIANS(t.latitude)) * COS(RADIANS(37.8044)) * 
+                                       COS(RADIANS(t.longitude) - RADIANS(-122.2712)) +
+                                       SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.8044))
                                    )
                                )) as distance
                         UNION ALL
                         SELECT 'Palo Alto' as city_name,
                                111.045 * DEGREES(ACOS(
                                    LEAST(1.0, 
-                                       COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.4419)) * 
-                                       COS(RADIANS(coordinates.longitude) - RADIANS(-122.1430)) +
-                                       SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.4419))
+                                       COS(RADIANS(t.latitude)) * COS(RADIANS(37.4419)) * 
+                                       COS(RADIANS(t.longitude) - RADIANS(-122.1430)) +
+                                       SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.4419))
                                    )
                                )) as distance
                         UNION ALL
                         SELECT 'San Jose' as city_name,
                                111.045 * DEGREES(ACOS(
                                    LEAST(1.0, 
-                                       COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.3382)) * 
-                                       COS(RADIANS(coordinates.longitude) - RADIANS(-121.8863)) +
-                                       SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.3382))
+                                       COS(RADIANS(t.latitude)) * COS(RADIANS(37.3382)) * 
+                                       COS(RADIANS(t.longitude) - RADIANS(-121.8863)) +
+                                       SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.3382))
                                    )
                                )) as distance
                     ) ORDER BY distance LIMIT 1)
@@ -107,31 +134,31 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
             
             -- Geographic region classification
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL THEN
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL THEN
                     CASE 
                         -- San Francisco proper
-                        WHEN coordinates.latitude BETWEEN 37.70 AND 37.80 
-                         AND coordinates.longitude BETWEEN -122.52 AND -122.37
+                        WHEN t.latitude BETWEEN 37.70 AND 37.80 
+                         AND t.longitude BETWEEN -122.52 AND -122.37
                         THEN 'san_francisco'
                         
                         -- East Bay (Oakland area)
-                        WHEN coordinates.latitude BETWEEN 37.70 AND 37.85 
-                         AND coordinates.longitude BETWEEN -122.35 AND -122.15
+                        WHEN t.latitude BETWEEN 37.70 AND 37.85 
+                         AND t.longitude BETWEEN -122.35 AND -122.15
                         THEN 'east_bay'
                         
                         -- Peninsula (Palo Alto, Mountain View area)
-                        WHEN coordinates.latitude BETWEEN 37.35 AND 37.50 
-                         AND coordinates.longitude BETWEEN -122.20 AND -122.05
+                        WHEN t.latitude BETWEEN 37.35 AND 37.50 
+                         AND t.longitude BETWEEN -122.20 AND -122.05
                         THEN 'peninsula'
                         
                         -- South Bay (San Jose area)
-                        WHEN coordinates.latitude BETWEEN 37.25 AND 37.45 
-                         AND coordinates.longitude BETWEEN -121.95 AND -121.75
+                        WHEN t.latitude BETWEEN 37.25 AND 37.45 
+                         AND t.longitude BETWEEN -121.95 AND -121.75
                         THEN 'south_bay'
                         
                         -- North Bay
-                        WHEN coordinates.latitude BETWEEN 37.85 AND 38.35 
-                         AND coordinates.longitude BETWEEN -122.70 AND -122.30
+                        WHEN t.latitude BETWEEN 37.85 AND 38.35 
+                         AND t.longitude BETWEEN -122.70 AND -122.30
                         THEN 'north_bay'
                         
                         ELSE 'other_bay_area'
@@ -141,14 +168,14 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
             
             -- Coordinate precision assessment
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL
                 THEN
                     CASE 
-                        WHEN coordinates.latitude::VARCHAR LIKE '%._____%' 
-                         AND coordinates.longitude::VARCHAR LIKE '%._____%'
+                        WHEN t.latitude::VARCHAR LIKE '%._____%' 
+                         AND t.longitude::VARCHAR LIKE '%._____%'
                         THEN 'high_precision'
-                        WHEN coordinates.latitude::VARCHAR LIKE '%.____%' 
-                         AND coordinates.longitude::VARCHAR LIKE '%.____%'
+                        WHEN t.latitude::VARCHAR LIKE '%.____%' 
+                         AND t.longitude::VARCHAR LIKE '%.____%'
                         THEN 'medium_precision'
                         ELSE 'low_precision'
                     END
@@ -157,26 +184,26 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
             
             -- Distance to nearest major center (minimum of all distances)
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL
                 THEN LEAST(
-                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.7749)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.4194)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.7749))))),
-                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.8044)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.2712)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.8044))))),
-                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.4419)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.1430)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.4419))))),
-                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.3382)) * COS(RADIANS(coordinates.longitude) - RADIANS(-121.8863)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.3382)))))
+                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.7749)) * COS(RADIANS(t.longitude) - RADIANS(-122.4194)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.7749))))),
+                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.8044)) * COS(RADIANS(t.longitude) - RADIANS(-122.2712)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.8044))))),
+                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.4419)) * COS(RADIANS(t.longitude) - RADIANS(-122.1430)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.4419))))),
+                    111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.3382)) * COS(RADIANS(t.longitude) - RADIANS(-121.8863)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.3382)))))
                 )
                 ELSE NULL
             END as distance_to_nearest_center_km,
             
             -- Urban accessibility score (closer to centers = higher score)
             CASE 
-                WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL
+                WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL
                 THEN 
                     GREATEST(0, LEAST(100, 
                         100 - (LEAST(
-                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.7749)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.4194)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.7749))))),
-                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.8044)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.2712)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.8044))))),
-                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.4419)) * COS(RADIANS(coordinates.longitude) - RADIANS(-122.1430)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.4419))))),
-                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(coordinates.latitude)) * COS(RADIANS(37.3382)) * COS(RADIANS(coordinates.longitude) - RADIANS(-121.8863)) + SIN(RADIANS(coordinates.latitude)) * SIN(RADIANS(37.3382)))))
+                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.7749)) * COS(RADIANS(t.longitude) - RADIANS(-122.4194)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.7749))))),
+                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.8044)) * COS(RADIANS(t.longitude) - RADIANS(-122.2712)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.8044))))),
+                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.4419)) * COS(RADIANS(t.longitude) - RADIANS(-122.1430)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.4419))))),
+                            111.045 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS(t.latitude)) * COS(RADIANS(37.3382)) * COS(RADIANS(t.longitude) - RADIANS(-121.8863)) + SIN(RADIANS(t.latitude)) * SIN(RADIANS(37.3382)))))
                         ) * 2)
                     ))::INTEGER
                 ELSE 0
@@ -186,7 +213,7 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
             CURRENT_TIMESTAMP as geo_enriched_at,
             'geographic_enrichment_v1.0' as geo_processing_version
             
-        FROM {input_table}
+        FROM {input_table} t
         """
     
     def validate_input(self, table_name: str) -> bool:
@@ -201,18 +228,19 @@ class GeographicEnrichmentProcessor(TransformationProcessor):
                 self.logger.error(f"Input table {table_name} is empty")
                 return False
             
-            # Check for coordinates column
+            # Check for latitude and longitude columns
             schema = self.get_table_schema(table_name)
-            if 'coordinates' not in schema:
-                self.logger.error("Missing coordinates column for geographic enrichment")
-                return False
+            if 'latitude' not in schema or 'longitude' not in schema:
+                self.logger.warning("Missing latitude or longitude columns for geographic enrichment")
+                # Not a hard failure - we can still process other fields
+                return True
             
             # Check how many records have valid coordinates
             valid_coords_query = f"""
             SELECT 
                 COUNT(*) as total,
-                COUNT(CASE WHEN coordinates.latitude IS NOT NULL AND coordinates.longitude IS NOT NULL THEN 1 END) as with_coords
-            FROM {table_name}
+                COUNT(CASE WHEN t.latitude IS NOT NULL AND t.longitude IS NOT NULL THEN 1 END) as with_coords
+            FROM {table_name} t
             """
             
             result = self.execute_sql(valid_coords_query).fetchone()

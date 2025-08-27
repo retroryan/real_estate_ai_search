@@ -152,10 +152,6 @@ class ElasticsearchOutputConfig(BaseModel):
         default_factory=lambda: ["localhost:9200"],
         description="Elasticsearch host addresses"
     )
-    index_prefix: str = Field(
-        default="real_estate",
-        description="Prefix for Elasticsearch indices"
-    )
     username: Optional[str] = Field(
         default=None,
         description="Elasticsearch username"

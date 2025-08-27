@@ -109,7 +109,6 @@ output:
   elasticsearch:
     hosts:
       - localhost:9200
-    index_prefix: real_estate
     username: elastic
     bulk_size: 1000
     # Password from ELASTICSEARCH_PASSWORD environment variable

@@ -154,6 +154,7 @@ class WikipediaArticle(SparkModel):
     page_id: int
     title: str
     url: Optional[str] = None
+    article_filename: Optional[str] = None
     best_city: Optional[str] = None
     best_state: Optional[str] = None
     latitude: Optional[float] = None

@@ -22,6 +22,12 @@ def demo_basic_property_search(
     """
     Demo 1: Basic property search using multi-match query.
     
+    ELASTICSEARCH CONCEPTS:
+    - LEAF QUERY CLAUSE: multi_match is a leaf query that searches for text
+    - QUERY CONTEXT: This runs in query context, calculating relevance scores
+    - FIELD BOOSTING: Using ^ operator to weight field importance
+    - FUZZY MATCHING: Handles typos and variations
+    
     Searches across description, features, amenities, and location fields
     with field boosting and fuzzy matching.
     
@@ -35,30 +41,55 @@ def demo_basic_property_search(
     """
     query = {
         "query": {
+            # MULTI_MATCH QUERY: A leaf query clause that searches text across multiple fields
+            # This is one of the most versatile full-text queries in Elasticsearch
             "multi_match": {
-                "query": query_text,
+                "query": query_text,  # The text to search for
+                
+                # FIELD BOOSTING: Fields with ^ boost scores when matches are found
+                # Higher boost = more important for relevance ranking
                 "fields": [
-                    "description^2",
-                    "features^1.5",
-                    "amenities",
-                    "address.city",
-                    "address.street",
-                    "neighborhood_name"
+                    "description^2",      # 2x boost - property descriptions are most important
+                    "features^1.5",       # 1.5x boost - features are quite important
+                    "amenities",          # 1x boost (default) - standard importance
+                    "address.city",       # Nested field search for location
+                    "address.street",     # Another nested field
+                    "neighborhood_name"   # Neighborhood context
                 ],
+                
+                # QUERY TYPE: "best_fields" finds the best matching field for each document
+                # Other options: "most_fields", "cross_fields", "phrase", "phrase_prefix"
                 "type": "best_fields",
+                
+                # FUZZINESS: Allows matching with typos/variations
+                # "AUTO" adjusts fuzziness based on term length (recommended)
+                # 0-2 chars: must match exactly
+                # 3-5 chars: one edit allowed  
+                # >5 chars: two edits allowed
                 "fuzziness": "AUTO",
+                
+                # PREFIX_LENGTH: Number of initial characters that must match exactly
+                # Prevents excessive fuzzy matches on short prefixes
                 "prefix_length": 2
             }
         },
+        
+        # RESULT SIZE: Maximum number of documents to return
         "size": size,
+        
+        # SOURCE FILTERING: Specify which fields to include in results
+        # Reduces network overhead by excluding unnecessary fields
         "_source": [
             "listing_id", "property_type", "price", "bedrooms", "bathrooms",
             "square_feet", "address", "description", "features"
         ],
+        
+        # HIGHLIGHTING: Shows matched text fragments with emphasis
+        # Helps users understand why documents matched
         "highlight": {
             "fields": {
-                "description": {},
-                "features": {}
+                "description": {},  # Default highlighter settings
+                "features": {}      # Will wrap matches in <em> tags
             }
         }
     }
@@ -120,39 +151,63 @@ def demo_property_filter(
     Returns:
         DemoQueryResult with filtered results
     """
-    # Build filter conditions
+    # Build filter conditions dynamically based on provided criteria
     filters = []
     
     if property_type:
+        # TERM QUERY: Exact match on keyword field (not analyzed)
+        # .keyword suffix uses the keyword analyzer for exact matching
         filters.append({"term": {"property_type.keyword": property_type}})
     
     if min_bedrooms is not None:
+        # RANGE QUERY: Numeric range filter
+        # gte = greater than or equal, also supports gt, lt, lte
         filters.append({"range": {"bedrooms": {"gte": min_bedrooms}}})
     
     if max_price is not None:
+        # RANGE QUERY: Upper bound price filter
+        # lte = less than or equal
         filters.append({"range": {"price": {"lte": max_price}}})
     
     if cities:
+        # TERMS QUERY: Match any value in the list (OR operation)
+        # Like SQL's IN clause
         filters.append({"terms": {"address.city.keyword": cities}})
     
     if features:
+        # Multiple TERM queries create an AND condition when in same filter array
         for feature in features:
             filters.append({"term": {"features": feature.lower()}})
     
     query = {
         "query": {
+            # BOOL QUERY: Compound query clause for combining multiple queries
+            # The Swiss Army knife of Elasticsearch queries
             "bool": {
+                # FILTER CONTEXT: Queries here don't calculate scores
+                # - Faster than query context (cacheable)
+                # - Used for yes/no questions
+                # - All conditions must match (AND logic)
                 "filter": filters
+                
+                # Other bool query clauses (not used here):
+                # "must": [] - Query context, affects score, AND logic
+                # "should": [] - Query context, affects score, OR logic
+                # "must_not": [] - Filter context, excludes documents
             }
-        } if filters else {"match_all": {}},
+        } if filters else {"match_all": {}},  # Fallback if no filters
+        
         "size": size,
+        
         "_source": [
             "listing_id", "property_type", "price", "bedrooms", "bathrooms",
             "square_feet", "address", "features", "amenities"
         ],
+        
+        # SORTING: Define sort order for results
         "sort": [
-            {"price": {"order": "asc"}},
-            "_score"
+            {"price": {"order": "asc"}},  # Primary sort: lowest price first
+            "_score"  # Secondary sort: relevance (though filters don't generate scores)
         ]
     }
     
@@ -208,42 +263,69 @@ def demo_geo_search(
     """
     query = {
         "query": {
+            # COMPOUND QUERY: Bool query wraps our geo filter
             "bool": {
+                # FILTER CONTEXT: Geo queries often run in filter context
+                # No scoring needed - either within distance or not
                 "filter": {
+                    # GEO_DISTANCE QUERY: Special query type for geographic data
+                    # Requires geo_point field mapping
                     "geo_distance": {
+                        # DISTANCE: Can use various units (km, mi, m, yd, ft)
                         "distance": distance,
+                        
+                        # GEO_POINT FIELD: Must be mapped as geo_point type
                         "address.location": {
                             "lat": latitude,
                             "lon": longitude
                         }
+                        # Alternative formats:
+                        # "address.location": "40.715,-74.011"  # String
+                        # "address.location": [lon, lat]        # Array (note: lon first!)
+                        # "address.location": {"lat": 40.715, "lon": -74.011}  # Object
                     }
                 }
             }
         },
+        
+        # GEO SORTING: Sort by distance from a point
         "sort": [
             {
                 "_geo_distance": {
+                    # Reference point for distance calculation
                     "address.location": {
                         "lat": latitude,
                         "lon": longitude
                     },
-                    "unit": "km",
-                    "order": "asc"
+                    "unit": "km",  # Unit for sort values
+                    "order": "asc"  # Nearest first
+                    
+                    # Other options:
+                    # "mode": "min" - For fields with multiple geo points
+                    # "distance_type": "arc" (default) or "plane" (faster, less accurate)
                 }
             }
         ],
+        
         "size": size,
+        
         "_source": [
             "listing_id", "property_type", "price", "bedrooms", "bathrooms",
             "address", "description"
         ],
+        
+        # SCRIPT FIELDS: Computed fields using Painless scripting language
+        # Calculate values at query time without storing them
         "script_fields": {
             "distance_km": {
                 "script": {
+                    # SCRIPT PARAMETERS: Pass values safely to scripts
                     "params": {
                         "lat": latitude,
                         "lon": longitude
                     },
+                    # PAINLESS SCRIPT: Elasticsearch's scripting language
+                    # arcDistance returns distance in meters
                     "source": """
                         if (doc['address.location'].size() == 0) return null;
                         return doc['address.location'].arcDistance(params.lat, params.lon) / 1000.0;

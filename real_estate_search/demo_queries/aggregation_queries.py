@@ -1,4 +1,12 @@
-"""Aggregation demo queries for statistical analysis."""
+"""
+Aggregation demo queries for statistical analysis.
+
+ELASTICSEARCH AGGREGATIONS OVERVIEW:
+- Aggregations provide analytics and statistics on your data
+- They operate alongside search requests (or independently with size:0)
+- Three main types: Metric (math), Bucket (grouping), Pipeline (post-processing)
+- Can be nested for complex multi-dimensional analysis
+"""
 
 from typing import Dict, Any
 from elasticsearch import Elasticsearch
@@ -27,27 +35,47 @@ def demo_neighborhood_stats(
         DemoQueryResult with aggregated statistics
     """
     query = {
-        "size": 0,  # Don't return documents, only aggregations
+        # SIZE: 0 means don't return documents, only aggregations
+        # This improves performance when you only need statistics
+        "size": 0,
+        
+        # AGGREGATIONS: The analytics framework of Elasticsearch
         "aggs": {
+            # BUCKET AGGREGATION: Groups documents into buckets
             "by_neighborhood": {
+                # TERMS AGGREGATION: Creates a bucket for each unique value
+                # Similar to SQL's GROUP BY
                 "terms": {
-                    "field": "neighborhood_id.keyword",
-                    "size": size,
-                    "order": {"property_count": "desc"}
+                    "field": "neighborhood_id.keyword",  # Must use keyword field for exact matching
+                    "size": size,  # Maximum number of buckets to return
+                    
+                    # ORDER: Sort buckets by a metric (can reference sub-aggregations)
+                    "order": {"property_count": "desc"}  # Most properties first
+                    # Other options: {"_count": "desc"}, {"_key": "asc"}, {"avg_price": "desc"}
                 },
+                
+                # SUB-AGGREGATIONS: Calculate metrics for each bucket
+                # These run in the context of their parent bucket
                 "aggs": {
+                    # METRIC AGGREGATION: Single-value numeric metric
                     "property_count": {
-                        "value_count": {"field": "listing_id"}
+                        "value_count": {"field": "listing_id"}  # Count unique values
                     },
+                    
+                    # AVG AGGREGATION: Calculate average value
                     "avg_price": {
                         "avg": {"field": "price"}
                     },
+                    
+                    # MIN/MAX AGGREGATIONS: Find extremes
                     "min_price": {
                         "min": {"field": "price"}
                     },
                     "max_price": {
                         "max": {"field": "price"}
                     },
+                    
+                    # Multiple metrics on different fields
                     "avg_bedrooms": {
                         "avg": {"field": "bedrooms"}
                     },
@@ -57,14 +85,18 @@ def demo_neighborhood_stats(
                     "price_per_sqft": {
                         "avg": {"field": "price_per_sqft"}
                     },
+                    
+                    # NESTED BUCKET AGGREGATION: Create sub-buckets within each neighborhood
                     "property_types": {
                         "terms": {
                             "field": "property_type.keyword",
-                            "size": 10
+                            "size": 10  # Top 10 property types per neighborhood
                         }
                     }
                 }
             },
+            
+            # GLOBAL METRICS: Calculate across all documents (not per bucket)
             "total_properties": {
                 "value_count": {"field": "listing_id"}
             },
@@ -139,57 +171,87 @@ def demo_price_distribution(
         DemoQueryResult with price distribution data
     """
     query = {
-        "size": 0,
+        "size": 0,  # Only aggregations, no documents
+        
+        # QUERY WITH AGGREGATIONS: Filter documents before aggregating
+        # Aggregations only operate on documents matching the query
         "query": {
+            # RANGE QUERY in QUERY CONTEXT: Although it doesn't need scoring,
+            # it's used here to limit the aggregation scope
             "range": {
                 "price": {
-                    "gte": min_price,
-                    "lte": max_price
+                    "gte": min_price,  # Greater than or equal
+                    "lte": max_price   # Less than or equal
                 }
             }
         },
+        
         "aggs": {
+            # HISTOGRAM AGGREGATION: Fixed-size interval buckets
+            # Like terms but for numeric ranges
             "price_histogram": {
                 "histogram": {
                     "field": "price",
-                    "interval": interval,
+                    "interval": interval,  # Bucket width (e.g., $100,000)
+                    
+                    # MIN_DOC_COUNT: Omit empty buckets (0 = show all)
                     "min_doc_count": 1,
+                    
+                    # EXTENDED_BOUNDS: Force histogram range even if no data
+                    # Useful for consistent visualizations
                     "extended_bounds": {
                         "min": min_price,
                         "max": max_price
                     }
+                    # Other options:
+                    # "offset": 50000 - Shift bucket boundaries
+                    # "keyed": true - Return as object instead of array
                 },
+                
+                # SUB-AGGREGATIONS per price bucket
                 "aggs": {
+                    # Break down each price range by property type
                     "by_property_type": {
                         "terms": {
                             "field": "property_type.keyword",
                             "size": 10
                         }
                     },
+                    
+                    # STATS AGGREGATION: Multiple metrics in one
+                    # Returns: min, max, avg, sum, count
                     "stats": {
                         "stats": {"field": "price"}
                     }
                 }
             },
+            
+            # PERCENTILES AGGREGATION: Statistical distribution
+            # Find values at specific percentile ranks
             "price_percentiles": {
                 "percentiles": {
                     "field": "price",
-                    "percents": [25, 50, 75, 90, 95, 99]
+                    "percents": [25, 50, 75, 90, 95, 99]  # Quartiles + high percentiles
+                    # 50th percentile = median
+                    # 25th-75th = interquartile range
                 }
             },
+            
+            # COMPLEX NESTED AGGREGATION: Stats per property type
             "by_property_type_stats": {
                 "terms": {
                     "field": "property_type.keyword",
                     "size": 10
                 },
                 "aggs": {
+                    # Multiple metric aggregations per bucket
                     "price_stats": {
                         "stats": {"field": "price"}
                     },
                     "price_percentiles": {
                         "percentiles": {
                             "field": "price",
-                            "percents": [50]
+                            "percents": [50]  # Just the median
                         }
                     }
                 }

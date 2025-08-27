@@ -127,6 +127,7 @@ class PipelineOrchestrator:
         
         self.geo_enrichment = GeographicEnrichmentProcessor(self.settings)
         self.geo_enrichment.set_connection(connection)
+        self.geo_enrichment.set_tier(MedallionTier.GOLD)
         
         # Initialize type-safe property processor
         self.property_processor = PropertyProcessor(self.settings)
@@ -389,9 +390,10 @@ class PipelineOrchestrator:
                 return
             
             gold_table = result[0]
-            enriched_table = f"property_enriched_{int(time.time())}"
             
-            if self.geo_enrichment.process(gold_table, enriched_table):
+            # Process returns the output table name
+            enriched_table = self.geo_enrichment.process(gold_table)
+            if enriched_table:
                 record_count = self.geo_enrichment.count_records(enriched_table)
                 self.metrics["tables_created"] += 1
                 

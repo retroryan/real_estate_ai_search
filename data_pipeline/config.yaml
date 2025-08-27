@@ -50,6 +50,5 @@ output:
   elasticsearch:
     hosts:
       - localhost:9200
-    index_prefix: "real_estate"
     username: elastic
     # Password from ELASTICSEARCH_PASSWORD environment variable

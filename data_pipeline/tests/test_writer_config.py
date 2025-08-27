@@ -40,7 +40,7 @@ class TestWriterConfiguration:
         config = ElasticsearchConfig()
         assert config.enabled is True
         assert config.hosts == ["localhost:9200"]
-        assert config.index_prefix == "realestate"
+        # index_prefix has been removed from configuration
         assert config.bulk_size == 500
         assert config.clear_before_write is True
     

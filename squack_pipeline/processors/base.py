@@ -141,6 +141,15 @@ class BaseProcessor(ABC):
         table = TableIdentifier(name=table_name)
         result = self.execute_sql(f"DESCRIBE {table.qualified_name}").fetchall()
         return [row[0] for row in result] if result else []
+    
+    def get_table_schema(self, table_name: str) -> Dict[str, str]:
+        """Get schema (column names and types) for a table."""
+        if not self.connection:
+            raise RuntimeError("No DuckDB connection available")
+        
+        table = TableIdentifier(name=table_name)
+        result = self.execute_sql(f"DESCRIBE {table.qualified_name}").fetchall()
+        return {row[0]: row[1] for row in result} if result else {}
 
 
 class TransformationProcessor(BaseProcessor):

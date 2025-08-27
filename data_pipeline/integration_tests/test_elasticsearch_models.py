@@ -45,14 +45,13 @@ class TestElasticsearchModels:
     def test_elasticsearch_writer_settings(self):
         """Test ElasticsearchWriterSettings model."""
         settings = ElasticsearchWriterSettings(
-            index_prefix="test",
             batch_size=500,
         )
         
         # Test index creation for each entity type
         for entity_type in EntityType:
             index_settings = settings.create_index_settings(entity_type)
-            assert index_settings.name.startswith("test_")
+            assert index_settings.name == entity_type.value
             assert index_settings.entity_type == entity_type
             assert index_settings.id_field  # Should have appropriate ID field
 

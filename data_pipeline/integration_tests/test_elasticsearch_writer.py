@@ -62,8 +62,7 @@ class TestElasticsearchWriter:
         if "elasticsearch" not in config.output.enabled_destinations:
             config.output.enabled_destinations.append("elasticsearch")
         
-        # Configure for testing
-        config.output.elasticsearch.index_prefix = "test_real_estate"
+        # index_prefix has been removed from configuration
         
         return config
 
@@ -267,7 +266,7 @@ class TestElasticsearchPipelineIntegration:
         
         # Ensure Elasticsearch is enabled
         config.output.enabled_destinations = ["parquet", "elasticsearch"]
-        config.output.elasticsearch.index_prefix = "integration_test"
+        # index_prefix has been removed from configuration
         
         # Run pipeline
         runner = DataPipelineRunner(config)
@@ -285,7 +284,7 @@ class TestElasticsearchPipelineIntegration:
         # Load configuration with only Elasticsearch enabled
         config = load_configuration(sample_size=2)
         config.output.enabled_destinations = ["elasticsearch"]
-        config.output.elasticsearch.index_prefix = "elasticsearch_only_test"
+        # index_prefix has been removed from configuration
         
         # Run pipeline
         runner = DataPipelineRunner(config)
@@ -305,7 +304,7 @@ def test_elasticsearch_configuration_loading():
     
     # Check basic settings
     assert config.output.elasticsearch.hosts, "Should have Elasticsearch hosts configured"
-    assert config.output.elasticsearch.index_prefix, "Should have index prefix configured"
+    # index_prefix has been removed from configuration
     
     # Verify Spark configuration generation
     spark_configs = config.get_spark_configs()
