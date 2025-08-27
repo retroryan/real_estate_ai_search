@@ -17,7 +17,6 @@ from squack_pipeline.models import (
     TableIdentifier, create_standard_property_pipeline, ProcessingResult
 )
 from squack_pipeline.embeddings.pipeline import EmbeddingPipeline
-from squack_pipeline.writers.parquet_writer import ParquetWriter
 from squack_pipeline.writers.embedding_writer import EmbeddingWriter
 from squack_pipeline.orchestrator.state_manager import PipelineStateManager, PipelineState
 from squack_pipeline.utils.logging import PipelineLogger, log_execution_time, log_data_quality
@@ -57,7 +56,6 @@ class PipelineOrchestrator:
         self.processing_pipeline = create_standard_property_pipeline()
         
         # Initialize writers
-        self.parquet_writer: Optional[ParquetWriter] = None
         self.embedding_writer: Optional[EmbeddingWriter] = None
         
         # Track embedded nodes for output
@@ -140,11 +138,8 @@ class PipelineOrchestrator:
             if not self.embedding_pipeline.initialize():
                 raise RuntimeError("Failed to initialize embedding pipeline")
         
-        # Initialize writers if not in dry run mode
+        # Initialize embedding writer if needed
         if not self.settings.dry_run:
-            self.parquet_writer = ParquetWriter(self.settings)
-            self.parquet_writer.set_connection(connection)
-            
             if self.settings.processing.generate_embeddings:
                 self.embedding_writer = EmbeddingWriter(self.settings)
                 self.embedding_writer.set_connection(connection)
@@ -495,118 +490,110 @@ class PipelineOrchestrator:
             raise
     
     def _write_output(self) -> None:
-        """Write final output to Parquet files."""
+        """Write final output to configured destinations."""
         if self.settings.dry_run:
             self.logger.info("Dry run mode - skipping output writing")
             return
         
-        if not self.parquet_writer:
-            self.logger.warning("No Parquet writer initialized")
-            return
-        
-        self.logger.info("Writing output to Parquet files")
+        self.logger.info("Writing output to configured destinations")
         
         try:
-            # Determine which table to write (most enriched available)
-            final_table = self._get_final_table()
+            # Get final tables for all entity types
+            tables = self._get_all_final_tables()
             
-            if not final_table:
+            if not tables:
                 self.logger.warning("No data available for output")
                 return
             
-            # Generate output filename with timestamp
-            timestamp = int(time.time())
-            output_filename = f"properties_{self.settings.environment}_{timestamp}.parquet"
-            output_path = self.settings.data.output_path / output_filename
+            # Use WriterOrchestrator to write to all destinations
+            from squack_pipeline.writers.orchestrator import WriterOrchestrator
+            writer_orchestrator = WriterOrchestrator(self.settings)
             
-            # Determine partitioning strategy
-            partition_columns = []
-            if self.settings.parquet.per_thread_output or len(self.parquet_writer.get_partition_columns()) > 0:
-                # Check which partition columns are available
-                available_columns = set()
-                schema_result = self.connection_manager.get_connection().execute(
-                    f"DESCRIBE {final_table}"
-                ).fetchall()
-                for col in schema_result:
-                    available_columns.add(col[0])
+            # Write all entities to all configured destinations
+            results = writer_orchestrator.write_all(
+                self.connection_manager.get_connection(),
+                tables
+            )
+            
+            # Log results for each destination
+            for destination, destination_results in results.items():
+                self.logger.info(f"Results for {destination}:")
                 
-                # Only use partition columns that exist in the table
-                requested_partitions = self.parquet_writer.get_partition_columns()
-                partition_columns = [col for col in requested_partitions if col in available_columns]
-                
-                if partition_columns:
-                    self.logger.info(f"Using partition columns: {partition_columns}")
-            
-            # Write properties data to Parquet
-            if partition_columns:
-                # Write partitioned output
-                partition_dir = self.settings.data.output_path / f"partitioned_{timestamp}"
-                written_files = self.parquet_writer.write_partitioned(
-                    final_table,
-                    partition_dir,
-                    partition_columns
-                )
-                self.logger.success(f"Wrote {len(written_files)} partitioned files to {partition_dir}")
-                self.metrics["output_files"] = len(written_files)
-            else:
-                # Write single file
-                parquet_path = self.parquet_writer.write_with_schema(
-                    final_table,
-                    output_path
-                )
-                self.logger.success(f"Wrote properties to {parquet_path}")
-                self.metrics["output_files"] = 1
-            
-            # Validate output if configured
-            if self.settings.validate_output:
-                validation_file = output_path if not partition_columns else written_files[0] if written_files else None
-                if validation_file and self.parquet_writer.validate_output(validation_file):
-                    self.logger.success("Output validation passed")
+                if destination == "elasticsearch":
+                    # Elasticsearch results are WriteResult objects
+                    for result in destination_results:
+                        if result.is_successful():
+                            self.logger.success(
+                                f"  ✓ {result.entity_type.value}: {result.record_count} records "
+                                f"in {result.duration_seconds:.2f}s"
+                            )
+                        else:
+                            self.logger.error(
+                                f"  ✗ {result.entity_type.value}: {result.error}"
+                            )
                 else:
-                    self.logger.warning("Output validation failed")
+                    # Parquet results are dictionaries
+                    for result in destination_results:
+                        if result.get('success'):
+                            self.logger.success(
+                                f"  ✓ {result['entity_type']}: {result.get('record_count', 0)} records"
+                            )
+                        else:
+                            self.logger.error(
+                                f"  ✗ {result['entity_type']}: {result.get('error', 'Unknown error')}"
+                            )
             
-            # Write embeddings if available using Pydantic models
+            # Update metrics
+            self.metrics["output_destinations"] = len(results)
+            
+            # Write embeddings if available
             if self.embedded_nodes and self.embedding_writer:
-                embeddings_filename = f"embeddings_{self.settings.environment}_{timestamp}.parquet"
-                embeddings_path = self.settings.data.output_path / embeddings_filename
-                
-                # Get embedding pipeline metrics for Pydantic model
-                embedding_metrics = self.embedding_pipeline.get_pipeline_metrics() if self.embedding_pipeline else {}
-                
-                provider_name = self.settings.embedding.provider.value if hasattr(self.settings.embedding.provider, 'value') else str(self.settings.embedding.provider)
-                chunk_method_name = self.settings.processing.chunk_method.value if hasattr(self.settings.processing.chunk_method, 'value') else str(self.settings.processing.chunk_method)
-                model_name = getattr(self.settings.embedding, f"{provider_name}_model", "unknown")
-                
-                self.embedding_writer.write_embedding_batch(
-                    nodes=self.embedded_nodes,
-                    output_path=embeddings_path,
-                    provider=provider_name,
-                    model=model_name,
-                    processing_time=embedding_metrics.get("processing_time", 0.0),
-                    chunk_method=chunk_method_name,
-                    chunk_size=self.settings.processing.chunk_size,
-                    batch_size=self.settings.processing.batch_size
-                )
-                
-                self.logger.success(f"Wrote embeddings with Pydantic validation to {embeddings_path}")
-                self.metrics["embedding_files"] = 1
+                self._write_embeddings()
             
-            # Get output statistics
-            total_size_mb = self.parquet_writer.get_total_size() / (1024 * 1024)
-            self.metrics["output_size_mb"] = total_size_mb
-            self.logger.info(f"Total output size: {total_size_mb:.2f} MB")
+            # Close writer connections
+            writer_orchestrator.close()
             
         except Exception as e:
             self.logger.error(f"Output writing error: {e}")
             raise
     
-    def _get_final_table(self) -> Optional[str]:
-        """Get the most enriched table available for output."""
+    def _write_embeddings(self) -> None:
+        """Write embeddings to Parquet file."""
+        if not self.embedded_nodes or not self.embedding_writer:
+            return
+        
+        timestamp = int(time.time())
+        embeddings_filename = f"embeddings_{self.settings.environment}_{timestamp}.parquet"
+        embeddings_path = self.settings.data.output_path / embeddings_filename
+        
+        # Get embedding pipeline metrics
+        embedding_metrics = self.embedding_pipeline.get_pipeline_metrics() if self.embedding_pipeline else {}
+        
+        provider_name = str(self.settings.embedding.provider.value)
+        chunk_method_name = str(self.settings.processing.chunk_method.value)
+        model_name = self.settings.embedding.voyage_model  # Default to voyage model
+        
+        self.embedding_writer.write_embedding_batch(
+            nodes=self.embedded_nodes,
+            output_path=embeddings_path,
+            provider=provider_name,
+            model=model_name,
+            processing_time=embedding_metrics.get("processing_time", 0.0),
+            chunk_method=chunk_method_name,
+            chunk_size=self.settings.processing.chunk_size,
+            batch_size=self.settings.processing.batch_size
+        )
+        
+        self.logger.success(f"Wrote embeddings to {embeddings_path}")
+        self.metrics["embedding_files"] = 1
+    
+    def _get_final_table(self, entity_prefix: str = "properties") -> Optional[str]:
+        """Get the most enriched table available for output for a specific entity type."""
         connection = self.connection_manager.get_connection()
         
         # Try to get the latest enriched table first
         enriched_result = connection.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_enriched_%' ORDER BY table_name DESC LIMIT 1"
+            f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{entity_prefix}_enriched_%' ORDER BY table_name DESC LIMIT 1"
         ).fetchone()
         
         if enriched_result:
@@ -614,7 +601,7 @@ class PipelineOrchestrator:
         
         # Fall back to Gold tier
         gold_result = connection.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_gold_%' ORDER BY table_name DESC LIMIT 1"
+            f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{entity_prefix}_gold_%' ORDER BY table_name DESC LIMIT 1"
         ).fetchone()
         
         if gold_result:
@@ -622,13 +609,37 @@ class PipelineOrchestrator:
         
         # Fall back to Silver tier
         silver_result = connection.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_silver_%' ORDER BY table_name DESC LIMIT 1"
+            f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{entity_prefix}_silver_%' ORDER BY table_name DESC LIMIT 1"
         ).fetchone()
         
         if silver_result:
             return silver_result[0]
         
+        # Fall back to raw/bronze tier
+        bronze_result = connection.execute(
+            f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{entity_prefix}_bronze_%' ORDER BY table_name DESC LIMIT 1"
+        ).fetchone()
+        
+        if bronze_result:
+            return bronze_result[0]
+        
         return None
+    
+    def _get_all_final_tables(self) -> Dict[str, str]:
+        """Get the most enriched tables for all entity types."""
+        tables = {}
+        
+        # Get properties table
+        properties_table = self._get_final_table("properties")
+        if properties_table:
+            tables["properties"] = properties_table
+        
+        # For now, only properties are processed through the medallion architecture
+        # Neighborhoods and Wikipedia could be added later
+        # tables["neighborhoods"] = self._get_final_table("neighborhoods")
+        # tables["wikipedia"] = self._get_final_table("wikipedia")
+        
+        return tables
     
     def _finalize_pipeline(self) -> None:
         """Finalize pipeline execution and log metrics."""

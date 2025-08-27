@@ -14,6 +14,16 @@ from .config.config import AppConfig
 from .infrastructure.elasticsearch_client import ElasticsearchClientFactory, ElasticsearchClient
 from .indexer.index_manager import ElasticsearchIndexManager, IndexStatus
 from .indexer.enums import IndexName
+from .demo_queries import (
+    demo_basic_property_search,
+    demo_property_filter,
+    demo_geo_search,
+    demo_neighborhood_stats,
+    demo_price_distribution,
+    demo_semantic_search,
+    demo_multi_entity_search,
+    demo_wikipedia_search
+)
 
 
 def setup_logging(log_level: str = "INFO"):
@@ -423,6 +433,87 @@ class IndexManagementCLI:
                 return f"{bytes_count:.1f} {unit}"
             bytes_count /= 1024
         return f"{bytes_count:.1f} TB"
+    
+    def run_demo_query(self, demo_number: int, verbose: bool = False) -> bool:
+        """
+        Run a specific demo query.
+        
+        Args:
+            demo_number: Demo query number to run (1-8)
+            verbose: If True, show detailed query DSL
+            
+        Returns:
+            True if query executed successfully
+        """
+        # Map demo numbers to functions
+        demo_queries = {
+            1: (demo_basic_property_search, "Basic Property Search"),
+            2: (demo_property_filter, "Property Filter Search"),
+            3: (demo_geo_search, "Geographic Distance Search"),
+            4: (demo_neighborhood_stats, "Neighborhood Statistics"),
+            5: (demo_price_distribution, "Price Distribution Analysis"),
+            6: (demo_semantic_search, "Semantic Similarity Search"),
+            7: (demo_multi_entity_search, "Multi-Entity Combined Search"),
+            8: (demo_wikipedia_search, "Wikipedia Article Search")
+        }
+        
+        if demo_number not in demo_queries:
+            print(f"✗ Invalid demo number: {demo_number}")
+            print(f"Available demos: {', '.join(str(k) for k in demo_queries.keys())}")
+            return False
+        
+        query_func, query_name = demo_queries[demo_number]
+        
+        try:
+            print(f"\nRunning Demo {demo_number}: {query_name}")
+            print("=" * 60)
+            
+            # Execute the demo query
+            result = query_func(self.es_client.client)
+            
+            # Display results
+            print(result.display(verbose=verbose))
+            
+            self.logger.info(f"Successfully executed demo {demo_number}: {query_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to execute demo {demo_number}: {str(e)}")
+            print(f"✗ Error executing demo: {str(e)}")
+            return False
+    
+    def list_demo_queries(self) -> bool:
+        """
+        List all available demo queries with descriptions.
+        
+        Returns:
+            True always
+        """
+        print("\nAvailable Demo Queries:")
+        print("=" * 70)
+        
+        demos = [
+            (1, "Basic Property Search", "Multi-match search across property fields"),
+            (2, "Property Filter Search", "Filter by type, bedrooms, price, location"),
+            (3, "Geographic Distance Search", "Find properties within radius of point"),
+            (4, "Neighborhood Statistics", "Aggregate property stats by neighborhood"),
+            (5, "Price Distribution Analysis", "Histogram of prices by property type"),
+            (6, "Semantic Similarity Search", "Find similar properties using embeddings"),
+            (7, "Multi-Entity Combined Search", "Search across all entity types"),
+            (8, "Wikipedia Article Search", "Search Wikipedia with location filters")
+        ]
+        
+        for num, name, description in demos:
+            print(f"  {num}. {name}")
+            print(f"     {description}")
+            print()
+        
+        print("=" * 70)
+        print("\nUsage: python -m real_estate_search.management demo <number>")
+        print("Example: python -m real_estate_search.management demo 1")
+        print("\nAdd --verbose flag to see the actual Elasticsearch query DSL")
+        
+        return True
 
 
 def main():
@@ -438,19 +529,42 @@ Examples:
   python -m real_estate_search.management validate-embeddings     # Check vector embedding coverage
   python -m real_estate_search.management list-indices
   python -m real_estate_search.management delete-test-indices
+  python -m real_estate_search.management demo --list           # List all demo queries
+  python -m real_estate_search.management demo 1                # Run demo query 1
+  python -m real_estate_search.management demo 2 --verbose      # Run demo 2 with query DSL
         """
     )
     
     parser.add_argument(
         'command',
-        choices=['setup-indices', 'validate-indices', 'validate-embeddings', 'list-indices', 'delete-test-indices'],
+        choices=['setup-indices', 'validate-indices', 'validate-embeddings', 'list-indices', 'delete-test-indices', 'demo'],
         help='Management command to execute'
+    )
+    
+    parser.add_argument(
+        'demo_number',
+        type=int,
+        nargs='?',
+        choices=range(1, 9),
+        help='Demo query number to run (1-8)'
     )
     
     parser.add_argument(
         '--clear',
         action='store_true',
         help='For setup-indices: Delete existing indices first (complete reset for demo)'
+    )
+    
+    parser.add_argument(
+        '--list',
+        action='store_true',
+        help='For demo: List all available demo queries'
+    )
+    
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='For demo: Show detailed query DSL'
     )
     
     parser.add_argument(
@@ -496,6 +610,15 @@ Examples:
             success = cli.list_indices()
         elif args.command == 'delete-test-indices':
             success = cli.delete_indices([IndexName.TEST_PROPERTIES])
+        elif args.command == 'demo':
+            if args.list:
+                success = cli.list_demo_queries()
+            elif args.demo_number:
+                success = cli.run_demo_query(args.demo_number, verbose=args.verbose)
+            else:
+                print("Please specify a demo number (1-8) or use --list to see available demos")
+                print("Example: python -m real_estate_search.management demo 1")
+                success = False
         
         # Exit with appropriate code
         sys.exit(0 if success else 1)

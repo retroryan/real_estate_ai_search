@@ -69,6 +69,103 @@
     },
     "embedded_at": {
       "type": "date"
+    },
+    "wikipedia_correlations": {
+      "type": "nested",
+      "properties": {
+        "primary_wiki_article": {
+          "type": "object",
+          "properties": {
+            "page_id": {
+              "type": "long"
+            },
+            "title": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "url": {
+              "type": "keyword"
+            },
+            "confidence": {
+              "type": "float"
+            },
+            "relationship": {
+              "type": "keyword"
+            }
+          }
+        },
+        "related_wiki_articles": {
+          "type": "nested",
+          "properties": {
+            "page_id": {
+              "type": "long"
+            },
+            "title": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "url": {
+              "type": "keyword"
+            },
+            "confidence": {
+              "type": "float"
+            },
+            "relationship": {
+              "type": "keyword"
+            }
+          }
+        },
+        "parent_geography": {
+          "type": "object",
+          "properties": {
+            "city_wiki": {
+              "type": "object",
+              "properties": {
+                "page_id": {
+                  "type": "long"
+                },
+                "title": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "state_wiki": {
+              "type": "object",
+              "properties": {
+                "page_id": {
+                  "type": "long"
+                },
+                "title": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "generated_by": {
+          "type": "keyword"
+        },
+        "generated_at": {
+          "type": "date"
+        },
+        "source": {
+          "type": "keyword"
+        },
+        "updated_by": {
+          "type": "keyword"
+        }
+      }
+    },
+    "wikipedia_confidence_avg": {
+      "type": "float"
     }
   }
 }

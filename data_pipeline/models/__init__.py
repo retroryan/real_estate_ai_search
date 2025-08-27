@@ -28,6 +28,12 @@ from data_pipeline.models.spark_models import (
     Property,
     FlattenedProperty,
     
+    # Wikipedia correlation models
+    WikipediaArticleReference,
+    WikipediaGeoReference,
+    ParentGeography,
+    WikipediaCorrelations,
+    
     # Neighborhood models
     Demographics,
     Neighborhood,
@@ -72,6 +78,12 @@ __all__ = [
     "PriceHistory",
     "Property",
     "FlattenedProperty",
+    
+    # Spark models - Wikipedia correlations
+    "WikipediaArticleReference",
+    "WikipediaGeoReference",
+    "ParentGeography",
+    "WikipediaCorrelations",
     
     # Spark models - Neighborhood
     "Demographics",

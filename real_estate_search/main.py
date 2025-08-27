@@ -1,18 +1,17 @@
 """
-Main entry point for the Real Estate Search demo application.
-Uses dependency injection container for all operations.
+Main entry point for the Real Estate Search application.
+Works with pre-indexed data from data_pipeline.
 """
 
 import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import List
+from typing import Optional
 
-from config.config import AppConfig
-from container import DependencyContainer
-from search.models import SearchRequest
-from indexer.models import Property
+from real_estate_search.config.config import AppConfig
+from real_estate_search.container import DependencyContainer
+from real_estate_search.search.models import SearchRequest, SearchResponse
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(log_level: str):
+def setup_logging(log_level: str) -> None:
     """Configure logging based on the provided level."""
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
@@ -30,31 +29,16 @@ def setup_logging(log_level: str):
     logging.getLogger().setLevel(numeric_level)
 
 
-def run_ingestion(container: DependencyContainer, force_recreate: bool = False):
-    """
-    Run the data ingestion pipeline.
-    
-    Args:
-        container: Dependency container with all services
-        force_recreate: If True, recreate indices before ingestion
-    """
-    logger.info("Starting data ingestion pipeline")
-    
-    # Run ingestion through orchestrator
-    stats = container.ingestion_orchestrator.ingest_all(force_recreate=force_recreate)
-    
-    logger.info(f"Ingestion complete: {stats['indexed']} properties indexed, {stats['failed']} failed")
-    
-    return stats
-
-
-def run_search(container: DependencyContainer, query: str):
+def run_search(container: DependencyContainer, query: str) -> SearchResponse:
     """
     Run a search query and display results.
     
     Args:
         container: Dependency container with all services
         query: Search query text
+        
+    Returns:
+        SearchResponse with results
     """
     logger.info(f"Searching for: {query}")
     
@@ -86,9 +70,41 @@ def run_search(container: DependencyContainer, query: str):
     return response
 
 
-def run_demo(container: DependencyContainer):
+def validate_data_exists(container: DependencyContainer) -> bool:
     """
-    Run a full demo showing ingestion and search capabilities.
+    Validate that required data exists in indices.
+    
+    Args:
+        container: Dependency container with all services
+        
+    Returns:
+        True if data exists, False otherwise
+    """
+    try:
+        # Check if property index exists and has data
+        if not container.property_repository.index_exists():
+            logger.error(f"Property index '{container.config.elasticsearch.property_index}' does not exist")
+            logger.info("Please run the data_pipeline first to index data")
+            return False
+        
+        # Get document count
+        count = container.property_repository.count()
+        if count == 0:
+            logger.error("Property index exists but contains no documents")
+            logger.info("Please run the data_pipeline to index property data")
+            return False
+        
+        logger.info(f"Found {count} properties in index")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error checking data: {e}")
+        return False
+
+
+def run_demo(container: DependencyContainer) -> None:
+    """
+    Run demo searches on pre-indexed data.
     
     Args:
         container: Dependency container with all services
@@ -96,16 +112,14 @@ def run_demo(container: DependencyContainer):
     logger.info("Running Real Estate Search Demo")
     logger.info("=" * 50)
     
-    # Step 1: Create index
-    logger.info("\nStep 1: Creating property index")
-    container.indexing_service.create_index(force_recreate=True)
+    # Step 1: Validate data exists
+    logger.info("\nStep 1: Validating pre-indexed data")
+    if not validate_data_exists(container):
+        logger.error("Demo cannot run without data. Please run data_pipeline first.")
+        sys.exit(1)
     
-    # Step 2: Ingest data
-    logger.info("\nStep 2: Ingesting properties with Wikipedia enrichment")
-    stats = run_ingestion(container, force_recreate=False)
-    
-    # Step 3: Demo searches
-    logger.info("\nStep 3: Running demo searches")
+    # Step 2: Demo searches
+    logger.info("\nStep 2: Running demo searches")
     
     demo_queries = [
         "ski resort properties",
@@ -122,9 +136,11 @@ def run_demo(container: DependencyContainer):
     logger.info("\nDemo complete!")
 
 
-def main():
+def main() -> None:
     """Main entry point for the application."""
-    parser = argparse.ArgumentParser(description="Real Estate Search Demo Application")
+    parser = argparse.ArgumentParser(
+        description="Real Estate Search Application - Works with pre-indexed data from data_pipeline"
+    )
     
     # Configuration
     parser.add_argument(
@@ -137,16 +153,9 @@ def main():
     # Operation mode
     parser.add_argument(
         "--mode",
-        choices=["ingest", "search", "demo"],
+        choices=["search", "demo"],
         default="demo",
-        help="Operation mode: ingest data, search, or run full demo"
-    )
-    
-    # Ingestion options
-    parser.add_argument(
-        "--recreate",
-        action="store_true",
-        help="Recreate indices before ingestion"
+        help="Operation mode: search or demo"
     )
     
     # Search options
@@ -174,22 +183,21 @@ def main():
         logger.info(f"Loading configuration from {args.config}")
         config = AppConfig.from_yaml(args.config)
         
-        # Override force_recreate if specified
-        if args.recreate:
-            config.force_recreate = True
-        
         # Create dependency container
         logger.info("Initializing dependency container")
         container = DependencyContainer(config)
         
         # Execute based on mode
-        if args.mode == "ingest":
-            run_ingestion(container, force_recreate=args.recreate)
-        
-        elif args.mode == "search":
+        if args.mode == "search":
             if not args.query:
                 logger.error("Query is required for search mode")
                 sys.exit(1)
+            
+            # Validate data exists before searching
+            if not validate_data_exists(container):
+                logger.error("Cannot search without data. Please run data_pipeline first.")
+                sys.exit(1)
+            
             run_search(container, args.query)
         
         elif args.mode == "demo":

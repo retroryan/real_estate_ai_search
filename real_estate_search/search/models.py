@@ -8,9 +8,9 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from pydantic.types import NonNegativeInt, NonNegativeFloat, PositiveInt
 
-from indexer.enums import PropertyType, PropertyStatus, SortOrder, FieldName
-from indexer.models import Property, Address, Neighborhood
-from search.enums import QueryType, GeoDistanceUnit, AggregationName
+from real_estate_search.indexer.enums import PropertyType, PropertyStatus, SortOrder, FieldName
+from real_estate_search.indexer.models import Property, Address, Neighborhood
+from real_estate_search.search.enums import QueryType, GeoDistanceUnit, AggregationName
 
 
 class GeoPoint(BaseModel):
@@ -170,7 +170,7 @@ class StatsAggregation(Aggregation):
 
 class SearchResponse(BaseModel):
     """Complete search response model."""
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, arbitrary_types_allowed=True)
     
     # Results
     hits: List[PropertyHit] = Field(default_factory=list)
@@ -188,7 +188,7 @@ class SearchResponse(BaseModel):
     aggregations: Optional[Dict[AggregationName, Union[BucketAggregation, StatsAggregation]]] = None
     
     # Request echo
-    request: SearchRequest
+    request: Optional[SearchRequest] = None
     
     @classmethod
     def from_elasticsearch(

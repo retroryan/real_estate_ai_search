@@ -8,8 +8,8 @@ from elasticsearch import Elasticsearch, helpers
 from elasticsearch.exceptions import ApiError
 import logging
 
-from indexer.models import Property, PropertyDocument, IndexStats
-from search.models import SearchRequest, SearchResponse, PropertyHit
+from real_estate_search.indexer.models import Property, PropertyDocument, IndexStats
+from real_estate_search.search.models import SearchRequest, SearchResponse, PropertyHit
 
 logger = logging.getLogger(__name__)
 
