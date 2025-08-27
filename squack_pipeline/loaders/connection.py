@@ -1,16 +1,19 @@
-"""DuckDB connection management for the pipeline."""
+"""DuckDB connection management following best practices."""
 
-from pathlib import Path
-from typing import Optional, Dict, Any
-
+from contextlib import contextmanager
+from typing import Optional, Any, Generator
 import duckdb
 
+from squack_pipeline.models.duckdb_models import (
+    DuckDBConnectionConfig,
+    TableIdentifier
+)
 from squack_pipeline.config.settings import PipelineSettings
-from squack_pipeline.utils.logging import PipelineLogger, log_execution_time
+from squack_pipeline.utils.logging import PipelineLogger
 
 
 class DuckDBConnectionManager:
-    """Singleton DuckDB connection manager."""
+    """DuckDB connection manager following best practices."""
     
     _instance: Optional['DuckDBConnectionManager'] = None
     _connection: Optional[duckdb.DuckDBPyConnection] = None
@@ -19,122 +22,192 @@ class DuckDBConnectionManager:
         """Ensure singleton instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance.initialized = False
+            cls._instance.database_path = ":memory:"
+            cls._instance.logger = PipelineLogger.get_logger(cls.__name__)
+            cls._instance.config = None
         return cls._instance
     
-    def __init__(self):
-        """Initialize connection manager."""
-        if not hasattr(self, 'initialized'):
-            self.logger = PipelineLogger.get_logger(self.__class__.__name__)
-            self.settings: Optional[PipelineSettings] = None
-            self.initialized = True
-    
-    @log_execution_time
     def initialize(self, settings: PipelineSettings) -> None:
-        """Initialize connection with settings."""
-        self.settings = settings
+        """Initialize connection with validated configuration."""
+        # Build config from settings
+        config = DuckDBConnectionConfig(
+            database_path=settings.duckdb.database_path,
+            memory_limit=settings.duckdb.memory_limit,
+            threads=settings.duckdb.threads,
+            preserve_insertion_order=settings.duckdb.preserve_insertion_order,
+        )
         
-        if self._connection is not None:
-            self.logger.info("DuckDB connection already initialized")
-            return
+        if self.initialized and self._connection:
+            if self.database_path == config.database_path:
+                self.logger.info(f"Connection already initialized to {self.database_path}")
+                return
+            else:
+                # Different database requested, close existing
+                self.close()
         
-        # Create connection
-        db_path = settings.duckdb.database_path
-        self._connection = duckdb.connect(db_path)
+        # Create new connection with config
+        duckdb_config = config.to_duckdb_config()
+        self._connection = duckdb.connect(
+            database=config.database_path,
+            config=duckdb_config
+        )
         
-        # Configure DuckDB settings
-        self._configure_duckdb()
+        # Store config and update state
+        self.config = config
+        self.initialized = True
+        self.database_path = str(config.database_path)
         
-        self.logger.info(f"DuckDB connection initialized: {db_path}")
+        # Apply any additional parquet settings
+        self._apply_parquet_settings(settings)
+        
+        self.logger.info(f"DuckDB initialized: {config.database_path}")
     
-    def _configure_duckdb(self) -> None:
-        """Configure DuckDB with optimal settings."""
-        if not self._connection or not self.settings:
+    def _apply_parquet_settings(self, settings: PipelineSettings) -> None:
+        """Apply parquet-specific settings that can't be set in config."""
+        if not self._connection:
             return
-        
-        config = self.settings.duckdb
-        
-        # Memory and performance settings
-        self._connection.execute(f"SET memory_limit = '{config.memory_limit}'")
-        self._connection.execute(f"SET threads = {config.threads}")
-        
-        # Progress and output settings
-        if config.enable_progress_bar:
-            self._connection.execute("SET enable_progress_bar = true")
-        
-        if config.preserve_insertion_order:
-            self._connection.execute("SET preserve_insertion_order = true")
-        
-        # Parquet settings (DuckDB 1.0+ uses different parameter name)
-        parquet_config = self.settings.parquet
+            
         try:
-            self._connection.execute(f"SET force_compression = '{parquet_config.compression}'")
+            compression = settings.parquet.compression
+            self._connection.execute(f"SET force_compression = '{compression}'")
         except Exception:
-            # Fallback for different DuckDB versions
-            self.logger.debug("Could not set compression setting, using defaults")
-        
-        self.logger.debug("DuckDB configuration applied")
+            self.logger.debug("Could not set parquet compression, using defaults")
     
     def get_connection(self) -> duckdb.DuckDBPyConnection:
-        """Get the DuckDB connection."""
-        if self._connection is None:
-            raise RuntimeError("DuckDB connection not initialized. Call initialize() first.")
+        """Get the raw connection."""
+        if not self._connection:
+            raise RuntimeError("Connection not initialized. Call initialize() first.")
         return self._connection
     
-    def execute_query(self, query: str, params: Optional[tuple] = None) -> Any:
-        """Execute a query and return results."""
-        connection = self.get_connection()
+    @contextmanager
+    def get_connection_context(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
+        """Get connection as context manager for safety."""
+        if not self._connection:
+            raise RuntimeError("Connection not initialized. Call initialize() first.")
         
-        if params:
-            return connection.execute(query, params)
-        else:
-            return connection.execute(query)
+        try:
+            yield self._connection
+        except Exception as e:
+            self.logger.error(f"Error in DuckDB operation: {e}")
+            raise
     
-    def get_table_info(self, table_name: str) -> Dict[str, Any]:
-        """Get information about a table."""
-        connection = self.get_connection()
+    def execute_safe(self, query: str, params: Optional[tuple] = None) -> Any:
+        """Execute query safely with proper error handling."""
+        if not self._connection:
+            raise RuntimeError("Connection not initialized. Call initialize() first.")
         
-        # Check if table exists
-        result = connection.execute(
-            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?",
-            (table_name,)
-        ).fetchone()
+        try:
+            if params:
+                return self._connection.execute(query, params)
+            return self._connection.execute(query)
+        except Exception as e:
+            self.logger.error(f"Error executing query: {e}")
+            raise
+    
+    def execute(self, query: str, params: Optional[tuple] = None) -> Any:
+        """Execute query and return result."""
+        with self.get_connection_context() as conn:
+            if params:
+                return conn.execute(query, params)
+            else:
+                return conn.execute(query)
+    
+    def execute_on_table(self, table: TableIdentifier, operation: str, **kwargs) -> Any:
+        """Execute operation on a validated table."""
+        operations = {
+            'count': f"SELECT COUNT(*) FROM {table.qualified_name}",
+            'describe': f"DESCRIBE {table.qualified_name}",
+            'drop': f"DROP TABLE IF EXISTS {table.qualified_name}",
+            'truncate': f"TRUNCATE {table.qualified_name}",
+        }
         
-        if not result or result[0] == 0:
+        if operation not in operations:
+            raise ValueError(f"Unknown operation: {operation}")
+        
+        query = operations[operation]
+        
+        # Add LIMIT if provided
+        if operation == 'select' and 'limit' in kwargs:
+            query = f"SELECT * FROM {table.qualified_name} LIMIT {int(kwargs['limit'])}"
+        
+        return self.execute(query)
+    
+    def table_exists(self, table: TableIdentifier) -> bool:
+        """Check if table exists using safe query."""
+        result = self.execute_safe(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
+            (table.name, table.schema if table.schema else 'main')
+        )
+        row = result.fetchone() if result else None
+        return bool(row and row[0] > 0)
+    
+    def get_table_info(self, table: TableIdentifier) -> dict:
+        """Get table information safely."""
+        if not self.table_exists(table):
             return {"exists": False}
         
-        # Get table schema
-        schema_result = connection.execute(
-            "SELECT column_name, data_type, is_nullable "
-            "FROM information_schema.columns WHERE table_name = ?",
-            (table_name,)
-        ).fetchall()
+        # Get schema
+        schema_result = self.execute_safe(
+            "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
+            (table.name, table.schema)
+        )
+        schema_rows = schema_result.fetchall() if schema_result else []
         
-        # Get row count
-        count_result = connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+        # Get row count - table is pre-validated
+        count_result = self.execute_safe(
+            f"SELECT COUNT(*) FROM {table.qualified_name}"
+        )
+        count_row = count_result.fetchone() if count_result else None
         
         return {
             "exists": True,
-            "row_count": count_result[0] if count_result else 0,
+            "row_count": count_row[0] if count_row else 0,
             "schema": [
                 {"name": row[0], "type": row[1], "nullable": row[2] == "YES"}
-                for row in schema_result
+                for row in schema_rows
             ]
         }
     
     def list_tables(self) -> list[str]:
         """List all tables in the database."""
-        connection = self.get_connection()
-        result = connection.execute(
-            "SELECT table_name FROM information_schema.tables"
-        ).fetchall()
-        return [row[0] for row in result]
+        result = self.execute_safe(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+        )
+        rows = result.fetchall() if result else []
+        return [row[0] for row in rows]
+    
+    def drop_table(self, table: TableIdentifier, if_exists: bool = True) -> None:
+        """Safely drop a table."""
+        if_exists_clause = "IF EXISTS" if if_exists else ""
+        query = f"DROP TABLE {if_exists_clause} {table.qualified_name}"
+        self.execute_safe(query)
+    
+    def execute_on_table(self, table: TableIdentifier, query_template: str) -> Any:
+        """Execute query on validated table."""
+        # Table name is pre-validated by Pydantic
+        query = query_template.format(table=table.qualified_name)
+        return self.execute_safe(query)
+    
+    def table_exists(self, table: TableIdentifier) -> bool:
+        """Check if table exists using safe query."""
+        result = self.execute_safe(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
+            (table.name, table.schema)
+        )
+        row = result.fetchone()
+        return bool(row and row[0] > 0)
     
     def close(self) -> None:
-        """Close the DuckDB connection."""
+        """Close the connection and reset state."""
         if self._connection:
             self._connection.close()
             self._connection = None
-            self.logger.info("DuckDB connection closed")
+        
+        self.initialized = False
+        self.database_path = ":memory:"
+        self.config = None
+        self.logger.info("Connection closed and state reset")
     
     def __enter__(self) -> 'DuckDBConnectionManager':
         """Context manager entry."""
@@ -144,4 +217,4 @@ class DuckDBConnectionManager:
         """Context manager exit."""
         if exc_type:
             self.logger.error(f"Exception in DuckDB context: {exc_val}")
-        # Don't close connection automatically - let it be reused
+        # Don't auto-close - allow reuse across pipeline

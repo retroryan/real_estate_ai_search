@@ -72,7 +72,7 @@ class IndexMapping(BaseModel):
     
     entity_type: EntityType = Field(description="Entity type")
     id_field: str = Field(description="Document ID field")
-    geo_fields: Optional[Dict[str, str]] = Field(
+    geo_fields: Optional[Dict[str, Dict[str, str]]] = Field(
         default=None,
         description="Mapping of geo_point field to lat/lon source fields"
     )

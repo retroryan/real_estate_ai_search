@@ -41,7 +41,7 @@ class Neighborhood(BaseModel):
     """Neighborhood information."""
     model_config = ConfigDict(str_strip_whitespace=True)
     
-    id: str = Field(..., min_length=1, max_length=50)
+    neighborhood_id: str = Field(..., min_length=1, max_length=50)
     name: str = Field(..., min_length=1, max_length=100)
     walkability_score: Optional[int] = Field(None, ge=0, le=100)
     school_rating: Optional[float] = Field(None, ge=0, le=10)
@@ -208,7 +208,7 @@ class PropertyDocument(BaseModel):
         # Add neighborhood if available
         if prop.neighborhood:
             doc_dict['neighborhood'] = {
-                'id': prop.neighborhood.id,
+                'neighborhood_id': prop.neighborhood.neighborhood_id,
                 'name': prop.neighborhood.name,
                 'walkability_score': prop.neighborhood.walkability_score,
                 'school_rating': prop.neighborhood.school_rating,

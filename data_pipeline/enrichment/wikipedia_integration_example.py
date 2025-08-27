@@ -103,7 +103,7 @@ def integration_with_search_pipeline():
     """
     Example of how the enriched data integrates with search pipeline builders.
     """
-    from search_pipeline.builders.property_builder import PropertyDocumentBuilder
+    from data_pipeline.search_pipeline.builders.property_builder import PropertyDocumentBuilder
     
     # After enrichment, the DataFrame contains all the fields needed by
     # the search pipeline builders to create structured documents

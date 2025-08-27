@@ -6,8 +6,8 @@ Tests transformation of property DataFrames into PropertyDocument models.
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from search_pipeline.builders.property_builder import PropertyDocumentBuilder
-from search_pipeline.models.documents import PropertyDocument
+from data_pipeline.search_pipeline.builders.property_builder import PropertyDocumentBuilder
+from data_pipeline.search_pipeline.models.documents import PropertyDocument
 
 
 def create_mock_row(data):

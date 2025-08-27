@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Dict, Any
 import json
 
-from .config.config import AppConfig
+from .config import AppConfig
 from .infrastructure.elasticsearch_client import ElasticsearchClientFactory, ElasticsearchClient
 from .indexer.index_manager import ElasticsearchIndexManager, IndexStatus
 from .indexer.enums import IndexName
@@ -593,7 +593,7 @@ Examples:
         
         # Override log level if specified
         if args.log_level:
-            config.log_level = args.log_level
+            config.logging.level = args.log_level.upper()
         
         # Initialize CLI
         cli = IndexManagementCLI(config)

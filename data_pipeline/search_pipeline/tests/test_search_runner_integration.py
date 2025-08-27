@@ -9,9 +9,9 @@ from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 from pyspark.sql import SparkSession
 
-from search_pipeline.core.search_runner import SearchPipelineRunner
-from search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig, BulkWriteConfig
-from search_pipeline.models.documents import PropertyDocument, NeighborhoodDocument, WikipediaDocument
+from data_pipeline.search_pipeline.core.search_runner import SearchPipelineRunner
+from data_pipeline.search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig, BulkWriteConfig
+from data_pipeline.search_pipeline.models.documents import PropertyDocument, NeighborhoodDocument, WikipediaDocument
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_search_runner_initialization(spark_session, search_config):
     assert "wikipedia" in runner.builders
     
     # Check builder types
-    from search_pipeline.builders import PropertyDocumentBuilder, NeighborhoodDocumentBuilder, WikipediaDocumentBuilder
+    from data_pipeline.search_pipeline.builders import PropertyDocumentBuilder, NeighborhoodDocumentBuilder, WikipediaDocumentBuilder
     assert isinstance(runner.builders["properties"], PropertyDocumentBuilder)
     assert isinstance(runner.builders["neighborhoods"], NeighborhoodDocumentBuilder)
     assert isinstance(runner.builders["wikipedia"], WikipediaDocumentBuilder)

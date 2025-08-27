@@ -7,7 +7,7 @@ from elasticsearch import Elasticsearch
 from typing import Dict, Any, List
 import logging
 
-from ..config.config import ElasticsearchConfig
+from ..config import ElasticsearchConfig
 
 logger = logging.getLogger(__name__)
 
@@ -35,37 +35,14 @@ class ElasticsearchClientFactory:
         Returns:
             Configured Elasticsearch client ready for use
         """
-        # Build connection configuration
+        # Get client configuration from Pydantic model
+        client_config = self.config.get_client_config()
+        
+        # Log connection info
         if self.config.cloud_id:
-            # Elastic Cloud configuration
-            client_config = {
-                "cloud_id": self.config.cloud_id,
-                "request_timeout": self.config.request_timeout
-            }
-            
-            # Add authentication
-            if self.config.api_key:
-                client_config["api_key"] = self.config.api_key
-            elif self.config.username and self.config.password:
-                client_config["basic_auth"] = (self.config.username, self.config.password)
-            
             logger.info("Creating Elasticsearch client for Elastic Cloud")
         else:
-            # Standard Elasticsearch configuration
-            url = f"http://{self.config.host}:{self.config.port}"
-            client_config = {
-                "hosts": [url],
-                "request_timeout": self.config.request_timeout,
-                "verify_certs": self.config.verify_certs
-            }
-            
-            # Add authentication if provided
-            if self.config.api_key:
-                client_config["api_key"] = self.config.api_key
-            elif self.config.username and self.config.password:
-                client_config["basic_auth"] = (self.config.username, self.config.password)
-            
-            logger.info(f"Creating Elasticsearch client for {url}")
+            logger.info(f"Creating Elasticsearch client for {self.config.url}")
         
         # Create and return client
         client = Elasticsearch(**client_config)

@@ -8,6 +8,7 @@ import duckdb
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.writers.parquet_writer import ParquetWriter
 from squack_pipeline.writers.elasticsearch import ElasticsearchWriter, EntityType, WriteResult
+from squack_pipeline.models.duckdb_models import TableIdentifier
 from squack_pipeline.utils.logging import PipelineLogger
 
 
@@ -123,9 +124,10 @@ class WriterOrchestrator:
                     output_path
                 )
                 
-                # Get record count
+                # Get record count safely
+                safe_table = TableIdentifier(name=table_name)
                 record_count = connection.execute(
-                    f"SELECT COUNT(*) FROM {table_name}"
+                    f"SELECT COUNT(*) FROM {safe_table.qualified_name}"
                 ).fetchone()[0]
                 
                 results.append({
@@ -187,8 +189,9 @@ class WriterOrchestrator:
             try:
                 self.logger.info(f"Extracting {entity_type_str} from {table_name}...")
                 
-                # Extract data from DuckDB as DataFrame
-                df = connection.execute(f"SELECT * FROM {table_name}").df()
+                # Extract data from DuckDB as DataFrame safely
+                safe_table = TableIdentifier(name=table_name)
+                df = connection.execute(f"SELECT * FROM {safe_table.qualified_name}").df()
                 
                 # Convert DataFrame to list of dictionaries
                 data = df.to_dict('records')

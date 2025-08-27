@@ -7,6 +7,7 @@ import pyarrow.parquet as pq
 
 from squack_pipeline.config.settings import PipelineSettings, ParquetConfig
 from squack_pipeline.writers.base import BaseWriter, PartitionedWriter
+from squack_pipeline.models.duckdb_models import TableIdentifier
 from squack_pipeline.utils.logging import PipelineLogger, log_execution_time
 
 
@@ -39,9 +40,12 @@ class ParquetWriter(PartitionedWriter):
         # Build DuckDB COPY statement with Parquet options
         copy_options = self._build_copy_options()
         
+        # Validate table name for safety
+        safe_table = TableIdentifier(name=table_name)
+        
         # Execute COPY TO PARQUET with options
         query = f"""
-        COPY (SELECT * FROM {table_name})
+        COPY (SELECT * FROM {safe_table.qualified_name})
         TO '{output_path}' 
         (FORMAT PARQUET{copy_options})
         """
@@ -51,7 +55,7 @@ class ParquetWriter(PartitionedWriter):
             self.connection.execute(query)
             
             # Cache the schema for validation
-            schema_query = f"DESCRIBE {table_name}"
+            schema_query = f"DESCRIBE {safe_table.qualified_name}"
             schema_result = self.connection.execute(schema_query).fetchall()
             self.schema_cache[str(output_path)] = {
                 row[0]: row[1] for row in schema_result

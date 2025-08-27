@@ -1,6 +1,10 @@
 # Configuration for Real Estate Search System
 # Works with pre-indexed data from data_pipeline
 
+environment: development
+debug: false
+demo_mode: true
+
 elasticsearch:
   host: localhost
   port: 9200
@@ -13,13 +17,32 @@ elasticsearch:
   wiki_chunks_index_prefix: wiki_chunks
   wiki_summaries_index_prefix: wiki_summaries
   request_timeout: 30
+  verify_certs: false
 
-# Wikipedia data location for enrichment lookups
+index:
+  name: properties
+  alias: properties_alias
+  shards: 1
+  replicas: 1
+  refresh_interval: 1s
+
+search:
+  default_size: 20
+  max_size: 100
+  default_sort: relevance
+  highlight_enabled: true
+  aggregations_enabled: true
+  enable_fuzzy: true
+
+indexing:
+  batch_size: 100
+  parallel_threads: 4
+  refresh_after_index: true
+  validate_before_index: true
+
+logging:
+  level: INFO
+  structured: false
+
 data:
   wikipedia_db: ../data/wikipedia/wikipedia.db
-
-# Search settings
-demo_mode: true
-
-# Logging
-log_level: INFO

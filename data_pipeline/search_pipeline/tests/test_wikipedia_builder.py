@@ -7,8 +7,8 @@ Tests transformation of Wikipedia DataFrames into WikipediaDocument models.
 import pytest
 from unittest.mock import Mock
 from datetime import datetime
-from search_pipeline.builders.wikipedia_builder import WikipediaDocumentBuilder
-from search_pipeline.models.documents import WikipediaDocument
+from data_pipeline.search_pipeline.builders.wikipedia_builder import WikipediaDocumentBuilder
+from data_pipeline.search_pipeline.models.documents import WikipediaDocument
 
 
 def create_mock_row(data):

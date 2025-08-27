@@ -20,7 +20,7 @@ from .input_schemas import (
     PriceHistoryInput,
     NeighborhoodCharacteristicsInput,
     NeighborhoodDemographicsInput,
-    GraphMetadataInput,
+    WikipediaCorrelationsInput,
 )
 
 from .output_schemas import (
@@ -61,7 +61,7 @@ __all__ = [
     "PriceHistoryInput",
     "NeighborhoodCharacteristicsInput",
     "NeighborhoodDemographicsInput", 
-    "GraphMetadataInput",
+    "WikipediaCorrelationsInput",
     
     # Nested output models
     "AddressModel",

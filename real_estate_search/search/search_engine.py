@@ -9,7 +9,7 @@ import logging
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ApiError
 
-from config.settings import Settings
+from ..config import AppConfig
 from .models import SearchRequest, SearchResponse, Aggregation
 from .enums import QueryType
 
@@ -32,31 +32,18 @@ class SearchEngine:
         self,
         es_client: Optional[Elasticsearch] = None,
         index_name: str = "properties",
-        settings: Optional[Settings] = None
+        config: Optional[AppConfig] = None
     ):
         """Initialize the search engine."""
-        self.settings = settings or Settings.load()
+        self.config = config or AppConfig.load()
         self.es_client = es_client or self._create_es_client()
         self.index_name = index_name
     
     def _create_es_client(self) -> Elasticsearch:
         """Create Elasticsearch client."""
-        # Build proper URL with scheme from settings
-        url = f"{self.settings.elasticsearch.scheme}://{self.settings.elasticsearch.host}:{self.settings.elasticsearch.port}"
-        
-        es_config = {
-            "hosts": [url],
-            "verify_certs": self.settings.elasticsearch.verify_certs,
-            "request_timeout": self.settings.elasticsearch.timeout
-        }
-        
-        if self.settings.elasticsearch.has_auth:
-            es_config["basic_auth"] = (
-                self.settings.elasticsearch.username,
-                self.settings.elasticsearch.password
-            )
-        
-        return Elasticsearch(**es_config)
+        # Get client configuration from Pydantic config
+        client_config = self.config.elasticsearch.get_client_config()
+        return Elasticsearch(**client_config)
     
     def search(self, request: SearchRequest) -> SearchResponse:
         """

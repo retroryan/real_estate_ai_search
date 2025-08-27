@@ -7,7 +7,7 @@ from pathlib import Path
 from elasticsearch import Elasticsearch
 import logging
 
-from real_estate_search.config.config import AppConfig
+from real_estate_search.config import AppConfig
 from real_estate_search.infrastructure.elasticsearch_client import ElasticsearchClientFactory
 from real_estate_search.repositories.property_repository import PropertyRepository
 from real_estate_search.services.search_service import SearchService

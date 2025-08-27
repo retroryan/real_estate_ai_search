@@ -1,6 +1,6 @@
 {
   "properties": {
-    "id": {
+    "neighborhood_id": {
       "type": "keyword"
     },
     "name": {
@@ -71,7 +71,7 @@
       "type": "date"
     },
     "wikipedia_correlations": {
-      "type": "nested",
+      "type": "object",
       "properties": {
         "primary_wiki_article": {
           "type": "object",
@@ -99,7 +99,7 @@
           }
         },
         "related_wiki_articles": {
-          "type": "nested",
+          "type": "object",
           "properties": {
             "page_id": {
               "type": "long"

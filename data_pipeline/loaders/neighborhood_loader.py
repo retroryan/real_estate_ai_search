@@ -33,7 +33,7 @@ class NeighborhoodLoader(BaseLoader):
     def _transform_to_entity_schema(self, df: DataFrame, source_path: str) -> DataFrame:
         """
         Transform raw neighborhood data to neighborhood-specific schema.
-        Preserves Wikipedia correlations from graph_metadata field.
+        Preserves Wikipedia correlations from wikipedia_correlations field.
         
         Args:
             df: Raw neighborhood DataFrame
@@ -42,18 +42,11 @@ class NeighborhoodLoader(BaseLoader):
         Returns:
             DataFrame conforming to neighborhood-specific schema
         """
-        # Check if graph_metadata exists in the schema
-        has_graph_metadata = "graph_metadata" in df.columns
+        # Check if wikipedia_correlations exists
+        has_wikipedia_correlations = "wikipedia_correlations" in df.columns
         
-        if has_graph_metadata:
-            # Rename graph_metadata to wikipedia_correlations
-            df = df.withColumnRenamed("graph_metadata", "wikipedia_correlations")
-        else:
-            # Add null wikipedia_correlations if not present
-            df = df.withColumn("wikipedia_correlations", lit(None))
-        
-        # Select all fields defined in the Neighborhood model
-        return df.select(
+        # Build list of columns to select
+        select_columns = [
             col("neighborhood_id"),
             col("name"),
             col("city"),
@@ -61,8 +54,14 @@ class NeighborhoodLoader(BaseLoader):
             col("description"),
             col("amenities"),
             col("demographics"),  # Keep demographics as nested structure
-            col("wikipedia_correlations")  # Preserve Wikipedia correlations
-        )
+        ]
+        
+        if has_wikipedia_correlations:
+            # Add wikipedia_correlations column
+            select_columns.append(col("wikipedia_correlations"))
+        
+        # Select all fields
+        return df.select(*select_columns)
     
     def validate(self, df: DataFrame) -> bool:
         """

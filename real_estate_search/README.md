@@ -158,16 +158,52 @@ real_estate_search/
 
 ## Data Pipeline Integration
 
-This application works with data indexed by the data_pipeline:
+### Complete Data Pipeline Flow
 
-1. **Run data_pipeline** to index properties with embeddings
-2. **Use this application** to search the indexed data
-3. **No ingestion** happens in this application
+The system follows a three-phase data pipeline architecture:
+
+#### Phase 1: Index Setup (real_estate_search)
+- **Purpose**: Create and configure Elasticsearch indexes with proper mappings
+- **Location**: `real_estate_search/management.py`
+- **Command**: `python -m real_estate_search.management setup-indices --clear`
+- **Creates**: Properties, neighborhoods, and Wikipedia article indexes with defined mappings
+- **Templates**: Index mappings located in `real_estate_search/elasticsearch/templates/`
+
+#### Phase 2: Data Ingestion (data_pipeline)
+- **Purpose**: Load, enrich, and index data into Elasticsearch
+- **Location**: `data_pipeline/`
+- **Command**: `python -m data_pipeline`
+- **Process**:
+  1. Loads raw property data from JSON files
+  2. Enriches with neighborhood and Wikipedia correlations
+  3. Generates embeddings for semantic search
+  4. Writes enriched documents to Elasticsearch indexes
+- **Output**: Fully indexed and enriched documents in Elasticsearch
+
+#### Phase 3: Search Operations (real_estate_search)
+- **Purpose**: Query and retrieve indexed data
+- **Location**: `real_estate_search/`
+- **Command**: `python -m real_estate_search.main`
+- **Features**: Full-text search, semantic search, filtering, and faceted navigation
+
+### Execution Order
+
+```bash
+# 1. Setup Elasticsearch indexes with mappings
+python -m real_estate_search.management setup-indices --clear
+
+# 2. Run data pipeline to ingest and enrich data
+python -m data_pipeline
+
+# 3. Search the indexed data
+python -m real_estate_search.main --mode demo
+```
 
 The separation ensures:
 - Clean architecture with single responsibility
 - Data pipeline handles all ETL and enrichment
 - Search application focuses on query and retrieval
+- Index mappings are defined before data ingestion
 
 ## Search Examples
 

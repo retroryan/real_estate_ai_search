@@ -349,7 +349,7 @@ class DataPipelineRunner:
         Returns:
             SearchPipelineConfig instance
         """
-        from search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig
+        from data_pipeline.search_pipeline.models.config import SearchPipelineConfig, ElasticsearchConfig
         
         # Check if Elasticsearch is enabled in output destinations
         search_enabled = "elasticsearch" in self.config.output.enabled_destinations

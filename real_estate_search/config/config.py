@@ -1,15 +1,18 @@
 """
-Comprehensive configuration for the entire real estate search system using Pydantic.
+Unified configuration for the entire real estate search system using Pydantic.
 Single source of truth with clean constructor injection patterns.
+Supports both environment variables and YAML configuration.
 """
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, Dict, Any, Literal
 from pathlib import Path
+from pydantic import BaseModel, Field, computed_field, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+import os
 import yaml
 import logging
-import os
-from dotenv import load_dotenv
+from enum import Enum
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,71 +20,605 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+class Environment(str, Enum):
+    """Application environment enumeration."""
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    DEMO = "demo"
+
+
 class ElasticsearchConfig(BaseModel):
-    """Elasticsearch configuration with validation."""
-    host: str = Field(default="localhost", description="Elasticsearch host")
-    port: int = Field(default=9200, description="Elasticsearch port", ge=1, le=65535)
-    username: Optional[str] = Field(default=None, description="Username for basic auth")
-    password: Optional[str] = Field(default=None, description="Password for basic auth")
-    api_key: Optional[str] = Field(default=None, description="API key for authentication")
-    cloud_id: Optional[str] = Field(default=None, description="Elastic Cloud ID")
-    property_index: str = Field(default="properties", description="Property index name")
-    wiki_chunks_index_prefix: str = Field(default="wiki_chunks", description="Wikipedia chunks index prefix")
-    wiki_summaries_index_prefix: str = Field(default="wiki_summaries", description="Wikipedia summaries index prefix")
-    request_timeout: int = Field(default=30, description="Request timeout in seconds", gt=0)
-    verify_certs: bool = Field(default=False, description="Verify SSL certificates")
+    """
+    Elasticsearch configuration with comprehensive validation.
+    Handles both standard Elasticsearch and Elastic Cloud connections.
+    """
     
-    def model_post_init(self, __context):
-        """Load credentials from environment if not provided."""
-        if self.username is None:
-            self.username = os.getenv("ES_USERNAME") or os.getenv("ELASTICSEARCH_USERNAME")
-        if self.password is None:
-            self.password = os.getenv("ES_PASSWORD") or os.getenv("ELASTICSEARCH_PASSWORD")
-        if self.api_key is None:
-            self.api_key = os.getenv("ES_API_KEY") or os.getenv("ELASTICSEARCH_API_KEY")
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True,
+        use_enum_values=True,
+        str_strip_whitespace=True
+    )
+    
+    # Connection settings
+    host: str = Field(
+        default="localhost",
+        min_length=1,
+        description="Elasticsearch host"
+    )
+    port: int = Field(
+        default=9200,
+        ge=1,
+        le=65535,
+        description="Elasticsearch port"
+    )
+    scheme: Literal["http", "https"] = Field(
+        default="http",
+        description="Connection scheme"
+    )
+    
+    # Authentication
+    username: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="Username for basic auth"
+    )
+    password: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="Password for basic auth"
+    )
+    api_key: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="API key for authentication"
+    )
+    cloud_id: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="Elastic Cloud ID"
+    )
+    
+    # Security settings
+    verify_certs: bool = Field(
+        default=False,
+        description="Verify SSL certificates"
+    )
+    ca_certs: Optional[Path] = Field(
+        default=None,
+        description="Path to CA certificate bundle"
+    )
+    
+    # Connection behavior
+    request_timeout: int = Field(
+        default=30,
+        gt=0,
+        le=300,
+        description="Request timeout in seconds"
+    )
+    retry_on_timeout: bool = Field(
+        default=True,
+        description="Retry requests on timeout"
+    )
+    max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Maximum number of retries"
+    )
+    
+    # Index names
+    property_index: str = Field(
+        default="properties",
+        min_length=1,
+        max_length=255,
+        description="Property index name"
+    )
+    wiki_chunks_index_prefix: str = Field(
+        default="wiki_chunks",
+        min_length=1,
+        max_length=255,
+        description="Wikipedia chunks index prefix"
+    )
+    wiki_summaries_index_prefix: str = Field(
+        default="wiki_summaries",
+        min_length=1,
+        max_length=255,
+        description="Wikipedia summaries index prefix"
+    )
+    
+    @computed_field
+    @property
+    def url(self) -> str:
+        """Compute full Elasticsearch URL."""
+        return f"{self.scheme}://{self.host}:{self.port}"
+    
+    @computed_field
+    @property
+    def has_auth(self) -> bool:
+        """Check if authentication is configured."""
+        return bool((self.username and self.password) or self.api_key or self.cloud_id)
+    
+    def get_client_config(self) -> Dict[str, Any]:
+        """
+        Generate Elasticsearch client configuration dictionary.
+        Returns configuration ready for Elasticsearch client initialization.
+        """
+        if self.cloud_id:
+            # Elastic Cloud configuration
+            config: Dict[str, Any] = {
+                "cloud_id": self.cloud_id,
+                "request_timeout": self.request_timeout,
+                "retry_on_timeout": self.retry_on_timeout,
+                "max_retries": self.max_retries
+            }
+            
+            # Add authentication
+            if self.api_key:
+                config["api_key"] = self.api_key
+            elif self.username and self.password:
+                config["basic_auth"] = (self.username, self.password)
+        else:
+            # Standard Elasticsearch configuration
+            config = {
+                "hosts": [self.url],
+                "request_timeout": self.request_timeout,
+                "verify_certs": self.verify_certs,
+                "retry_on_timeout": self.retry_on_timeout,
+                "max_retries": self.max_retries
+            }
+            
+            # Add CA certificates if provided
+            if self.ca_certs:
+                config["ca_certs"] = str(self.ca_certs)
+            
+            # Add authentication
+            if self.api_key:
+                config["api_key"] = self.api_key
+            elif self.username and self.password:
+                config["basic_auth"] = (self.username, self.password)
+        
+        return config
+
+
+class IndexConfig(BaseModel):
+    """
+    Index configuration settings with validation.
+    Defines Elasticsearch index properties.
+    """
+    
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True,
+        str_strip_whitespace=True
+    )
+    
+    name: str = Field(
+        default="properties",
+        min_length=1,
+        max_length=255,
+        description="Index name"
+    )
+    alias: str = Field(
+        default="properties_alias",
+        min_length=1,
+        max_length=255,
+        description="Index alias"
+    )
+    shards: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description="Number of primary shards"
+    )
+    replicas: int = Field(
+        default=1,
+        ge=0,
+        le=5,
+        description="Number of replica shards"
+    )
+    refresh_interval: str = Field(
+        default="1s",
+        description="Index refresh interval"
+    )
+
+
+class SearchConfig(BaseModel):
+    """
+    Search configuration settings with comprehensive validation.
+    Controls search behavior and result ranking.
+    """
+    
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True
+    )
+    
+    # Result size settings
+    default_size: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+        description="Default number of results"
+    )
+    max_size: int = Field(
+        default=100,
+        ge=1,
+        le=500,
+        description="Maximum allowed result size"
+    )
+    
+    # Search behavior
+    default_sort: Literal["relevance", "price_asc", "price_desc", "date"] = Field(
+        default="relevance",
+        description="Default sort order"
+    )
+    highlight_enabled: bool = Field(
+        default=True,
+        description="Enable search result highlighting"
+    )
+    aggregations_enabled: bool = Field(
+        default=True,
+        description="Enable search aggregations"
+    )
+    enable_fuzzy: bool = Field(
+        default=True,
+        description="Enable fuzzy matching"
+    )
+    
+    # Field boost factors for relevance tuning
+    boost_description: float = Field(
+        default=2.0,
+        ge=0.0,
+        le=10.0,
+        description="Description field boost factor"
+    )
+    boost_features: float = Field(
+        default=1.5,
+        ge=0.0,
+        le=10.0,
+        description="Features field boost factor"
+    )
+    boost_amenities: float = Field(
+        default=1.5,
+        ge=0.0,
+        le=10.0,
+        description="Amenities field boost factor"
+    )
+    boost_location: float = Field(
+        default=1.8,
+        ge=0.0,
+        le=10.0,
+        description="Location field boost factor"
+    )
+    
+    @computed_field
+    @property
+    def boost_fields(self) -> Dict[str, float]:
+        """Get all boost fields as a dictionary."""
+        return {
+            "description": self.boost_description,
+            "features": self.boost_features,
+            "amenities": self.boost_amenities,
+            "location": self.boost_location
+        }
+
+
+class IndexingConfig(BaseModel):
+    """
+    Indexing configuration settings with validation.
+    Controls bulk indexing behavior and performance.
+    """
+    
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True
+    )
+    
+    batch_size: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Documents per batch"
+    )
+    parallel_threads: int = Field(
+        default=4,
+        ge=1,
+        le=16,
+        description="Number of parallel indexing threads"
+    )
+    refresh_after_index: bool = Field(
+        default=True,
+        description="Refresh index after bulk operations"
+    )
+    validate_before_index: bool = Field(
+        default=True,
+        description="Validate documents before indexing"
+    )
+    
+    @computed_field
+    @property
+    def bulk_size_bytes(self) -> int:
+        """Calculate approximate bulk size in bytes (assuming ~1KB per doc)."""
+        return self.batch_size * 1024
+
+
+class LoggingConfig(BaseModel):
+    """
+    Logging configuration settings with validation.
+    Controls application logging behavior.
+    """
+    
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True,
+        str_strip_whitespace=True
+    )
+    
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        default="INFO",
+        description="Logging level"
+    )
+    format: str = Field(
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        min_length=1,
+        description="Log message format"
+    )
+    structured: bool = Field(
+        default=True,
+        description="Use structured JSON logging"
+    )
+    
+    @computed_field
+    @property
+    def log_level_int(self) -> int:
+        """Get numeric log level for Python logging."""
+        levels = {
+            "DEBUG": 10,
+            "INFO": 20,
+            "WARNING": 30,
+            "ERROR": 40,
+            "CRITICAL": 50
+        }
+        return levels[self.level]
 
 
 class DataConfig(BaseModel):
-    """Data paths configuration."""
-    wikipedia_db: Path = Field(default=Path("../data/wikipedia/wikipedia.db"))
+    """
+    Data paths configuration with validation.
+    Manages data storage locations.
+    """
     
-    def model_post_init(self, __context):
-        """Ensure database directory exists."""
-        self.wikipedia_db.parent.mkdir(parents=True, exist_ok=True)
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True
+    )
+    
+    wikipedia_db: Path = Field(
+        default=Path("../data/wikipedia/wikipedia.db"),
+        description="Wikipedia database path"
+    )
+    
+    @computed_field
+    @property
+    def wikipedia_db_exists(self) -> bool:
+        """Check if Wikipedia database file exists."""
+        return self.wikipedia_db.exists()
 
 
-class AppConfig(BaseModel):
+class AppConfig(BaseSettings):
     """
-    Configuration for Real Estate Search application.
-    Works with pre-indexed data from data_pipeline.
+    Main application configuration using Pydantic Settings.
+    Central configuration for the entire real estate search system.
     """
-    elasticsearch: ElasticsearchConfig = Field(default_factory=ElasticsearchConfig)
-    data: DataConfig = Field(default_factory=DataConfig)
-    demo_mode: bool = Field(default=True, description="Running in demo mode")
-    log_level: str = Field(default="INFO", description="Logging level")
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="ignore",
+        populate_by_name=True,
+        validate_default=True,
+        validate_assignment=True
+    )
+    
+    # Environment settings
+    environment: Environment = Field(
+        default=Environment.DEVELOPMENT,
+        description="Application environment"
+    )
+    debug: bool = Field(
+        default=False,
+        description="Debug mode"
+    )
+    demo_mode: bool = Field(
+        default=True,
+        description="Demo mode with sample data"
+    )
+    
+    # Sub-configurations with factory functions for environment variable support
+    elasticsearch: ElasticsearchConfig = Field(
+        default_factory=lambda: ElasticsearchConfig(
+            host=os.getenv('ES_HOST', 'localhost'),
+            port=int(os.getenv('ES_PORT', '9200')),
+            scheme=os.getenv('ES_SCHEME', 'http'),  # type: ignore
+            username=os.getenv('ES_USERNAME') or os.getenv('ELASTICSEARCH_USERNAME'),
+            password=os.getenv('ES_PASSWORD') or os.getenv('ELASTICSEARCH_PASSWORD'),
+            api_key=os.getenv('ES_API_KEY') or os.getenv('ELASTICSEARCH_API_KEY'),
+            cloud_id=os.getenv('ES_CLOUD_ID'),
+            verify_certs=os.getenv('ES_VERIFY_CERTS', 'false').lower() == 'true',
+            ca_certs=Path(ca) if (ca := os.getenv('ES_CA_CERTS')) else None,
+            request_timeout=int(os.getenv('ES_TIMEOUT', '30')),
+            retry_on_timeout=os.getenv('ES_RETRY_ON_TIMEOUT', 'true').lower() == 'true',
+            max_retries=int(os.getenv('ES_MAX_RETRIES', '3')),
+            property_index=os.getenv('ES_PROPERTY_INDEX', 'properties'),
+            wiki_chunks_index_prefix=os.getenv('ES_WIKI_CHUNKS_PREFIX', 'wiki_chunks'),
+            wiki_summaries_index_prefix=os.getenv('ES_WIKI_SUMMARIES_PREFIX', 'wiki_summaries')
+        ),
+        description="Elasticsearch configuration"
+    )
+    
+    index: IndexConfig = Field(
+        default_factory=lambda: IndexConfig(
+            name=os.getenv('INDEX_NAME', 'properties'),
+            alias=os.getenv('INDEX_ALIAS', 'properties_alias'),
+            shards=int(os.getenv('INDEX_SHARDS', '1')),
+            replicas=int(os.getenv('INDEX_REPLICAS', '1')),
+            refresh_interval=os.getenv('INDEX_REFRESH_INTERVAL', '1s')
+        ),
+        description="Index configuration"
+    )
+    
+    search: SearchConfig = Field(
+        default_factory=lambda: SearchConfig(
+            default_size=int(os.getenv('SEARCH_DEFAULT_SIZE', '20')),
+            max_size=int(os.getenv('SEARCH_MAX_SIZE', '100')),
+            default_sort=os.getenv('SEARCH_DEFAULT_SORT', 'relevance'),  # type: ignore
+            highlight_enabled=os.getenv('SEARCH_HIGHLIGHT_ENABLED', 'true').lower() == 'true',
+            aggregations_enabled=os.getenv('SEARCH_AGGREGATIONS_ENABLED', 'true').lower() == 'true',
+            enable_fuzzy=os.getenv('SEARCH_ENABLE_FUZZY', 'true').lower() == 'true',
+            boost_description=float(os.getenv('SEARCH_BOOST_DESCRIPTION', '2.0')),
+            boost_features=float(os.getenv('SEARCH_BOOST_FEATURES', '1.5')),
+            boost_amenities=float(os.getenv('SEARCH_BOOST_AMENITIES', '1.5')),
+            boost_location=float(os.getenv('SEARCH_BOOST_LOCATION', '1.8'))
+        ),
+        description="Search configuration"
+    )
+    
+    indexing: IndexingConfig = Field(
+        default_factory=lambda: IndexingConfig(
+            batch_size=int(os.getenv('INDEXING_BATCH_SIZE', '100')),
+            parallel_threads=int(os.getenv('INDEXING_PARALLEL_THREADS', '4')),
+            refresh_after_index=os.getenv('INDEXING_REFRESH_AFTER_INDEX', 'true').lower() == 'true',
+            validate_before_index=os.getenv('INDEXING_VALIDATE_BEFORE_INDEX', 'true').lower() == 'true'
+        ),
+        description="Indexing configuration"
+    )
+    
+    logging: LoggingConfig = Field(
+        default_factory=lambda: LoggingConfig(
+            level=os.getenv('LOG_LEVEL', 'INFO'),  # type: ignore
+            format=os.getenv('LOG_FORMAT', '%(asctime)s - %(name)s - %(levelname)s - %(message)s'),
+            structured=os.getenv('LOG_STRUCTURED', 'true').lower() == 'true'
+        ),
+        description="Logging configuration"
+    )
+    
+    data: DataConfig = Field(
+        default_factory=lambda: DataConfig(
+            wikipedia_db=Path(os.getenv('DATA_WIKIPEDIA_DB', '../data/wikipedia/wikipedia.db'))
+        ),
+        description="Data paths configuration"
+    )
+    
+    @computed_field
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.environment == Environment.DEVELOPMENT
+    
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.environment == Environment.PRODUCTION
+    
+    @computed_field
+    @property
+    def is_staging(self) -> bool:
+        """Check if running in staging environment."""
+        return self.environment == Environment.STAGING
+    
+    @computed_field
+    @property
+    def is_demo(self) -> bool:
+        """Check if running in demo mode."""
+        return self.environment == Environment.DEMO or self.demo_mode
+    
+    @classmethod
+    def load(cls) -> "AppConfig":
+        """
+        Load configuration from environment variables and .env file.
+        
+        Returns:
+            Configured AppConfig instance
+        """
+        return cls()
     
     @classmethod
     def from_yaml(cls, path: Path = Path("config.yaml")) -> "AppConfig":
-        """Load configuration from YAML file."""
+        """
+        Load configuration from YAML file with environment variable override.
+        
+        Args:
+            path: Path to YAML configuration file
+            
+        Returns:
+            Configured AppConfig instance
+        """
         logger.info(f"Loading configuration from {path}")
         
         if not path.exists():
-            logger.warning(f"Configuration file {path} not found, using defaults")
+            logger.warning(f"Configuration file {path} not found, using defaults with env overrides")
             return cls()
         
-        with open(path) as f:
-            data = yaml.safe_load(f) or {}
-        
-        config = cls(**data)
-        logger.info("Configuration loaded successfully")
-        return config
+        try:
+            with open(path) as f:
+                yaml_data = yaml.safe_load(f) or {}
+            
+            # Convert environment string to enum if present
+            if 'environment' in yaml_data and isinstance(yaml_data['environment'], str):
+                yaml_data['environment'] = Environment(yaml_data['environment'])
+            
+            # Create config with YAML data
+            # Environment variables override YAML values due to Pydantic's priority
+            config = cls(**yaml_data)
+            logger.info("Configuration loaded successfully from YAML")
+            return config
+            
+        except Exception as e:
+            logger.error(f"Failed to load configuration from {path}: {e}")
+            raise
     
-    def to_yaml(self, path: Path = Path("config.yaml")):
-        """Save configuration to YAML file."""
+    def save_yaml(self, path: Path = Path("config.yaml")) -> None:
+        """
+        Save current configuration to YAML file.
+        
+        Args:
+            path: Path where YAML file will be saved
+        """
         logger.info(f"Saving configuration to {path}")
         
-        with open(path, 'w') as f:
-            data = self.model_dump(exclude_none=True, mode='json')
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        try:
+            with open(path, 'w') as f:
+                # Export with computed fields excluded and proper serialization
+                data = self.model_dump(
+                    exclude={'is_development', 'is_production', 'is_staging', 'is_demo'},
+                    exclude_unset=False,
+                    exclude_defaults=False,
+                    mode='python'
+                )
+                
+                # Convert Environment enum to string
+                if 'environment' in data:
+                    data['environment'] = data['environment'].value
+                
+                yaml.dump(data, f, default_flow_style=False, sort_keys=False, indent=2)
+            
+            logger.info("Configuration saved successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to save configuration to {path}: {e}")
+            raise
+    
+    def get_elasticsearch_client_config(self) -> Dict[str, Any]:
+        """
+        Get Elasticsearch client configuration.
+        Convenience method that delegates to elasticsearch config.
         
-        logger.info("Configuration saved successfully")
+        Returns:
+            Elasticsearch client configuration dictionary
+        """
+        return self.elasticsearch.get_client_config()

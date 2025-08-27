@@ -10,8 +10,9 @@ import duckdb
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.models.processing_models import (
     EntityType, MedallionTier, ProcessingStage, ProcessingContext,
-    ProcessingResult, TableIdentifier, EntityProcessorConfig
+    ProcessingResult, TableIdentifier as ProcessingTableIdentifier, EntityProcessorConfig
 )
+from squack_pipeline.models.duckdb_models import TableIdentifier as SafeTableIdentifier
 from squack_pipeline.utils.logging import PipelineLogger
 
 
@@ -141,20 +142,23 @@ class EntityProcessor(ABC):
             return result
     
     def _count_records(self, table_name: str) -> int:
-        """Count records in a table."""
+        """Count records in a table safely."""
         try:
-            result = self.connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+            safe_table = SafeTableIdentifier(name=table_name)
+            result = self.connection.execute(f"SELECT COUNT(*) FROM {safe_table.qualified_name}").fetchone()
             return result[0] if result else 0
         except Exception:
             return 0
     
     def _create_table_from_query(self, table_name: str, query: str) -> None:
-        """Create a new table from a SQL query."""
+        """Create a new table from a SQL query safely."""
+        safe_table = SafeTableIdentifier(name=table_name)
+        
         # Drop table if exists
-        self.connection.execute(f"DROP TABLE IF EXISTS {table_name}")
+        self.connection.execute(f"DROP TABLE IF EXISTS {safe_table.qualified_name}")
         
         # Create new table
-        self.connection.execute(f"CREATE TABLE {table_name} AS {query}")
+        self.connection.execute(f"CREATE TABLE {safe_table.qualified_name} AS {query}")
         
         self.logger.info(f"Created table {table_name}")
     

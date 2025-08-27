@@ -93,7 +93,7 @@ class WriteOperation(BaseModel):
         """Get Spark write options for Elasticsearch."""
         return {
             "es.resource": self.index_settings.name,
-            "es.mapping.id": "id",
+            "es.mapping.id": self.index_settings.id_field,
         }
 
 

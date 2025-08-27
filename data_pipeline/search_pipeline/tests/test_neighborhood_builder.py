@@ -6,8 +6,8 @@ Tests transformation of neighborhood DataFrames into NeighborhoodDocument models
 
 import pytest
 from unittest.mock import Mock
-from search_pipeline.builders.neighborhood_builder import NeighborhoodDocumentBuilder
-from search_pipeline.models.documents import NeighborhoodDocument
+from data_pipeline.search_pipeline.builders.neighborhood_builder import NeighborhoodDocumentBuilder
+from data_pipeline.search_pipeline.models.documents import NeighborhoodDocument
 
 
 def create_mock_row(data):

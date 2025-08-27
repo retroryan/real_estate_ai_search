@@ -6,7 +6,7 @@ Tests the common utilities and validation methods.
 
 import pytest
 from unittest.mock import Mock
-from search_pipeline.builders.base import BaseDocumentBuilder
+from data_pipeline.search_pipeline.builders.base import BaseDocumentBuilder
 
 
 class MockBuilder(BaseDocumentBuilder):

@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config.config import Config
+from ..config import AppConfig
 from wikipedia.enricher import PropertyEnricher
 from wikipedia.extractor import WikipediaExtractor
 from indexer.mappings import get_property_mappings
@@ -31,19 +31,19 @@ class PropertyIndexer:
         self,
         es_client: Optional[Elasticsearch] = None,
         index_name: Optional[str] = None,
-        config: Optional[Config] = None,
+        config: Optional[AppConfig] = None,
         settings: Optional[Any] = None  # Backward compatibility
     ):
         """Initialize the indexer."""
         # Use config, fallback to loading from yaml
-        self.config = config or Config.from_yaml()
+        self.config = config or AppConfig.from_yaml()
         self.es_client = es_client or self._create_es_client()
         self.index_name = index_name or self.config.elasticsearch.property_index
         self.enricher = PropertyEnricher()
     
     def _create_es_client(self) -> Elasticsearch:
         """Create Elasticsearch client."""
-        client_config = self.config.get_es_client_config()
+        client_config = self.config.elasticsearch.get_client_config()
         return Elasticsearch(**client_config)
     
     def create_index(self, force_recreate: bool = False) -> bool:

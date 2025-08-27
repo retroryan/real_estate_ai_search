@@ -287,7 +287,7 @@ class PipelineOrchestrator:
         
         self.logger.info("Processing Gold tier (data enrichment)")
         
-        if not hasattr(self, 'property_processor') or not self.property_processor:
+        if not self.property_processor:
             self.logger.error("Property processor not initialized")
             return
         
@@ -295,7 +295,7 @@ class PipelineOrchestrator:
             # Get the latest Silver table using type-safe naming
             connection = self.connection_manager.get_connection()
             result = connection.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_silver_%' ORDER BY table_name DESC LIMIT 1"
+                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_gold_%' OR table_name LIKE 'property_silver_%' ORDER BY table_name DESC LIMIT 1"
             ).fetchone()
             
             if not result:
@@ -381,7 +381,7 @@ class PipelineOrchestrator:
             # Get the latest Gold table
             connection = self.connection_manager.get_connection()
             result = connection.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_gold_%' ORDER BY table_name DESC LIMIT 1"
+                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_gold_%' ORDER BY table_name DESC LIMIT 1"
             ).fetchone()
             
             if not result:
@@ -389,7 +389,7 @@ class PipelineOrchestrator:
                 return
             
             gold_table = result[0]
-            enriched_table = f"properties_enriched_{int(time.time())}"
+            enriched_table = f"property_enriched_{int(time.time())}"
             
             if self.geo_enrichment.process(gold_table, enriched_table):
                 record_count = self.geo_enrichment.count_records(enriched_table)
@@ -429,7 +429,7 @@ class PipelineOrchestrator:
             
             # Try to get the latest enriched table first
             enriched_result = connection.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_enriched_%' ORDER BY table_name DESC LIMIT 1"
+                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_enriched_%' ORDER BY table_name DESC LIMIT 1"
             ).fetchone()
             
             if enriched_result:
@@ -438,7 +438,7 @@ class PipelineOrchestrator:
             else:
                 # Fall back to Gold tier
                 gold_result = connection.execute(
-                    "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_gold_%' ORDER BY table_name DESC LIMIT 1"
+                    "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_gold_%' ORDER BY table_name DESC LIMIT 1"
                 ).fetchone()
                 if gold_result:
                     final_table = gold_result[0]
@@ -587,7 +587,7 @@ class PipelineOrchestrator:
         self.logger.success(f"Wrote embeddings to {embeddings_path}")
         self.metrics["embedding_files"] = 1
     
-    def _get_final_table(self, entity_prefix: str = "properties") -> Optional[str]:
+    def _get_final_table(self, entity_prefix: str = "property") -> Optional[str]:
         """Get the most enriched table available for output for a specific entity type."""
         connection = self.connection_manager.get_connection()
         
@@ -630,7 +630,7 @@ class PipelineOrchestrator:
         tables = {}
         
         # Get properties table
-        properties_table = self._get_final_table("properties")
+        properties_table = self._get_final_table("property")
         if properties_table:
             tables["properties"] = properties_table
         
@@ -701,11 +701,11 @@ class PipelineOrchestrator:
     
     def cleanup(self) -> None:
         """Clean up pipeline resources."""
-        if hasattr(self, 'connection_manager'):
+        if self.connection_manager:
             self.connection_manager.close()
         
         # Clean up old state files
-        if hasattr(self, 'state_manager'):
+        if self.state_manager:
             self.state_manager.cleanup_old_states(days=7)
         
         self.logger.info("Pipeline cleanup completed")
