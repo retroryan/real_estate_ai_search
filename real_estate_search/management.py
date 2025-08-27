@@ -22,7 +22,8 @@ from .demo_queries import (
     demo_price_distribution,
     demo_semantic_search,
     demo_multi_entity_search,
-    demo_wikipedia_search
+    demo_wikipedia_search,
+    demo_relationship_search
 )
 
 
@@ -454,7 +455,8 @@ class IndexManagementCLI:
             5: (demo_price_distribution, "Price Distribution Analysis"),
             6: (demo_semantic_search, "Semantic Similarity Search"),
             7: (demo_multi_entity_search, "Multi-Entity Combined Search"),
-            8: (demo_wikipedia_search, "Wikipedia Article Search")
+            8: (demo_wikipedia_search, "Wikipedia Article Search"),
+            9: (demo_relationship_search, "Property-Neighborhood-Wikipedia Relationships")
         }
         
         if demo_number not in demo_queries:
@@ -467,6 +469,29 @@ class IndexManagementCLI:
         try:
             print(f"\nRunning Demo {demo_number}: {query_name}")
             print("=" * 60)
+            
+            # Add special description for demo 9
+            if demo_number == 9:
+                print("\n📊 Query Architecture Overview:")
+                print("-" * 50)
+                print("This demo performs three types of relationship queries:\n")
+                print("1️⃣  Property → Neighborhood → Wikipedia")
+                print("   Starting from a property, finds its neighborhood and related articles")
+                print("   Shows: Property details, neighborhood context, location Wikipedia")
+                print()
+                print("2️⃣  Neighborhood → Properties + Wikipedia") 
+                print("   Shows all properties in a neighborhood plus Wikipedia context")
+                print("   Example: Pacific Heights with all its properties and articles")
+                print()
+                print("3️⃣  Location → Properties + Wikipedia")
+                print("   City-level search combining real estate and encyclopedia data")
+                print("   Example: All San Francisco properties with city Wikipedia articles")
+                print()
+                print("🔗 Relationships established through:")
+                print("   • neighborhood_id field linking properties to neighborhoods")
+                print("   • Location matching between Wikipedia and property/neighborhood data")
+                print("   • Confidence scoring (primary=95%, neighborhood=85%, park=90%, etc.)")
+                print("=" * 60)
             
             # Execute the demo query
             result = query_func(self.es_client.client)
@@ -500,7 +525,8 @@ class IndexManagementCLI:
             (5, "Price Distribution Analysis", "Histogram of prices by property type"),
             (6, "Semantic Similarity Search", "Find similar properties using embeddings"),
             (7, "Multi-Entity Combined Search", "Search across all entity types"),
-            (8, "Wikipedia Article Search", "Search Wikipedia with location filters")
+            (8, "Wikipedia Article Search", "Search Wikipedia with location filters"),
+            (9, "Property-Neighborhood-Wikipedia Relationships", "Demonstrates entity linking across indices")
         ]
         
         for num, name, description in demos:
@@ -545,8 +571,8 @@ Examples:
         'demo_number',
         type=int,
         nargs='?',
-        choices=range(1, 9),
-        help='Demo query number to run (1-8)'
+        choices=range(1, 10),
+        help='Demo query number to run (1-9)'
     )
     
     parser.add_argument(
@@ -616,7 +642,7 @@ Examples:
             elif args.demo_number:
                 success = cli.run_demo_query(args.demo_number, verbose=args.verbose)
             else:
-                print("Please specify a demo number (1-8) or use --list to see available demos")
+                print("Please specify a demo number (1-9) or use --list to see available demos")
                 print("Example: python -m real_estate_search.management demo 1")
                 success = False
         

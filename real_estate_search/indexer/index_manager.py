@@ -211,7 +211,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="properties_template",
-            index_patterns=["properties*", "real_estate_properties*"],
+            index_patterns=["properties*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -230,7 +230,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="neighborhoods_template",
-            index_patterns=["neighborhoods*", "real_estate_neighborhoods*"],
+            index_patterns=["neighborhoods*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -249,7 +249,7 @@ class ElasticsearchIndexManager:
         
         template = IndexTemplate(
             name="wikipedia_template",
-            index_patterns=["wikipedia*", "real_estate_wikipedia*"],
+            index_patterns=["wikipedia*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100

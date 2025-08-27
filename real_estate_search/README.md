@@ -11,6 +11,28 @@ A high-quality demonstration of Elasticsearch-powered real estate search enriche
 - **Faceted Search**: Filter by price ranges, property types, and categories
 - **Geo-Location Support**: Properties indexed with coordinates for proximity searches
 
+## Pipeline Flow
+
+The complete data indexing and search demonstration follows this three-step process:
+
+### Step 1: Create Indexes
+Initialize Elasticsearch indexes with proper mappings and configurations:
+```bash
+python -m real_estate_search.management setup-indices --clear
+```
+
+### Step 2: Run Data Pipeline
+Process, enrich, and index property data with neighborhood and Wikipedia correlations:
+```bash
+python -m data_pipeline
+```
+
+### Step 3: Run Search Demo
+Execute demonstration queries showcasing various search capabilities:
+```bash
+python -m real_estate_search.management demo 1
+```
+
 ## Quick Start
 
 ### Prerequisites
@@ -50,11 +72,31 @@ python -m data_pipeline
 
 ### Run the Demos Mode 
 
-Run demonstration searches on pre-indexed data:
+The application includes multiple demo queries that showcase different search capabilities. You can run demos using the management CLI:
 
 ```bash
-# Run full demo
-python -m real_estate_search.main
+# List all available demos
+python -m real_estate_search.management demo --list
+
+# Run a specific demo by number (1-9)
+python -m real_estate_search.management demo 1
+
+# Run demo with verbose output to see the actual Elasticsearch queries
+python -m real_estate_search.management demo 1 --verbose
+
+# Available demos:
+# 1. Basic Property Search - Simple property search examples
+# 2. Property Filter Search - Filtered searches with criteria
+# 3. Geographic Distance Search - Location-based proximity searches
+# 4. Neighborhood Statistics - Aggregations and statistics by neighborhood
+# 5. Price Distribution Analysis - Price range analytics
+# 6. Semantic Similarity Search - AI-powered semantic search
+# 7. Multi-Entity Combined Search - Search across properties, neighborhoods, and Wikipedia
+# 8. Wikipedia Article Search - Search Wikipedia location data
+# 9. Property-Neighborhood-Wikipedia Relationships - Show rich relationships between entities
+
+# Run the standalone relationship demo (Demo 9 with enhanced visualization)
+python -m real_estate_search.demo_queries.demo_relationship_search
 ```
 
 ### Search Mode

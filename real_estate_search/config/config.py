@@ -15,7 +15,12 @@ import logging
 from enum import Enum
 
 # Load environment variables from .env file
-load_dotenv()
+# Try parent directory first (where main .env typically lives)
+env_path = Path(__file__).parent.parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv()  # Fall back to default behavior
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +33,20 @@ class Environment(str, Enum):
     DEMO = "demo"
 
 
-class ElasticsearchConfig(BaseModel):
+class ElasticsearchConfig(BaseSettings):
     """
     Elasticsearch configuration with comprehensive validation.
     Handles both standard Elasticsearch and Elastic Cloud connections.
     """
     
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
+        env_prefix='ES_',  # Use ES_ prefix for env vars
         validate_default=True,
         validate_assignment=True,
         use_enum_values=True,
-        str_strip_whitespace=True
+        str_strip_whitespace=True,
+        case_sensitive=False,
+        extra='ignore'
     )
     
     # Connection settings
@@ -58,7 +66,7 @@ class ElasticsearchConfig(BaseModel):
         description="Connection scheme"
     )
     
-    # Authentication
+    # Authentication - ES_USERNAME and ES_PASSWORD will be automatically loaded
     username: Optional[str] = Field(
         default=None,
         min_length=1,
@@ -438,25 +446,9 @@ class AppConfig(BaseSettings):
         description="Demo mode with sample data"
     )
     
-    # Sub-configurations with factory functions for environment variable support
+    # Sub-configurations - ElasticsearchConfig will load its own env vars
     elasticsearch: ElasticsearchConfig = Field(
-        default_factory=lambda: ElasticsearchConfig(
-            host=os.getenv('ES_HOST', 'localhost'),
-            port=int(os.getenv('ES_PORT', '9200')),
-            scheme=os.getenv('ES_SCHEME', 'http'),  # type: ignore
-            username=os.getenv('ES_USERNAME') or os.getenv('ELASTICSEARCH_USERNAME'),
-            password=os.getenv('ES_PASSWORD') or os.getenv('ELASTICSEARCH_PASSWORD'),
-            api_key=os.getenv('ES_API_KEY') or os.getenv('ELASTICSEARCH_API_KEY'),
-            cloud_id=os.getenv('ES_CLOUD_ID'),
-            verify_certs=os.getenv('ES_VERIFY_CERTS', 'false').lower() == 'true',
-            ca_certs=Path(ca) if (ca := os.getenv('ES_CA_CERTS')) else None,
-            request_timeout=int(os.getenv('ES_TIMEOUT', '30')),
-            retry_on_timeout=os.getenv('ES_RETRY_ON_TIMEOUT', 'true').lower() == 'true',
-            max_retries=int(os.getenv('ES_MAX_RETRIES', '3')),
-            property_index=os.getenv('ES_PROPERTY_INDEX', 'properties'),
-            wiki_chunks_index_prefix=os.getenv('ES_WIKI_CHUNKS_PREFIX', 'wiki_chunks'),
-            wiki_summaries_index_prefix=os.getenv('ES_WIKI_SUMMARIES_PREFIX', 'wiki_summaries')
-        ),
+        default_factory=ElasticsearchConfig,
         description="Elasticsearch configuration"
     )
     
@@ -572,8 +564,12 @@ class AppConfig(BaseSettings):
             if 'environment' in yaml_data and isinstance(yaml_data['environment'], str):
                 yaml_data['environment'] = Environment(yaml_data['environment'])
             
+            # Handle elasticsearch config specially to merge with env vars
+            if 'elasticsearch' in yaml_data:
+                # Create ElasticsearchConfig which will merge YAML with env vars
+                yaml_data['elasticsearch'] = ElasticsearchConfig(**yaml_data['elasticsearch'])
+            
             # Create config with YAML data
-            # Environment variables override YAML values due to Pydantic's priority
             config = cls(**yaml_data)
             logger.info("Configuration loaded successfully from YAML")
             return config

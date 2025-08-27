@@ -19,6 +19,7 @@ from .property_neighborhood_wiki import (
     demo_neighborhood_properties_and_wiki,
     demo_location_wikipedia_context
 )
+from .demo_relationship_search import demo_relationship_search
 
 __all__ = [
     'demo_basic_property_search',
@@ -31,5 +32,6 @@ __all__ = [
     'demo_wikipedia_search',
     'demo_property_with_full_context',
     'demo_neighborhood_properties_and_wiki',
-    'demo_location_wikipedia_context'
+    'demo_location_wikipedia_context',
+    'demo_relationship_search'
 ]

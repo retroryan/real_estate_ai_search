@@ -49,7 +49,6 @@ class ElasticsearchOrchestrator(EntityWriter):
         
         # Create writer settings from config
         self.settings = ElasticsearchWriterSettings(
-            index_prefix=config.index_prefix,
             batch_size=config.bulk_size,
         )
         
@@ -74,7 +73,7 @@ class ElasticsearchOrchestrator(EntityWriter):
                 return False
             
             # Create test write operation
-            test_index = f"{self.settings.index_prefix}_validation_test"
+            test_index = "validation_test"
             test_df = self.spark.createDataFrame([{"id": "test", "validation": True}])
             
             # Perform test write

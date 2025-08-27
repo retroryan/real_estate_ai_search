@@ -85,8 +85,7 @@ class TestOutputDrivenIntegration:
             "output": {
                 "enabled_destinations": ["elasticsearch"],
                 "elasticsearch": {
-                    "hosts": ["localhost:9200"],
-                    "index_prefix": "test"
+                    "hosts": ["localhost:9200"]
                 }
             },
             "embedding": {"provider": "mock"}
@@ -115,7 +114,7 @@ class TestOutputDrivenIntegration:
             "output": {
                 "enabled_destinations": ["neo4j", "elasticsearch", "parquet"],
                 "neo4j": {"uri": "bolt://localhost:7687", "username": "neo4j", "database": "neo4j"},
-                "elasticsearch": {"hosts": ["localhost:9200"], "index_prefix": "test"},
+                "elasticsearch": {"hosts": ["localhost:9200"]},
                 "parquet": {"base_path": "data/test_parquet"}
             },
             "embedding": {"provider": "mock"}
@@ -151,7 +150,6 @@ class TestOutputDrivenIntegration:
           elasticsearch:
             hosts:
               - localhost:9200
-            index_prefix: real_estate
         embedding:
           provider: mock
         """
@@ -165,7 +163,7 @@ class TestOutputDrivenIntegration:
                         'output': {
                             'enabled_destinations': ['parquet', 'elasticsearch'],
                             'parquet': {'base_path': 'data/processed'},
-                            'elasticsearch': {'hosts': ['localhost:9200'], 'index_prefix': 'real_estate'}
+                            'elasticsearch': {'hosts': ['localhost:9200']}
                         },
                         'embedding': {'provider': 'mock'}
                     }

@@ -122,7 +122,6 @@ class WriteResult(BaseModel):
 class ElasticsearchWriterSettings(BaseModel):
     """Complete settings for Elasticsearch writer."""
     
-    index_prefix: str = Field(description="Prefix for all indices")
     default_write_mode: ElasticsearchWriteMode = Field(
         default=ElasticsearchWriteMode.APPEND,
         description="Default write mode"
@@ -157,7 +156,7 @@ class ElasticsearchWriterSettings(BaseModel):
         config = entity_configs[entity_type]
         
         return IndexSettings(
-            name=f"{self.index_prefix}_{entity_type.value}",
+            name=entity_type.value,
             entity_type=entity_type,
             id_field=config["id_field"],
             write_mode=self.default_write_mode,

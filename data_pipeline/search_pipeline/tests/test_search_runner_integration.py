@@ -28,7 +28,6 @@ def search_config():
     """Create search pipeline configuration."""
     es_config = ElasticsearchConfig(
         nodes=["localhost:9200"],
-        index_prefix="test",
         username="test_user",
         password="test_pass",
         bulk=BulkWriteConfig(
@@ -329,8 +328,7 @@ def test_disabled_pipeline(spark_session):
     config = SearchPipelineConfig(
         enabled=False,
         elasticsearch=ElasticsearchConfig(
-            nodes=["localhost:9200"],
-            index_prefix="test"
+            nodes=["localhost:9200"]
         )
     )
     

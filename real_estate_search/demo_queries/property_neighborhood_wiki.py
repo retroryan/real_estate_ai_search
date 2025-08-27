@@ -1,6 +1,13 @@
 """
 Demo queries showing relationships between properties, neighborhoods, and Wikipedia articles.
 
+ELASTICSEARCH RELATIONSHIP CONCEPTS:
+- ENTITY RELATIONSHIPS: Linking documents across indices using IDs
+- MULTI-STEP QUERIES: Chaining queries to build complete context
+- MSEARCH API: Executing multiple searches in one request
+- FIELD-BASED JOINS: Using IDs and location data to connect entities
+- RESULT ENRICHMENT: Combining data from multiple sources
+
 This module demonstrates how to query and display real estate properties
 along with their associated neighborhood information and Wikipedia articles,
 showing the full context available from the data pipeline.
@@ -48,22 +55,26 @@ def demo_property_with_full_context(
     
     # Step 1: Get a property
     if not property_id:
-        # Get a random property with a neighborhood_id
+        # RANDOM DOCUMENT SELECTION: Get a random property for demonstration
+        # This technique is useful for sampling, testing, or demo purposes
         random_query = {
             "query": {
+                # FUNCTION SCORE: Modify relevance scores with functions
                 "function_score": {
                     "query": {
+                        # EXISTS FILTER: Only properties with neighborhood relationships
                         "exists": {"field": "neighborhood_id"}
                     },
+                    # RANDOM SCORING: Each execution gets different results
                     "random_score": {"seed": 42}
                 }
             },
-            "size": 1,
-            "_source": True
+            "size": 1,  # Just need one random document
+            "_source": True  # Get all fields for the selected property
         }
         
         try:
-            response = es_client.search(index="real_estate_properties", body=random_query)
+            response = es_client.search(index="properties", body=random_query)
             if response['hits']['hits']:
                 property_data = response['hits']['hits'][0]['_source']
                 property_id = response['hits']['hits'][0]['_id']
@@ -90,7 +101,7 @@ def demo_property_with_full_context(
     else:
         # Get specified property
         try:
-            response = es_client.get(index="real_estate_properties", id=property_id)
+            response = es_client.get(index="properties", id=property_id)
             property_data = response['_source']
         except Exception as e:
             logger.error(f"Error getting property {property_id}: {e}")
@@ -124,7 +135,7 @@ def demo_property_with_full_context(
                 "_source": True
             }
             
-            response = es_client.search(index="real_estate_neighborhoods", body=neighborhood_query)
+            response = es_client.search(index="neighborhoods", body=neighborhood_query)
             if response['hits']['hits']:
                 neighborhood_data = response['hits']['hits'][0]['_source']
                 neighborhood_data['_entity_type'] = 'neighborhood'
@@ -155,7 +166,7 @@ def demo_property_with_full_context(
                         "_source": True
                     }
                     
-                    response = es_client.search(index="real_estate_wikipedia", body=wiki_query)
+                    response = es_client.search(index="wikipedia", body=wiki_query)
                     if response['hits']['hits']:
                         wiki_data = response['hits']['hits'][0]['_source']
                         wiki_data['_entity_type'] = 'wikipedia_primary'
@@ -183,7 +194,7 @@ def demo_property_with_full_context(
                             "_source": ["page_id", "title", "summary", "city", "state"]
                         }
                         
-                        response = es_client.search(index="real_estate_wikipedia", body=wiki_query)
+                        response = es_client.search(index="wikipedia", body=wiki_query)
                         if response['hits']['hits']:
                             wiki_data = response['hits']['hits'][0]['_source']
                             wiki_data['_entity_type'] = 'wikipedia_related'
@@ -254,7 +265,7 @@ def demo_neighborhood_properties_and_wiki(
     }
     
     try:
-        response = es_client.search(index="real_estate_neighborhoods", body=neighborhood_query)
+        response = es_client.search(index="neighborhoods", body=neighborhood_query)
         if not response['hits']['hits']:
             return DemoQueryResult(
                 query_name=f"Neighborhood '{neighborhood_name}' with Properties and Wikipedia",
@@ -294,7 +305,7 @@ def demo_neighborhood_properties_and_wiki(
         }
         
         try:
-            response = es_client.search(index="real_estate_properties", body=properties_query)
+            response = es_client.search(index="properties", body=properties_query)
             for hit in response['hits']['hits']:
                 prop = hit['_source']
                 prop['_entity_type'] = 'property'
@@ -377,7 +388,7 @@ def demo_location_wikipedia_context(
     
     # Properties in location
     msearch_body.extend([
-        {"index": "real_estate_properties"},
+        {"index": "properties"},
         {
             "query": {
                 "bool": {
@@ -394,7 +405,7 @@ def demo_location_wikipedia_context(
     
     # Wikipedia articles about this location
     msearch_body.extend([
-        {"index": "real_estate_wikipedia"},
+        {"index": "wikipedia"},
         {
             "query": {
                 "bool": {
@@ -447,8 +458,8 @@ def demo_location_wikipedia_context(
             query_dsl={
                 "multi_search": True,
                 "queries": [
-                    {"index": "real_estate_properties", "filter": f"city={city}, state={state}"},
-                    {"index": "real_estate_wikipedia", "filter": f"city={city}, state={state}"}
+                    {"index": "properties", "filter": f"city={city}, state={state}"},
+                    {"index": "wikipedia", "filter": f"city={city}, state={state}"}
                 ]
             }
         )

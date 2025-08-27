@@ -116,7 +116,6 @@ class SearchPipelineRunner:
         
         # Log configuration for debugging
         logger.info(f"Elasticsearch nodes: {self.config.elasticsearch.nodes}")
-        logger.info(f"Index prefix: {self.config.elasticsearch.index_prefix}")
         logger.info(f"Bulk batch size: {self.config.elasticsearch.bulk.batch_size_entries} docs")
         logger.info(f"Node discovery: {self.config.elasticsearch.nodes_discovery}")
     
@@ -265,7 +264,7 @@ class SearchPipelineRunner:
             )
             
             # Try to write to a test index
-            test_index = f"{self.config.elasticsearch.index_prefix}_connection_test"
+            test_index = "connection_test"
             
             es_conf = self.config.elasticsearch.get_spark_conf()
             es_conf["es.resource"] = test_index

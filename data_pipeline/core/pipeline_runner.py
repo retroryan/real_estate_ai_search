@@ -359,7 +359,6 @@ class DataPipelineRunner:
             enabled=search_enabled,
             elasticsearch=ElasticsearchConfig(
                 nodes=self.config.output.elasticsearch.hosts if self.config.output.elasticsearch else ["localhost:9200"],
-                index_prefix=self.config.output.elasticsearch.index_prefix if self.config.output.elasticsearch else "real_estate",
                 username=self.config.output.elasticsearch.username if self.config.output.elasticsearch else None
                 # Don't set mapping_id here - let each entity type handle its own ID field
             )

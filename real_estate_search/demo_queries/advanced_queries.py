@@ -1,8 +1,18 @@
-"""Advanced demo queries including semantic search and multi-entity search."""
+"""
+Advanced search demo queries including semantic similarity and multi-entity search.
+
+ADVANCED ELASTICSEARCH CONCEPTS:
+- KNN (k-nearest neighbor) search for semantic similarity using vectors
+- Script Score queries for custom ranking algorithms
+- Multi-index search patterns
+- Complex bool query combinations
+- Query and filter context interactions
+"""
 
 from typing import Dict, Any, Optional, List
 from elasticsearch import Elasticsearch
 import logging
+import random
 
 from .models import DemoQueryResult
 
@@ -11,126 +21,151 @@ logger = logging.getLogger(__name__)
 
 def demo_semantic_search(
     es_client: Elasticsearch,
-    size: int = 5
+    reference_property_id: Optional[str] = None,
+    size: int = 10
 ) -> DemoQueryResult:
     """
     Demo 6: Semantic similarity search using embeddings.
     
-    Randomly selects a property and finds the most similar properties
-    using cosine similarity of pre-computed embedding vectors.
+    ELASTICSEARCH CONCEPTS:
+    - KNN SEARCH: k-nearest neighbor for vector similarity
+    - SCRIPT SCORE: Custom scoring using Painless scripts
+    - DENSE VECTORS: Storing and searching embeddings
+    - COSINE SIMILARITY: Vector similarity metric
     
-    How it works:
-    1. Randomly selects a reference property from the index
-    2. Retrieves that property's embedding vector (1024 dimensions)
-    3. Uses cosine similarity to find the most similar properties
-    4. Returns top 5 matches excluding the reference property itself
+    Finds properties similar to a reference property using vector embeddings,
+    demonstrating AI-powered semantic search capabilities.
     
     Args:
         es_client: Elasticsearch client
+        reference_property_id: Property to find similar ones to
         size: Number of similar properties to return
         
     Returns:
         DemoQueryResult with semantically similar properties
     """
-    # Always randomly pick a reference property
-    reference_property_id = None
-    embedding_vector = None
     
-    try:
-        import random
-        # Get a random property with embeddings
+    # First, get a reference property (random if not specified)
+    if not reference_property_id:
+        # RANDOM SAMPLING: Get a random document for demonstration
         random_query = {
+            # FUNCTION SCORE QUERY: Modify document scores with functions
             "query": {
                 "function_score": {
-                    "query": {
-                        "exists": {"field": "embedding"}
-                    },
+                    "query": {"match_all": {}},
+                    # RANDOM SCORE: Randomize results for sampling
                     "random_score": {"seed": random.randint(1, 10000)}
                 }
             },
-            "size": 1,
-            "_source": ["listing_id", "embedding", "address", "price", "bedrooms", "bathrooms", "property_type", "square_feet"]
+            "size": 1
         }
-        random_response = es_client.search(index="properties", body=random_query)
-        if random_response['hits']['hits']:
-            reference_property_id = random_response['hits']['hits'][0]['_id']
-            ref_data = random_response['hits']['hits'][0]['_source']
-            embedding_vector = ref_data.get('embedding')
-            logger.info(f"Randomly selected property: {reference_property_id}")
+        
+        try:
+            random_response = es_client.search(index="properties", body=random_query)
+            if random_response['hits']['hits']:
+                reference_property_id = random_response['hits']['hits'][0]['_id']
+        except Exception as e:
+            logger.error(f"Error getting random property: {e}")
+            reference_property_id = "prop-001"
+    
+    # First get the reference property's embedding
+    reference_embedding = None
+    ref_property_details = {}
+    
+    try:
+        # Get reference property with its embedding
+        if reference_property_id:
+            ref_doc = es_client.get(index="properties", id=reference_property_id)
+            if 'embedding' in ref_doc.get('_source', {}):
+                reference_embedding = ref_doc['_source']['embedding']
+                ref_property_details = {
+                    'address': ref_doc['_source'].get('address', {}),
+                    'property_type': ref_doc['_source'].get('property_type', 'Unknown'),
+                    'price': ref_doc['_source'].get('price', 0),
+                    'bedrooms': ref_doc['_source'].get('bedrooms', 0),
+                    'bathrooms': ref_doc['_source'].get('bathrooms', 0),
+                    'square_feet': ref_doc['_source'].get('square_feet', 0)
+                }
+                # Log property details for context
+                addr = ref_property_details['address']
+                street = addr.get('street', 'Unknown street')
+                city = addr.get('city', 'Unknown city')
+                price_fmt = f"${ref_property_details['price']:,.0f}" if ref_property_details['price'] else "Unknown price"
+                beds = ref_property_details['bedrooms']
+                baths = ref_property_details['bathrooms']
+                sqft = ref_property_details['square_feet']
+                prop_type = ref_property_details['property_type']
+                
+                logger.info(f"\n" + "="*60 + 
+                           f"\n🔍 REFERENCE PROPERTY FOR SIMILARITY SEARCH:" +
+                           f"\n{'-'*60}" +
+                           f"\nProperty ID: {reference_property_id}" +
+                           f"\nAddress: {street}, {city}" +
+                           f"\nType: {prop_type}" +
+                           f"\nPrice: {price_fmt}" +
+                           f"\nSize: {beds}bd/{baths}ba | {sqft} sqft" +
+                           f"\n" + "="*60)
+            else:
+                logger.warning(f"Reference property {reference_property_id} has no embedding")
+                return DemoQueryResult(
+                    query_name="Semantic Similarity Search",
+                    execution_time_ms=0,
+                    total_hits=0,
+                    returned_hits=0,
+                    results=[],
+                    query_dsl={"error": "Reference property has no embedding"}
+                )
     except Exception as e:
-        logger.error(f"Could not get random property: {e}")
+        logger.error(f"Error getting reference property: {e}")
         return DemoQueryResult(
             query_name="Semantic Similarity Search",
             execution_time_ms=0,
             total_hits=0,
             returned_hits=0,
             results=[],
-            query_dsl={}
+            query_dsl={"error": str(e)}
         )
     
-    # Build semantic search query with embeddings excluding the reference property
-    if embedding_vector and reference_property_id:
-        query = {
-            "query": {
-                "bool": {
-                    "must_not": [
-                        {"term": {"_id": reference_property_id}}  # Exclude the reference property
-                    ],
-                    "must": [
-                        {
-                            "script_score": {
-                                "query": {"exists": {"field": "embedding"}},
-                                "script": {
-                                    "source": "cosineSimilarity(params.vector, 'embedding') + 1.0",
-                                    "params": {
-                                        "vector": embedding_vector
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                }
-            },
-            "size": size,
-            "min_score": 1.0,  # Cosine similarity + 1 means minimum actual similarity of 0
-            "_source": [
-                "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-                "square_feet", "address", "description", "features"
-            ]
-        }
-    else:
-        # Fallback query if no embedding available
-        query = {
-            "query": {"match_all": {}},
-            "size": size,
-            "_source": [
-                "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-                "square_feet", "address", "description"
-            ]
-        }
+    # Build the KNN semantic similarity query
+    # KNN is the modern, efficient way to do vector similarity in Elasticsearch
+    query = {
+        # KNN SEARCH: K-Nearest Neighbors for vector similarity
+        # This is much more efficient than script_score for dense_vector fields
+        "knn": {
+            "field": "embedding",  # The dense_vector field containing embeddings
+            "query_vector": reference_embedding,  # The reference vector to compare against
+            "k": size + 1,  # Number of neighbors to find (+1 as reference might be included)
+            "num_candidates": 100  # Number of candidates per shard (higher = more accurate but slower)
+        },
+        # FILTER: Exclude the reference property from results
+        "query": {
+            "bool": {
+                "must_not": [
+                    {"term": {"_id": reference_property_id}}
+                ]
+            }
+        },
+        "size": size,
+        "_source": [
+            "listing_id", "property_type", "price", "bedrooms", "bathrooms",
+            "square_feet", "address", "description", "features"
+        ]
+    }
     
     try:
+        
         response = es_client.search(index="properties", body=query)
         
         results = []
         for hit in response['hits']['hits']:
             result = hit['_source']
-            result['_score'] = hit.get('_score', 0)
+            # Include similarity score for transparency
+            result['_similarity_score'] = hit['_score']
+            result['_reference_property'] = reference_property_id
             results.append(result)
         
-        # Get reference property details for query name
-        ref_details = ""
-        if reference_property_id:
-            try:
-                # We already have ref_data from the random selection
-                ref_doc = es_client.get(index="properties", id=reference_property_id)
-                if '_source' in ref_doc:
-                    ref = ref_doc['_source']
-                    ref_details = f"Finding properties similar to: {ref.get('address', {}).get('street', 'N/A')}, {ref.get('address', {}).get('city', 'N/A')} - {ref.get('bedrooms', 0)}bd/{ref.get('bathrooms', 0)}ba - ${ref.get('price', 0):,.0f} - {ref.get('property_type', 'N/A')}"
-            except:
-                ref_details = f"Finding properties similar to: {reference_property_id}"
-        
-        query_name = f"Semantic Similarity Search (Random Property)\n   {ref_details}"
+        # Create descriptive query name with reference property info
+        query_name = f"Semantic Similarity Search - Finding properties similar to: {street}, {city} ({prop_type}, {price_fmt})"
         
         return DemoQueryResult(
             query_name=query_name,
@@ -148,120 +183,149 @@ def demo_semantic_search(
             total_hits=0,
             returned_hits=0,
             results=[],
-            query_dsl=query if 'query' in locals() else {}
+            query_dsl=query
         )
 
 
 def demo_multi_entity_search(
     es_client: Elasticsearch,
     query_text: str = "historic downtown",
-    size_per_index: int = 5
+    size: int = 5
 ) -> DemoQueryResult:
     """
-    Demo 7: Multi-entity combined search.
+    Demo 7: Multi-entity combined search across different indices.
+    
+    ELASTICSEARCH CONCEPTS:
+    - MULTI-INDEX SEARCH: Query multiple indices in one request
+    - INDEX BOOSTING: Weight importance of different indices
+    - CROSS-INDEX RANKING: Unified relevance scoring
+    - RESULT DISCRIMINATION: Identify source index of each result
     
     Searches across properties, neighborhoods, and Wikipedia articles
-    in a single query using the multi-search API for efficiency.
+    to provide comprehensive results from multiple data sources.
     
     Args:
         es_client: Elasticsearch client
         query_text: Search query text
-        size_per_index: Number of results per index
+        size: Number of results per entity type
         
     Returns:
-        DemoQueryResult with combined results from all indices
+        DemoQueryResult with mixed entity results
     """
-    # Build multi-search request
-    msearch_body = []
     
-    # Properties search
-    msearch_body.extend([
-        {"index": "properties"},
-        {
-            "query": {
-                "multi_match": {
-                    "query": query_text,
-                    "fields": ["description^2", "features", "amenities", "address.city"],
-                    "type": "best_fields"
+    # MULTI-INDEX QUERY: Search multiple indices simultaneously
+    # This is more efficient than separate queries
+    query = {
+        "query": {
+            # MULTI_MATCH across all text fields in all indices
+            "multi_match": {
+                "query": query_text,
+                # FIELD PATTERNS: Use wildcards to match fields across indices
+                "fields": [
+                    # Property fields
+                    "description^2",
+                    "features^1.5",
+                    "amenities",
+                    "address.city",
+                    "neighborhood_name",
+                    
+                    # Neighborhood fields (will be ignored if not present)
+                    "name^3",
+                    "demographics.description",
+                    
+                    # Wikipedia fields
+                    "title^3",
+                    "summary^2",
+                    "content",
+                    "categories"
+                ],
+                "type": "best_fields",
+                "fuzziness": "AUTO"
+            }
+        },
+        
+        # AGGREGATION: Count results by index for overview
+        "aggs": {
+            "by_index": {
+                # INDEX AGGREGATION: Group by _index metadata field
+                "terms": {
+                    "field": "_index",
+                    "size": 10
                 }
+            }
+        },
+        
+        "size": size * 3,  # Get more since we're searching multiple indices
+        
+        # Include index name in results for discrimination
+        "_source": {
+            "includes": ["*"]  # All fields
+        },
+        
+        # HIGHLIGHT: Works across all indices
+        "highlight": {
+            "fields": {
+                "*": {}  # Highlight any matching field
             },
-            "size": size_per_index,
-            "_source": ["listing_id", "property_type", "price", "bedrooms", "address", "description"]
+            "pre_tags": ["<mark>"],
+            "post_tags": ["</mark>"]
         }
-    ])
+    }
     
-    # Neighborhoods search
-    msearch_body.extend([
-        {"index": "neighborhoods"},
-        {
-            "query": {
-                "multi_match": {
-                    "query": query_text,
-                    "fields": ["name^2", "description", "city"],
-                    "type": "best_fields"
-                }
-            },
-            "size": size_per_index,
-            "_source": ["neighborhood_id", "name", "city", "state", "description"]
-        }
-    ])
-    
-    # Wikipedia search
-    msearch_body.extend([
-        {"index": "wikipedia"},
-        {
-            "query": {
-                "multi_match": {
-                    "query": query_text,
-                    "fields": ["title^2", "summary^1.5", "content"],
-                    "type": "best_fields"
-                }
-            },
-            "size": size_per_index,
-            "_source": ["page_id", "title", "summary", "city", "state"]
-        }
-    ])
+    # INDEX SPECIFICATION: Can use wildcards or comma-separated list
+    indices = "properties,neighborhoods,wikipedia"
+    # Alternative patterns:
+    # indices = "*"  # Search all indices
+    # indices = "prop*,neigh*"  # Wildcard patterns
+    # indices = ["properties", "neighborhoods"]  # List format
     
     try:
-        responses = es_client.msearch(body=msearch_body)
+        response = es_client.search(
+            index=indices,  # Multiple indices
+            body=query,
+            # INDEX BOOST: Weight certain indices as more important
+            # Can be specified in URL: "properties^2,neighborhoods^1.5,wikipedia"
+        )
         
-        combined_results = []
-        total_hits = 0
-        execution_time = 0
-        
-        # Process each response
-        for idx, response in enumerate(responses.get('responses', [])):
-            if 'error' in response:
-                logger.error(f"Error in multi-search index {idx}: {response['error']}")
-                continue
+        # Process results and add entity type
+        results = []
+        for hit in response['hits']['hits']:
+            result = hit['_source']
             
-            entity_type = ['properties', 'neighborhoods', 'wikipedia'][idx]
-            execution_time = max(execution_time, response.get('took', 0))
-            total_hits += response['hits']['total']['value']
+            # ADD METADATA: Include index and type information
+            result['_index'] = hit['_index']
+            result['_id'] = hit['_id']
+            result['_score'] = hit['_score']
             
-            for hit in response['hits']['hits']:
-                result = hit['_source']
-                result['_entity_type'] = entity_type
-                result['_score'] = hit.get('_score', 0)
-                combined_results.append(result)
+            # ENTITY TYPE DETECTION: Based on index name
+            if 'properties' in hit['_index']:
+                result['_entity_type'] = 'property'
+            elif 'neighborhoods' in hit['_index']:
+                result['_entity_type'] = 'neighborhood'
+            elif 'wikipedia' in hit['_index']:
+                result['_entity_type'] = 'wikipedia'
+            else:
+                result['_entity_type'] = 'unknown'
+            
+            # Add highlights if present
+            if 'highlight' in hit:
+                result['_highlights'] = hit['highlight']
+            
+            results.append(result)
         
-        # Sort combined results by score
-        combined_results.sort(key=lambda x: x.get('_score', 0), reverse=True)
+        # Include aggregation results
+        aggregations = {}
+        if 'aggregations' in response:
+            aggregations = response['aggregations']
         
         return DemoQueryResult(
-            query_name=f"Multi-Entity Search: '{query_text}' (searching: properties, neighborhoods, wikipedia)",
-            execution_time_ms=execution_time,
-            total_hits=total_hits,
-            returned_hits=len(combined_results),
-            results=combined_results,
-            query_dsl={
-                "multi_search": True,
-                "searches": [
-                    {"index": "properties", "query": msearch_body[1]},
-                    {"index": "neighborhoods", "query": msearch_body[3]},
-                    {"index": "wikipedia", "query": msearch_body[5]}
-                ]
-            }
+            query_name=f"Multi-Entity Search: '{query_text}' (searching: {indices})",
+            execution_time_ms=response.get('took', 0),
+            total_hits=response['hits']['total']['value'],
+            returned_hits=len(results),
+            results=results,
+            aggregations=aggregations,
+            query_dsl=query
         )
     except Exception as e:
         logger.error(f"Error in multi-entity search: {e}")
@@ -271,83 +335,144 @@ def demo_multi_entity_search(
             total_hits=0,
             returned_hits=0,
             results=[],
-            query_dsl={"multi_search": True}
+            query_dsl=query
         )
 
 
 def demo_wikipedia_search(
     es_client: Elasticsearch,
-    query_text: str = "golden gate park",
-    city: Optional[str] = None,
-    state: Optional[str] = None,
+    city: Optional[str] = "San Francisco",
+    state: Optional[str] = "California",
+    topics: Optional[List[str]] = None,
     size: int = 10
 ) -> DemoQueryResult:
     """
-    Demo 8: Wikipedia article search.
+    Demo 8: Wikipedia article search with location filtering.
     
-    Searches Wikipedia articles with optional location filtering
-    to find relevant local knowledge and context.
+    ELASTICSEARCH CONCEPTS:
+    - COMPLEX BOOL QUERIES: Combining multiple conditions
+    - QUERY vs FILTER CONTEXT: When to use each
+    - FIELD EXISTENCE CHECKS: Using exists query
+    - MULTI-FIELD SORTING: Primary and secondary sort orders
+    - NULL HANDLING: Dealing with missing values in sorts
+    
+    Searches Wikipedia articles with geographic and topical filters,
+    demonstrating complex query construction.
     
     Args:
         es_client: Elasticsearch client
-        query_text: Search query text
-        city: Optional city filter
-        state: Optional state filter
+        city: Filter by city
+        state: Filter by state
+        topics: Filter by topics/categories
         size: Number of results
         
     Returns:
         DemoQueryResult with Wikipedia articles
     """
-    # Build query with optional location filters
-    must_clauses = [
-        {
-            "multi_match": {
-                "query": query_text,
-                "fields": [
-                    "title^3",
-                    "summary^2",
-                    "content",
-                    "topics"
-                ],
-                "type": "best_fields",
-                "fuzziness": "AUTO"
-            }
-        }
-    ]
+    if topics is None:
+        topics = ["history", "culture", "landmark"]
     
+    # BUILD COMPLEX BOOL QUERY
+    # Demonstrates query vs filter context usage
+    
+    # MUST CLAUSES: Query context - affects scoring
+    must_clauses = []
+    
+    # Add topic search if provided
+    if topics:
+        must_clauses.append({
+            "multi_match": {
+                "query": " ".join(topics),
+                "fields": [
+                    "title^2",      # Article title most important
+                    "summary^1.5",  # Summary quite important
+                    "categories",   # Categories/topics
+                    "content"       # Full content
+                ],
+                "type": "best_fields"
+            }
+        })
+    
+    # FILTER CLAUSES: Filter context - no scoring, cacheable
     filter_clauses = []
+    
+    # Geographic filters
     if city:
-        filter_clauses.append({"term": {"city.keyword": city}})
+        filter_clauses.append({
+            # NESTED BOOL: OR condition within AND
+            "bool": {
+                "should": [  # OR - match any of these
+                    {"term": {"city.keyword": city}},
+                    {"term": {"best_city_standardized.keyword": city.lower()}},
+                    {"match": {"location": city}}  # Fuzzy match on location field
+                ],
+                "minimum_should_match": 1  # At least one must match
+            }
+        })
+    
     if state:
-        filter_clauses.append({"term": {"state.keyword": state}})
+        filter_clauses.append({
+            "bool": {
+                "should": [
+                    {"term": {"state.keyword": state}},
+                    {"term": {"best_state_standardized.keyword": state.lower()}}
+                ],
+                "minimum_should_match": 1
+            }
+        })
+    
+    # Ensure articles have location data
+    filter_clauses.append({
+        "exists": {"field": "location"}  # Only articles with location field
+    })
     
     query = {
         "query": {
             "bool": {
-                "must": must_clauses,
-                "filter": filter_clauses if filter_clauses else None
+                # QUERY CONTEXT: Scoring queries
+                "must": must_clauses if must_clauses else [{"match_all": {}}],
+                
+                # FILTER CONTEXT: Non-scoring filters
+                "filter": filter_clauses,
+                
+                # BOOSTING: Prefer certain articles
+                "should": [
+                    # Boost high-quality articles
+                    {"range": {"article_quality_score": {"gte": 0.8, "boost": 2.0}}},
+                    # Boost if title contains the city
+                    {"match": {"title": {"query": city or "", "boost": 1.5}}},
+                    # Boost comprehensive articles
+                    {"range": {"content_length": {"gte": 5000, "boost": 1.2}}}
+                ]
             }
         } if filter_clauses else {"bool": {"must": must_clauses}},
+        
         "size": size,
+        
         "_source": [
             "page_id", "title", "url", "summary", "city", "state",
             "location", "article_quality_score", "topics"
         ],
+        
+        # HIGHLIGHTING: Show matching content
         "highlight": {
             "fields": {
                 "summary": {"fragment_size": 150},
                 "content": {"fragment_size": 200}
             }
         },
+        
+        # COMPLEX SORTING: Multiple sort criteria
         "sort": [
-            "_score",
+            "_score",  # Primary: relevance
+            # Secondary: quality score (handle nulls)
             {"article_quality_score": {"order": "desc", "missing": "_last"}}
         ]
     }
     
     # Clean up query if no filters
     if not filter_clauses:
-        query["query"] = must_clauses[0]
+        query['query'] = {"bool": {"must": must_clauses}} if must_clauses else {"match_all": {}}
     
     try:
         response = es_client.search(index="wikipedia", body=query)
@@ -355,20 +480,23 @@ def demo_wikipedia_search(
         results = []
         for hit in response['hits']['hits']:
             result = hit['_source']
-            result['_score'] = hit.get('_score', 0)
+            result['_score'] = hit['_score']
+            
+            # Add highlights
             if 'highlight' in hit:
                 result['_highlights'] = hit['highlight']
+            
+            # Add computed relevance info
+            result['_relevance_factors'] = {
+                'score': hit['_score'],
+                'has_location': 'location' in result,
+                'quality_score': result.get('article_quality_score', 0)
+            }
+            
             results.append(result)
         
-        location_filter = []
-        if city:
-            location_filter.append(f"city={city}")
-        if state:
-            location_filter.append(f"state={state}")
-        location_str = f" ({', '.join(location_filter)})" if location_filter else ""
-        
         return DemoQueryResult(
-            query_name=f"Wikipedia Search: '{query_text}'{location_str}",
+            query_name=f"Wikipedia Search",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),

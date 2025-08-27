@@ -13,7 +13,7 @@ from typing import Optional
 
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, current_timestamp, lit
+from pyspark.sql.functions import col, concat, current_timestamp, lit
 
 from data_pipeline.models.spark_models import WikipediaArticle
 from .base_loader import BaseLoader
@@ -86,6 +86,8 @@ class WikipediaLoader(BaseLoader):
             col("page_id").cast("long"),
             col("title"),
             col("url"),
+            # Generate article filename from page_id
+            concat(lit("data/wikipedia/pages/"), col("page_id").cast("string"), lit(".html")).alias("article_filename"),
             col("categories"),  # Already parsed as array
             col("best_city"),
             col("best_state"),

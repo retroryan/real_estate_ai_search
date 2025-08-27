@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Run demo showing relationships between properties, neighborhoods, and Wikipedia data.
+Demo showing relationships between properties, neighborhoods, and Wikipedia data.
 
-This script demonstrates how the real_estate_search module works with data
+This demonstrates how the real_estate_search module works with data
 indexed by the data_pipeline, showing the full context available for each property.
 """
 
@@ -16,8 +16,8 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from real_estate_search.config import AppConfig
-from real_estate_search.demo_queries import (
+from .models import DemoQueryResult
+from .property_neighborhood_wiki import (
     demo_property_with_full_context,
     demo_neighborhood_properties_and_wiki,
     demo_location_wikipedia_context
@@ -222,8 +222,109 @@ def display_location_context(results: list, city: str, state: str) -> None:
         console.print(table)
 
 
+def demo_relationship_search(es_client: Elasticsearch) -> DemoQueryResult:
+    """Run comprehensive demo showing property-neighborhood-Wikipedia relationships.
+    
+    Args:
+        es_client: Elasticsearch client
+        
+    Returns:
+        DemoQueryResult with combined search results
+    """
+    console.print("\n[bold cyan]Demo 9: Property, Neighborhood & Wikipedia Relationships[/bold cyan]")
+    console.print("=" * 70)
+    
+    console.print("\n[dim]This demo demonstrates how the search system connects three data types:[/dim]")
+    console.print("[dim]• Properties: Real estate listings with details and amenities[/dim]")
+    console.print("[dim]• Neighborhoods: Contextual information about areas[/dim]")
+    console.print("[dim]• Wikipedia: Encyclopedia articles providing rich location context[/dim]")
+    console.print("\n[dim]The system uses relationship mappings to link these entities together,[/dim]")
+    console.print("[dim]enriching property searches with comprehensive location intelligence.[/dim]")
+    
+    all_results = []
+    
+    # Demo Part 1: Property with full context
+    console.print("\n[bold]Part 1: Property with Full Neighborhood and Wikipedia Context[/bold]")
+    console.print("-" * 50)
+    console.print("\n[dim italic]Query Process:[/dim italic]")
+    console.print("[dim]1. Randomly selects a property from the index[/dim]")
+    console.print("[dim]2. Fetches the neighborhood using the property's neighborhood_id[/dim]")
+    console.print("[dim]3. Searches Wikipedia for articles about the property's city[/dim]")
+    console.print("[dim]4. Ranks Wikipedia articles by relevance and relationship type[/dim]")
+    console.print("[dim]5. Returns enriched property data with full location context[/dim]")
+    
+    result1 = demo_property_with_full_context(es_client)
+    if result1.results:
+        display_property_with_context(result1.results)
+        console.print(f"\n[dim]Query execution time: {result1.execution_time_ms}ms[/dim]")
+        console.print(f"[dim]Result shows: Property details + Neighborhood info + Related Wikipedia articles[/dim]")
+        all_results.extend(result1.results)
+    else:
+        console.print("[yellow]No data found for property context demo[/yellow]")
+    
+    # Demo Part 2: Neighborhood with properties and Wikipedia
+    console.print("\n[bold]Part 2: Neighborhood with All Properties and Wikipedia Articles[/bold]")
+    console.print("-" * 50)
+    console.print("\n[dim italic]Query Process:[/dim italic]")
+    console.print("[dim]1. Searches for neighborhood by name: 'Pacific Heights'[/dim]")
+    console.print("[dim]2. Retrieves all properties with matching neighborhood_id[/dim]")
+    console.print("[dim]3. Finds Wikipedia articles mentioning the neighborhood[/dim]")
+    console.print("[dim]4. Categorizes articles by type (primary, neighborhood, park, reference)[/dim]")
+    console.print("[dim]5. Combines results showing the neighborhood ecosystem[/dim]")
+    
+    result2 = demo_neighborhood_properties_and_wiki(es_client, "Pacific Heights")
+    if result2.results:
+        display_neighborhood_with_properties(result2.results)
+        console.print(f"\n[dim]Total items found: {result2.returned_hits}[/dim]")
+        console.print(f"[dim]Result shows: Neighborhood overview + Sample properties + Related Wikipedia content[/dim]")
+        all_results.extend(result2.results)
+    else:
+        console.print("[yellow]No data found for Pacific Heights[/yellow]")
+    
+    # Demo Part 3: Location Wikipedia context
+    console.print("\n[bold]Part 3: Location-based Wikipedia Context for Properties[/bold]")
+    console.print("-" * 50)
+    console.print("\n[dim italic]Query Process:[/dim italic]")
+    console.print("[dim]1. Multi-search across properties and Wikipedia indices[/dim]")
+    console.print("[dim]2. Filters properties by city and state: San Francisco, CA[/dim]")
+    console.print("[dim]3. Searches Wikipedia for articles about the location[/dim]")
+    console.print("[dim]4. Uses text analysis to find location-specific content[/dim]")
+    console.print("[dim]5. Merges results to show properties with city-wide context[/dim]")
+    
+    result3 = demo_location_wikipedia_context(es_client, "San Francisco", "CA")
+    if result3.results:
+        display_location_context(result3.results, "San Francisco", "CA")
+        prop_count = len([r for r in result3.results if r.get('_entity_type') == 'property'])
+        wiki_count = len([r for r in result3.results if r.get('_entity_type') == 'wikipedia'])
+        console.print(f"\n[dim]Query results: {prop_count} properties and {wiki_count} Wikipedia articles[/dim]")
+        console.print(f"[dim]Result shows: City-level property listings + Wikipedia articles about the location[/dim]")
+        all_results.extend(result3.results)
+    else:
+        console.print("[yellow]No data found for San Francisco, CA[/yellow]")
+    
+    console.print("\n[green]✓ Demo 9 complete - Rich entity relationships demonstrated![/green]")
+    console.print("\n[bold yellow]Key Insights:[/bold yellow]")
+    console.print("[yellow]• Properties are enriched with neighborhood and Wikipedia data[/yellow]")
+    console.print("[yellow]• Relationships are mapped using IDs and location matching[/yellow]")
+    console.print("[yellow]• Wikipedia articles provide historical and cultural context[/yellow]")
+    console.print("[yellow]• Multi-index searches enable comprehensive location intelligence[/yellow]")
+    
+    # Return combined results
+    return DemoQueryResult(
+        query_name="Property-Neighborhood-Wikipedia Relationships",
+        results=all_results[:20],  # Limit to 20 results for management display
+        total_hits=len(all_results),
+        returned_hits=min(20, len(all_results)),
+        execution_time_ms=result1.execution_time_ms + result2.execution_time_ms + result3.execution_time_ms if result1.results else 0,
+        query_dsl={"demo": "relationship_search", "parts": ["property_context", "neighborhood", "location"]}
+    )
+
+
 def main():
-    """Run the relationship demos."""
+    """Standalone entry point for running the demo with rich visualization."""
+    from ..config import AppConfig
+    from ..infrastructure.elasticsearch_client import ElasticsearchClientFactory
+    
     console.print("\n[bold cyan]Real Estate Search - Property, Neighborhood & Wikipedia Demo[/bold cyan]")
     console.print("=" * 70)
     
@@ -232,13 +333,19 @@ def main():
     if not config_path.exists():
         config_path = Path("config.yaml")
     
-    config = AppConfig.from_yaml(config_path)
+    try:
+        config = AppConfig.from_yaml(config_path)
+    except Exception as e:
+        console.print(f"[red]Error loading config: {e}[/red]")
+        return
     
-    # Create Elasticsearch client
-    es_client = Elasticsearch(
-        hosts=[f"{config.elasticsearch.host}:{config.elasticsearch.port}"],
-        basic_auth=(config.elasticsearch.username, config.elasticsearch.password) if config.elasticsearch.username else None
-    )
+    # Create Elasticsearch client using factory
+    try:
+        client_factory = ElasticsearchClientFactory(config.elasticsearch)
+        es_client = client_factory.create_client()
+    except Exception as e:
+        console.print(f"[red]Failed to create Elasticsearch client: {e}[/red]")
+        return
     
     # Check connection
     if not es_client.ping():
@@ -247,43 +354,8 @@ def main():
     
     console.print("[green]✓ Connected to Elasticsearch[/green]")
     
-    # Demo 1: Property with full context
-    console.print("\n" + "="*70)
-    console.print("[bold]Demo 1: Property with Full Neighborhood and Wikipedia Context[/bold]")
-    console.print("="*70)
-    
-    result = demo_property_with_full_context(es_client)
-    if result.results:
-        display_property_with_context(result.results)
-        console.print(f"\n[dim]Query took {result.execution_time_ms}ms[/dim]")
-    else:
-        console.print("[red]No data found[/red]")
-    
-    # Demo 2: Neighborhood with properties and Wikipedia
-    console.print("\n" + "="*70)
-    console.print("[bold]Demo 2: Neighborhood with All Properties and Wikipedia Articles[/bold]")
-    console.print("="*70)
-    
-    result = demo_neighborhood_properties_and_wiki(es_client, "Pacific Heights")
-    if result.results:
-        display_neighborhood_with_properties(result.results)
-        console.print(f"\n[dim]Found {result.returned_hits} total items[/dim]")
-    else:
-        console.print("[red]No data found for Pacific Heights[/red]")
-    
-    # Demo 3: Location Wikipedia context
-    console.print("\n" + "="*70)
-    console.print("[bold]Demo 3: Location-based Wikipedia Context for Properties[/bold]")
-    console.print("="*70)
-    
-    result = demo_location_wikipedia_context(es_client, "San Francisco", "CA")
-    if result.results:
-        display_location_context(result.results, "San Francisco", "CA")
-        console.print(f"\n[dim]Found {len([r for r in result.results if r.get('_entity_type') == 'property'])} properties and {len([r for r in result.results if r.get('_entity_type') == 'wikipedia'])} Wikipedia articles[/dim]")
-    else:
-        console.print("[red]No data found for San Francisco, CA[/red]")
-    
-    console.print("\n[green]Demo complete![/green]")
+    # Run the demo
+    demo_relationship_search(es_client)
 
 
 if __name__ == "__main__":

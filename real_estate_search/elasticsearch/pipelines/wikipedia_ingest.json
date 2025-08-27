@@ -1,0 +1,43 @@
+{
+  "description": "Pipeline for processing Wikipedia HTML content",
+  "processors": [
+    {
+      "html_strip": {
+        "field": "full_content",
+        "ignore_missing": true,
+        "ignore_failure": true,
+        "description": "Remove HTML tags from full_content field"
+      }
+    },
+    {
+      "trim": {
+        "field": "full_content",
+        "ignore_missing": true,
+        "ignore_failure": true,
+        "description": "Trim whitespace from full_content"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.full_content != null) { ctx.content_length = ctx.full_content.length(); ctx.content_loaded = true; ctx.content_loaded_at = new Date(); } else { ctx.content_loaded = false; }",
+        "ignore_failure": true,
+        "description": "Set metadata fields for content loading"
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "_index",
+        "value": "wikipedia_failed"
+      }
+    },
+    {
+      "set": {
+        "field": "error_message",
+        "value": "{{_ingest.on_failure_message}}"
+      }
+    }
+  ]
+}

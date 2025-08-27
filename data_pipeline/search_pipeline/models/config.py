@@ -77,10 +77,6 @@ class ElasticsearchConfig(BaseModel):
         le=65535,
         description="Elasticsearch port (es.port)"
     )
-    index_prefix: str = Field(
-        default="real_estate",
-        description="Prefix for index names"
-    )
     index_auto_create: bool = Field(
         default=True,
         description="Automatically create indices if they don't exist (es.index.auto.create)"
@@ -178,9 +174,7 @@ class ElasticsearchConfig(BaseModel):
         Returns:
             Full index name
         """
-        if not self.index_prefix or self.index_prefix.strip() == "":
-            return entity_type
-        return f"{self.index_prefix}_{entity_type}"
+        return entity_type
 
 
 class SearchPipelineConfig(BaseModel):
