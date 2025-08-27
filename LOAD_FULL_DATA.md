@@ -363,13 +363,13 @@ Modified the WikipediaArticle SparkModel to include article_filename field. Upda
 
 ---
 
-## Phase 2: Configure Elasticsearch Index and Ingest Pipeline ✅ COMPLETED
+## Phase 2: Configure Elasticsearch Index and Ingest Pipeline
 
 ### Problem
 The Wikipedia index needs proper field mappings and an ingest pipeline to handle HTML content.
 
 ### Fix
-Updated the Wikipedia index template with multi-field mappings using the English analyzer, and created a simple ingest pipeline for HTML processing.
+Update the Wikipedia index template with multi-field mappings using the English analyzer, and create a simple ingest pipeline for HTML processing.
 
 ### Requirements
 - Use English analyzer for text fields
@@ -378,17 +378,17 @@ Updated the Wikipedia index template with multi-field mappings using the English
 - Add necessary metadata fields
 
 ### Solution
-Modified the wikipedia.json template to include new fields with multi-field mapping using the English analyzer. Created a simple ingest pipeline that strips HTML and cleans whitespace.
+Modify the wikipedia.json template to include new fields with multi-field mapping using the English analyzer. Define a simple ingest pipeline that strips HTML and cleans whitespace.
 
-### Implementation Status
-- ✅ Added full_content field with English analyzer and multi-field mapping
-- ✅ Added full_content.exact with standard analyzer for phrase matching
-- ✅ Added article_filename field as keyword type (non-indexed)
-- ✅ Created wikipedia_ingest_pipeline with HTML strip processor
-- ✅ Added trim processor to clean whitespace
-- ✅ Added metadata fields (content_loaded, content_length, content_loaded_at)
-- ✅ Included script processor to set metadata on content load
-- ✅ Added on_failure handlers for error handling
+### Todo List
+- [ ] Add full_content field with multi-field mapping using English analyzer
+- [ ] Add full_content.exact with standard analyzer for phrase matching
+- [ ] Add article_filename field as keyword type
+- [ ] Create wikipedia_ingest_pipeline with HTML strip processor
+- [ ] Add trim processor to pipeline
+- [ ] Add metadata fields (content_loaded, content_length)
+- [ ] Test pipeline with sample Wikipedia HTML
+- [ ] Code review and testing
 
 ---
 
