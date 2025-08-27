@@ -153,7 +153,7 @@
         },
         "wikipedia_title": {
           "type": "text",
-          "analyzer": "english",
+          "analyzer": "wikipedia_analyzer",
           "fields": {
             "keyword": {
               "type": "keyword"
@@ -162,11 +162,11 @@
         },
         "location_summary": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "historical_significance": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "key_topics": {
           "type": "keyword",
@@ -197,7 +197,7 @@
             },
             "description": {
               "type": "text",
-              "analyzer": "english"
+              "analyzer": "wikipedia_analyzer"
             }
           }
         },
@@ -229,7 +229,7 @@
         },
         "wikipedia_title": {
           "type": "text",
-          "analyzer": "english",
+          "analyzer": "wikipedia_analyzer",
           "fields": {
             "keyword": {
               "type": "keyword"
@@ -238,15 +238,15 @@
         },
         "description": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "history": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "character": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "notable_residents": {
           "type": "keyword"
@@ -298,7 +298,7 @@
         },
         "description": {
           "type": "text",
-          "analyzer": "english"
+          "analyzer": "wikipedia_analyzer"
         },
         "key_topics": {
           "type": "keyword",
@@ -308,7 +308,7 @@
     },
     "enriched_search_text": {
       "type": "text",
-      "analyzer": "english"
+      "analyzer": "wikipedia_analyzer"
     },
     "location_scores": {
       "type": "object",

@@ -5,7 +5,7 @@
     },
     "title": {
       "type": "text",
-      "analyzer": "english",
+      "analyzer": "wikipedia_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword"
@@ -17,37 +17,13 @@
       "index": false,
       "doc_values": false
     },
-    "article_filename": {
-      "type": "keyword",
-      "index": false
-    },
     "long_summary": {
       "type": "text",
-      "analyzer": "english"
+      "analyzer": "wikipedia_analyzer"
     },
     "short_summary": {
       "type": "text",
-      "analyzer": "english"
-    },
-    "full_content": {
-      "type": "text",
-      "analyzer": "english",
-      "index_options": "offsets",
-      "fields": {
-        "exact": {
-          "type": "text",
-          "analyzer": "standard"
-        }
-      }
-    },
-    "content_length": {
-      "type": "integer"
-    },
-    "content_loaded": {
-      "type": "boolean"
-    },
-    "content_loaded_at": {
-      "type": "date"
+      "analyzer": "wikipedia_analyzer"
     },
     "best_city": {
       "type": "keyword",
