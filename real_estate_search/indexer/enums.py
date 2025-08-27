@@ -126,6 +126,8 @@ class IndexName(StrEnum):
     TEST_NEIGHBORHOODS = "test_neighborhoods"
     WIKIPEDIA = "wikipedia"
     TEST_WIKIPEDIA = "test_wikipedia"
+    PROPERTY_RELATIONSHIPS = "property_relationships"
+    TEST_PROPERTY_RELATIONSHIPS = "test_property_relationships"
 
 
 class AggregationType(StrEnum):

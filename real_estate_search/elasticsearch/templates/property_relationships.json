@@ -1,0 +1,241 @@
+{
+  "properties": {
+    "listing_id": {
+      "type": "keyword"
+    },
+    "property_type": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "price": {
+      "type": "float"
+    },
+    "bedrooms": {
+      "type": "short"
+    },
+    "bathrooms": {
+      "type": "half_float"
+    },
+    "square_feet": {
+      "type": "integer"
+    },
+    "year_built": {
+      "type": "short"
+    },
+    "lot_size": {
+      "type": "integer"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "text",
+          "analyzer": "address_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "city": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "zip_code": {
+          "type": "keyword"
+        },
+        "location": {
+          "type": "geo_point"
+        }
+      }
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "property_analyzer"
+    },
+    "features": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "amenities": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "status": {
+      "type": "keyword"
+    },
+    "listing_date": {
+      "type": "date"
+    },
+    "last_updated": {
+      "type": "date"
+    },
+    "days_on_market": {
+      "type": "integer"
+    },
+    "price_per_sqft": {
+      "type": "float"
+    },
+    "hoa_fee": {
+      "type": "float"
+    },
+    "parking": {
+      "type": "object",
+      "properties": {
+        "spaces": {
+          "type": "byte"
+        },
+        "type": {
+          "type": "keyword"
+        }
+      }
+    },
+    "virtual_tour_url": {
+      "type": "keyword",
+      "index": false,
+      "doc_values": false
+    },
+    "images": {
+      "type": "keyword",
+      "index": false,
+      "doc_values": false
+    },
+    "mls_number": {
+      "type": "keyword"
+    },
+    "tax_assessed_value": {
+      "type": "long"
+    },
+    "annual_tax": {
+      "type": "float"
+    },
+    "neighborhood": {
+      "type": "object",
+      "properties": {
+        "neighborhood_id": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "property_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "city": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "state": {
+          "type": "keyword"
+        },
+        "population": {
+          "type": "integer"
+        },
+        "median_income": {
+          "type": "integer"
+        },
+        "walkability_score": {
+          "type": "byte"
+        },
+        "school_rating": {
+          "type": "half_float"
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "property_analyzer"
+        },
+        "amenities": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "demographics": {
+          "type": "object",
+          "properties": {
+            "age_distribution": {
+              "type": "keyword"
+            },
+            "education_level": {
+              "type": "keyword"
+            },
+            "income_brackets": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    },
+    "wikipedia_articles": {
+      "type": "nested",
+      "properties": {
+        "page_id": {
+          "type": "keyword"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "english",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "url": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "summary": {
+          "type": "text",
+          "analyzer": "english"
+        },
+        "best_city": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "best_state": {
+          "type": "keyword"
+        },
+        "relationship_type": {
+          "type": "keyword"
+        },
+        "confidence": {
+          "type": "float"
+        },
+        "relevance_score": {
+          "type": "float"
+        }
+      }
+    },
+    "enriched_search_text": {
+      "type": "text",
+      "analyzer": "wikipedia_analyzer"
+    },
+    "embedding": {
+      "type": "dense_vector",
+      "dims": 1024,
+      "similarity": "cosine"
+    },
+    "embedding_model": {
+      "type": "keyword"
+    },
+    "embedding_dimension": {
+      "type": "integer"
+    },
+    "embedded_at": {
+      "type": "date"
+    },
+    "relationship_updated": {
+      "type": "date"
+    },
+    "data_version": {
+      "type": "keyword"
+    }
+  }
+}

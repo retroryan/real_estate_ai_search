@@ -8,7 +8,12 @@ import logging
 from elasticsearch import Elasticsearch
 from pydantic import BaseModel
 
-from .mappings import get_property_mappings, get_neighborhood_mappings, get_wikipedia_mappings
+from .mappings import (
+    get_property_mappings, 
+    get_neighborhood_mappings, 
+    get_wikipedia_mappings,
+    get_property_relationships_mappings
+)
 from .enums import IndexName, ErrorCode
 from .exceptions import ElasticsearchIndexError
 
@@ -165,6 +170,41 @@ class ElasticsearchIndexManager:
                 f"Failed to create index {index_name}: {str(e)}"
             )
     
+    def create_property_relationships_index(self, index_name: str = IndexName.PROPERTY_RELATIONSHIPS) -> bool:
+        """
+        Create property relationships index with proper mappings.
+        
+        Args:
+            index_name: Name of the index to create
+            
+        Returns:
+            True if index was created or already exists, False on error
+        """
+        try:
+            # Check if index already exists
+            if self.client.indices.exists(index=index_name):
+                self.logger.info(f"Index {index_name} already exists")
+                return True
+            
+            # Get mappings for property relationships index
+            mappings_config = get_property_relationships_mappings()
+            
+            # Create the index
+            self.client.indices.create(
+                index=index_name,
+                body=mappings_config
+            )
+            
+            self.logger.info(f"Successfully created index: {index_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create index {index_name}: {str(e)}")
+            raise ElasticsearchIndexError(
+                ErrorCode.INDEX_NOT_FOUND,
+                f"Failed to create index {index_name}: {str(e)}"
+            )
+    
     def register_index_template(self, template: IndexTemplate) -> bool:
         """
         Register an index template.
@@ -250,6 +290,25 @@ class ElasticsearchIndexManager:
         template = IndexTemplate(
             name="wikipedia_template",
             index_patterns=["wikipedia*"],
+            settings=mappings_config["settings"],
+            mappings=mappings_config["mappings"],
+            priority=100
+        )
+        
+        return self.register_index_template(template)
+    
+    def create_property_relationships_template(self) -> bool:
+        """
+        Create and register property relationships index template.
+        
+        Returns:
+            True if template was created successfully
+        """
+        mappings_config = get_property_relationships_mappings()
+        
+        template = IndexTemplate(
+            name="property_relationships_template",
+            index_patterns=["property_relationships*"],
             settings=mappings_config["settings"],
             mappings=mappings_config["mappings"],
             priority=100
@@ -388,7 +447,9 @@ class ElasticsearchIndexManager:
             IndexName.NEIGHBORHOODS,
             IndexName.TEST_NEIGHBORHOODS,
             IndexName.WIKIPEDIA,
-            IndexName.TEST_WIKIPEDIA
+            IndexName.TEST_WIKIPEDIA,
+            IndexName.PROPERTY_RELATIONSHIPS,
+            IndexName.TEST_PROPERTY_RELATIONSHIPS
         ]
         
         return [self.get_index_status(name) for name in index_names]
@@ -434,6 +495,7 @@ class ElasticsearchIndexManager:
             results["property_template"] = self.create_property_template()
             results["neighborhood_template"] = self.create_neighborhood_template()
             results["wikipedia_template"] = self.create_wikipedia_template()
+            results["property_relationships_template"] = self.create_property_relationships_template()
             
             # Then create indices
             self.logger.info("Creating indices...")
@@ -443,6 +505,8 @@ class ElasticsearchIndexManager:
             results[IndexName.TEST_NEIGHBORHOODS] = self.create_neighborhood_index(IndexName.TEST_NEIGHBORHOODS)
             results[IndexName.WIKIPEDIA] = self.create_wikipedia_index(IndexName.WIKIPEDIA)
             results[IndexName.TEST_WIKIPEDIA] = self.create_wikipedia_index(IndexName.TEST_WIKIPEDIA)
+            results[IndexName.PROPERTY_RELATIONSHIPS] = self.create_property_relationships_index(IndexName.PROPERTY_RELATIONSHIPS)
+            results[IndexName.TEST_PROPERTY_RELATIONSHIPS] = self.create_property_relationships_index(IndexName.TEST_PROPERTY_RELATIONSHIPS)
             
             success_count = sum(1 for success in results.values() if success)
             total_count = len(results)

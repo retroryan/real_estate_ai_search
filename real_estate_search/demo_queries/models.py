@@ -125,10 +125,21 @@ class DemoQueryResult(BaseModel):
                         f"{result.get('address', {}).get('city', 'N/A')}, "
                         f"{result.get('address', {}).get('state', 'N/A')}"
                     )
+                    # Check if features is a dict with property details
+                    features = result.get('features', {})
+                    if isinstance(features, dict):
+                        bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
+                        bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
+                        square_feet = features.get('square_feet', result.get('square_feet', 0))
+                    else:
+                        bedrooms = result.get('bedrooms', 0)
+                        bathrooms = result.get('bathrooms', 0)
+                        square_feet = result.get('square_feet', 0)
+                    
                     output.append(
                         f"   ${result.get('price', 0):,.0f} | "
-                        f"{result.get('bedrooms', 0)}bd/{result.get('bathrooms', 0)}ba | "
-                        f"{result.get('square_feet', 0):,} sqft | "
+                        f"{bedrooms}bd/{bathrooms}ba | "
+                        f"{square_feet:,} sqft | "
                         f"{result.get('property_type', 'N/A')}"
                     )
                     if '_score' in result:

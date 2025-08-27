@@ -23,6 +23,7 @@ class EntityType(str, Enum):
     PROPERTIES = "properties"
     NEIGHBORHOODS = "neighborhoods"
     WIKIPEDIA = "wikipedia"
+    PROPERTY_RELATIONSHIPS = "property_relationships"
 
 
 class IndexSettings(BaseModel):
@@ -149,6 +150,10 @@ class ElasticsearchWriterSettings(BaseModel):
             },
             EntityType.WIKIPEDIA: {
                 "id_field": "page_id",
+                "enable_geo_point": True,
+            },
+            EntityType.PROPERTY_RELATIONSHIPS: {
+                "id_field": "listing_id",
                 "enable_geo_point": True,
             },
         }

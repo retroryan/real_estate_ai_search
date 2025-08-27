@@ -20,6 +20,7 @@ from data_pipeline.writers.elasticsearch.models import (
     WriteResult,
 )
 from data_pipeline.writers.elasticsearch.transformations import DataFrameTransformer
+from data_pipeline.writers.elasticsearch.relationship_writer import PropertyRelationshipBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ class ElasticsearchOrchestrator(EntityWriter):
         
         # Initialize transformer
         self.transformer = DataFrameTransformer(spark)
+        
+        # Initialize relationship builder
+        self.relationship_builder = PropertyRelationshipBuilder(spark)
         
         # Spark format
         self.format_string = "es"
@@ -149,6 +153,47 @@ class ElasticsearchOrchestrator(EntityWriter):
             return True
         else:
             self.logger.error(f"Wikipedia write failed: {result.error_message}")
+            return False
+    
+    def write_property_relationships(
+        self, 
+        properties_df: DataFrame,
+        neighborhoods_df: DataFrame,
+        wikipedia_df: DataFrame
+    ) -> bool:
+        """
+        Write property relationships to denormalized index.
+        
+        Args:
+            properties_df: Properties DataFrame
+            neighborhoods_df: Neighborhoods DataFrame
+            wikipedia_df: Wikipedia DataFrame
+            
+        Returns:
+            True if successful
+        """
+        # Build denormalized relationships
+        relationships_df = self.relationship_builder.build_relationships(
+            properties_df,
+            neighborhoods_df,
+            wikipedia_df,
+            max_wikipedia_articles=5
+        )
+        
+        # Create write operation for relationships
+        operation = self._create_write_operation(
+            EntityType.PROPERTY_RELATIONSHIPS,
+            relationships_df.count()
+        )
+        
+        # Execute write
+        result = self._execute_write_operation(relationships_df, operation)
+        
+        if result.success:
+            self.logger.info(f"Successfully wrote {result.record_count} property relationships")
+            return True
+        else:
+            self.logger.error(f"Property relationships write failed: {result.error_message}")
             return False
     
     def get_writer_name(self) -> str:
