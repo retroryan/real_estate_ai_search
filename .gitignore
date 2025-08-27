@@ -159,3 +159,6 @@ output/
 neo4j_auth.txt
 
 .idea/
+
+# HTML output directory
+real_estate_search/out_html/
