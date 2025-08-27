@@ -576,6 +576,7 @@ class PropertyNeighborhoodWikiDemo:
         
         return DemoQueryResult(
             query_name=query_name,
+            query_description="Retrieves a property with its neighborhood details and related Wikipedia articles, demonstrating cross-index relationships",
             execution_time_ms=total_execution_time,
             total_hits=len(results),
             returned_hits=len(results),
@@ -589,7 +590,22 @@ class PropertyNeighborhoodWikiDemo:
                     "3. Extract Wikipedia correlations",
                     "4. Fetch Wikipedia articles"
                 ]
-            }
+            },
+            es_features=[
+                "Cross-Index Relationships - Following foreign keys between indices",
+                "Multi-Step Query Pattern - Sequential queries to build context",
+                "Function Score Query - Random property selection for demos",
+                "Term Queries - Exact ID lookups across indices",
+                "Source Filtering - Optimize network traffic by excluding large fields",
+                "Entity Relationship Mapping - Property -> Neighborhood -> Wikipedia",
+                "Exists Query - Filter properties with neighborhood relationships"
+            ],
+            indexes_used=[
+                "properties index - Real estate property listings",
+                "neighborhoods index - Neighborhood demographics and descriptions",
+                "wikipedia index - Related Wikipedia articles for context",
+                "Following relationships across 3 different indices"
+            ]
         )
     
     def demo_neighborhood_properties_and_wiki(

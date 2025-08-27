@@ -475,11 +475,23 @@ class PropertySearchDemo:
         
         return DemoQueryResult(
             query_name=f"Basic Property Search: '{query_text}'",
+            query_description=f"Full-text search for '{query_text}' across property descriptions, amenities, and addresses with fuzzy matching to handle typos",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
             returned_hits=len(results),
             results=results,
             query_dsl=request.to_dict(),
+            es_features=[
+                "Multi-Match Query: Searches across multiple fields simultaneously",
+                "Field Boosting: Weights description 2x, amenities 1.5x for relevance",
+                "Fuzzy Matching: AUTO fuzziness handles typos and variations",
+                "Highlighting: Shows matched text fragments in results",
+                "Query Context: Calculates relevance scores for ranking"
+            ],
+            indexes_used=[
+                "properties index: 420 real estate listings",
+                "Fields searched: description, amenities, address.street, address.city, neighborhood_id"
+            ],
             explanation=f"Searched for '{query_text}' across description, amenities, and address fields with fuzzy matching"
         )
     
@@ -537,11 +549,23 @@ class PropertySearchDemo:
         
         return DemoQueryResult(
             query_name="Filtered Property Search",
+            query_description=f"Filter properties by: {property_type} type, ${min_price:,.0f}-${max_price:,.0f} price range, {min_bedrooms}+ bedrooms, {min_bathrooms}+ bathrooms",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
             returned_hits=len(results),
             results=results,
             query_dsl=request.to_dict(),
+            es_features=[
+                "Bool Query with Filters: Combines multiple criteria using filter context",
+                "Filter Context: Non-scoring queries cached for performance",
+                "Range Queries: Numeric filtering for price, bedrooms, bathrooms",
+                "Term Query: Exact matching on property type",
+                "Sort by Price: Results ordered by price ascending"
+            ],
+            indexes_used=[
+                "properties index: 420 real estate listings",
+                "Filtered fields: property_type, price, bedrooms, bathrooms"
+            ],
             explanation=f"Properties: {property_type}, ${min_price:,.0f}-${max_price:,.0f}, {min_bedrooms}+ beds, {min_bathrooms}+ baths"
         )
     
@@ -602,11 +626,24 @@ class PropertySearchDemo:
         
         return DemoQueryResult(
             query_name="Geo-Distance Property Search",
+            query_description=f"Find properties within {radius_km}km radius of coordinates ({center_lat:.4f}, {center_lon:.4f}) with optional price filtering",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
             returned_hits=len(results),
             results=results,
             query_dsl=request.to_dict(),
+            es_features=[
+                "Geo-Distance Query: Filters documents within radius of a point",
+                "Geo-Point Field: Uses address.location field for coordinates",
+                "Distance Sorting: Results ordered by distance from center",
+                "Distance Calculation: Arc method for accurate distances",
+                "Combined Filters: Geo filter with optional price constraints"
+            ],
+            indexes_used=[
+                "properties index: 420 real estate listings with geo-coordinates",
+                "Geo field: address.location (lat/lon pairs)",
+                f"Search area: {radius_km}km radius in San Francisco area"
+            ],
             explanation=f"Properties within {radius_km}km of ({center_lat}, {center_lon})"
         )
     
@@ -684,12 +721,25 @@ class PropertySearchDemo:
         
         return DemoQueryResult(
             query_name="Price Range Search with Analytics",
+            query_description=f"Search properties in ${min_price:,.0f}-${max_price:,.0f} range with statistical aggregations for market analysis",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
             returned_hits=len(results),
             results=results,
             query_dsl=request.to_dict(),
             aggregations=aggregations,
+            es_features=[
+                "Range Query: Filter properties by price range",
+                "Stats Aggregation: Calculate min, max, avg, sum statistics",
+                "Histogram Aggregation: Price distribution in $100k buckets",
+                "Terms Aggregation: Group by property types",
+                "Multi-Aggregation: Multiple analytics in single query"
+            ],
+            indexes_used=[
+                "properties index: 420 real estate listings",
+                "Aggregation fields: price, property_type, bedrooms",
+                "Statistical analysis across matching properties"
+            ],
             explanation=f"Properties ${min_price:,.0f}-${max_price:,.0f} with statistical analysis"
         )
 

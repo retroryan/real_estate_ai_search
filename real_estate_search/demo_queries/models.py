@@ -65,24 +65,46 @@ class MultiEntitySearchParams(BaseModel):
 class DemoQueryResult(BaseModel):
     """Standard result format for demo queries."""
     query_name: str = Field(..., description="Name of the demo query")
+    query_description: Optional[str] = Field(None, description="Description of what the query searches for")
     execution_time_ms: int = Field(..., description="Query execution time in milliseconds")
     total_hits: int = Field(..., description="Total number of matching documents")
     returned_hits: int = Field(..., description="Number of documents returned")
     results: List[Dict[str, Any]] = Field(..., description="Query results")
     aggregations: Optional[Dict[str, Any]] = Field(None, description="Aggregation results if applicable")
     query_dsl: Dict[str, Any] = Field(..., description="The actual Elasticsearch query used")
+    es_features: Optional[List[str]] = Field(None, description="Elasticsearch features demonstrated")
+    indexes_used: Optional[List[str]] = Field(None, description="Indexes queried")
     
     def display(self, verbose: bool = False) -> str:
         """Format results for display."""
         import json
         
         output = []
-        output.append(f"\n{'='*60}")
-        output.append(f"Demo Query: {self.query_name}")
-        output.append(f"{'='*60}")
-        output.append(f"Execution Time: {self.execution_time_ms}ms")
-        output.append(f"Total Hits: {self.total_hits}")
-        output.append(f"Returned: {self.returned_hits}")
+        output.append(f"\n{'='*80}")
+        output.append(f"🔍 Demo Query: {self.query_name}")
+        output.append(f"{'='*80}")
+        
+        # Add search description if provided
+        if self.query_description:
+            output.append(f"\n📝 SEARCH DESCRIPTION:")
+            output.append(f"   {self.query_description}")
+        
+        # Add Elasticsearch features if provided
+        if self.es_features:
+            output.append(f"\n📊 ELASTICSEARCH FEATURES:")
+            for feature in self.es_features:
+                output.append(f"   • {feature}")
+        
+        # Add indexes used if provided
+        if self.indexes_used:
+            output.append(f"\n📁 INDEXES & DOCUMENTS:")
+            for index_info in self.indexes_used:
+                output.append(f"   • {index_info}")
+        
+        output.append(f"\n{'─'*80}")
+        output.append(f"⏱️  Execution Time: {self.execution_time_ms}ms")
+        output.append(f"📊 Total Hits: {self.total_hits}")
+        output.append(f"📄 Returned: {self.returned_hits}")
         
         if self.results:
             output.append(f"\n{'-'*40}")

@@ -311,12 +311,27 @@ def demo_relationship_search(es_client: Elasticsearch) -> DemoQueryResult:
     
     # Return combined results
     return DemoQueryResult(
-        query_name="Property-Neighborhood-Wikipedia Relationships",
+        query_name="Demo 9: Property-Neighborhood-Wikipedia Relationships",
+        query_description="Demonstrates comprehensive entity relationships by showing properties with neighborhood context and Wikipedia articles, illustrating how the system connects different data types",
         results=all_results[:20],  # Limit to 20 results for management display
         total_hits=len(all_results),
         returned_hits=min(20, len(all_results)),
         execution_time_ms=result1.execution_time_ms + result2.execution_time_ms + result3.execution_time_ms if result1.results else 0,
-        query_dsl={"demo": "relationship_search", "parts": ["property_context", "neighborhood", "location"]}
+        query_dsl={"demo": "relationship_search", "parts": ["property_context", "neighborhood", "location"]},
+        es_features=[
+            "Entity Relationship Mapping - Connecting properties to neighborhoods to Wikipedia",
+            "Foreign Key Lookups - Following neighborhood_id references",
+            "Multi-Step Queries - Building context through sequential searches",
+            "Cross-Index Joins - Combining data from 3 different indices",
+            "Wikipedia Correlations - Confidence-scored article relationships",
+            "Rich Metadata - Including relationship types and confidence scores"
+        ],
+        indexes_used=[
+            "properties index - Primary real estate listings",
+            "neighborhoods index - Area demographics and descriptions",
+            "wikipedia index - Encyclopedia articles with location data",
+            "Demonstrates full knowledge graph traversal"
+        ]
     )
 
 

@@ -27,7 +27,6 @@ class EntityType(str, Enum):
     CITY = "city"
     STATE = "state"
     TOPIC_CLUSTER = "topic_cluster"
-    PROPERTY_RELATIONSHIPS = "property_relationships"
 
 
 class WriteMetadata(BaseModel):

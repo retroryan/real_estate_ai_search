@@ -26,7 +26,7 @@ This project uses Elasticsearch as its primary search engine, implementing:
 - **Dense vectors** for semantic search capabilities
 - **Geo-spatial** features for location-based queries
 
-## 📋 Configuration Files Detailed Explanation
+## �� Configuration Files Detailed Explanation
 
 ### 1. Settings: `settings/analyzers.json`
 
@@ -43,12 +43,12 @@ This file defines custom analyzers, normalizers, and index settings that are sha
 
 1. **`property_analyzer`** - For property descriptions
    - Tokenizer: `standard` (splits on whitespace and punctuation)
-   - Filters: `lowercase`, `stop` (removes common words), `snowball` (stems words)
+   - Filters: `lowercase`, `stop`, `snowball`
    - Use: Property descriptions, neighborhood descriptions
 
 2. **`address_analyzer`** - For street addresses
    - Tokenizer: `standard`
-   - Filters: `lowercase`, `asciifolding` (converts accented chars)
+   - Filters: `lowercase`, `asciifolding`
    - Use: Street names, maintaining searchability with/without accents
 
 3. **`feature_analyzer`** - For property features/amenities
@@ -62,15 +62,44 @@ This file defines custom analyzers, normalizers, and index settings that are sha
    - Special: Includes shingles for phrase matching (2-3 word combinations)
    - Use: Rich text content from Wikipedia articles
 
+#### Token Filter Definitions:
+
+**Common Filters Explained:**
+
+- **`lowercase`**: Converts all tokens to lowercase
+  - Example: "San Francisco" → "san francisco"
+  - Purpose: Case-insensitive matching
+
+- **`stop`**: Removes common English stop words
+  - Removes: "the", "is", "at", "which", "on", "a", "an", etc.
+  - Example: "the beautiful house on the hill" → "beautiful house hill"
+  - Purpose: Focuses on meaningful words, reduces index size
+
+- **`snowball`**: Algorithmic stemmer that reduces words to root form
+  - Examples: "running" → "run", "houses" → "hous", "beautiful" → "beauti"
+  - Purpose: Matches different forms of the same word
+
+- **`asciifolding`**: Converts alphabetic, numeric, and symbolic Unicode characters outside ASCII range to ASCII equivalents
+  - Examples: "café" → "cafe", "naïve" → "naive", "Zürich" → "Zurich"
+  - Purpose: Handles accented characters, making "José" searchable as "Jose"
+
+- **`shingle`**: Creates word n-grams (consecutive word combinations)
+  - With `min_shingle_size: 2` and `max_shingle_size: 3`:
+    - Input: "modern luxury home"
+    - Output tokens: ["modern", "luxury", "home", "modern luxury", "luxury home", "modern luxury home"]
+  - Purpose: Improves phrase matching and relevance
+
 **Normalizers:**
 - **`lowercase_normalizer`** - For keyword fields needing case-insensitive exact matching
   - Filters: `lowercase`, `asciifolding`
   - Use: City names, categories, ensuring "San Francisco" = "san francisco"
+  - Note: Normalizers only work on keyword fields, not text fields
 
-**Custom Filters:**
-- **`shingle`** - Creates n-grams of 2-3 words
-  - Improves phrase matching in searches
-  - Example: "modern luxury home" → ["modern luxury", "luxury home", "modern luxury home"]
+**Custom Filter Configuration:**
+- **`shingle`** filter settings:
+  - `min_shingle_size: 2` - Minimum words in a shingle (2 = bigrams)
+  - `max_shingle_size: 3` - Maximum words in a shingle (3 = trigrams)
+  - Creates overlapping word combinations for better phrase search
 
 ### 2. Ingest Pipeline: `pipelines/wikipedia_ingest.json`
 
@@ -113,6 +142,113 @@ POST wikipedia/_doc?pipeline=wikipedia_ingest
 
 ### 3. Index Templates
 
+#### Understanding Elasticsearch Field Types and Concepts
+
+Before diving into the templates, let's understand key Elasticsearch concepts:
+
+**Field Types Explained:**
+
+- **`keyword`**: Structured content for exact matching, filtering, sorting, and aggregations
+  - Stored as-is without analysis (not tokenized)
+  - Examples: IDs, email addresses, status codes, zip codes
+  - Use cases: Exact matches, terms aggregations, sorting
+  - Example mapping: `"listing_id": {"type": "keyword"}`
+
+- **`text`**: Unstructured content for full-text search
+  - Analyzed (tokenized, filtered) at index time
+  - Examples: Descriptions, reviews, article content
+  - Use cases: Full-text search, relevance scoring
+  - Example mapping: `"description": {"type": "text", "analyzer": "english"}`
+
+- **`fields` (Multi-fields)**: Store the same value in multiple ways
+  - Allows different analysis for different purposes
+  - Common pattern: Text field with keyword sub-field
+  - Example:
+    ```json
+    "title": {
+      "type": "text",           // For full-text search
+      "fields": {
+        "keyword": {             // For exact match, sorting
+          "type": "keyword",
+          "ignore_above": 256    // Don't index if longer than 256 chars
+        }
+      }
+    }
+    ```
+  - Query usage: `title` for search, `title.keyword` for sorting/aggregations
+
+**Why Use Multi-fields?**
+- Single source, multiple purposes: Search "modern home" in description, but also aggregate on exact property descriptions
+- Performance: Index once, use many ways
+- Flexibility: Can search loosely but sort/filter exactly
+
+**Common Field Type Patterns:**
+
+1. **ID Fields**: Always use `keyword`
+   ```json
+   "listing_id": {"type": "keyword"}
+   ```
+
+2. **Descriptive Text**: Use `text` with `keyword` sub-field
+   ```json
+   "description": {
+     "type": "text",
+     "analyzer": "english",
+     "fields": {
+       "keyword": {"type": "keyword", "ignore_above": 256}
+     }
+   }
+   ```
+
+3. **Categories/Tags**: Use `keyword` with normalizer
+   ```json
+   "property_type": {
+     "type": "keyword",
+     "normalizer": "lowercase_normalizer"
+   }
+   ```
+
+4. **Numeric Types**: Choose based on range and precision needs
+   - `byte`: -128 to 127
+   - `short`: -32,768 to 32,767  
+   - `integer`: -2^31 to 2^31-1
+   - `long`: -2^63 to 2^63-1
+   - `float`: Single-precision 32-bit
+   - `half_float`: Half-precision 16-bit
+   - `double`: Double-precision 64-bit
+
+5. **Boolean**: True/false values
+   ```json
+   "has_pool": {"type": "boolean"}
+   ```
+
+6. **Date**: Date/time values
+   ```json
+   "listing_date": {"type": "date"}
+   ```
+
+7. **Object**: JSON objects (nested structure)
+   ```json
+   "address": {
+     "type": "object",
+     "properties": {
+       "street": {"type": "text"},
+       "city": {"type": "keyword"}
+     }
+   }
+   ```
+
+8. **Nested**: Array of objects that need independent querying
+   ```json
+   "amenities": {
+     "type": "nested",
+     "properties": {
+       "name": {"type": "keyword"},
+       "available": {"type": "boolean"}
+     }
+   }
+   ```
+
 #### `templates/properties.json` - Real Estate Properties
 
 **Purpose:** Main index for property listings with rich location context and vector embeddings.
@@ -141,10 +277,11 @@ POST wikipedia/_doc?pipeline=wikipedia_ingest
    - `nearby_poi` (nested) - Points of interest with Wikipedia links
    - `landmarks` (nested) - Notable landmarks with distance
 
-5. **Vector Search:**
+5. **Vector Search (KNN-Enabled):**
    - `embedding` (dense_vector, 1024 dims) - For semantic search
    - `embedding_model` (keyword) - Track model version
    - `similarity: "cosine"` - Similarity metric for vectors
+   - **Automatic KNN**: Since Elasticsearch 8.0, `index: true` is default for dense_vector fields
 
 **Advanced Features:**
 - **Multi-fields:** Many text fields have `.keyword` sub-field for exact matching/aggregations
@@ -282,6 +419,135 @@ PUT wikipedia
 PUT property_relationships
 ```
 
+## 📚 Special Field Configurations
+
+### Important Field Settings
+
+**`ignore_above`**: For keyword fields, don't index strings longer than specified length
+```json
+"keyword": {
+  "type": "keyword",
+  "ignore_above": 256  // Strings > 256 chars won't be indexed (still stored)
+}
+```
+- Purpose: Prevents memory issues with very long strings
+- Use case: URLs, descriptions that might be unexpectedly long
+
+**`index`**: Controls whether field is searchable
+```json
+"virtual_tour_url": {
+  "type": "keyword",
+  "index": false  // Can't search on this field
+}
+```
+- Purpose: Saves disk space and memory for fields you'll never search
+- Use case: URLs, IDs only used for retrieval
+
+**`doc_values`**: Controls whether field can be used for sorting/aggregations
+```json
+"images": {
+  "type": "keyword",
+  "index": false,
+  "doc_values": false  // Can't sort or aggregate on this field
+}
+```
+- Purpose: Saves significant disk space
+- Use case: Fields only returned in search results, never sorted/aggregated
+
+**`normalizer`**: Like analyzer but for keyword fields (single token)
+```json
+"city": {
+  "type": "keyword",
+  "normalizer": "lowercase_normalizer"
+}
+```
+- Purpose: Normalizes exact values for consistent matching
+- Example: "San Francisco" and "san francisco" both match
+
+**`index_options`**: Controls what information is stored for text fields
+```json
+"full_content": {
+  "type": "text",
+  "index_options": "offsets"  // Stores term offsets for highlighting
+}
+```
+- Options:
+  - `docs`: Only doc numbers (smallest)
+  - `freqs`: Doc numbers + term frequencies
+  - `positions`: Above + term positions (default)
+  - `offsets`: Above + character offsets (for highlighting)
+
+### Object vs Nested Types
+
+**Object Type** (default for JSON objects):
+```json
+"address": {
+  "type": "object",
+  "properties": {
+    "street": {"type": "text"},
+    "city": {"type": "keyword"}
+  }
+}
+```
+- Arrays of objects are flattened
+- Can't query array items independently
+
+**Nested Type** (for arrays of objects):
+```json
+"amenities": {
+  "type": "nested",
+  "properties": {
+    "name": {"type": "keyword"},
+    "available": {"type": "boolean"}
+  }
+}
+```
+- Maintains relationship between fields in array objects
+- Allows independent queries on each array item
+- Performance cost: Each nested doc is indexed separately
+
+**Example showing the difference:**
+```json
+// Document with array of objects
+{
+  "amenities": [
+    {"name": "pool", "available": true},
+    {"name": "gym", "available": false}
+  ]
+}
+
+// With object type (flattened):
+// This incorrectly matches because values are mixed
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {"amenities.name": "gym"}},
+        {"match": {"amenities.available": true}}
+      ]
+    }
+  }
+}
+
+// With nested type (preserved relationships):
+// This correctly returns no results
+{
+  "query": {
+    "nested": {
+      "path": "amenities",
+      "query": {
+        "bool": {
+          "must": [
+            {"match": {"amenities.name": "gym"}},
+            {"match": {"amenities.available": true}}
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
 ## 📊 Data Types Optimization
 
 ### Numeric Type Selection:
@@ -305,6 +571,174 @@ PUT property_relationships
       }
     }
   }
+}
+```
+
+## 🚀 KNN Vector Search Configuration
+
+### Dense Vector Fields for Semantic Search
+
+The indexes are configured with **KNN (k-nearest neighbor)** search capability for AI-powered semantic similarity search.
+
+**Configuration in templates:**
+```json
+"embedding": {
+  "type": "dense_vector",
+  "dims": 1024,
+  "similarity": "cosine"
+}
+```
+
+**Key Points:**
+- **Dimensions**: 1024 (matching voyage-3 embedding model output)
+- **Similarity**: Cosine (measures angle between vectors, ideal for semantic similarity)
+- **KNN Enabled**: Automatically enabled in Elasticsearch 8.0+ (no need for explicit `"index": true`)
+- **Model**: voyage-3 generates the embeddings during data pipeline processing
+
+### How KNN Works
+
+1. **Indexing Phase:**
+   - Documents are processed through voyage-3 model to generate 1024-dimensional vectors
+   - Vectors are indexed using HNSW (Hierarchical Navigable Small World) algorithm
+   - Creates efficient graph structure for fast approximate nearest neighbor search
+
+2. **Search Phase:**
+   - Query text is embedded using same voyage-3 model
+   - KNN query finds k most similar vectors using cosine similarity
+   - Returns documents ranked by vector similarity score
+
+### KNN Query Structure
+```json
+{
+  "knn": {
+    "field": "embedding",
+    "query_vector": [0.1, 0.2, ...],  // 1024 dimensions
+    "k": 10,
+    "num_candidates": 100
+  }
+}
+```
+
+**Parameters:**
+- `k`: Number of nearest neighbors to return
+- `num_candidates`: Number of candidates per shard to consider (higher = more accurate but slower)
+- Default algorithm: HNSW with automatic parameter tuning
+
+### Performance Characteristics
+- **Speed**: Sub-second search on millions of vectors
+- **Accuracy**: ~95% recall with default settings
+- **Memory**: ~2GB per million 1024-dim vectors
+- **Scaling**: Horizontal scaling via sharding
+
+### Hybrid Search Capability
+Combine KNN with traditional text search:
+```json
+{
+  "knn": {
+    "field": "embedding",
+    "query_vector": [...],
+    "k": 50
+  },
+  "query": {
+    "match": {
+      "description": "modern home"
+    }
+  }
+}
+```
+This enables powerful hybrid semantic + keyword search as recommended by Elastic.
+
+## 🔍 Understanding Keyword vs Text Fields
+
+### Practical Differences
+
+**Keyword Field Example:**
+```json
+// Document
+{"property_type": "Single Family Home"}
+
+// Keyword field queries (exact match only):
+GET properties/_search
+{
+  "query": {
+    "term": {"property_type": "Single Family Home"}  // ✅ Matches
+  }
+}
+
+{
+  "query": {
+    "term": {"property_type": "single family home"}  // ❌ No match (case sensitive)
+  }
+}
+
+{
+  "query": {
+    "term": {"property_type": "Family Home"}  // ❌ No match (partial not allowed)
+  }
+}
+```
+
+**Text Field Example:**
+```json
+// Document
+{"description": "Beautiful single family home with pool"}
+
+// Text field queries (analyzed, flexible matching):
+GET properties/_search
+{
+  "query": {
+    "match": {"description": "family homes"}  // ✅ Matches (stemmed: homes→home)
+  }
+}
+
+{
+  "query": {
+    "match": {"description": "BEAUTIFUL HOME"}  // ✅ Matches (case insensitive)
+  }
+}
+
+{
+  "query": {
+    "match": {"description": "house pool"}  // ✅ Partial match (home≈house via synonyms)
+  }
+}
+```
+
+**Multi-field Usage Example:**
+```json
+// Mapping
+"city": {
+  "type": "text",
+  "fields": {
+    "keyword": {"type": "keyword"}
+  }
+}
+
+// Document
+{"city": "San Francisco"}
+
+// Full-text search on city
+GET properties/_search
+{
+  "query": {
+    "match": {"city": "francisco"}  // ✅ Matches (partial text search)
+  }
+}
+
+// Exact aggregation on city.keyword
+GET properties/_search
+{
+  "aggs": {
+    "cities": {
+      "terms": {"field": "city.keyword"}  // Returns exact "San Francisco"
+    }
+  }
+}
+
+// Sorting on city.keyword
+GET properties/_search
+{
+  "sort": [{"city.keyword": "asc"}]  // Sorts by exact city names
 }
 ```
 
@@ -429,3 +863,98 @@ es.index(
 5. **Configure ILM policies** for data lifecycle management
 
 This configuration provides a robust foundation for a production-ready Elasticsearch implementation with support for complex real estate searches, geographic queries, and semantic search capabilities.
+
+## 🧬 What Happens Internally When You Add an Index Like `properties.json`
+
+When you create an index in Elasticsearch using a mapping like `properties.json`, Elasticsearch (backed by Apache Lucene) builds a set of internal data structures for each field, optimized for different query types. Here’s what happens under the hood:
+
+### 1. Inverted Index (Sparse Index)
+- **Purpose:** Fast full-text search and filtering.
+- **How it works:** For each token (word) in a text field, Lucene stores a list of document IDs where that token appears. This is called a *postings list*.
+- **Sparse:** Most tokens appear in only a few documents, so the index is sparse (lots of empty space).
+- **Used for:** `text` fields, `keyword` fields (for term queries), and any field with `index: true`.
+
+### 2. Doc Values (Columnar Store)
+- **Purpose:** Fast sorting, aggregations, and script access.
+- **How it works:** Lucene stores each field’s value for all documents in a column-oriented format (like a table column), which is highly efficient for operations that need to scan all values of a field.
+- **Default:** Enabled for `keyword`, numeric, date, and geo fields. Disabled for `text` fields unless explicitly enabled.
+- **Columnar:** All values for a field are stored together, making it fast to access all values for a field across many documents.
+- **Used for:** Sorting, aggregations, and accessing field values in scripts.
+
+### 3. Norms (Optional, for Text Fields)
+- **Purpose:** Improve relevance scoring in full-text search.
+- **How it works:** Stores a small value per document per field, encoding information like field length and field-level boosts. This helps Elasticsearch score shorter fields higher (since a match in a short field is more significant).
+- **Optional:** Enabled by default for `text` fields, can be disabled to save space if you don’t need scoring (e.g., for log data).
+- **Used for:** BM25 and other relevance algorithms.
+
+### 4. Dense Vector vs. Sparse Index
+- **Dense Vector:**
+  - **Purpose:** Semantic search (KNN, similarity search with ML embeddings).
+  - **How it works:** Stores a fixed-length array (e.g., 1024 floats) per document. These are not indexed in the traditional inverted index, but in a special structure (HNSW graph) for fast nearest neighbor search.
+  - **Columnar:** Stored as a block of floats per document, not as tokens.
+  - **Use case:** AI-powered search, semantic similarity, hybrid search.
+- **Sparse (Inverted) Index:**
+  - **Purpose:** Traditional keyword and full-text search.
+  - **How it works:** Stores only the terms that appear in each document, and which documents they appear in.
+  - **Use case:** Filtering, keyword search, aggregations.
+
+### 5. Storage and Performance Implications
+- **Each field type adds its own internal structure:**
+  - `text` fields: Inverted index + optional norms.
+  - `keyword` fields: Inverted index + doc values (columnar store).
+  - Numeric/date/geo fields: Doc values (columnar) + sometimes a small inverted index for range queries.
+  - `dense_vector`: Special vector block, not part of the inverted index.
+  - `nested` fields: Each nested object is stored as a hidden Lucene document, grouped with its parent.
+- **Multi-fields:** If you define both `text` and `keyword` for a field, Elasticsearch stores both representations, increasing index size but enabling both full-text and exact-match queries.
+
+### 6. Example: What Happens for a Field Like `description`
+```json
+"description": {
+  "type": "text",
+  "analyzer": "property_analyzer",
+  "fields": {
+    "keyword": {
+      "type": "keyword",
+      "ignore_above": 256
+    }
+  }
+}
+```
+- **description (text):**
+  - Indexed in the inverted index for full-text search.
+  - Norms are stored for scoring.
+  - Not stored in doc values (can’t sort/aggregate on this field).
+- **description.keyword (keyword):**
+  - Indexed for exact match.
+  - Stored in doc values for sorting/aggregations.
+
+### 7. Dense Vector Example
+```json
+"embedding": {
+  "type": "dense_vector",
+  "dims": 1024,
+  "similarity": "cosine"
+}
+```
+- **embedding:**
+  - Stored as a block of 1024 floats per document.
+  - Indexed using HNSW for fast KNN search.
+  - Not part of the inverted index or doc values.
+
+### 8. Summary Table
+| Field Type      | Inverted Index | Doc Values (Columnar) | Norms | Dense Vector Block |
+|-----------------|:-------------:|:---------------------:|:-----:|:------------------:|
+| text            |      Yes      |          No           | Yes   |        No          |
+| keyword         |      Yes      |         Yes           |  No   |        No          |
+| numeric/date    |      No*      |         Yes           |  No   |        No          |
+| geo_point       |      No*      |         Yes           |  No   |        No          |
+| dense_vector    |      No       |          No           |  No   |       Yes          |
+| nested          |      N/A      |         N/A           | N/A   |       N/A          |
+
+*Numeric/date/geo fields may use a small BKD-tree index for range/geo queries, not a traditional inverted index.
+
+### 9. Why This Matters
+- **Query performance:** Each structure is optimized for different query types (text search, sorting, KNN, etc.).
+- **Storage:** More fields and multi-fields increase disk usage, but enable more flexible queries.
+- **Design tip:** Only add multi-fields or dense vectors if you need them for your queries.
+

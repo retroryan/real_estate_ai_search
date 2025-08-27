@@ -129,13 +129,26 @@ def demo_neighborhood_stats(
                 })
         
         return DemoQueryResult(
-            query_name="Neighborhood Statistics Aggregation",
+            query_name="Demo 4: Neighborhood Statistics Aggregation",
+            query_description=f"Aggregates property data by neighborhood showing average prices, counts, and breakdowns for top {size} neighborhoods",
             execution_time_ms=response.get('took', 0),
             total_hits=response['aggregations']['total_properties']['value'] if 'aggregations' in response else 0,
             returned_hits=len(results),
             results=results,
             aggregations=response.get('aggregations', {}),
-            query_dsl=query
+            query_dsl=query,
+            es_features=[
+                "Terms Aggregation - Groups properties by neighborhood_id (like SQL GROUP BY)",
+                "Metric Aggregations - Calculates avg, min, max prices and other statistics",
+                "Nested Aggregations - Property type breakdown within each neighborhood",
+                "Sub-aggregations - Multiple metrics calculated per bucket",
+                "Ordering - Sorts neighborhoods by property count",
+                "Global Aggregations - Overall statistics across all properties"
+            ],
+            indexes_used=[
+                "properties index - Real estate property listings",
+                f"Returns statistics for top {size} neighborhoods by property count"
+            ]
         )
     except Exception as e:
         logger.error(f"Error in neighborhood stats aggregation: {e}")
@@ -286,13 +299,27 @@ def demo_price_distribution(
         aggregations = response.get('aggregations', {})
         
         return DemoQueryResult(
-            query_name=f"Price Distribution Analysis (${min_price:,.0f} - ${max_price:,.0f}, interval: ${interval:,.0f})",
+            query_name=f"Demo 5: Price Distribution Analysis",
+            query_description=f"Creates histogram of property prices from ${min_price:,.0f} to ${max_price:,.0f} with ${interval:,.0f} intervals, including property type breakdowns",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'] if 'hits' in response else 0,
             returned_hits=len(results),
             results=results,
             aggregations=aggregations,
-            query_dsl=query
+            query_dsl=query,
+            es_features=[
+                "Histogram Aggregation - Creates fixed-size price range buckets",
+                "Range Query - Filters properties within price boundaries",
+                "Percentiles Aggregation - Calculates price distribution percentiles",
+                "Stats Aggregation - Multiple metrics (min/max/avg/sum) in one aggregation",
+                "Nested Terms Aggregation - Property type breakdown per price bucket",
+                "Extended Bounds - Forces consistent histogram range",
+                "Min Doc Count - Omits empty buckets for cleaner results"
+            ],
+            indexes_used=[
+                "properties index - Real estate property listings",
+                f"Analyzes price distribution across {(max_price - min_price) / interval:.0f} price ranges"
+            ]
         )
     except Exception as e:
         logger.error(f"Error in price distribution analysis: {e}")

@@ -79,7 +79,8 @@ class HTMLResultsGenerator:
                     content_length=doc_data.get('content_length'),
                     highlights=highlights,
                     summary=doc_data.get('summary'),
-                    url=doc_data.get('url')  # Add URL for Wikipedia links
+                    url=doc_data.get('url'),  # Add URL for Wikipedia links
+                    local_html_file=doc_data.get('local_html_file')  # Add local HTML file path
                 )
                 documents.append(doc)
             
