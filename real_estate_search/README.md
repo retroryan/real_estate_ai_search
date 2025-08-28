@@ -220,24 +220,17 @@ python -m real_estate_search.demo_queries.demo_relationship_search
 Execute specific search queries:
 
 ```bash
-# Search for properties
-python main.py --mode search --query "ski resort properties"
-python main.py --mode search --query "family home near parks"
-python main.py --mode search --query "downtown condo with amenities"
-python main.py --mode search --query "historic neighborhood"
-```
+# List all available demos
+python -m real_estate_search.management demo --list
 
-### Configuration Options
+# Run specific demo (1-15)
+python -m real_estate_search.management demo 1  # Basic property search
+python -m real_estate_search.management demo 3  # Geo-distance search
+python -m real_estate_search.management demo 6  # Semantic similarity search
+python -m real_estate_search.management demo 10 # Wikipedia full-text search
 
-```bash
-# Use custom configuration
-python main.py --config custom-config.yaml
-
-# Set logging level
-python main.py --log-level DEBUG
-
-# Get help
-python main.py --help
+# Run demo with verbose output (shows Elasticsearch query DSL)
+python -m real_estate_search.management demo 2 --verbose
 ```
 
 ## Index Management
@@ -328,8 +321,7 @@ The project leverages these Elasticsearch components:
 
 ```
 real_estate_search/
-├── main.py                      # CLI entry point
-├── management.py                # Index management CLI
+├── management.py                # CLI entry point for management commands
 ├── enrich_wikipedia_articles.py # Document enrichment tutorial
 ├── demo_queries/                # 10 search demonstrations
 │   ├── property_queries.py      # Basic property search
@@ -408,25 +400,29 @@ The tests validate:
 
 ## Search Examples
 
-### Property Types
-```bash
-python main.py --mode search --query "single family home"
-python main.py --mode search --query "luxury condo"
-python main.py --mode search --query "townhouse"
-```
+### Available Demo Searches
 
-### Location Features
-```bash
-python main.py --mode search --query "near parks"
-python main.py --mode search --query "downtown location"
-python main.py --mode search --query "mountain views"
-```
+The system includes 15 comprehensive demo searches:
 
-### Amenities
+1. **Basic Property Search** - Multi-match search across fields
+2. **Property Filter Search** - Filter by type, bedrooms, price
+3. **Geographic Distance Search** - Find properties within radius
+4. **Neighborhood Statistics** - Aggregate stats by neighborhood
+5. **Price Distribution Analysis** - Histogram of prices
+6. **Semantic Similarity Search** - Find similar using embeddings
+7. **Multi-Entity Combined Search** - Search across all indices
+8. **Wikipedia Article Search** - Search with location filters
+9. **Property-Neighborhood-Wikipedia Relationships** - Entity linking
+10. **Wikipedia Full-Text Search** - Full-text across articles
+11. **Simplified Single-Query Relationships** - Denormalized index
+12. **Natural Language Semantic Search** - Query embeddings
+13. **Natural Language Examples** - Multiple NL examples
+14. **Semantic vs Keyword Comparison** - Compare search methods
+15. **Rich Real Estate Listing** - Complete listing with context
+
+Run any demo with:
 ```bash
-python main.py --mode search --query "swimming pool"
-python main.py --mode search --query "modern kitchen"
-python main.py --mode search --query "garage parking"
+python -m real_estate_search.management demo <number>
 ```
 
 ## Troubleshooting
