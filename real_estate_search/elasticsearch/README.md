@@ -103,7 +103,7 @@ This file defines custom analyzers, normalizers, and index settings that are sha
 
 ### 2. Ingest Pipeline: `pipelines/wikipedia_ingest.json`
 
-This pipeline processes Wikipedia HTML content before indexing. **Note: Currently not actively used in the codebase but configured for future use.**
+This pipeline processes Wikipedia HTML content before indexing. **Status: ACTIVE - Used by the WikipediaEnricher for content enrichment.**
 
 #### Pipeline Processors:
 
@@ -808,21 +808,80 @@ GET properties/_search
 
 ## 🔧 Pipeline Usage Status
 
-**Current Status:** The `wikipedia_ingest` pipeline is configured but **not actively used** in the current codebase.
+**Current Status:** The `wikipedia_ingest` pipeline is **ACTIVE** and used in production.
 
-**Where pipelines could be used:**
-1. During bulk indexing in `data_pipeline/writers/elasticsearch/`
-2. In the enrichment script `real_estate_search/enrich_wikipedia_articles.py`
-3. When updating documents through the API
+### Active Usage Details
 
-**To enable pipeline usage:**
+#### 1. Wikipedia Content Enrichment (`real_estate_search/enrich_wikipedia_articles.py`)
+
+The WikipediaEnricher class actively uses the pipeline when loading Wikipedia HTML content:
+
 ```python
-# In your indexing code
+# In WikipediaEnricher._perform_bulk_updates() at line 238
+response = bulk(
+    self.es,
+    batch,
+    pipeline=self.config.pipeline_name,  # Uses 'wikipedia_ingest_pipeline'
+    stats_only=True,
+    raise_on_error=False
+)
+```
+
+**How it works:**
+1. The enricher scans Wikipedia documents missing the `content_loaded` flag
+2. Reads corresponding HTML files from disk (e.g., `../data/wikipedia_content/123456.html`)
+3. Sends documents through the pipeline during bulk update
+4. Pipeline automatically:
+   - Strips HTML tags from `full_content`
+   - Trims whitespace
+   - Sets `content_loaded=true` and `content_loaded_at` timestamp
+   - Calculates `content_length` from cleaned text
+
+**Command-line usage:**
+```bash
+# Enrich all Wikipedia documents needing content
+python real_estate_search/enrich_wikipedia_articles.py
+
+# Specify custom pipeline
+python real_estate_search/enrich_wikipedia_articles.py --pipeline custom_pipeline
+
+# Dry run to preview changes
+python real_estate_search/enrich_wikipedia_articles.py --dry-run
+```
+
+#### 2. Pipeline Configuration Location
+
+- **Definition:** `elasticsearch/pipelines/wikipedia_ingest.json`
+- **Default name:** `wikipedia_ingest_pipeline`
+- **Index:** Applied to `wikipedia` index documents
+
+#### 3. Pipeline must be created in Elasticsearch before use:
+
+```bash
+# Create the pipeline (one-time setup)
+curl -X PUT "localhost:9200/_ingest/pipeline/wikipedia_ingest_pipeline" \
+  -H 'Content-Type: application/json' \
+  -d @real_estate_search/elasticsearch/pipelines/wikipedia_ingest.json
+```
+
+### Other Potential Usage Points
+
+**Where pipelines could also be used:**
+1. During initial bulk indexing in `data_pipeline/writers/elasticsearch/`
+2. When updating documents through REST API endpoints
+3. During real-time document updates
+
+**To use in other code:**
+```python
+# Single document indexing with pipeline
 es.index(
     index="wikipedia",
     document=doc,
-    pipeline="wikipedia_ingest"  # Add this parameter
+    pipeline="wikipedia_ingest_pipeline"
 )
+
+# Bulk indexing with pipeline
+bulk(es, actions, pipeline="wikipedia_ingest_pipeline")
 ```
 
 ## 📈 Performance Considerations

@@ -38,14 +38,14 @@ Instead of building relationships during the pipeline (when data is being transf
 
 ## Implementation Plan
 
-### Phase 1: Create Standalone Builder Script
+### Phase 1: Add Relationship Builder to Indexer Module
 
-**File**: `real_estate_search/indexer/build_relationships.py`
+**File**: `real_estate_search/indexer/relationship_builder.py`
 
 ```python
 """
-Standalone script to build property_relationships index.
-Reads from existing Elasticsearch indices and creates denormalized documents.
+Build property_relationships index from existing Elasticsearch indices.
+Creates denormalized documents by reading from properties, neighborhoods, and wikipedia.
 """
 
 from typing import Dict, List, Any, Optional
@@ -54,7 +54,7 @@ from elasticsearch import Elasticsearch, helpers
 import logging
 
 @dataclass
-class RelationshipBuilder:
+class PropertyRelationshipBuilder:
     """Builds denormalized property relationship documents."""
     
     def __init__(self, es_client: Elasticsearch):
@@ -232,52 +232,83 @@ class RelationshipBuilder:
         helpers.bulk(self.es, actions)
 ```
 
-### Phase 2: Create Management Command
+### Phase 2: Integrate with Index Manager
 
-**File**: `real_estate_search/management_commands.py`
+**File**: `real_estate_search/indexer/index_manager.py`
 
 ```python
-def build_property_relationships(es_client: Elasticsearch):
-    """Build property_relationships index from existing data."""
+def populate_property_relationships_index(self) -> bool:
+    """
+    Populate property_relationships index from existing indices.
+    Called after setup-indices to build denormalized documents.
+    """
+    from .relationship_builder import PropertyRelationshipBuilder
     
-    print("Building property relationships index...")
+    logger.info("Building property relationships from existing indices...")
     
     # Check that source indices exist and have data
-    for index in ["properties", "neighborhoods", "wikipedia"]:
-        if not es_client.indices.exists(index=index):
-            print(f"Error: {index} index does not exist")
-            return
+    required_indices = ["properties", "neighborhoods", "wikipedia"]
+    for index in required_indices:
+        if not self.es.indices.exists(index=index):
+            logger.error(f"Required index {index} does not exist")
+            return False
         
-        count = es_client.count(index=index)["count"]
-        print(f"  {index}: {count} documents")
+        count = self.es.count(index=index)["count"]
+        logger.info(f"  {index}: {count} documents")
     
     # Build relationships
-    builder = RelationshipBuilder(es_client)
+    builder = PropertyRelationshipBuilder(self.es)
     total = builder.build_all_relationships()
     
-    print(f"\n✓ Created {total} relationship documents")
+    logger.info(f"✓ Created {total} relationship documents")
     
     # Verify
-    count = es_client.count(index="property_relationships")["count"]
-    print(f"✓ property_relationships index now has {count} documents")
+    count = self.es.count(index="property_relationships")["count"]
+    logger.info(f"✓ property_relationships index now has {count} documents")
+    
+    return True
 ```
 
-### Phase 3: Integration Points
+### Phase 3: Update Management Command
 
-1. **Add to management.py**:
+**File**: `real_estate_search/management.py`
+
 ```python
-# Add new command
-if args.command == "build-relationships":
-    build_property_relationships(es_client)
+# Add new argument to setup-indices
+parser_setup.add_argument(
+    '--build-relationships', 
+    action='store_true',
+    help='Build property_relationships index after setting up indices'
+)
+
+# In setup_indices function:
+def setup_indices():
+    # ... existing setup code ...
+    
+    if args.build_relationships:
+        print("\n" + "="*60)
+        print("BUILDING PROPERTY RELATIONSHIPS")
+        print("="*60)
+        
+        success = index_manager.populate_property_relationships_index()
+        if success:
+            print("✅ Property relationships built successfully")
+        else:
+            print("❌ Failed to build property relationships")
 ```
 
-2. **Update README**:
+### Phase 4: Updated Usage
+
 ```bash
 # After running data pipeline:
 python -m data_pipeline --config config.yaml
 
-# Build property relationships:
-python -m real_estate_search.management build-relationships
+# Setup indices AND build relationships in one command:
+python -m real_estate_search.management setup-indices --clear --build-relationships
+
+# Or build relationships separately:
+python -m real_estate_search.management setup-indices --clear
+python -m real_estate_search.management setup-indices --build-relationships
 
 # Run demo:
 python -m real_estate_search.management demo 11
@@ -324,20 +355,18 @@ python -m real_estate_search.management demo 11
 
 3. **End-to-End Test**:
    ```bash
-   # Clear and rebuild
-   python -m real_estate_search.management delete-index property_relationships
-   python -m real_estate_search.management setup-indices
-   python -m real_estate_search.management build-relationships
+   # Clear and rebuild everything in one command
+   python -m real_estate_search.management setup-indices --clear --build-relationships
    python -m real_estate_search.management demo 11
    ```
 
 ## Migration Path
 
-1. **Phase 1**: Implement standalone builder (1 hour)
-2. **Phase 2**: Add management command (30 min)
-3. **Phase 3**: Test with sample data (30 min)
-4. **Phase 4**: Full integration test (30 min)
-5. **Phase 5**: Documentation update (30 min)
+1. **Phase 1**: Create relationship_builder.py module (1 hour)
+2. **Phase 2**: Add method to index_manager.py (30 min)
+3. **Phase 3**: Update management.py with --build-relationships flag (30 min)
+4. **Phase 4**: Test with sample data (30 min)
+5. **Phase 5**: Full integration test (30 min)
 
 ## Success Criteria
 

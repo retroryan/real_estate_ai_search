@@ -15,6 +15,7 @@ class CommandType(str, Enum):
     LIST_INDICES = "list-indices"
     DELETE_TEST_INDICES = "delete-test-indices"
     DEMO = "demo"
+    ENRICH_WIKIPEDIA = "enrich-wikipedia"
 
 
 class LogLevel(str, Enum):
@@ -91,6 +92,26 @@ class DemoExecutionResult(BaseModel):
     query_dsl: Optional[Dict[str, Any]] = None
 
 
+class WikipediaEnrichmentConfig(BaseModel):
+    """Configuration for Wikipedia enrichment."""
+    batch_size: int = Field(default=50, ge=1, le=500, description="Batch size for bulk updates")
+    max_documents: Optional[int] = Field(default=None, ge=1, description="Maximum documents to process")
+    dry_run: bool = Field(default=False, description="Perform dry run without updating")
+    data_dir: str = Field(default="../data", description="Data directory path")
+    pipeline_name: str = Field(default="wikipedia_ingest_pipeline", description="Ingest pipeline name")
+
+
+class WikipediaEnrichmentResult(BaseModel):
+    """Result of Wikipedia enrichment process."""
+    total_documents_scanned: int = 0
+    documents_needing_enrichment: int = 0
+    documents_enriched: int = 0
+    documents_failed: int = 0
+    files_not_found: int = 0
+    errors: List[str] = Field(default_factory=list)
+    execution_time_ms: Optional[float] = None
+
+
 class CLIArguments(BaseModel):
     """Parsed CLI arguments."""
     command: CommandType
@@ -100,6 +121,10 @@ class CLIArguments(BaseModel):
     verbose: bool = False
     config_path: str = "config.yaml"
     log_level: LogLevel = LogLevel.INFO
+    # Wikipedia enrichment specific args
+    batch_size: Optional[int] = Field(default=50, ge=1, le=500)
+    max_documents: Optional[int] = Field(default=None, ge=1)
+    dry_run: bool = False
 
 
 class OperationStatus(BaseModel):

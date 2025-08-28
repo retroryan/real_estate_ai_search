@@ -12,7 +12,9 @@ from .models import (
     ClusterHealthInfo,
     DemoQuery,
     DemoExecutionResult,
-    OperationStatus
+    OperationStatus,
+    WikipediaEnrichmentConfig,
+    WikipediaEnrichmentResult
 )
 
 from .commands import (
@@ -22,7 +24,8 @@ from .commands import (
     ValidateEmbeddingsCommand,
     ListIndicesCommand,
     DeleteTestIndicesCommand,
-    DemoCommand
+    DemoCommand,
+    EnrichWikipediaCommand
 )
 
 from .cli_parser import CLIParser
@@ -43,6 +46,8 @@ __all__ = [
     'DemoQuery',
     'DemoExecutionResult',
     'OperationStatus',
+    'WikipediaEnrichmentConfig',
+    'WikipediaEnrichmentResult',
     # Commands
     'BaseCommand',
     'SetupIndicesCommand',
@@ -51,6 +56,7 @@ __all__ = [
     'ListIndicesCommand',
     'DeleteTestIndicesCommand',
     'DemoCommand',
+    'EnrichWikipediaCommand',
     # Services
     'CLIParser',
     'CLIOutput',

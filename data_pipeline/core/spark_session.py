@@ -58,6 +58,10 @@ class SparkSessionManager:
                 .appName(config.app_name) \
                 .master(config.master)
             
+            # Add explicit binding configuration to fix network issues
+            builder = builder.config("spark.driver.bindAddress", "127.0.0.1")
+            builder = builder.config("spark.driver.host", "localhost")
+            
             # Set driver memory if not in local mode
             if not config.master.startswith("local"):
                 builder = builder.config("spark.driver.memory", config.driver_memory)

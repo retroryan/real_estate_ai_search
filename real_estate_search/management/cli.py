@@ -17,7 +17,8 @@ from .commands import (
     ValidateEmbeddingsCommand,
     ListIndicesCommand,
     DeleteTestIndicesCommand,
-    DemoCommand
+    DemoCommand,
+    EnrichWikipediaCommand
 )
 
 
@@ -50,7 +51,8 @@ def get_command_class(command_type: CommandType) -> Type[BaseCommand]:
         CommandType.VALIDATE_EMBEDDINGS: ValidateEmbeddingsCommand,
         CommandType.LIST_INDICES: ListIndicesCommand,
         CommandType.DELETE_TEST_INDICES: DeleteTestIndicesCommand,
-        CommandType.DEMO: DemoCommand
+        CommandType.DEMO: DemoCommand,
+        CommandType.ENRICH_WIKIPEDIA: EnrichWikipediaCommand
     }
     
     return command_map[command_type]
