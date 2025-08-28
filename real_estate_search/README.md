@@ -60,9 +60,9 @@ This application demonstrates real-world Elasticsearch patterns and best practic
 - **HTML Results Generation**: Export search results to formatted HTML reports
 - **Bulk Document Processing**: Efficiently handle documents ranging from 1KB to 500KB
 
-## Learning Outcomes
+## Elasticsearch Patterns Covered
 
-By exploring this project, you'll learn how to:
+This project covers key Elasticsearch patterns including:
 
 1. **Design Elasticsearch Schemas** for mixed structured/unstructured data
 2. **Build Ingest Pipelines** to process HTML and extract clean text
@@ -118,22 +118,46 @@ Process, enrich, and index property data with neighborhood and Wikipedia correla
 python -m data_pipeline
 ```
 
-### Step 3: Enrich Wikipedia Articles (Optional)
-After running the data pipeline, optionally enrich Wikipedia documents with full article content for enhanced full-text search:
+### Step 3: Enrich Wikipedia Articles 
+After running the data pipeline, enrich Wikipedia documents with full article content for enhanced full-text search:
 ```bash
 # Enrich all Wikipedia articles (processes ~450+ HTML files)
-python enrich_wikipedia_articles.py --data-dir ../data
+python -m real_estate_search.management enrich-wikipedia
 ```
 
-### Step 4: Run Search Demos
-Execute demonstration queries showcasing various search capabilities:
+### Step 4: Build Property Relationships Index 
+After all data is loaded, build the denormalized property_relationships index that combines data from properties, neighborhoods, and Wikipedia for optimized query performance:
 ```bash
-# Run a specific demo
-python -m real_estate_search.management demo 1
-
-# Or run demo 10 for Wikipedia full-text search (requires Step 3)
-python -m real_estate_search.management demo 10
+# Build relationships index only (assumes other indices already exist)
+python -m real_estate_search.management setup-indices --build-relationships
 ```
+
+This creates a denormalized index by:
+- Reading from existing properties, neighborhoods, and wikipedia indices
+- Creating combined documents with embedded relationships
+- Building a single optimized index for fast multi-entity queries
+- Achieving 100x+ query performance improvement (from ~250ms to ~2-3ms)
+
+### Step 5: Run Search Demos
+Execute demonstration queries showcasing various search capabilities using the demo runner script:
+```bash
+# Show all available demos
+./elastic_demos.sh --list
+
+# Run the default demo (Rich Property Listing)
+./elastic_demos.sh
+
+# Run a specific demo by number
+./elastic_demos.sh 10
+
+# Run demo with verbose output to see Elasticsearch query DSL
+./elastic_demos.sh 15 --verbose
+
+# Get help
+./elastic_demos.sh --help
+```
+
+The script automatically loads Elasticsearch authentication from your .env file and provides easy access to all 15 demo queries including property search, semantic search, geo queries, and relationship traversal.
 
 ## Additional Options
 
@@ -142,14 +166,17 @@ python -m real_estate_search.management demo 10
 The Wikipedia enrichment step (Step 3) provides several options:
 
 ```bash
-# Test with a smaller batch first
-python enrich_wikipedia_articles.py --data-dir ../data --max-documents 10 --dry-run
+# Test with a smaller batch first (dry run without updating)
+python -m real_estate_search.management enrich-wikipedia --dry-run
 
 # Process specific number of documents
-python enrich_wikipedia_articles.py --data-dir ../data --max-documents 100
+python -m real_estate_search.management enrich-wikipedia --max-documents 100
 
 # View processing details
-python enrich_wikipedia_articles.py --data-dir ../data --verbose
+python -m real_estate_search.management enrich-wikipedia --verbose
+
+# Custom batch size for bulk updates (default: 50)
+python -m real_estate_search.management enrich-wikipedia --batch-size 100
 ```
 
 This enrichment:
@@ -465,6 +492,79 @@ The patterns demonstrated scale to:
 - **Thousands of queries/second** with caching
 - **Real-time updates** with refresh intervals
 - **Global deployments** with cross-cluster replication
+
+## Advanced Management Commands
+
+The management CLI provides comprehensive tools for all aspects of index and data management:
+
+### Complete Command Reference
+
+```bash
+# Index Setup and Management
+python -m real_estate_search.management setup-indices
+python -m real_estate_search.management setup-indices --clear  # Delete and recreate all indices
+python -m real_estate_search.management setup-indices --build-relationships  # Build relationships index only
+python -m real_estate_search.management setup-indices --clear --build-relationships  # Full reset with relationships
+
+# Index Validation and Status
+python -m real_estate_search.management validate-indices  # Check indices exist with correct mappings
+python -m real_estate_search.management validate-embeddings  # Verify vector embedding coverage
+python -m real_estate_search.management list-indices  # Show index status and document counts
+python -m real_estate_search.management delete-test-indices  # Clean up test indices
+
+# Wikipedia Enrichment
+python -m real_estate_search.management enrich-wikipedia  # Process all Wikipedia articles
+python -m real_estate_search.management enrich-wikipedia --dry-run  # Test without updating
+python -m real_estate_search.management enrich-wikipedia --max-documents 100  # Process subset
+python -m real_estate_search.management enrich-wikipedia --verbose  # Show processing details
+python -m real_estate_search.management enrich-wikipedia --batch-size 100  # Custom bulk batch size
+
+# Search Demonstrations
+python -m real_estate_search.management demo --list  # List all available demos
+python -m real_estate_search.management demo 1  # Run specific demo
+python -m real_estate_search.management demo 2 --verbose  # Show query DSL details
+```
+
+### Global Options
+
+All commands support these configuration options:
+```bash
+--config PATH        # Path to config file (default: config.yaml)
+--log-level LEVEL   # Set logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
+```
+
+### Command Details
+
+#### setup-indices
+- Creates all required Elasticsearch indices with proper mappings
+- `--clear`: Deletes existing indices before creation (full reset)
+- `--build-relationships`: Builds denormalized property_relationships index after setup
+- Combines both flags for complete pipeline initialization
+
+#### validate-indices
+- Checks that all required indices exist
+- Verifies index mappings match expected schema
+- Reports any missing or misconfigured indices
+
+#### validate-embeddings
+- Analyzes vector embedding field coverage
+- Reports percentage of documents with embeddings
+- Identifies documents missing embeddings
+
+#### enrich-wikipedia
+- Loads full HTML content from disk into Elasticsearch
+- Uses ingest pipeline to strip HTML and extract clean text
+- Options:
+  - `--dry-run`: Preview changes without updating
+  - `--max-documents N`: Process only N documents
+  - `--batch-size N`: Bulk update batch size (default: 50)
+  - `--verbose`: Show detailed processing information
+
+#### demo
+- Runs pre-configured demonstration queries
+- `--list`: Shows all available demos with descriptions
+- `--verbose`: Displays actual Elasticsearch query DSL
+- Demos include property search, geo queries, aggregations, and more
 
 ## Development Notes
 
