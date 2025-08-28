@@ -115,10 +115,11 @@ class WikipediaEnrichmentResult(BaseModel):
 class CLIArguments(BaseModel):
     """Parsed CLI arguments."""
     command: CommandType
-    demo_number: Optional[int] = Field(default=None, ge=1, le=14)
+    demo_number: Optional[int] = Field(default=None, ge=1, le=15)
     clear: bool = False
     list: bool = False
     verbose: bool = False
+    build_relationships: bool = False
     config_path: str = "config.yaml"
     log_level: LogLevel = LogLevel.INFO
     # Wikipedia enrichment specific args

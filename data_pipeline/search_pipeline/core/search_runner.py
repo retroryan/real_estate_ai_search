@@ -229,11 +229,21 @@ class SearchPipelineRunner:
         """
         Write DataFrame directly to Elasticsearch using Spark connector.
         
+        Note: The Spark Elasticsearch connector handles batching internally:
+        - Each Spark partition writes in batches (default: 1000 docs per batch via es.batch.size.entries)
+        - The connector automatically uses Elasticsearch's bulk API for efficient indexing
+        - Parallel writes occur across Spark executors based on DataFrame partitioning
+        - No manual batching needed - the connector optimizes this automatically
+        
         Args:
             df: Transformed DataFrame ready for indexing
             index_name: Target Elasticsearch index
         """
-        # Write to Elasticsearch using Spark connector
+        # Configure Elasticsearch connection
+        # The Spark connector will handle batching based on these settings:
+        # - es.batch.size.entries: Number of docs per bulk request (default: 1000)
+        # - es.batch.size.bytes: Max bytes per bulk request (default: 1mb)
+        # These can be tuned via config if needed, but defaults work well
         es_conf = self.config.elasticsearch.get_spark_conf()
         es_conf["es.resource"] = index_name
         es_conf["es.mapping.id"] = "doc_id"  # Use the 'doc_id' field from transformed DataFrame
@@ -244,6 +254,10 @@ class SearchPipelineRunner:
         logger.debug(f"Elasticsearch write configuration: {debug_conf}")
         
         # Write DataFrame directly to Elasticsearch
+        # This single write operation triggers distributed, batched writes:
+        # - Each Spark executor processes its partitions independently
+        # - Each executor batches documents according to es.batch.* settings
+        # - Writes happen in parallel across the cluster
         df.write \
             .format("org.elasticsearch.spark.sql") \
             .options(**es_conf) \

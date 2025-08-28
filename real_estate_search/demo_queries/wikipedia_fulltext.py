@@ -19,7 +19,7 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 from elasticsearch import Elasticsearch
 from .models import DemoQueryResult
-from ..html_results import HTMLResultsGenerator
+from ..html_generators import WikipediaHTMLGenerator
 
 
 def get_demo_queries() -> List[Dict[str, Any]]:
@@ -615,6 +615,22 @@ def demo_wikipedia_fulltext(es_client: Elasticsearch) -> DemoQueryResult:
     # Generate HTML report of search results (already saved articles above)
     html_filename = generate_html_report(processed_results)
     
+    # Open the HTML file in browser
+    if html_filename:
+        import subprocess
+        import platform
+        try:
+            if platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', html_filename], check=False)
+            elif platform.system() == 'Linux':
+                subprocess.run(['xdg-open', html_filename], check=False)
+            elif platform.system() == 'Windows':
+                subprocess.run(['start', html_filename], shell=True, check=False)
+            print(f"\n📂 HTML report opened in browser: {html_filename}")
+        except Exception as e:
+            print(f"\n📂 HTML report saved to: {html_filename}")
+            print(f"   (Unable to auto-open: {e})")
+    
     # Create sample query DSL for documentation
     sample_query_dsl = create_sample_query_dsl(queries[0] if queries else {})
     
@@ -676,7 +692,7 @@ def generate_html_report(processed_results: List[Dict[str, Any]]) -> Optional[st
         Filename of generated HTML or None if failed
     """
     try:
-        html_generator = HTMLResultsGenerator()
+        html_generator = WikipediaHTMLGenerator()
         html_path = html_generator.generate_from_demo_results(
             title="Wikipedia Full-Text Search Results",
             description="Comprehensive full-text search across enriched Wikipedia articles",
@@ -686,7 +702,7 @@ def generate_html_report(processed_results: List[Dict[str, Any]]) -> Optional[st
         print(f"\n📄 HTML results saved to: {html_path}")
         print(f"   Open in browser: file://{html_path.absolute()}")
         
-        return html_path.name
+        return str(html_path)
     except Exception as e:
         print(f"\n⚠️  Could not generate HTML output: {str(e)}")
         return None

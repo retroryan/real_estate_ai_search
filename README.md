@@ -25,45 +25,91 @@ The project utilizes three primary datasets to demonstrate comprehensive AI sear
 
 - **Wikipedia Articles (Real Data)**: 500+ curated Wikipedia articles covering cities, landmarks, historical events, and cultural topics relevant to the property locations. Articles include full text content, metadata, and have been processed for optimal retrieval and semantic understanding.
 
-### Integration Architecture
+### Core Architectural Patterns
 
+The Real Estate AI Search System employs a sophisticated pipeline architecture where data flows through distinct transformation stages, each adding semantic richness and searchability through AI-powered enrichment. This design elevates the system beyond traditional search applications by creating a knowledge graph that connects properties, neighborhoods, and encyclopedic content in meaningful ways.
+
+#### System Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        A[Property JSON Files<br/>550+ Listings] 
+        B[Wikipedia HTML Articles<br/>450+ Documents/100MB]
+        C[Neighborhood Data<br/>21 Areas]
+    end
+    
+    subgraph "AI Processing Layer"
+        D[DSPy Summarization<br/>Extract Key Concepts]
+        E[LlamaIndex Embeddings<br/>Semantic Vectors]
+        F[Voyage AI Vectors<br/>Domain-Specific]
+    end
+    
+    subgraph "Data Pipeline (Apache Spark)"
+        G[Distributed Processing<br/>DataFrames]
+        H[Relationship Builder<br/>Graph Construction]
+        I[Bulk Indexing<br/>Batch Operations]
+    end
+    
+    subgraph "Elasticsearch Storage"
+        J[Properties Index<br/>Core Entities]
+        K[Neighborhoods Index<br/>Demographics]
+        L[Wikipedia Index<br/>Knowledge Base]
+        M[Relationships Index<br/>Denormalized]
+    end
+    
+    subgraph "Search Layer"
+        N[Query Embeddings<br/>Intent Understanding]
+        O[KNN Vector Search<br/>Semantic Similarity]
+        P[Full-text Search<br/>BM25 Scoring]
+        Q[Geo-spatial Search<br/>Distance Queries]
+    end
+    
+    A --> G
+    B --> D --> G
+    C --> G
+    G --> E --> I
+    G --> F --> I
+    G --> H --> I
+    I --> J
+    I --> K
+    I --> L
+    H --> M
+    N --> O
+    O --> M
+    P --> M
+    Q --> M
 ```
-┌────────────────────────────────────────────────────────────────┐
-│              Generative AI Pipeline (Data Preparation)         │
-├───────────────┬──────────────┬──────────────┬──────────────────┤
-│ Data Sources  │  Processing  │  AI Models   │   Storage        │
-├───────────────┼──────────────┼──────────────┼──────────────────┤
-│ • Wikipedia   │ • DSPy CoT   │ • Ollama     │ • Parquet        │
-│ • Real Estate │ • LlamaIndex │ • OpenRouter │ • ChromaDB       │
-│ • User Queries│ • Chunking   │ • Claude     │                  │
-│               │ • Filtering  │ • VoyageAI   │                  │
-└───────────────┴──────────────┴──────────────┴──────────────────┘
-                              ↓
-┌────────────────────────────────────────────────────────────────┐
-│                      Spark Data Pipeline                       │
-├────────────────────────────────────────────────────────────────┤
-│ • Distributed Data Processing & Transformation                 │
-│ • Scalable ETL Operations                                      │
-│ • Data Enrichment & Feature Engineering                        │
-│ • Parallel Embedding Generation                                │
-│ • Orchestration of All Data Flows                              │
-└────────────────────────────────────────────────────────────────┘
-                    ↙                       ↘
-    ┌──────────────────────────┐   ┌──────────────────────────┐
-    │        NEO4J              │   │     ELASTICSEARCH        │
-    ├──────────────────────────┤   ├──────────────────────────┤
-    │ • Knowledge Graph         │   │ • Full-Text Search       │
-    │ • Native Vector Indexing  │   │ • Vector Search          │
-    │ • Hybrid Graph + Vector   │   │ • Faceted Filtering      │
-    │ • Relationship Retrieval  │   │ • Relevance Scoring      │
-    │ • Graph Centrality        │   │ • Aggregations           │
-    └──────────────────────────┘   └──────────────────────────┘
-                    ↘                       ↙
-                    ┌──────────────────┐
-                    │   RAG/GraphRAG   │
-                    │   Applications   │
-                    └──────────────────┘
-```
+
+#### Key Architectural Components
+
+**1. Multi-Stage Data Pipeline**
+The system processes raw data through six distinct stages, each adding layers of intelligence:
+
+- **Stage 1 - AI Enrichment**: DSPy extracts summaries and key concepts from Wikipedia articles, while location data undergoes geocoding and normalization
+- **Stage 2 - Data Loading**: Ingests property JSON, Wikipedia HTML, and neighborhood CSVs into Apache Spark DataFrames for distributed processing
+- **Stage 3 - Embedding Generation**: LlamaIndex and Voyage AI create 1024-dimensional vectors capturing semantic meaning of all text content
+- **Stage 4 - Relationship Building**: Correlation engine identifies connections between properties, neighborhoods, and Wikipedia articles with confidence scores
+- **Stage 5 - Elasticsearch Loading**: Bulk API efficiently loads enriched documents into specialized indices optimized for different query patterns
+- **Stage 6 - Post-Processing**: Ingest pipelines perform final transformations like HTML stripping and metadata enrichment
+
+**2. AI-Powered Search Capabilities**
+The search layer combines multiple retrieval methods enhanced by generative AI:
+
+- **Semantic Search**: Query embeddings generated through LlamaIndex/Voyage AI enable natural language understanding ("cozy family home near parks")
+- **Hybrid Scoring**: Combines vector similarity, BM25 text relevance, geographic proximity, and feature matching for optimal results
+- **Query Understanding**: DSPy models parse intent, extracting entities, attributes, and constraints from natural language
+- **KNN Vector Search**: HNSW algorithm searches 1024-dimensional space in milliseconds, finding conceptually similar properties
+
+**3. Denormalization Strategy**
+The property_relationships index demonstrates strategic denormalization for performance:
+
+- **Traditional Approach**: 5-6 sequential queries taking ~250ms total
+- **Denormalized Approach**: Single query returning complete context in ~2-3ms
+- **Trade-off**: Increased storage (each document ~50KB) for 100x query performance improvement
+- **Implementation**: Relationship builder pre-computes all joins during indexing, embedding full neighborhood and Wikipedia data within each property document
+
+For a comprehensive deep-dive into the system architecture, implementation patterns, and design decisions, see [ARCHITECTURE_IN_DEPTH.md](./ARCHITECTURE_IN_DEPTH.md).
 
 ### [1. Wikipedia Summarization](./wiki_summary/README.md)
 **Purpose**: Use generative AI with DSPy for Context Engineering and LLM Calling  
@@ -333,6 +379,43 @@ python wiki_crawl/wikipedia_location_crawler.py quick real_estate_data/neighborh
 
 ## Data Organization
 
+### Knowledge Graph Architecture
+The system creates a rich knowledge graph connecting three primary entity types:
+
+```mermaid
+graph LR
+    subgraph "Property Entity"
+        P[Property<br/>550+ Listings]
+        P --> P1[Structured Data<br/>Price, Beds, Baths]
+        P --> P2[Location Data<br/>Geo-coordinates]
+        P --> P3[AI Embeddings<br/>Semantic Vectors]
+    end
+    
+    subgraph "Neighborhood Entity"
+        N[Neighborhood<br/>21 Areas]
+        N --> N1[Demographics<br/>Population, Income]
+        N --> N2[Quality Scores<br/>Walkability, Schools]
+        N --> N3[Local Context<br/>Amenities, Culture]
+    end
+    
+    subgraph "Wikipedia Entity"
+        W[Wikipedia<br/>450+ Articles]
+        W --> W1[Full Content<br/>100MB Text]
+        W --> W2[AI Summaries<br/>DSPy Extracted]
+        W --> W3[Landmarks<br/>Points of Interest]
+    end
+    
+    P -.->|belongs to| N
+    N -.->|correlates with| W
+    P -.->|enriched by| W
+    
+    subgraph "Denormalized Index"
+        R[Property Relationships]
+        R -->|embeds all| PNW[Complete Context]
+    end
+```
+
+### Directory Structure
 ```
 real_estate_ai_search/
 ├── data/                      # Shared data directory
