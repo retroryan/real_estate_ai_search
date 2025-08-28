@@ -94,7 +94,7 @@ class DemoExecutionResult(BaseModel):
 class CLIArguments(BaseModel):
     """Parsed CLI arguments."""
     command: CommandType
-    demo_number: Optional[int] = Field(default=None, ge=1, le=11)
+    demo_number: Optional[int] = Field(default=None, ge=1, le=14)
     clear: bool = False
     list: bool = False
     verbose: bool = False

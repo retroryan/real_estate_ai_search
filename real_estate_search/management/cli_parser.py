@@ -49,8 +49,8 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             'demo_number',
             type=int,
             nargs='?',
-            choices=range(1, 12),
-            help='Demo query number to run (1-11)'
+            choices=range(1, 15),
+            help='Demo query number to run (1-14)'
         )
         
         parser.add_argument(
@@ -133,7 +133,7 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
         # Demo command specific validation
         if args.command == CommandType.DEMO:
             if not args.list and not args.demo_number:
-                return "Please specify a demo number (1-11) or use --list to see available demos"
+                return "Please specify a demo number (1-14) or use --list to see available demos"
         
         # Clear flag only valid for setup-indices
         if args.clear and args.command != CommandType.SETUP_INDICES:

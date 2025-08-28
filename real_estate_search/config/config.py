@@ -508,7 +508,9 @@ class AppConfig(BaseSettings):
     
     # Embedding configuration for semantic search
     embedding: EmbeddingConfig = Field(
-        default_factory=EmbeddingConfig,
+        default_factory=lambda: EmbeddingConfig(
+            api_key=os.getenv('VOYAGE_API_KEY')
+        ),
         description="Embedding configuration for query processing"
     )
     

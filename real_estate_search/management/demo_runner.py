@@ -16,7 +16,10 @@ from ..demo_queries import (
     demo_multi_entity_search,
     demo_wikipedia_search,
     demo_relationship_search,
-    demo_wikipedia_fulltext
+    demo_wikipedia_fulltext,
+    demo_natural_language_search,
+    demo_natural_language_examples,
+    demo_semantic_vs_keyword_comparison
 )
 from ..demo_queries.demo_single_query_relationships import demo_simplified_relationships
 from .models import DemoQuery, DemoExecutionResult
@@ -109,6 +112,24 @@ class DemoRunner:
                 name="Simplified Single-Query Relationships",
                 description="Denormalized index for single-query retrieval",
                 query_function="demo_simplified_relationships"
+            ),
+            12: DemoQuery(
+                number=12,
+                name="Natural Language Semantic Search",
+                description="Convert natural language queries to embeddings for semantic search",
+                query_function="demo_natural_language_search"
+            ),
+            13: DemoQuery(
+                number=13,
+                name="Natural Language Examples",
+                description="Multiple examples of natural language property search",
+                query_function="demo_natural_language_examples"
+            ),
+            14: DemoQuery(
+                number=14,
+                name="Semantic vs Keyword Comparison",
+                description="Compare semantic embedding search with traditional keyword search",
+                query_function="demo_semantic_vs_keyword_comparison"
             )
         }
         return demos
@@ -203,7 +224,10 @@ class DemoRunner:
             8: demo_wikipedia_search,
             9: demo_relationship_search,
             10: demo_wikipedia_fulltext,
-            11: demo_simplified_relationships
+            11: demo_simplified_relationships,
+            12: demo_natural_language_search,
+            13: demo_natural_language_examples,
+            14: demo_semantic_vs_keyword_comparison
         }
         
         return demo_functions[demo_number]
@@ -241,7 +265,32 @@ This demo showcases Wikipedia full-text search after HTML enrichment:
 
 • Searches across complete Wikipedia article content
 • Demonstrates various query patterns and operators
-• Shows highlighted relevant content from articles"""
+• Shows highlighted relevant content from articles""",
+            
+            12: """🤖 Natural Language Semantic Search:
+This demo uses AI embeddings to understand natural language queries:
+
+• Converts text queries to 1024-dimensional vectors using Voyage-3
+• Performs KNN search against pre-computed property embeddings
+• Understands semantic meaning beyond simple keyword matching
+• Example: "cozy family home near good schools" finds relevant properties""",
+            
+            13: """🔍 Natural Language Search Examples:
+Demonstrates various natural language queries:
+
+• Family-oriented: "cozy family home near good schools and parks"
+• Urban living: "modern downtown condo with city views"
+• Work from home: "spacious property with home office and fast internet"
+• Eco-friendly: "eco-friendly house with solar panels"
+• And more examples showing semantic understanding""",
+            
+            14: """⚖️ Semantic vs Keyword Search Comparison:
+Compares AI-powered semantic search with traditional keyword search:
+
+• Runs the same query using both approaches
+• Shows how semantic search understands meaning
+• Demonstrates differences in result relevance
+• Highlights unique strengths of each approach"""
         }
         
         return descriptions
