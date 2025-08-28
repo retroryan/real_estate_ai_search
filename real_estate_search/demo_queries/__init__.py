@@ -26,6 +26,7 @@ from .semantic_query_search import (
     demo_natural_language_examples,
     demo_semantic_vs_keyword_comparison
 )
+from .rich_listing_demo import demo_rich_property_listing
 
 __all__ = [
     'demo_basic_property_search',
@@ -43,5 +44,6 @@ __all__ = [
     'demo_wikipedia_fulltext',
     'demo_natural_language_search',
     'demo_natural_language_examples',
-    'demo_semantic_vs_keyword_comparison'
+    'demo_semantic_vs_keyword_comparison',
+    'demo_rich_property_listing'
 ]

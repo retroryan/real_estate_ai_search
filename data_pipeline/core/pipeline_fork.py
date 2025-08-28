@@ -201,12 +201,20 @@ class PipelineFork:
                 result.graph_error = str(e)
         
         # Search path: Process documents for Elasticsearch + parquet
+        # Note: Unlike Neo4j/Parquet writers, Elasticsearch doesn't use a traditional writer class.
+        # Instead, it leverages the Spark Elasticsearch connector for distributed writes.
+        # The SearchPipelineRunner handles both transformation and writing using Spark's native capabilities.
         if self.paths.search:
             logger.info("🔍 Processing search path (Elasticsearch)")
             try:
                 if spark and search_config:
                     from data_pipeline.search_pipeline.core.search_runner import SearchPipelineRunner
                     
+                    # The SearchPipelineRunner processes each entity type (properties, neighborhoods, wikipedia):
+                    # 1. Transforms DataFrames using entity-specific transformers
+                    # 2. Writes directly to Elasticsearch using Spark's elasticsearch-spark connector
+                    # 3. The connector handles batching internally (default: 1000 docs per bulk request)
+                    # 4. Parallel writes occur across Spark executors automatically
                     search_runner = SearchPipelineRunner(spark, search_config)
                     search_result = search_runner.process(processed_entities)
                     

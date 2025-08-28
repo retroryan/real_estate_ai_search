@@ -1,0 +1,90 @@
+{
+  "description": "Pipeline for processing Wikipedia HTML content",
+  "processors": [
+    {
+      "html_strip": {
+        "field": "full_content",
+        "ignore_missing": true
+        // PROCESSOR 1: HTML Strip
+        // Removes all HTML tags from the full_content field
+        // Converts: <p>San Francisco is a <b>city</b></p>
+        // To: San Francisco is a city
+        // This is essential for Wikipedia articles which come as HTML
+        // ignore_missing: true prevents errors if full_content doesn't exist
+      }
+    },
+    {
+      "trim": {
+        "field": "full_content",
+        "ignore_missing": true
+        // PROCESSOR 2: Trim Whitespace
+        // Removes leading/trailing whitespace from the cleaned text
+        // After HTML stripping, there's often extra whitespace
+        // This ensures clean, normalized text for indexing
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.full_content != null && ctx.full_content.length() > 0) { ctx.content_loaded = true; ctx.content_loaded_at = new Date(); ctx.content_length = ctx.full_content.length(); }"
+        // PROCESSOR 3: Metadata Enrichment Script
+        // Uses Painless (Elasticsearch's scripting language) to:
+        // 1. Check if full_content exists and has content
+        // 2. Set content_loaded = true (marks document as processed)
+        // 3. Add content_loaded_at timestamp (tracks when enriched)
+        // 4. Calculate content_length (useful for analytics)
+        //
+        // This metadata helps track:
+        // - Which documents have been enriched
+        // - When enrichment occurred
+        // - Size of content for performance monitoring
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "ingest_error",
+        "value": "{{_ingest.on_failure_message}}"
+        // ERROR HANDLING:
+        // If any processor fails, this captures the error
+        // Stores the error message in ingest_error field
+        // Allows the document to still be indexed (with error noted)
+        // {{_ingest.on_failure_message}} is a template variable
+        // containing the actual error message from Elasticsearch
+        //
+        // This ensures:
+        // - Failed documents don't block the entire batch
+        // - Errors are traceable for debugging
+        // - Partial success is possible
+      }
+    }
+  ]
+}
+
+// HOW THIS PIPELINE WORKS WITH BULK UPDATES:
+// ============================================
+// 1. EnrichWikipediaCommand reads HTML files from disk
+// 2. Creates update actions with full_content field containing raw HTML
+// 3. Calls helpers.bulk() with pipeline="wikipedia_ingest_pipeline"
+// 4. Elasticsearch processes EACH document through this pipeline:
+//    - Strips HTML tags
+//    - Trims whitespace
+//    - Adds metadata fields
+// 5. Processed documents are then indexed/updated
+// 6. All processing happens on Elasticsearch nodes (distributed)
+//
+// BENEFITS:
+// - Consistent HTML processing across all documents
+// - Server-side processing (no client CPU usage)
+// - Atomic updates (each document succeeds or fails independently)
+// - Automatic error handling with fallback
+// - Scalable to millions of documents
+//
+// USAGE EXAMPLE:
+// helpers.bulk(
+//     es_client,
+//     actions,
+//     pipeline="wikipedia_ingest_pipeline",  # Applies this pipeline
+//     stats_only=True
+// )

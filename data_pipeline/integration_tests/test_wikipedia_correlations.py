@@ -232,7 +232,7 @@ class TestWikipediaCorrelations:
     def test_elasticsearch_mapping_structure(self):
         """Test that Elasticsearch mapping includes Wikipedia correlations."""
         # Read the mapping file
-        mapping_file = Path("/Users/ryanknight/projects/temporal/real_estate_ai_search/real_estate_search/elasticsearch/templates/neighborhoods.json")
+        mapping_file = Path(__file__).parent.parent.parent / "real_estate_search/elasticsearch/templates/neighborhoods.json"
         
         if mapping_file.exists():
             with open(mapping_file) as f:

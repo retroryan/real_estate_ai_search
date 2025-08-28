@@ -480,6 +480,68 @@ class ElasticsearchIndexManager:
                 f"Failed to delete index {index_name}: {str(e)}"
             )
     
+    def populate_property_relationships_index(self) -> bool:
+        """
+        Populate property_relationships index from existing indices.
+        Called after setup-indices to build denormalized documents.
+        
+        Returns:
+            True if relationships were populated successfully
+        """
+        from .relationship_builder import PropertyRelationshipBuilder, RelationshipBuilderConfig
+        
+        self.logger.info("Starting property relationships population...")
+        
+        try:
+            # Check that required indices exist and have data
+            required_indices = [IndexName.PROPERTIES, IndexName.NEIGHBORHOODS, IndexName.WIKIPEDIA]
+            for index in required_indices:
+                if not self.client.indices.exists(index=index):
+                    self.logger.error(f"Required index '{index}' does not exist")
+                    return False
+                
+                count = self.client.count(index=index)["count"]
+                if count == 0:
+                    self.logger.warning(f"Index '{index}' is empty")
+                else:
+                    self.logger.info(f"  {index}: {count} documents")
+            
+            # Ensure property_relationships index exists
+            if not self.client.indices.exists(index=IndexName.PROPERTY_RELATIONSHIPS):
+                self.logger.info("Creating property_relationships index...")
+                success = self.create_property_relationships_index(IndexName.PROPERTY_RELATIONSHIPS)
+                if not success:
+                    self.logger.error("Failed to create property_relationships index")
+                    return False
+            
+            # Build relationships using the relationship builder
+            config = RelationshipBuilderConfig(
+                batch_size=50,  # Smaller batches for stability
+                max_wikipedia_articles=3,
+                enable_combined_text=True
+            )
+            
+            builder = PropertyRelationshipBuilder(self.client, config)
+            total_created = builder.build_all_relationships()
+            
+            if total_created > 0:
+                self.logger.info(f"✅ Successfully created {total_created} relationship documents")
+                
+                # Verify final count
+                final_count = self.client.count(index=IndexName.PROPERTY_RELATIONSHIPS)["count"]
+                self.logger.info(f"✅ property_relationships index now has {final_count} documents")
+                return True
+            else:
+                self.logger.warning("No relationship documents were created")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Failed to populate property relationships: {str(e)}")
+            raise ElasticsearchIndexError(
+                ErrorCode.CONFIGURATION_ERROR,
+                f"Failed to populate property relationships: {str(e)}"
+            )
+    
     def setup_all_indices(self) -> Dict[str, bool]:
         """
         Set up all required indices with templates.

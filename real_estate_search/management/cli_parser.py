@@ -27,6 +27,8 @@ class CLIParser:
 Examples:
   python -m real_estate_search.management setup-indices
   python -m real_estate_search.management setup-indices --clear    # Reset and recreate indices
+  python -m real_estate_search.management setup-indices --clear --build-relationships  # Complete setup with relationships
+  python -m real_estate_search.management setup-indices --build-relationships  # Just build relationships
   python -m real_estate_search.management validate-indices
   python -m real_estate_search.management validate-embeddings     # Check vector embedding coverage
   python -m real_estate_search.management list-indices
@@ -52,14 +54,20 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             'demo_number',
             type=int,
             nargs='?',
-            choices=range(1, 15),
-            help='Demo query number to run (1-14)'
+            choices=range(1, 16),
+            help='Demo query number to run (1-15)'
         )
         
         parser.add_argument(
             '--clear',
             action='store_true',
             help='For setup-indices: Delete existing indices first (complete reset for demo)'
+        )
+        
+        parser.add_argument(
+            '--build-relationships',
+            action='store_true',
+            help='For setup-indices: Build property_relationships index from existing data'
         )
         
         parser.add_argument(
@@ -136,6 +144,7 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             clear=parsed_args.clear,
             list=parsed_args.list,
             verbose=parsed_args.verbose,
+            build_relationships=parsed_args.build_relationships,
             config_path=str(config_path),
             log_level=LogLevel(parsed_args.log_level),
             batch_size=getattr(parsed_args, 'batch_size', 50),
@@ -159,11 +168,15 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
         # Demo command specific validation
         if args.command == CommandType.DEMO:
             if not args.list and not args.demo_number:
-                return "Please specify a demo number (1-14) or use --list to see available demos"
+                return "Please specify a demo number (1-15) or use --list to see available demos"
         
         # Clear flag only valid for setup-indices
         if args.clear and args.command != CommandType.SETUP_INDICES:
             return "--clear flag is only valid for setup-indices command"
+        
+        # Build relationships flag only valid for setup-indices
+        if args.build_relationships and args.command != CommandType.SETUP_INDICES:
+            return "--build-relationships flag is only valid for setup-indices command"
         
         # List flag only valid for demo command
         if args.list and args.command != CommandType.DEMO:

@@ -33,8 +33,9 @@ class TestNeo4jGraphWriter:
     def __init__(self):
         """Initialize test environment."""
         # Load environment variables
-        parent_env = Path('/Users/ryanknight/projects/temporal/.env')
-        local_env = Path('/Users/ryanknight/projects/temporal/real_estate_ai_search/.env')
+        project_root = Path(__file__).parent.parent.parent
+        parent_env = project_root.parent / '.env'
+        local_env = project_root / '.env'
         
         if parent_env.exists():
             load_dotenv(parent_env)
@@ -51,7 +52,7 @@ class TestNeo4jGraphWriter:
         )
         
         # JAR path
-        self.jar_path = Path('/Users/ryanknight/projects/temporal/real_estate_ai_search/lib/neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar')
+        self.jar_path = project_root / 'lib/neo4j-connector-apache-spark_2.13-5.3.8_for_spark_3.jar'
         
         # Initialize Spark session
         self.spark = self._create_spark_session()

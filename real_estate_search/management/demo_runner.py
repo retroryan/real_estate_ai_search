@@ -19,7 +19,8 @@ from ..demo_queries import (
     demo_wikipedia_fulltext,
     demo_natural_language_search,
     demo_natural_language_examples,
-    demo_semantic_vs_keyword_comparison
+    demo_semantic_vs_keyword_comparison,
+    demo_rich_property_listing
 )
 from ..demo_queries.demo_single_query_relationships import demo_simplified_relationships
 from .models import DemoQuery, DemoExecutionResult
@@ -130,6 +131,12 @@ class DemoRunner:
                 name="Semantic vs Keyword Comparison",
                 description="Compare semantic embedding search with traditional keyword search",
                 query_function="demo_semantic_vs_keyword_comparison"
+            ),
+            15: DemoQuery(
+                number=15,
+                name="Rich Real Estate Listing",
+                description="Complete property listing with neighborhood and Wikipedia data from single query",
+                query_function="demo_rich_property_listing"
             )
         }
         return demos
@@ -227,7 +234,8 @@ class DemoRunner:
             11: demo_simplified_relationships,
             12: demo_natural_language_search,
             13: demo_natural_language_examples,
-            14: demo_semantic_vs_keyword_comparison
+            14: demo_semantic_vs_keyword_comparison,
+            15: demo_rich_property_listing
         }
         
         return demo_functions[demo_number]
@@ -290,7 +298,36 @@ Compares AI-powered semantic search with traditional keyword search:
 • Runs the same query using both approaches
 • Shows how semantic search understands meaning
 • Demonstrates differences in result relevance
-• Highlights unique strengths of each approach"""
+• Highlights unique strengths of each approach""",
+            
+            15: """🏡 Rich Real Estate Listing (Single Query):
+Demonstrates the power of denormalized property_relationships index:
+
+✨ Complete Property Information:
+• Property details (price, beds, baths, square footage)
+• Full property description and features
+• Amenities and special characteristics
+
+📍 Embedded Neighborhood Data:
+• Demographics (population, median income)
+• Walkability and school ratings
+• Local amenities and characteristics
+• Neighborhood description
+
+📚 Wikipedia Context:
+• Related articles about the area
+• Historical and cultural information
+• Local landmarks and points of interest
+
+⚡ Performance Benefits:
+• Single query retrieves ALL data
+• 5-10x faster than multiple queries
+• Simplified error handling
+• Clean, maintainable code
+
+This is what modern real estate platforms need - rich, contextual
+listings that help buyers make informed decisions, all delivered
+with exceptional performance!"""
         }
         
         return descriptions

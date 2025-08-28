@@ -96,15 +96,23 @@ class SetupIndicesCommand(BaseCommand):
     def execute(self) -> OperationStatus:
         """Execute index setup."""
         try:
-            results = self.index_operations.setup_indices(clear=self.args.clear)
+            results = self.index_operations.setup_indices(
+                clear=self.args.clear,
+                build_relationships=self.args.build_relationships
+            )
             self.output.print_index_setup_results(results, clear=self.args.clear)
             
             all_successful = all(r.success for r in results if "reset" not in r.message.lower())
             
+            # Update success message if relationships were built
+            success_msg = "All indices set up successfully"
+            if self.args.build_relationships and all_successful:
+                success_msg += " and property relationships built"
+            
             return OperationStatus(
                 operation="setup-indices",
                 success=all_successful,
-                message="All indices set up successfully" if all_successful else "Some indices failed to set up"
+                message=success_msg if all_successful else "Some operations failed"
             )
         except Exception as e:
             self.logger.error(f"Failed to setup indices: {str(e)}")
@@ -437,7 +445,27 @@ class EnrichWikipediaCommand(BaseCommand):
         return actions
     
     def _perform_bulk_updates(self, actions: List[Dict[str, Any]]) -> None:
-        """Perform bulk updates to Elasticsearch."""
+        """
+        Perform bulk updates to Elasticsearch using an ingest pipeline.
+        
+        This method leverages Elasticsearch's ingest pipeline feature for efficient
+        document processing. The pipeline ("wikipedia_ingest_pipeline") performs
+        transformations on documents BEFORE they are indexed:
+        
+        1. HTML Processing: Strips HTML tags, extracts text content
+        2. Text Analysis: Generates summaries, extracts entities
+        3. Field Enrichment: Adds metadata, timestamps, computed fields
+        4. Content Validation: Ensures required fields are present
+        
+        The bulk API with pipeline processing is ideal for:
+        - Large-scale document enrichment (100s to 1000s of docs)
+        - Consistent document transformations
+        - CPU-intensive processing (offloaded to Elasticsearch nodes)
+        - Atomic updates (all-or-nothing per document)
+        
+        Pipeline processing happens on the Elasticsearch cluster, not the client,
+        which distributes the computational load across nodes.
+        """
         if not actions:
             self.output.info("No documents to update")
             return
@@ -449,28 +477,44 @@ class EnrichWikipediaCommand(BaseCommand):
         
         self.output.info(f"Updating {len(actions)} documents...")
         
-        # Process in batches
+        # Process in batches to avoid memory issues and network timeouts
+        # Default batch_size is 50-100 documents for optimal throughput
         batch_size = self.enrichment_config.batch_size
         for i in range(0, len(actions), batch_size):
             batch = actions[i:i + batch_size]
             
             try:
-                # Use helpers.bulk for efficient bulk indexing
+                # Use helpers.bulk for efficient bulk indexing with pipeline processing
+                # 
+                # Key parameters:
+                # - pipeline: Name of the ingest pipeline to process documents through
+                #             The pipeline runs ON THE SERVER before indexing
+                # - stats_only: Return only success/failure counts, not full responses
+                #               Reduces network traffic for large batches
+                # - raise_on_error: False allows partial success (some docs may fail)
+                #
+                # The pipeline parameter is the KEY feature here:
+                # It tells Elasticsearch to run each document through the pipeline
+                # BEFORE indexing, allowing complex transformations at scale
                 success, failed = helpers.bulk(
                     self.raw_es_client,
                     batch,
-                    pipeline=self.enrichment_config.pipeline_name,
-                    stats_only=True,
-                    raise_on_error=False
+                    pipeline=self.enrichment_config.pipeline_name,  # "wikipedia_ingest_pipeline"
+                    stats_only=True,        # Don't return full responses (saves memory)
+                    raise_on_error=False    # Continue on partial failures
                 )
                 
                 self.result.documents_enriched += success
                 self.result.documents_failed += failed
                 
                 if failed > 0:
+                    # Some documents failed pipeline processing
+                    # Common causes: missing fields, pipeline errors, mapping conflicts
                     self.output.warning(f"Failed to update {failed} documents in batch")
                     
             except Exception as e:
+                # Catastrophic failure - entire batch failed
+                # Usually network issues or pipeline configuration problems
                 error_msg = f"Bulk update failed: {e}"
                 self.logger.error(error_msg)
                 self.result.errors.append(error_msg)

@@ -27,12 +27,13 @@ class IndexOperations:
         self.index_manager = index_manager
         self.logger = logging.getLogger(__name__)
     
-    def setup_indices(self, clear: bool = False) -> List[IndexOperationResult]:
+    def setup_indices(self, clear: bool = False, build_relationships: bool = False) -> List[IndexOperationResult]:
         """
         Create all indices with proper mappings.
         
         Args:
             clear: If True, delete existing indices first
+            build_relationships: If True, build property_relationships index after setup
         
         Returns:
             List of operation results for each index
@@ -60,6 +61,33 @@ class IndexOperations:
                     self.logger.info(f"Successfully set up index: {name}")
                 else:
                     self.logger.error(f"Failed to set up index: {name}")
+            
+            # Build relationships if requested
+            if build_relationships:
+                self.logger.info("Building property relationships...")
+                try:
+                    relationships_success = self.index_manager.populate_property_relationships_index()
+                    result = IndexOperationResult(
+                        index_name="property_relationships_population",
+                        success=relationships_success,
+                        message="Property relationships built successfully" if relationships_success else "Failed to build property relationships"
+                    )
+                    results.append(result)
+                    
+                    if relationships_success:
+                        self.logger.info("Successfully built property relationships")
+                    else:
+                        self.logger.error("Failed to build property relationships")
+                        
+                except Exception as e:
+                    self.logger.error(f"Failed to build property relationships: {str(e)}")
+                    result = IndexOperationResult(
+                        index_name="property_relationships_population",
+                        success=False,
+                        error=str(e),
+                        message=f"Failed to build property relationships: {str(e)}"
+                    )
+                    results.append(result)
             
             return results
             
