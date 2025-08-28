@@ -9,7 +9,8 @@ from .models import (
     EmbeddingValidationResult,
     ClusterHealthInfo,
     DemoQuery,
-    DemoExecutionResult
+    DemoExecutionResult,
+    WikipediaEnrichmentResult
 )
 
 
@@ -273,3 +274,29 @@ class CLIOutput:
             print("✓ All indices deleted successfully!")
         else:
             print("✗ Some indices failed to delete")
+    
+    def header(self, text: str):
+        """Print a header."""
+        print(f"\n{text}")
+        print("=" * len(text))
+    
+    def section(self, text: str):
+        """Print a section header."""
+        print(f"\n{text}")
+        print("-" * len(text))
+    
+    def info(self, message: str):
+        """Print an info message."""
+        print(f"ℹ️  {message}")
+    
+    def success(self, message: str):
+        """Print a success message."""
+        print(f"✓ {message}")
+    
+    def warning(self, message: str):
+        """Print a warning message."""
+        print(f"⚠️  {message}")
+    
+    def error(self, message: str):
+        """Print an error message."""
+        print(f"✗ {message}")

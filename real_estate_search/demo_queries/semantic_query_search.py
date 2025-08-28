@@ -167,7 +167,7 @@ def demo_natural_language_search(
 def demo_natural_language_examples(
     es_client: Elasticsearch,
     config: Optional[AppConfig] = None
-) -> List[DemoQueryResult]:
+) -> DemoQueryResult:
     """
     Run multiple natural language search examples.
     
@@ -179,7 +179,7 @@ def demo_natural_language_examples(
         config: Application configuration
         
     Returns:
-        List of DemoQueryResults for different example queries
+        DemoQueryResult with aggregated example results
     """
     
     example_queries = [
@@ -187,48 +187,94 @@ def demo_natural_language_examples(
         "modern downtown condo with city views",
         "spacious property with home office and fast internet",
         "eco-friendly house with solar panels and energy efficiency",
-        "luxury estate with pool and entertainment areas",
-        "affordable starter home for first-time buyers",
-        "historic Victorian house with original architecture",
-        "beach house with ocean access and outdoor living",
-        "mountain retreat with privacy and natural surroundings",
-        "urban loft with industrial design and open concept"
+        "luxury estate with pool and entertainment areas"
     ]
     
-    results = []
+    all_results = []
+    total_time = 0
+    total_hits_all = 0
     
-    logger.info("=" * 60)
-    logger.info("NATURAL LANGUAGE SEMANTIC SEARCH EXAMPLES")
-    logger.info("=" * 60)
+    # Load config if not provided
+    if config is None:
+        config = AppConfig.load()
     
-    for i, query in enumerate(example_queries, 1):
-        logger.info(f"\nExample {i}/{len(example_queries)}: '{query}'")
-        logger.info("-" * 40)
-        
-        result = demo_natural_language_search(
-            es_client=es_client,
-            query=query,
-            size=3,  # Fewer results per query for overview
-            config=config
+    # Initialize embedding service once for all queries
+    try:
+        embedding_service = QueryEmbeddingService(config=config.embedding)
+        embedding_service.initialize()
+    except Exception as e:
+        logger.error(f"Failed to initialize embedding service: {e}")
+        return DemoQueryResult(
+            query_name="Natural Language Examples",
+            query_description="Multiple natural language semantic search examples",
+            execution_time_ms=0,
+            total_hits=0,
+            returned_hits=0,
+            results=[],
+            query_dsl={"error": str(e)}
         )
-        
-        # Log summary
-        if result.returned_hits > 0:
-            logger.info(f"✓ Found {result.total_hits} matching properties")
-            logger.info(f"  Top result score: {result.results[0].get('_score', 0):.3f}")
-            if 'address' in result.results[0]:
-                addr = result.results[0]['address']
-                logger.info(f"  Top match: {addr.get('street', 'Unknown')}, {addr.get('city', 'Unknown')}")
-        else:
-            logger.info("✗ No results found")
-        
-        results.append(result)
     
-    logger.info("\n" + "=" * 60)
-    logger.info("SEMANTIC SEARCH EXAMPLES COMPLETE")
-    logger.info("=" * 60)
+    try:
+        for i, query in enumerate(example_queries, 1):
+            # Generate embedding
+            start_time = time.time()
+            query_embedding = embedding_service.embed_query(query)
+            
+            # Build and execute query
+            es_query = {
+                "knn": {
+                    "field": "embedding",
+                    "query_vector": query_embedding,
+                    "k": 3,
+                    "num_candidates": 30
+                },
+                "size": 3,
+                "_source": ["listing_id", "property_type", "price", "address"]
+            }
+            
+            response = es_client.search(index="properties", body=es_query)
+            query_time = (time.time() - start_time) * 1000
+            total_time += query_time
+            
+            # Collect top result from each query
+            if response['hits']['hits']:
+                hit = response['hits']['hits'][0]
+                result = {
+                    'example_number': i,
+                    'query': query,
+                    'top_match': hit['_source'],
+                    'score': hit['_score'],
+                    'total_hits': response['hits']['total']['value']
+                }
+                all_results.append(result)
+                total_hits_all += response['hits']['total']['value']
     
-    return results
+    finally:
+        embedding_service.close()
+    
+    return DemoQueryResult(
+        query_name="Demo 13: Natural Language Search Examples",
+        query_description="Demonstrates semantic understanding across 5 diverse natural language queries",
+        execution_time_ms=int(total_time),
+        total_hits=total_hits_all,
+        returned_hits=len(all_results),
+        results=all_results,
+        query_dsl={
+            "description": "5 different KNN queries with natural language embeddings",
+            "queries_tested": example_queries
+        },
+        es_features=[
+            f"Tested {len(example_queries)} diverse natural language queries",
+            f"Average query time: {total_time/len(example_queries):.1f}ms",
+            "Query types: family homes, condos, work-from-home, eco-friendly, luxury",
+            "Each query generates unique 1024-dimensional embedding",
+            "Demonstrates semantic understanding beyond keywords"
+        ],
+        indexes_used=[
+            "properties index with pre-computed embeddings",
+            f"Total matches across all queries: {total_hits_all}"
+        ]
+    )
 
 
 def demo_semantic_vs_keyword_comparison(
@@ -236,7 +282,7 @@ def demo_semantic_vs_keyword_comparison(
     query: str = "stunning views from modern kitchen",
     size: int = 5,
     config: Optional[AppConfig] = None
-) -> Dict[str, DemoQueryResult]:
+) -> DemoQueryResult:
     """
     Compare semantic search with traditional keyword search.
     
@@ -253,22 +299,52 @@ def demo_semantic_vs_keyword_comparison(
         Dictionary with 'semantic' and 'keyword' DemoQueryResults
     """
     
-    logger.info("=" * 60)
-    logger.info("SEMANTIC VS KEYWORD SEARCH COMPARISON")
-    logger.info(f"Query: '{query}'")
-    logger.info("=" * 60)
+    # Load config if not provided
+    if config is None:
+        config = AppConfig.load()
     
     # Run semantic search
-    logger.info("\n1. SEMANTIC SEARCH (using embeddings):")
-    semantic_result = demo_natural_language_search(
-        es_client=es_client,
-        query=query,
-        size=size,
-        config=config
-    )
+    semantic_start = time.time()
+    
+    # Initialize embedding service
+    try:
+        embedding_service = QueryEmbeddingService(config=config.embedding)
+        embedding_service.initialize()
+        query_embedding = embedding_service.embed_query(query)
+        embedding_service.close()
+    except Exception as e:
+        logger.error(f"Failed to generate embedding: {e}")
+        query_embedding = None
+    
+    semantic_results = []
+    semantic_hits = 0
+    
+    if query_embedding:
+        semantic_query = {
+            "knn": {
+                "field": "embedding",
+                "query_vector": query_embedding,
+                "k": size,
+                "num_candidates": size * 10
+            },
+            "size": size,
+            "_source": ["listing_id", "property_type", "price", "address", "description"]
+        }
+        
+        try:
+            response = es_client.search(index="properties", body=semantic_query)
+            semantic_hits = response['hits']['total']['value']
+            for hit in response['hits']['hits']:
+                result = hit['_source']
+                result['_score'] = hit['_score']
+                semantic_results.append(result)
+        except Exception as e:
+            logger.error(f"Semantic search failed: {e}")
+    
+    semantic_time = (time.time() - semantic_start) * 1000
     
     # Run keyword search
-    logger.info("\n2. KEYWORD SEARCH (traditional text matching):")
+    keyword_start = time.time()
     keyword_query = {
         "query": {
             "multi_match": {
@@ -291,65 +367,77 @@ def demo_semantic_vs_keyword_comparison(
         ]
     }
     
+    keyword_results = []
+    keyword_hits = 0
+    
     try:
         response = es_client.search(index="properties", body=keyword_query)
-        
-        keyword_results = []
+        keyword_hits = response['hits']['total']['value']
         for hit in response['hits']['hits']:
             result = hit['_source']
             result['_score'] = hit['_score']
             keyword_results.append(result)
-        
-        keyword_result = DemoQueryResult(
-            query_name=f"Keyword Search: '{query[:50]}...'",
-            query_description=f"Traditional text-based search: '{query}'",
-            execution_time_ms=response.get('took', 0),
-            total_hits=response['hits']['total']['value'],
-            returned_hits=len(keyword_results),
-            results=keyword_results,
-            query_dsl=keyword_query,
-            es_features=[
-                "Multi-Match Query - Text matching across multiple fields",
-                "Field Boosting - Weighted importance of different text fields",
-                "Fuzzy Matching - Handle typos and variations",
-                "BM25 Scoring - Traditional text relevance algorithm"
-            ]
-        )
     except Exception as e:
         logger.error(f"Error in keyword search: {e}")
-        keyword_result = DemoQueryResult(
-            query_name=f"Keyword Search: '{query[:50]}...'",
-            query_description=f"Traditional text-based search: '{query}'",
-            execution_time_ms=0,
-            total_hits=0,
-            returned_hits=0,
-            results=[],
-            query_dsl=keyword_query
-        )
+    
+    keyword_time = (time.time() - keyword_start) * 1000
     
     # Compare results
-    logger.info("\n" + "=" * 60)
-    logger.info("COMPARISON SUMMARY:")
-    logger.info("-" * 40)
-    
-    # Find overlap
-    semantic_ids = {r.get('listing_id') for r in semantic_result.results if 'listing_id' in r}
-    keyword_ids = {r.get('listing_id') for r in keyword_result.results if 'listing_id' in r}
+    semantic_ids = {r.get('listing_id') for r in semantic_results if 'listing_id' in r}
+    keyword_ids = {r.get('listing_id') for r in keyword_results if 'listing_id' in r}
     overlap = semantic_ids & keyword_ids
     
-    logger.info(f"Semantic search found: {semantic_result.total_hits} properties")
-    logger.info(f"Keyword search found: {keyword_result.total_hits} properties")
-    logger.info(f"Overlap in top {size} results: {len(overlap)} properties")
-    logger.info(f"Unique to semantic: {len(semantic_ids - keyword_ids)} properties")
-    logger.info(f"Unique to keyword: {len(keyword_ids - semantic_ids)} properties")
-    
-    if semantic_result.returned_hits > 0 and keyword_result.returned_hits > 0:
-        logger.info(f"\nTop semantic result score: {semantic_result.results[0].get('_score', 0):.3f}")
-        logger.info(f"Top keyword result score: {keyword_result.results[0].get('_score', 0):.3f}")
-    
-    logger.info("=" * 60)
-    
-    return {
-        "semantic": semantic_result,
-        "keyword": keyword_result
+    # Combine results for comparison
+    comparison_results = {
+        'semantic': {
+            'total_hits': semantic_hits,
+            'top_results': semantic_results[:3] if semantic_results else [],
+            'execution_time_ms': semantic_time
+        },
+        'keyword': {
+            'total_hits': keyword_hits,
+            'top_results': keyword_results[:3] if keyword_results else [],
+            'execution_time_ms': keyword_time
+        },
+        'comparison': {
+            'overlap_count': len(overlap),
+            'unique_to_semantic': len(semantic_ids - keyword_ids),
+            'unique_to_keyword': len(keyword_ids - semantic_ids),
+            'semantic_top_score': semantic_results[0].get('_score', 0) if semantic_results else 0,
+            'keyword_top_score': keyword_results[0].get('_score', 0) if keyword_results else 0
+        }
     }
+    
+    return DemoQueryResult(
+        query_name="Demo 14: Semantic vs Keyword Search Comparison",
+        query_description=f"Comparing semantic and keyword search for: '{query}'",
+        execution_time_ms=int(semantic_time + keyword_time),
+        total_hits=semantic_hits + keyword_hits,
+        returned_hits=len(semantic_results) + len(keyword_results),
+        results=[comparison_results],
+        query_dsl={
+            "semantic_query": {"knn": "..."},
+            "keyword_query": keyword_query
+        },
+        es_features=[
+            "SEMANTIC SEARCH:",
+            f"  • Found {semantic_hits} properties in {semantic_time:.1f}ms",
+            f"  • Top score: {comparison_results['comparison']['semantic_top_score']:.3f}",
+            "  • Uses AI embeddings for semantic understanding",
+            "",
+            "KEYWORD SEARCH:",
+            f"  • Found {keyword_hits} properties in {keyword_time:.1f}ms",
+            f"  • Top score: {comparison_results['comparison']['keyword_top_score']:.3f}",
+            "  • Uses traditional text matching with BM25",
+            "",
+            "COMPARISON:",
+            f"  • Overlap in top {size}: {len(overlap)} properties",
+            f"  • Unique to semantic: {len(semantic_ids - keyword_ids)}",
+            f"  • Unique to keyword: {len(keyword_ids - semantic_ids)}"
+        ],
+        indexes_used=[
+            "properties index - tested with both search methods",
+            f"Query tested: '{query}'"
+        ],
+        aggregations=comparison_results
+    )

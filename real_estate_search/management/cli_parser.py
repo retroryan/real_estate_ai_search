@@ -34,6 +34,9 @@ Examples:
   python -m real_estate_search.management demo --list           # List all demo queries
   python -m real_estate_search.management demo 1                # Run demo query 1
   python -m real_estate_search.management demo 2 --verbose      # Run demo 2 with query DSL
+  python -m real_estate_search.management enrich-wikipedia      # Enrich Wikipedia articles
+  python -m real_estate_search.management enrich-wikipedia --dry-run  # Test without updating
+  python -m real_estate_search.management enrich-wikipedia --max-documents 100  # Process 100 docs
   
 Note: Uses real_estate_search/config.yaml by default. Override with --config flag.
             """
@@ -85,6 +88,26 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             help='Logging level (default: INFO)'
         )
         
+        # Wikipedia enrichment specific arguments
+        parser.add_argument(
+            '--batch-size',
+            type=int,
+            default=50,
+            help='For enrich-wikipedia: Batch size for bulk updates (default: 50)'
+        )
+        
+        parser.add_argument(
+            '--max-documents',
+            type=int,
+            help='For enrich-wikipedia: Maximum documents to process'
+        )
+        
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='For enrich-wikipedia: Perform dry run without updating documents'
+        )
+        
         return parser
     
     @staticmethod
@@ -114,7 +137,10 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             list=parsed_args.list,
             verbose=parsed_args.verbose,
             config_path=str(config_path),
-            log_level=LogLevel(parsed_args.log_level)
+            log_level=LogLevel(parsed_args.log_level),
+            batch_size=getattr(parsed_args, 'batch_size', 50),
+            max_documents=getattr(parsed_args, 'max_documents', None),
+            dry_run=getattr(parsed_args, 'dry_run', False)
         )
         
         return cli_args
@@ -143,12 +169,23 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
         if args.list and args.command != CommandType.DEMO:
             return "--list flag is only valid for demo command"
         
-        # Verbose flag only valid for demo command
-        if args.verbose and args.command != CommandType.DEMO:
-            return "--verbose flag is only valid for demo command"
+        # Verbose flag valid for demo and enrich-wikipedia commands
+        if args.verbose and args.command not in [CommandType.DEMO, CommandType.ENRICH_WIKIPEDIA]:
+            return "--verbose flag is only valid for demo and enrich-wikipedia commands"
         
         # Demo number only valid for demo command
         if args.demo_number and args.command != CommandType.DEMO:
             return "Demo number is only valid for demo command"
+        
+        # Wikipedia enrichment specific validation
+        if args.command == CommandType.ENRICH_WIKIPEDIA:
+            if args.batch_size and (args.batch_size < 1 or args.batch_size > 500):
+                return "Batch size must be between 1 and 500"
+            if args.max_documents and args.max_documents < 1:
+                return "Max documents must be greater than 0"
+        else:
+            # These flags only valid for enrich-wikipedia
+            if args.dry_run:
+                return "--dry-run flag is only valid for enrich-wikipedia command"
         
         return None
