@@ -13,7 +13,17 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 - **Semantic Chunking**: AI-powered text segmentation using embedding similarity boundaries
 - **Real Estate Property Analysis**: Embedding generation and comparison for synthetic property and neighborhood data
 
-## Project Modules
+## Project Overview
+
+### Data Overview
+
+The project utilizes three primary datasets to demonstrate comprehensive AI search capabilities:
+
+- **Real Estate Property Listings (Synthetic - AI Generated)**: ~2,000 property listings across San Francisco Bay Area and Park City, Utah. Each property includes detailed specifications (bedrooms, bathrooms, square footage), precise geographic coordinates, pricing information, amenities, and rich text descriptions suitable for semantic search.
+
+- **Neighborhood Information (Synthetic - AI Generated)**: Comprehensive neighborhood profiles for ~100 neighborhoods featuring walkability scores, transit accessibility, school ratings, safety metrics, lifestyle characteristics, local amenities, and detailed narrative descriptions capturing the unique character of each area.
+
+- **Wikipedia Articles (Real Data)**: 500+ curated Wikipedia articles covering cities, landmarks, historical events, and cultural topics relevant to the property locations. Articles include full text content, metadata, and have been processed for optimal retrieval and semantic understanding.
 
 ### Integration Architecture
 
@@ -77,27 +87,30 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 
 ---
 
-### [3. Neo4j GraphRAG Real Estate Search](./graph_real_estate/)
+### [3. Elasticsearch Real Estate RAG](./real_estate_search/)
+**Purpose**: Elasticsearch-based RAG real estate and Wikipedia search demonstrating Vector Search, Full Text Search, and Hybrid Search capabilities  
+**Key Features**:
+- **Vector Search**: 1024-dimensional embeddings with k-NN search for semantic similarity
+- **Full Text Search**: BM25-based text search with multi-field queries and relevance scoring
+- **Hybrid Search**: Combines vector similarity with text relevance for optimal results
+- **Data Ingestion & Processing**: Scalable pipeline for indexing properties, neighborhoods, and Wikipedia content
+- **Geographic Search**: Intelligent radius search with coordinate-based ranking
+- **Faceted Search**: AI-driven faceted search and dynamic filtering
+- **REST API**: FastAPI with OpenAPI documentation
+- **Type Safety**: Pydantic models with AI validation and comprehensive error handling
+- **Resilience**: Circuit breaker and retry logic for fault tolerance
+
+---
+
+### [4. Neo4j GraphRAG Real Estate Search](./graph_real_estate/)
 **Purpose**: Neo4j-based GraphRAG system for intelligent property and Wikipedia search with knowledge graph relationships  
 **Key Features**:
-- **Neo4j Native Vector Search**: 768-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
+- **Neo4j Native Vector Search**: 1024-dimensional embeddings with ANN (Approximate Nearest Neighbor) indexing
 - **Hybrid Scoring Algorithm**: Combines vector similarity, graph centrality, and feature richness
 - **Knowledge Graph Structure**: Properties, neighborhoods, features, and Wikipedia articles connected through semantic relationships
 - **Multi-Provider Embeddings**: Support for Ollama, OpenAI, and Gemini models
 - **Advanced Graph Queries**: Relationship-aware retrieval using Cypher queries
 - **Natural Language Search**: "modern condo with city views", "family home near schools"
-
----
-
-### [4. Elasticsearch Real Estate RAG](./real_estate_search/)
-**Purpose**: Elasticsearch-based RAG real estate and Wikipedia search  
-**Key Features**:
-- AI-enhanced full-text search with multi-field queries and relevance scoring
-- Intelligent geographic radius search with coordinate-based ranking
-- AI-driven faceted search and dynamic filtering
-- REST API with FastAPI and OpenAPI documentation
-- Type-safe Pydantic models with AI validation and comprehensive error handling
-- Circuit breaker and retry logic for resilience
 
 ---
 

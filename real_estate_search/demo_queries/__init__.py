@@ -21,6 +21,11 @@ from .property_neighborhood_wiki import (
 )
 from .demo_relationship_search import demo_relationship_search
 from .wikipedia_fulltext import demo_wikipedia_fulltext
+from .semantic_query_search import (
+    demo_natural_language_search,
+    demo_natural_language_examples,
+    demo_semantic_vs_keyword_comparison
+)
 
 __all__ = [
     'demo_basic_property_search',
@@ -35,5 +40,8 @@ __all__ = [
     'demo_neighborhood_properties_and_wiki',
     'demo_location_wikipedia_context',
     'demo_relationship_search',
-    'demo_wikipedia_fulltext'
+    'demo_wikipedia_fulltext',
+    'demo_natural_language_search',
+    'demo_natural_language_examples',
+    'demo_semantic_vs_keyword_comparison'
 ]

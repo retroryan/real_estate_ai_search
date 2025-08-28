@@ -62,10 +62,9 @@ class EmbeddingConfig(BaseModel):
     @classmethod
     def load_api_key(cls, v: Optional[str]) -> Optional[str]:
         """Load Voyage API key from environment if not provided."""
-        if not v:
+        if v is None:
             v = os.getenv('VOYAGE_API_KEY')
-            # Note: We don't raise an error here because the key might be loaded
-            # via AppConfig from .env file. The service will validate when initialized.
+            # Note: We don't raise an error here because the service will validate when initialized.
         return v
     
     def get_model_identifier(self) -> str:
