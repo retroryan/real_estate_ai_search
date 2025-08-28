@@ -13,6 +13,7 @@ import os
 import yaml
 import logging
 from enum import Enum
+from real_estate_search.embeddings.models import EmbeddingConfig
 
 # Load environment variables from .env file
 # Try parent directory first (where main .env typically lives)
@@ -503,6 +504,12 @@ class AppConfig(BaseSettings):
             wikipedia_db=Path(os.getenv('DATA_WIKIPEDIA_DB', '../data/wikipedia/wikipedia.db'))
         ),
         description="Data paths configuration"
+    )
+    
+    # Embedding configuration for semantic search
+    embedding: EmbeddingConfig = Field(
+        default_factory=EmbeddingConfig,
+        description="Embedding configuration for query processing"
     )
     
     @computed_field
