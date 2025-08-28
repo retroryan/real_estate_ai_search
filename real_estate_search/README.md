@@ -355,6 +355,30 @@ The separation ensures:
 - Search application focuses on query and retrieval
 - Index mappings are defined before data ingestion
 
+## Testing
+
+### Integration Tests
+
+The application includes integration tests for the embedding service that powers semantic search:
+
+```bash
+# Run all integration tests (requires VOYAGE_API_KEY in .env)
+pytest real_estate_search/integration_tests/ -v
+
+# Run embedding service tests
+pytest real_estate_search/integration_tests/test_embedding_service.py -v
+
+# Run with detailed output
+pytest real_estate_search/integration_tests/test_embedding_service.py -v -s
+```
+
+The tests validate:
+- Configuration loading from config.yaml and .env
+- Query embedding generation using Voyage AI
+- Semantic similarity between related queries
+- Batch processing capabilities
+- Error handling and validation
+
 ## Search Examples
 
 ### Property Types

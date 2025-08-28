@@ -1,0 +1,1 @@
+"""Integration tests for real estate search system."""

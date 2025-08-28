@@ -46,3 +46,13 @@ logging:
 
 data:
   wikipedia_db: ../data/wikipedia/wikipedia.db
+
+# Embedding configuration for semantic search
+# Uses same Voyage-3 model as data_pipeline for consistency
+embedding:
+  provider: voyage
+  model_name: voyage-3
+  dimension: 1024
+  # API key loaded from VOYAGE_API_KEY environment variable
+  timeout_seconds: 30.0
+  max_retries: 3

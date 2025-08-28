@@ -34,6 +34,8 @@ Examples:
   python -m real_estate_search.management demo --list           # List all demo queries
   python -m real_estate_search.management demo 1                # Run demo query 1
   python -m real_estate_search.management demo 2 --verbose      # Run demo 2 with query DSL
+  
+Note: Uses real_estate_search/config.yaml by default. Override with --config flag.
             """
         )
         
@@ -72,8 +74,8 @@ Examples:
         parser.add_argument(
             '--config',
             type=Path,
-            default=Path("config.yaml"),
-            help='Configuration file path (default: config.yaml)'
+            default=Path(__file__).parent.parent / "config.yaml",
+            help='Configuration file path (default: real_estate_search/config.yaml)'
         )
         
         parser.add_argument(
@@ -99,6 +101,11 @@ Examples:
         parser = CLIParser.create_parser()
         parsed_args = parser.parse_args(args)
         
+        # Resolve config path to absolute path
+        config_path = parsed_args.config
+        if not config_path.is_absolute():
+            config_path = config_path.resolve()
+        
         # Convert to Pydantic model
         cli_args = CLIArguments(
             command=CommandType(parsed_args.command),
@@ -106,7 +113,7 @@ Examples:
             clear=parsed_args.clear,
             list=parsed_args.list,
             verbose=parsed_args.verbose,
-            config_path=str(parsed_args.config),
+            config_path=str(config_path),
             log_level=LogLevel(parsed_args.log_level)
         )
         

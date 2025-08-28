@@ -111,6 +111,19 @@ This repository demonstrates both **GraphRAG** and **RAG** architectures through
 - **Chunking Strategies**: Compare semantic vs fixed-size chunking approaches
 - **Retrieval Testing**: End-to-end RAG pipeline evaluation
 
+---
+
+### [6. SQUACK Pipeline](./squack_pipeline/)
+**Purpose**: Work in progress - replacing Spark for local data processing using DuckDB  
+**Key Features**:
+- **DuckDB-based Processing**: High-performance columnar OLAP engine for local data processing
+- **Medallion Architecture**: Bronze → Silver → Gold data quality tiers
+- **LlamaIndex Integration**: Document processing and embedding generation
+- **Multi-Store Output**: Writes to Parquet files and Elasticsearch indexes
+- **Elasticsearch Support**: Direct indexing to Elasticsearch for search applications
+- **State Management**: Pipeline recovery and comprehensive metrics
+- **CLI Interface**: Full command-line support with YAML configuration
+
 ## Generative AI Technologies
 
 This project leverages an extensive suite of cutting-edge generative AI frameworks, models, and techniques:
@@ -229,6 +242,82 @@ cp .env.example .env
 # NEO4J_PASSWORD=password
 ```
 
+## Common Workflows
+
+### Complete Wikipedia Pipeline
+
+If you want to run this demo from scratch let me know and I would be happy to help you get set up and download the wikipedia data.
+
+The wiki_crawl module is a WIP. However it works pretty well if you just ask your friendly local LLM like Claude Code to download wikipedia articles using the wiki_crawl module.
+
+After you have that everything else is automated.
+
+```bash
+Process Wikipedia data from crawling to searchable embeddings:
+
+```bash
+# 1. Generate summaries with DSPy
+python wiki_summary/summarize_main.py --limit 50
+
+# 2. Run Spark pipeline for Wikipedia data
+python -m data_pipeline --data-type wikipedia
+
+# 3. Test embeddings with LlamaIndex
+python -m common_embeddings.main evaluate
+```
+
+### Elasticsearch Real Estate Search
+
+Run Elasticsearch locally using the [Elastic Quick Start Guide](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/local-development-installation-quickstart#local-dev-quick-start).
+
+Complete pipeline flow for Elasticsearch-based real estate search:
+
+```bash
+# 1. Create indexes with proper mappings
+python -m real_estate_search.management setup-indices --clear
+
+# 2. Run data pipeline to process and index data
+python -m data_pipeline
+
+# 3. (Optional) Enrich Wikipedia articles for full-text search
+python real_estate_search/enrich_wikipedia_articles.py --data-dir data
+
+# 4. List all available demos
+python -m real_estate_search.management demo --list
+
+# 5. Run search demos
+python -m real_estate_search.management demo 1  # Basic property search
+python -m real_estate_search.management demo 10 # Wikipedia full-text search
+```
+
+See [real_estate_search/README.md](./real_estate_search/README.md) for more details on the complete pipeline flow and available demos.
+
+### Neo4j GraphRAG Pipeline
+Build a complete GraphRAG system with Neo4j:
+
+```bash
+# 1. Setup Neo4j with Docker
+docker-compose up -d
+
+# 2. Run Spark pipeline to populate Neo4j
+python -m data_pipeline --output-destination neo4j
+
+# 3. Test hybrid search
+python graph_real_estate/search_properties.py "modern condo with city views" --demo
+```
+
+
+### Neighborhood Research
+Find Wikipedia pages for specific neighborhoods:
+
+```bash
+# Search for neighborhood pages
+python wiki_crawl/wikipedia_location_crawler.py search real_estate_data/neighborhoods_sf.json
+
+# Quick preview
+python wiki_crawl/wikipedia_location_crawler.py quick real_estate_data/neighborhoods_pc.json
+```
+
 ## Data Organization
 
 ```
@@ -267,75 +356,6 @@ real_estate_ai_search/
 └── real_estate_data/         # Source data
     ├── properties_*.json    # Property datasets
     └── neighborhoods_*.json # Neighborhood datasets
-```
-
-## Common Workflows
-
-### Spark Data Pipeline
-Run the complete data pipeline with output to multiple destinations:
-
-```bash
-# Run Spark pipeline with outputs to Neo4j, Elasticsearch, and Parquet
-python -m data_pipeline --output-destination neo4j,archive_elasticsearch,parquet
-
-# Run with specific configuration
-python -m data_pipeline --config config/production.yaml
-
-# Run in test mode with sample data
-python -m data_pipeline --test-mode --sample-size 100
-```
-
-### Neo4j GraphRAG Pipeline
-Build a complete GraphRAG system with Neo4j:
-
-```bash
-# 1. Setup Neo4j with Docker
-docker-compose up -d
-
-# 2. Run Spark pipeline to populate Neo4j
-python -m data_pipeline --output-destination neo4j
-
-# 3. Test hybrid search
-python graph_real_estate/search_properties.py "modern condo with city views" --demo
-```
-
-### Elasticsearch RAG Pipeline
-Set up Elasticsearch-based RAG system:
-
-```bash
-# 1. Start Elasticsearch
-docker-compose up archive_elasticsearch -d
-
-# 2. Run Spark pipeline to populate Elasticsearch
-python -m data_pipeline --output-destination archive_elasticsearch
-
-# 3. Start the search API
-uvicorn real_estate_search.api:app --reload
-```
-
-### Complete Wikipedia Pipeline
-Process Wikipedia data from crawling to searchable embeddings:
-
-```bash
-# 1. Generate summaries with DSPy
-python wiki_summary/summarize_main.py --limit 50
-
-# 2. Run Spark pipeline for Wikipedia data
-python -m data_pipeline --data-type wikipedia
-
-# 3. Test embeddings with LlamaIndex
-python -m common_embeddings.main evaluate
-```
-
-### Neighborhood Research
-Find Wikipedia pages for specific neighborhoods:
-
-```bash
-# Search for neighborhood pages
-python wiki_crawl/wikipedia_location_crawler.py search real_estate_data/neighborhoods_sf.json
-
-# Quick preview
-python wiki_crawl/wikipedia_location_crawler.py quick real_estate_data/neighborhoods_pc.json
 ```
 
 ## Testing
