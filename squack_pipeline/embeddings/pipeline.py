@@ -152,6 +152,148 @@ class EmbeddingPipeline:
             percentage = (current / total) * 100
             self.logger.info(f"Embedding progress: {current}/{total} ({percentage:.1f}%)")
     
+    def process_neighborhoods(self, neighborhoods_data: List[Dict[str, Any]]) -> List[TextNode]:
+        """Process neighborhood data through complete embedding pipeline.
+        
+        Args:
+            neighborhoods_data: List of neighborhood records
+            
+        Returns:
+            List of TextNode objects with embeddings
+        """
+        if not neighborhoods_data:
+            self.logger.warning("No neighborhoods data provided")
+            return []
+        
+        start_time = time.time()
+        self.logger.info(f"Processing {len(neighborhoods_data)} neighborhoods through embedding pipeline")
+        
+        try:
+            # Step 1: Convert to Documents
+            self.logger.info("Converting neighborhoods to LlamaIndex Documents")
+            documents = self.document_converter.convert_neighborhoods_to_documents(neighborhoods_data)
+            
+            if not self.document_converter.validate_documents(documents):
+                raise ValueError("Document validation failed for neighborhoods")
+            
+            self.metrics["documents_converted"] += len(documents)
+            
+            # Step 2: Chunk documents (if enabled)
+            if self.config.processing.enable_chunking:
+                self.logger.info("Chunking neighborhood documents")
+                nodes = self.text_chunker.chunk_documents(documents)
+                
+                if not self.text_chunker.validate_nodes(nodes):
+                    raise ValueError("Node validation failed for neighborhoods")
+            else:
+                self.logger.info("Chunking disabled, converting documents to single nodes")
+                nodes = self.text_chunker._documents_to_single_nodes(documents)
+            
+            self.metrics["nodes_created"] += len(nodes)
+            
+            # Step 3: Generate embeddings
+            if self.config.processing.generate_embeddings:
+                self.logger.info("Generating embeddings for neighborhood nodes")
+                embedded_nodes = self.batch_processor.process_nodes_to_embeddings(nodes)
+                
+                # Validate embeddings
+                embedding_metrics = self.batch_processor.validate_embeddings(embedded_nodes)
+                self.metrics["embeddings_generated"] += embedding_metrics["nodes_with_embeddings"]
+                
+                # Update success rate
+                total_embeddings = self.metrics.get("total_embeddings_attempted", 0) + len(nodes)
+                self.metrics["total_embeddings_attempted"] = total_embeddings
+                self.metrics["embedding_success_rate"] = self.metrics["embeddings_generated"] / total_embeddings
+            else:
+                self.logger.info("Embedding generation disabled for neighborhoods")
+                embedded_nodes = nodes
+            
+            # Record processing time
+            processing_time = time.time() - start_time
+            self.metrics["processing_time"] += processing_time
+            
+            self.logger.success(
+                f"Completed neighborhood embedding pipeline: "
+                f"{len(embedded_nodes)} nodes processed in {processing_time:.2f} seconds"
+            )
+            
+            return embedded_nodes
+            
+        except Exception as e:
+            self.logger.error(f"Neighborhood embedding pipeline failed: {e}")
+            raise
+    
+    def process_wikipedia(self, wikipedia_data: List[Dict[str, Any]]) -> List[TextNode]:
+        """Process Wikipedia articles through complete embedding pipeline.
+        
+        Args:
+            wikipedia_data: List of Wikipedia article records
+            
+        Returns:
+            List of TextNode objects with embeddings
+        """
+        if not wikipedia_data:
+            self.logger.warning("No Wikipedia data provided")
+            return []
+        
+        start_time = time.time()
+        self.logger.info(f"Processing {len(wikipedia_data)} Wikipedia articles through embedding pipeline")
+        
+        try:
+            # Step 1: Convert to Documents
+            self.logger.info("Converting Wikipedia articles to LlamaIndex Documents")
+            documents = self.document_converter.convert_wikipedia_to_documents(wikipedia_data)
+            
+            if not self.document_converter.validate_documents(documents):
+                raise ValueError("Document validation failed for Wikipedia articles")
+            
+            self.metrics["documents_converted"] += len(documents)
+            
+            # Step 2: Chunk documents (if enabled)
+            if self.config.processing.enable_chunking:
+                self.logger.info("Chunking Wikipedia documents")
+                nodes = self.text_chunker.chunk_documents(documents)
+                
+                if not self.text_chunker.validate_nodes(nodes):
+                    raise ValueError("Node validation failed for Wikipedia")
+            else:
+                self.logger.info("Chunking disabled, converting documents to single nodes")
+                nodes = self.text_chunker._documents_to_single_nodes(documents)
+            
+            self.metrics["nodes_created"] += len(nodes)
+            
+            # Step 3: Generate embeddings
+            if self.config.processing.generate_embeddings:
+                self.logger.info("Generating embeddings for Wikipedia nodes")
+                embedded_nodes = self.batch_processor.process_nodes_to_embeddings(nodes)
+                
+                # Validate embeddings
+                embedding_metrics = self.batch_processor.validate_embeddings(embedded_nodes)
+                self.metrics["embeddings_generated"] += embedding_metrics["nodes_with_embeddings"]
+                
+                # Update success rate
+                total_embeddings = self.metrics.get("total_embeddings_attempted", 0) + len(nodes)
+                self.metrics["total_embeddings_attempted"] = total_embeddings
+                self.metrics["embedding_success_rate"] = self.metrics["embeddings_generated"] / total_embeddings
+            else:
+                self.logger.info("Embedding generation disabled for Wikipedia")
+                embedded_nodes = nodes
+            
+            # Record processing time
+            processing_time = time.time() - start_time
+            self.metrics["processing_time"] += processing_time
+            
+            self.logger.success(
+                f"Completed Wikipedia embedding pipeline: "
+                f"{len(embedded_nodes)} nodes processed in {processing_time:.2f} seconds"
+            )
+            
+            return embedded_nodes
+            
+        except Exception as e:
+            self.logger.error(f"Wikipedia embedding pipeline failed: {e}")
+            raise
+    
     def get_pipeline_metrics(self) -> Dict[str, Any]:
         """Get comprehensive pipeline metrics."""
         return {

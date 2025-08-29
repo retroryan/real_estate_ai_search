@@ -93,6 +93,32 @@ class EmbeddingConfig(BaseModel):
         return os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
 
 
+class DataSourcesConfig(BaseModel):
+    """Data source paths configuration."""
+    properties_files: List[Path] = Field(
+        default=[
+            Path("real_estate_data/properties_sf.json"),
+            Path("real_estate_data/properties_pc.json")
+        ],
+        description="List of property JSON files"
+    )
+    neighborhoods_files: List[Path] = Field(
+        default=[
+            Path("real_estate_data/neighborhoods_sf.json"),
+            Path("real_estate_data/neighborhoods_pc.json")
+        ],
+        description="List of neighborhood JSON files"
+    )
+    wikipedia_db_path: Path = Field(
+        default=Path("data/wikipedia/wikipedia.db"),
+        description="Path to Wikipedia SQLite database"
+    )
+    locations_file: Path = Field(
+        default=Path("real_estate_data/locations.json"),
+        description="Path to locations JSON file"
+    )
+
+
 class DataConfig(BaseSettings):
     """Data paths and processing configuration."""
     
@@ -103,10 +129,6 @@ class DataConfig(BaseSettings):
     
     input_path: Path = Field(default=Path("real_estate_data"), description="Input data directory")
     output_path: Path = Field(default=Path("squack_pipeline_output"), description="Output directory")
-    properties_file: str = Field(default="properties_sf.json", description="Properties JSON file")
-    neighborhoods_file: str = Field(default="neighborhoods_sf.json", description="Neighborhoods JSON file")
-    locations_file: str = Field(default="locations.json", description="Locations JSON file")
-    wikipedia_db_path: Path = Field(default=Path("data/wikipedia/wikipedia.db"), description="Wikipedia database path")
     sample_size: Optional[int] = Field(default=None, ge=1, description="Sample size for testing")
 
 
@@ -151,15 +173,6 @@ class ProcessingConfig(BaseModel):
     buffer_size: int = Field(default=2, ge=1, le=10, description="Buffer size for semantic chunking")
 
 
-class MedallionConfig(BaseModel):
-    """Medallion architecture configuration."""
-    
-    enable_bronze: bool = Field(default=True, description="Enable Bronze tier processing")
-    enable_silver: bool = Field(default=True, description="Enable Silver tier processing")
-    enable_gold: bool = Field(default=True, description="Enable Gold tier processing")
-    enable_geographic_enrichment: bool = Field(default=True, description="Enable geographic enrichment")
-
-
 class ElasticsearchConfig(BaseModel):
     """Elasticsearch output configuration."""
     
@@ -174,6 +187,18 @@ class ElasticsearchConfig(BaseModel):
     def password(self) -> Optional[str]:
         """Get Elasticsearch password from environment variable."""
         return os.getenv('ELASTICSEARCH_PASSWORD')
+
+
+class MedallionConfig(BaseModel):
+    """Medallion architecture configuration."""
+    
+    enable_silver: bool = Field(default=True, description="Enable Silver tier processing")
+    enable_gold: bool = Field(default=True, description="Enable Gold tier processing")
+    enable_enrichment: bool = Field(default=True, description="Enable data enrichment")
+    
+    # Data quality thresholds
+    min_completeness: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum data completeness")
+    max_null_ratio: float = Field(default=0.3, ge=0.0, le=1.0, description="Maximum null ratio")
 
 
 class OutputConfig(BaseModel):
@@ -221,6 +246,7 @@ class PipelineSettings(BaseSettings):
     processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
     medallion: MedallionConfig = Field(default_factory=MedallionConfig)
     data: DataConfig = Field(default_factory=DataConfig)
+    data_sources: DataSourcesConfig = Field(default_factory=DataSourcesConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
     
@@ -263,7 +289,7 @@ class PipelineSettings(BaseSettings):
                 config_data[field.replace('name', 'pipeline_name').replace('version', 'pipeline_version')] = data[field]
         
         # Nested configuration sections
-        nested_sections = ['duckdb', 'parquet', 'embedding', 'processing', 'medallion', 'data', 'logging', 'output']
+        nested_sections = ['duckdb', 'parquet', 'embedding', 'processing', 'medallion', 'data', 'data_sources', 'logging', 'output']
         for section in nested_sections:
             if section in data:
                 config_data[section] = data[section]

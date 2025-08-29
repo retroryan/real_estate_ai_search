@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class DecimalJSONEncoder(json.JSONEncoder):
@@ -41,11 +41,15 @@ class EmbeddingMetadata(BaseModel):
     output_file_path: str = Field(description="Path to the output Parquet file")
     file_size_bytes: int = Field(description="Size of output file in bytes")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat(),
-            Path: str
-        }
+    @field_serializer('generation_timestamp')
+    def serialize_datetime(self, dt: datetime) -> str:
+        """Serialize datetime to ISO format."""
+        return dt.isoformat()
+    
+    @field_serializer('output_file_path')
+    def serialize_path(self, path: Any) -> str:
+        """Serialize Path to string."""
+        return str(path) if isinstance(path, Path) else path
 
 
 class EmbeddingNodeData(BaseModel):

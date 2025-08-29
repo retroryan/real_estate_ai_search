@@ -60,17 +60,18 @@ class TableIdentifier(BaseModel):
         pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$",
         description="Table name"
     )
-    schema: Optional[str] = Field(
+    schema_name: Optional[str] = Field(
         default="main", 
         pattern=r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$",
-        description="Schema name"
+        description="Schema name",
+        alias="schema"
     )
     
     @property
     def qualified_name(self) -> str:
         """Get fully qualified table name."""
-        if self.schema and self.schema != "main":
-            return f"{self.schema}.{self.name}"
+        if self.schema_name and self.schema_name != "main":
+            return f"{self.schema_name}.{self.name}"
         return self.name
     
     @classmethod
@@ -78,7 +79,7 @@ class TableIdentifier(BaseModel):
         """Create from a string like 'schema.table' or 'table'."""
         parts = table_string.split('.')
         if len(parts) == 2:
-            return cls(schema=parts[0], name=parts[1])
+            return cls(schema_name=parts[0], name=parts[1])
         elif len(parts) == 1:
             return cls(name=parts[0])
         else:

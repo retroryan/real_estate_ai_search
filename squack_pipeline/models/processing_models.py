@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Type
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class EntityType(str, Enum):
@@ -100,10 +100,10 @@ class ProcessingContext(BaseModel):
     validation_enabled: bool = Field(default=True, description="Enable validation")
     enrichment_enabled: bool = Field(default=True, description="Enable enrichment")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda dt: dt.isoformat()
-        }
+    @field_serializer('started_at')
+    def serialize_datetime(self, dt: datetime) -> str:
+        """Serialize datetime to ISO format."""
+        return dt.isoformat()
 
 
 class ProcessingResult(BaseModel):

@@ -84,10 +84,7 @@ class EntityProcessor(ABC):
                 return result
             
             # Get record count before processing
-            # Handle special case for raw properties table
             source_table_name = context.source_table.table_name
-            if context.source_table.timestamp == 0 and context.source_tier == MedallionTier.BRONZE:
-                source_table_name = "raw_properties"
             
             source_count = self._count_records(source_table_name)
             if source_count == 0:
@@ -255,10 +252,7 @@ class PropertyProcessor(EntityProcessor):
     
     def _get_silver_transformation_query(self, context: ProcessingContext) -> str:
         """Silver tier transformation: data cleaning and standardization."""
-        # Handle special case for raw properties table
         source_table = context.source_table.table_name
-        if context.source_table.timestamp == 0 and context.source_tier == MedallionTier.BRONZE:
-            source_table = "raw_properties"
         
         return f"""
         SELECT 
@@ -336,10 +330,7 @@ class PropertyProcessor(EntityProcessor):
     def validate_input_data(self, context: ProcessingContext) -> bool:
         """Validate input data for property processing."""
         try:
-            # Handle special case for raw properties table
             table_name = context.source_table.table_name
-            if context.source_table.timestamp == 0 and context.source_tier == MedallionTier.BRONZE:
-                table_name = "raw_properties"
             
             # Check if source table exists
             tables = self.connection.execute(
@@ -352,8 +343,8 @@ class PropertyProcessor(EntityProcessor):
             
             # Check for required columns based on processing stage
             if context.processing_stage == ProcessingStage.CLEANING:
-                # For raw properties, check the nested structure
-                if table_name == "raw_properties":
+                # For bronze properties, check the nested structure
+                if table_name == "bronze_properties":
                     required_checks = [
                         ('listing_id', 'listing_id IS NOT NULL'),
                         ('listing_price', 'listing_price IS NOT NULL AND listing_price > 0'),

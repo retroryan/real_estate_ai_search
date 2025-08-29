@@ -204,8 +204,208 @@ class DocumentConverter:
         # Filter out None values
         return {k: v for k, v in metadata.items() if v is not None}
     
+    def convert_neighborhoods_to_documents(self, neighborhoods_data: List[Dict[str, Any]]) -> List[Document]:
+        """Convert neighborhood records to LlamaIndex Documents.
+        
+        Args:
+            neighborhoods_data: List of neighborhood records
+            
+        Returns:
+            List of LlamaIndex Documents
+        """
+        documents = []
+        
+        for hood in neighborhoods_data:
+            try:
+                # Create rich text content from neighborhood data
+                text_content = self._create_neighborhood_text(hood)
+                
+                # Create comprehensive metadata
+                metadata = self._create_neighborhood_metadata(hood)
+                
+                # Create document
+                doc = Document(
+                    text=text_content,
+                    metadata=metadata,
+                    excluded_embed_metadata_keys=[
+                        "neighborhood_id", "chunk_index", "chunk_total", 
+                        "processing_version", "created_at"
+                    ],
+                    excluded_llm_metadata_keys=[
+                        "embedding_dimension", "text_hash"
+                    ]
+                )
+                
+                documents.append(doc)
+                
+            except Exception as e:
+                self.logger.error(f"Error converting neighborhood {hood.get('neighborhood_id', 'unknown')}: {e}")
+                continue
+        
+        self.logger.info(f"Converted {len(documents)} neighborhoods to documents")
+        return documents
+    
+    def _create_neighborhood_text(self, hood: Dict[str, Any]) -> str:
+        """Create rich text content from neighborhood data for optimal embeddings."""
+        text_parts = []
+        
+        # Neighborhood header
+        if hood.get('name'):
+            text_parts.append(f"Neighborhood: {hood['name']}")
+        
+        # Location
+        location_parts = []
+        if hood.get('city'):
+            location_parts.append(hood['city'])
+        if hood.get('state'):
+            location_parts.append(hood['state'])
+        if location_parts:
+            text_parts.append(f"Location: {', '.join(location_parts)}")
+        
+        # Demographics
+        if hood.get('population'):
+            text_parts.append(f"Population: {hood['population']:,}")
+        if hood.get('median_income'):
+            text_parts.append(f"Median Income: ${hood['median_income']:,.0f}")
+        if hood.get('median_age'):
+            text_parts.append(f"Median Age: {hood['median_age']:.1f}")
+        
+        # Scores and ratings
+        if hood.get('walkability_score'):
+            text_parts.append(f"Walkability Score: {hood['walkability_score']}")
+        if hood.get('transit_score'):
+            text_parts.append(f"Transit Score: {hood['transit_score']}")
+        if hood.get('school_rating'):
+            text_parts.append(f"School Rating: {hood['school_rating']:.1f}")
+        
+        # Categories (from Gold tier)
+        if hood.get('income_category'):
+            text_parts.append(f"Income Category: {hood['income_category']}")
+        if hood.get('walkability_category'):
+            text_parts.append(f"Walkability: {hood['walkability_category']}")
+        if hood.get('school_category'):
+            text_parts.append(f"Schools: {hood['school_category']}")
+        
+        # Description
+        if hood.get('description'):
+            text_parts.append(f"Description: {hood['description'].strip()}")
+        
+        # Amenities
+        if hood.get('amenities') and len(hood['amenities']) > 0:
+            amenities_text = ", ".join(hood['amenities'])
+            text_parts.append(f"Amenities: {amenities_text}")
+        
+        return "\n".join(text_parts)
+    
+    def _create_neighborhood_metadata(self, hood: Dict[str, Any]) -> Dict[str, Any]:
+        """Create comprehensive metadata for neighborhood document."""
+        metadata = {
+            "entity_type": "neighborhood",
+            "neighborhood_id": hood.get('neighborhood_id', 'unknown'),
+            "name": hood.get('name', ''),
+            "city": hood.get('city', ''),
+            "state": hood.get('state', ''),
+            "walkability_score": hood.get('walkability_score', 0),
+            "transit_score": hood.get('transit_score', 0),
+            "school_rating": hood.get('school_rating', 0.0),
+            "population": hood.get('population', 0),
+            "median_income": hood.get('median_income', 0.0)
+        }
+        
+        # Add coordinates if available
+        if hood.get('latitude') and hood.get('longitude'):
+            metadata['latitude'] = hood['latitude']
+            metadata['longitude'] = hood['longitude']
+        
+        return metadata
+    
+    def convert_wikipedia_to_documents(self, wikipedia_data: List[Dict[str, Any]]) -> List[Document]:
+        """Convert Wikipedia articles to LlamaIndex Documents.
+        
+        Args:
+            wikipedia_data: List of Wikipedia article records
+            
+        Returns:
+            List of LlamaIndex Documents
+        """
+        documents = []
+        
+        for article in wikipedia_data:
+            try:
+                # Create text content from Wikipedia data (use summary, not full content for efficiency)
+                text_content = self._create_wikipedia_text(article)
+                
+                # Create metadata
+                metadata = self._create_wikipedia_metadata(article)
+                
+                # Create document
+                doc = Document(
+                    text=text_content,
+                    metadata=metadata,
+                    excluded_embed_metadata_keys=[
+                        "page_id", "chunk_index", "chunk_total", 
+                        "processing_version", "created_at", "url"
+                    ],
+                    excluded_llm_metadata_keys=[
+                        "embedding_dimension", "text_hash", "word_count"
+                    ]
+                )
+                
+                documents.append(doc)
+                
+            except Exception as e:
+                self.logger.error(f"Error converting Wikipedia article {article.get('page_id', 'unknown')}: {e}")
+                continue
+        
+        self.logger.info(f"Converted {len(documents)} Wikipedia articles to documents")
+        return documents
+    
+    def _create_wikipedia_text(self, article: Dict[str, Any]) -> str:
+        """Create text content from Wikipedia article for optimal embeddings."""
+        text_parts = []
+        
+        # Article header
+        if article.get('title'):
+            text_parts.append(f"Wikipedia Article: {article['title']}")
+        
+        # Relevance and category
+        if article.get('relevance_score'):
+            text_parts.append(f"Relevance Score: {article['relevance_score']:.2f}")
+        if article.get('relevance_category'):
+            text_parts.append(f"Relevance: {article['relevance_category']}")
+        
+        # Use summary if available, otherwise use display_summary
+        summary_text = article.get('summary', '') or article.get('display_summary', '')
+        if summary_text and len(summary_text.strip()) > 0:
+            text_parts.append(f"Summary: {summary_text.strip()}")
+        
+        # Categories
+        if article.get('categories') and len(article['categories']) > 0:
+            categories_text = ", ".join(article['categories'][:5])  # Limit to first 5 categories
+            text_parts.append(f"Categories: {categories_text}")
+        
+        return "\n".join(text_parts)
+    
+    def _create_wikipedia_metadata(self, article: Dict[str, Any]) -> Dict[str, Any]:
+        """Create metadata for Wikipedia document."""
+        metadata = {
+            "entity_type": "wikipedia",
+            "page_id": article.get('page_id', 'unknown'),
+            "title": article.get('title', ''),
+            "relevance_score": article.get('relevance_score', 0.0),
+            "word_count": article.get('word_count', 0),
+            "article_length": article.get('article_length', 'unknown')
+        }
+        
+        # Add coordinates if available
+        if article.get('latitude') and article.get('longitude'):
+            metadata['latitude'] = article['latitude']
+            metadata['longitude'] = article['longitude']
+        
+        return metadata
+    
     def validate_documents(self, documents: List[Document]) -> bool:
-        """Validate converted documents."""
+        """Validate converted documents for all entity types."""
         if not documents:
             self.logger.error("No documents to validate")
             return False
@@ -220,11 +420,24 @@ class DocumentConverter:
                 self.logger.error(f"Document {i} has no metadata")
                 return False
             
-            # Check required metadata fields
-            required_fields = ["entity_type", "property_id", "processing_tier"]
-            for field in required_fields:
-                if field not in doc.metadata:
-                    self.logger.error(f"Document {i} missing required metadata field: {field}")
+            # Check for entity type
+            if "entity_type" not in doc.metadata:
+                self.logger.error(f"Document {i} missing entity_type in metadata")
+                return False
+            
+            # Check entity-specific required fields
+            entity_type = doc.metadata["entity_type"]
+            if entity_type == "property":
+                if "property_id" not in doc.metadata:
+                    self.logger.error(f"Property document {i} missing property_id")
+                    return False
+            elif entity_type == "neighborhood":
+                if "neighborhood_id" not in doc.metadata:
+                    self.logger.error(f"Neighborhood document {i} missing neighborhood_id")
+                    return False
+            elif entity_type == "wikipedia":
+                if "page_id" not in doc.metadata:
+                    self.logger.error(f"Wikipedia document {i} missing page_id")
                     return False
         
         self.logger.info(f"Validated {len(documents)} documents successfully")

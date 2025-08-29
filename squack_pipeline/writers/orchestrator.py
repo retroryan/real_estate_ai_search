@@ -174,6 +174,7 @@ class WriterOrchestrator:
             "properties": EntityType.PROPERTIES,
             "neighborhoods": EntityType.NEIGHBORHOODS,
             "wikipedia": EntityType.WIKIPEDIA,
+            "locations": EntityType.NEIGHBORHOODS,  # Use neighborhoods type for locations
         }
         
         for entity_type_str, table_name in tables.items():

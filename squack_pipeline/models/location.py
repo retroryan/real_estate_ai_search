@@ -1,5 +1,6 @@
 """Location and neighborhood data models using Pydantic V2."""
 
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,14 +31,23 @@ class NeighborhoodCharacteristics(BaseModel):
 
 
 class Demographics(BaseModel):
-    """Demographic information for a neighborhood."""
+    """Demographic information for a neighborhood matching Elasticsearch template."""
     
     model_config = ConfigDict(strict=True)
     
-    primary_age_group: str
-    vibe: str
-    population: int = Field(gt=0)
-    median_household_income: float = Field(ge=0)
+    # Core demographic fields for Elasticsearch
+    population: Optional[int] = Field(default=None, gt=0)
+    median_income: Optional[int] = Field(default=None, ge=0)  # Changed from median_household_income
+    median_age: Optional[float] = Field(default=None, ge=0)
+    
+    # Array fields for Elasticsearch template
+    age_distribution: List[str] = Field(default_factory=list)
+    education_level: List[str] = Field(default_factory=list)
+    income_brackets: List[str] = Field(default_factory=list)
+    
+    # Legacy fields (optional)
+    primary_age_group: Optional[str] = None
+    vibe: Optional[str] = None
 
 
 class WikiArticle(BaseModel):
@@ -76,7 +86,7 @@ class WikipediaCorrelations(BaseModel):
 
 
 class Neighborhood(BaseModel):
-    """Neighborhood information model."""
+    """Neighborhood information model matching Elasticsearch template."""
     
     model_config = ConfigDict(
         strict=True,
@@ -84,17 +94,39 @@ class Neighborhood(BaseModel):
         str_strip_whitespace=True
     )
     
+    # Core fields matching Elasticsearch template
     neighborhood_id: str
     name: str
     city: str
-    county: str
     state: str
-    coordinates: Dict[str, float]
-    description: str
-    characteristics: NeighborhoodCharacteristics
+    
+    # Location fields
+    county: Optional[str] = None
+    coordinates: Optional[Dict[str, float]] = None  # Will be transformed to location array
+    location: Optional[List[float]] = None  # [longitude, latitude] for geo_point
+    
+    # Description and metrics
+    description: Optional[str] = None
+    population: Optional[int] = None
+    median_income: Optional[int] = None
+    walkability_score: Optional[int] = Field(default=None, ge=0, le=100)
+    school_rating: Optional[float] = Field(default=None, ge=0, le=10)
+    
+    # Arrays
     amenities: List[str] = Field(default_factory=list)
-    lifestyle_tags: List[str] = Field(default_factory=list)
-    median_home_price: float = Field(gt=0)
-    price_trend: str
-    demographics: Demographics
+    
+    # Optional nested objects
+    demographics: Optional[Demographics] = None
     wikipedia_correlations: Optional[WikipediaCorrelations] = None
+    
+    # Legacy fields (optional)
+    characteristics: Optional[NeighborhoodCharacteristics] = None
+    lifestyle_tags: List[str] = Field(default_factory=list)
+    median_home_price: Optional[float] = Field(default=None, gt=0)
+    price_trend: Optional[str] = None
+    
+    # Embedding fields for vector search
+    embedding: Optional[List[float]] = None
+    embedding_model: Optional[str] = None
+    embedding_dimension: Optional[int] = None
+    embedded_at: Optional[datetime] = None
