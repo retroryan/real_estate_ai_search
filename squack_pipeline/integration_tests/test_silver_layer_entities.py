@@ -49,7 +49,7 @@ class TestPropertySilverLayer:
         try:
             # Load properties into Bronze layer
             print("Loading properties into Bronze layer...")
-            bronze_table = property_loader.load(sample_size=10)
+            bronze_table = property_loader.load(table_name="bronze_properties", sample_size=10)
             assert bronze_table == "bronze_properties"
             bronze_count = property_loader.count_records(bronze_table)
             print(f"✓ Loaded {bronze_count} properties into Bronze layer")
@@ -132,7 +132,7 @@ class TestNeighborhoodSilverLayer:
         try:
             # Load neighborhoods into Bronze layer
             print("Loading neighborhoods into Bronze layer...")
-            bronze_table = neighborhood_loader.load(sample_size=5)
+            bronze_table = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=5)
             assert bronze_table == "bronze_neighborhoods"
             bronze_count = neighborhood_loader.count_records(bronze_table)
             print(f"✓ Loaded {bronze_count} neighborhoods into Bronze layer")
@@ -232,7 +232,7 @@ class TestWikipediaSilverLayer:
         try:
             # Load Wikipedia articles into Bronze layer
             print("Loading Wikipedia articles into Bronze layer...")
-            bronze_table = wikipedia_loader.load(sample_size=20)
+            bronze_table = wikipedia_loader.load(table_name="bronze_wikipedia", sample_size=20)
             assert bronze_table == "bronze_wikipedia"
             bronze_count = wikipedia_loader.count_records(bronze_table)
             print(f"✓ Loaded {bronze_count} Wikipedia articles into Bronze layer")
@@ -345,9 +345,9 @@ class TestSilverLayerIntegration:
         try:
             # Load all entities into Bronze
             print("Loading all entities into Bronze layer...")
-            prop_bronze = property_loader.load(sample_size=5)
-            hood_bronze = neighborhood_loader.load(sample_size=3)
-            wiki_bronze = wikipedia_loader.load(sample_size=10)
+            prop_bronze = property_loader.load(table_name="bronze_properties", sample_size=5)
+            hood_bronze = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=3)
+            wiki_bronze = wikipedia_loader.load(table_name="bronze_wikipedia", sample_size=10)
             
             # Process all through Silver
             print("Processing all entities through Silver layer...")

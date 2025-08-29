@@ -44,7 +44,7 @@ class TestBronzeLayerNestedStructures:
         try:
             # Load properties into Bronze layer
             print("Loading properties into Bronze layer...")
-            table_name = property_loader.load(sample_size=10)
+            table_name = property_loader.load(table_name="bronze_properties", sample_size=10)
             assert table_name == "bronze_properties"
             
             # Verify table exists and has data
@@ -123,7 +123,7 @@ class TestBronzeLayerNestedStructures:
         try:
             # Load neighborhoods into Bronze layer
             print("Loading neighborhoods into Bronze layer...")
-            table_name = neighborhood_loader.load(sample_size=5)
+            table_name = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=5)
             assert table_name == "bronze_neighborhoods"
             
             # Verify table exists and has data
@@ -193,7 +193,7 @@ class TestBronzeLayerNestedStructures:
         try:
             # Load locations into Bronze layer
             print("Loading locations into Bronze layer...")
-            table_name = location_loader.load(sample_size=10)
+            table_name = location_loader.load(table_name="bronze_locations", sample_size=10)
             assert table_name == "bronze_locations"
             
             # Verify table exists and has data
@@ -240,8 +240,8 @@ class TestBronzeLayerNestedStructures:
         try:
             # Load entity types
             print("Loading entity types into Bronze layer...")
-            property_table = property_loader.load(sample_size=5)
-            neighborhood_table = neighborhood_loader.load(sample_size=3)
+            property_table = property_loader.load(table_name="bronze_properties", sample_size=5)
+            neighborhood_table = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=3)
             
             connection = property_loader.connection_manager.get_connection()
             
@@ -298,9 +298,9 @@ class TestBronzeLayerNestedStructures:
         
         try:
             # Load all entity types
-            property_table = property_loader.load(sample_size=20)
-            neighborhood_table = neighborhood_loader.load(sample_size=10)
-            location_table = location_loader.load(sample_size=15)
+            property_table = property_loader.load(table_name="bronze_properties", sample_size=20)
+            neighborhood_table = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=10)
+            location_table = location_loader.load(table_name="bronze_locations", sample_size=15)
             
             # Get record counts
             property_count = property_loader.count_records(property_table)

@@ -210,7 +210,7 @@ class WriterOrchestrator:
                     entity_type=entity_type,
                     record_count=0,
                     failed_count=0,
-                    index_name=f"{self.es_writer.config.index_prefix}_{entity_type.value}",
+                    index_name=entity_type.value,
                     error=str(e)
                 ))
         

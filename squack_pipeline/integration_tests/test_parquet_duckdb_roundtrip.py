@@ -52,7 +52,7 @@ class TestParquetDuckDBRoundtrip:
         # Bronze
         loader = PropertyLoader(settings)
         loader.set_connection(connection)
-        bronze_table = loader.load(sample_size=10)
+        bronze_table = loader.load(table_name="bronze_properties", sample_size=10)
         
         # Silver
         silver_proc = PropertySilverProcessor(settings)
@@ -69,7 +69,7 @@ class TestParquetDuckDBRoundtrip:
         # Bronze
         loader = NeighborhoodLoader(settings)
         loader.set_connection(connection)
-        bronze_table = loader.load(sample_size=10)
+        bronze_table = loader.load(table_name="bronze_neighborhoods", sample_size=10)
         
         # Silver
         silver_proc = NeighborhoodSilverProcessor(settings)
@@ -86,7 +86,7 @@ class TestParquetDuckDBRoundtrip:
         # Bronze
         loader = WikipediaLoader(settings)
         loader.set_connection(connection)
-        bronze_table = loader.load(sample_size=10)
+        bronze_table = loader.load(table_name="bronze_wikipedia", sample_size=10)
         
         # Silver
         silver_proc = WikipediaSilverProcessor(settings)

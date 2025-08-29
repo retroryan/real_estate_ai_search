@@ -18,27 +18,33 @@
 # Install dependencies (from project root)
 pip install -e .
 
-# Run a small sample to test (10 records per entity)
+# Quick test - Run with 2 records to verify setup
+python -m squack_pipeline run --sample-size 2 --entities properties --skip-elasticsearch
+
+# Run a small sample (10 records per entity)
 python -m squack_pipeline run --sample-size 10
 
-# Run with more data
+# Run specific entity types only
+python -m squack_pipeline run --sample-size 5 --entities properties
+python -m squack_pipeline run --sample-size 5 --entities neighborhoods,wikipedia
+
+# Run with more data and write to Elasticsearch
 python -m squack_pipeline run --sample-size 100
 
 # Run full pipeline with all data
 python -m squack_pipeline run
+
+# Skip Elasticsearch output (useful for testing)
+python -m squack_pipeline run --sample-size 10 --skip-elasticsearch
+
+# Dry run to test configuration without processing
+python -m squack_pipeline run --sample-size 3 --dry-run --verbose
 
 # Run with custom configuration
 python -m squack_pipeline run --config squack_pipeline/config.yaml
 
 # Run with embeddings enabled (requires API key)
 python -m squack_pipeline run --sample-size 5 --generate-embeddings
-
-# Dry run to test configuration without processing
-python -m squack_pipeline run --sample-size 3 --dry-run --verbose
-
-# Run specific entity types only
-python -m squack_pipeline run --entities properties
-python -m squack_pipeline run --entities neighborhoods,wikipedia
 ```
 
 ### Verify Results

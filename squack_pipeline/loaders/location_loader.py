@@ -39,7 +39,7 @@ class LocationLoader(BaseLoader):
         }
     
     @log_execution_time
-    def load(self, source: Optional[Path] = None, table_name: str = "bronze_locations", sample_size: Optional[int] = None) -> str:
+    def load(self, table_name: str, source: Optional[Path] = None, sample_size: Optional[int] = None) -> str:
         """Load location data from configured JSON file into DuckDB using Pydantic validation and Bronze layer standardization."""
         # Use configured location file
         location_file = self.settings.data_sources.locations_file
