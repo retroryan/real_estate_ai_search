@@ -178,7 +178,6 @@ class ElasticsearchConfig(BaseModel):
     
     host: str = Field(default="localhost", description="Elasticsearch host")
     port: int = Field(default=9200, ge=1, le=65535, description="Elasticsearch port")
-    index_prefix: str = Field(default="squack", description="Prefix for all indices")
     bulk_size: int = Field(default=500, ge=1, le=10000, description="Bulk operation size")
     username: Optional[str] = Field(default="elastic", description="Elasticsearch username")
     timeout: int = Field(default=30, ge=1, description="Request timeout in seconds")

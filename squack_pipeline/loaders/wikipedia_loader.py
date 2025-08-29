@@ -39,7 +39,7 @@ class WikipediaLoader(BaseLoader):
         }
     
     @log_execution_time
-    def load(self, source: Optional[Path] = None, table_name: str = "bronze_wikipedia", sample_size: Optional[int] = None) -> str:
+    def load(self, table_name: str, source: Optional[Path] = None, sample_size: Optional[int] = None) -> str:
         """Load Wikipedia data from configured SQLite database into DuckDB."""
         # Use configured Wikipedia database path
         db_path = self.settings.data_sources.wikipedia_db_path

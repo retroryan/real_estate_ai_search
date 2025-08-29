@@ -42,7 +42,7 @@ class NeighborhoodLoader(BaseLoader):
         }
     
     @log_execution_time
-    def load(self, source: Optional[Path] = None, table_name: str = "bronze_neighborhoods", sample_size: Optional[int] = None) -> str:
+    def load(self, table_name: str, source: Optional[Path] = None, sample_size: Optional[int] = None) -> str:
         """Load neighborhood data from JSON files into DuckDB preserving nested structures using STRUCT types."""
         # Use configured neighborhood files
         neighborhood_files = self.settings.data_sources.neighborhoods_files

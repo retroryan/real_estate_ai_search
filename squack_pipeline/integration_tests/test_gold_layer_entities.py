@@ -58,7 +58,7 @@ class TestPropertyGoldLayer:
         try:
             # Load and process through Bronze → Silver
             print("Loading properties through Bronze and Silver layers...")
-            bronze_table = property_loader.load(sample_size=10)
+            bronze_table = property_loader.load(table_name="bronze_properties", sample_size=10)
             silver_table = property_silver_processor.process(bronze_table)
             silver_count = property_silver_processor.count_records(silver_table)
             print(f"✓ {silver_count} properties in Silver layer")
@@ -165,7 +165,7 @@ class TestNeighborhoodGoldLayer:
         try:
             # Load and process through Bronze → Silver
             print("Loading neighborhoods through Bronze and Silver layers...")
-            bronze_table = neighborhood_loader.load(sample_size=5)
+            bronze_table = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=5)
             silver_table = neighborhood_silver_processor.process(bronze_table)
             silver_count = neighborhood_silver_processor.count_records(silver_table)
             print(f"✓ {silver_count} neighborhoods in Silver layer")
@@ -276,7 +276,7 @@ class TestWikipediaGoldLayer:
         try:
             # Load and process through Bronze → Silver
             print("Loading Wikipedia articles through Bronze and Silver layers...")
-            bronze_table = wikipedia_loader.load(sample_size=20)
+            bronze_table = wikipedia_loader.load(table_name="bronze_wikipedia", sample_size=20)
             silver_table = wikipedia_silver_processor.process(bronze_table)
             silver_count = wikipedia_silver_processor.count_records(silver_table)
             print(f"✓ {silver_count} Wikipedia articles in Silver layer")
@@ -400,7 +400,7 @@ class TestGoldLayerIntegration:
             
             # Properties
             print("Processing properties...")
-            prop_bronze = property_loader.load(sample_size=5)
+            prop_bronze = property_loader.load(table_name="bronze_properties", sample_size=5)
             prop_silver = property_silver.process(prop_bronze)
             prop_gold = property_gold.process(prop_silver)
             
@@ -410,7 +410,7 @@ class TestGoldLayerIntegration:
             
             # Neighborhoods  
             print("Processing neighborhoods...")
-            hood_bronze = neighborhood_loader.load(sample_size=3)
+            hood_bronze = neighborhood_loader.load(table_name="bronze_neighborhoods", sample_size=3)
             hood_silver = neighborhood_silver.process(hood_bronze)
             hood_gold = neighborhood_gold.process(hood_silver)
             
@@ -419,7 +419,7 @@ class TestGoldLayerIntegration:
             
             # Wikipedia
             print("Processing Wikipedia...")
-            wiki_bronze = wikipedia_loader.load(sample_size=10)
+            wiki_bronze = wikipedia_loader.load(table_name="bronze_wikipedia", sample_size=10)
             wiki_silver = wikipedia_silver.process(wiki_bronze)
             wiki_gold = wikipedia_gold.process(wiki_silver)
             

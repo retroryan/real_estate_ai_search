@@ -76,7 +76,6 @@ output:
   elasticsearch:
     host: localhost
     port: 9200
-    index_prefix: squack_demo
     bulk_size: 500
     username: elastic  # Default username
     # Password from ELASTICSEARCH_PASSWORD environment variable

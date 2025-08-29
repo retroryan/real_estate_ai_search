@@ -28,6 +28,10 @@ def run(
         Optional[int],
         typer.Option("--sample-size", "-s", help="Sample size for testing")
     ] = None,
+    entities: Annotated[
+        Optional[str],
+        typer.Option("--entities", help="Comma-separated list of entities to process (properties,neighborhoods,wikipedia)")
+    ] = None,
     environment: Annotated[
         str,
         typer.Option("--environment", "-e", help="Environment name")
@@ -35,6 +39,10 @@ def run(
     dry_run: Annotated[
         bool,
         typer.Option("--dry-run", help="Run without writing output")
+    ] = False,
+    skip_elasticsearch: Annotated[
+        bool,
+        typer.Option("--skip-elasticsearch", help="Skip writing to Elasticsearch")
     ] = False,
     validate: Annotated[
         bool,
@@ -55,7 +63,12 @@ def run(
         if config and config.exists():
             settings = PipelineSettings.load_from_yaml(config)
         else:
-            settings = PipelineSettings()
+            # Try to load from default config.yaml location
+            default_config = Path("squack_pipeline/config.yaml")
+            if default_config.exists():
+                settings = PipelineSettings.load_from_yaml(default_config)
+            else:
+                settings = PipelineSettings()
         
         # Override settings from CLI
         if sample_size:
@@ -87,13 +100,36 @@ def run(
             return
         
         # Import orchestrator here to avoid circular imports
-        from squack_pipeline.orchestrator.pipeline import PipelineOrchestrator
+        from squack_pipeline.orchestrator.main_orchestrator import MainPipelineOrchestrator
+        from squack_pipeline.models import EntityType
+        
+        # Parse entities if provided
+        entities_to_process = None
+        if entities:
+            entity_map = {
+                "properties": EntityType.PROPERTY,
+                "neighborhoods": EntityType.NEIGHBORHOOD,
+                "wikipedia": EntityType.WIKIPEDIA,
+            }
+            entities_to_process = []
+            for entity_name in entities.split(","):
+                entity_name = entity_name.strip().lower()
+                if entity_name in entity_map:
+                    entities_to_process.append(entity_map[entity_name])
+                else:
+                    logger.warning(f"Unknown entity type: {entity_name}")
         
         # Create and run pipeline
-        orchestrator = PipelineOrchestrator(settings)
-        orchestrator.run()
+        orchestrator = MainPipelineOrchestrator(settings)
+        metrics = orchestrator.run(
+            entities=entities_to_process,
+            sample_size=sample_size,
+            dry_run=dry_run,
+            skip_elasticsearch=skip_elasticsearch
+        )
         
-        logger.success("Pipeline completed successfully")
+        if not dry_run:
+            logger.success(f"Pipeline completed successfully - {metrics.get('total_records', 0)} records processed")
         
     except Exception as e:
         typer.echo(f"✗ Pipeline failed: {e}", err=True)
