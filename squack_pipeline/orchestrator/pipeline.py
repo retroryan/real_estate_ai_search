@@ -8,10 +8,23 @@ from squack_pipeline.config.settings import PipelineSettings
 # from squack_pipeline.config.schemas import MedallionTier  # Using MedallionTier from processing_models instead
 from squack_pipeline.loaders.connection import DuckDBConnectionManager
 from squack_pipeline.loaders.property_loader import PropertyLoader
-from squack_pipeline.processors.silver_processor import SilverProcessor
-from squack_pipeline.processors.gold_processor import GoldProcessor
+from squack_pipeline.loaders.neighborhood_loader import NeighborhoodLoader
+from squack_pipeline.loaders.location_loader import LocationLoader
+from squack_pipeline.loaders.wikipedia_loader import WikipediaLoader
+# Silver tier processors (entity-specific)
+from squack_pipeline.processors.property_silver_processor import PropertySilverProcessor
+from squack_pipeline.processors.neighborhood_silver_processor import NeighborhoodSilverProcessor
+from squack_pipeline.processors.wikipedia_silver_processor import WikipediaSilverProcessor
+
+# Gold tier processors (entity-specific)
+from squack_pipeline.processors.property_gold_processor import PropertyGoldProcessor
+from squack_pipeline.processors.neighborhood_gold_processor import NeighborhoodGoldProcessor
+from squack_pipeline.processors.wikipedia_gold_processor import WikipediaGoldProcessor
+
+# Enrichment processors
 from squack_pipeline.processors.geographic_enrichment import GeographicEnrichmentProcessor
 from squack_pipeline.processors.entity_processor import PropertyProcessor
+from squack_pipeline.processors.cross_entity_enrichment import CrossEntityEnrichmentProcessor
 from squack_pipeline.models import (
     EntityType, MedallionTier, ProcessingStage, ProcessingContext,
     TableIdentifier, create_standard_property_pipeline, ProcessingResult
@@ -45,14 +58,21 @@ class PipelineOrchestrator:
             "embedding_success_rate": 0.0
         }
         
-        # Initialize processors
-        self.silver_processor: Optional[SilverProcessor] = None
-        self.gold_processor: Optional[GoldProcessor] = None
+        # Silver tier processors (entity-specific)
+        self.property_silver_processor: Optional[PropertySilverProcessor] = None
+        self.neighborhood_silver_processor: Optional[NeighborhoodSilverProcessor] = None
+        self.wikipedia_silver_processor: Optional[WikipediaSilverProcessor] = None
+        
+        # Gold tier processors (entity-specific)
+        self.property_gold_processor: Optional[PropertyGoldProcessor] = None
+        self.neighborhood_gold_processor: Optional[NeighborhoodGoldProcessor] = None
+        self.wikipedia_gold_processor: Optional[WikipediaGoldProcessor] = None
+        
+        # Enrichment processors
         self.geo_enrichment: Optional[GeographicEnrichmentProcessor] = None
         self.embedding_pipeline: Optional[EmbeddingPipeline] = None
-        
-        # Initialize type-safe entity processors
         self.property_processor: Optional[PropertyProcessor] = None
+        self.cross_entity_enrichment: Optional[CrossEntityEnrichmentProcessor] = None
         self.processing_pipeline = create_standard_property_pipeline()
         
         # Initialize writers
@@ -90,12 +110,16 @@ class PipelineOrchestrator:
             self.state_manager.update_state(PipelineState.ENRICHING_GEOGRAPHIC, "Applying geographic enrichment")
             self._apply_geographic_enrichment()
             
-            # Phase 5: Embedding generation (optional)
+            # Phase 5: Cross-entity enrichment (join properties with neighborhoods and Wikipedia)
+            self.state_manager.update_state(PipelineState.ENRICHING_GEOGRAPHIC, "Applying cross-entity enrichment")
+            self._apply_cross_entity_enrichment()
+            
+            # Phase 6: Embedding generation (optional)
             if self.settings.processing.generate_embeddings:
                 self.state_manager.update_state(PipelineState.GENERATING_EMBEDDINGS, "Generating embeddings")
             self._generate_embeddings()
             
-            # Phase 6: Write output to Parquet files
+            # Phase 7: Write output to Parquet files
             if not self.settings.dry_run:
                 self.state_manager.update_state(PipelineState.WRITING_OUTPUT, "Writing output files")
             self._write_output()
@@ -119,19 +143,37 @@ class PipelineOrchestrator:
         
         # Initialize processors
         connection = self.connection_manager.get_connection()
-        self.silver_processor = SilverProcessor(self.settings)
-        self.silver_processor.set_connection(connection)
-        
-        self.gold_processor = GoldProcessor(self.settings)
-        self.gold_processor.set_connection(connection)
         
         self.geo_enrichment = GeographicEnrichmentProcessor(self.settings)
         self.geo_enrichment.set_connection(connection)
         self.geo_enrichment.set_tier(MedallionTier.GOLD)
         
-        # Initialize type-safe property processor
+        # Initialize Silver tier processors
+        self.property_silver_processor = PropertySilverProcessor(self.settings)
+        self.property_silver_processor.set_connection(connection)
+        
+        self.neighborhood_silver_processor = NeighborhoodSilverProcessor(self.settings)
+        self.neighborhood_silver_processor.set_connection(connection)
+        
+        self.wikipedia_silver_processor = WikipediaSilverProcessor(self.settings)
+        self.wikipedia_silver_processor.set_connection(connection)
+        
+        # Initialize Gold tier processors
+        self.property_gold_processor = PropertyGoldProcessor(self.settings)
+        self.property_gold_processor.set_connection(connection)
+        
+        self.neighborhood_gold_processor = NeighborhoodGoldProcessor(self.settings)
+        self.neighborhood_gold_processor.set_connection(connection)
+        
+        self.wikipedia_gold_processor = WikipediaGoldProcessor(self.settings)
+        self.wikipedia_gold_processor.set_connection(connection)
+        
+        # Initialize enrichment processor
         self.property_processor = PropertyProcessor(self.settings)
         self.property_processor.set_connection(connection)
+        
+        self.cross_entity_enrichment = CrossEntityEnrichmentProcessor(self.settings)
+        self.cross_entity_enrichment.set_connection(connection)
         
         # Initialize embedding pipeline if enabled
         if self.settings.processing.generate_embeddings:
@@ -160,31 +202,28 @@ class PipelineOrchestrator:
         """Load raw data into Bronze tier."""
         self.logger.info("Loading raw data (Bronze tier)")
         
-        # Load properties
+        # Load all entity types
         self._load_properties()
-        
-        # Note: Additional data sources (neighborhoods, wikipedia) can be added in future phases
+        self._load_neighborhoods()
+        self._load_locations()
+        self._load_wikipedia()
     
     def _load_properties(self) -> None:
-        """Load property data."""
-        property_file = self.settings.data.input_path / self.settings.data.properties_file
-        
-        if not property_file.exists():
-            self.logger.warning(f"Property file not found: {property_file}")
-            return
+        """Load property data from all configured files."""
+        self.logger.info("Loading property data...")
         
         # Initialize property loader
         property_loader = PropertyLoader(self.settings)
         property_loader.set_connection(self.connection_manager.get_connection())
         
-        # Load data
-        table_name = property_loader.load(property_file)
+        # Load data (loader now uses configured files)
+        table_name = property_loader.load()
         
         # Validate data
         if property_loader.validate(table_name):
             record_count = property_loader.count_records(table_name)
             self.metrics["records_processed"] += record_count
-            self.metrics["bronze_records"] = record_count
+            self.metrics["bronze_records"] += record_count
             self.metrics["tables_created"] += 1
             
             # Track table for recovery
@@ -203,6 +242,98 @@ class PipelineOrchestrator:
             self.logger.error(f"Property data validation failed for {table_name}")
             self.metrics["records_failed"] += property_loader.count_records(table_name)
     
+    def _load_neighborhoods(self) -> None:
+        """Load neighborhood data from all configured files."""
+        self.logger.info("Loading neighborhood data...")
+        
+        # Initialize neighborhood loader
+        neighborhood_loader = NeighborhoodLoader(self.settings)
+        neighborhood_loader.set_connection(self.connection_manager.get_connection())
+        
+        # Load data
+        table_name = neighborhood_loader.load()
+        
+        # Validate data
+        if neighborhood_loader.validate(table_name):
+            record_count = neighborhood_loader.count_records(table_name)
+            self.metrics["records_processed"] += record_count
+            self.metrics["bronze_records"] += record_count
+            self.metrics["tables_created"] += 1
+            
+            # Track table for recovery
+            self.state_manager.record_table("bronze", table_name)
+            
+            self.logger.success(f"Loaded {record_count} neighborhoods into {table_name} (Bronze tier)")
+            
+            # Show sample data
+            sample_data = neighborhood_loader.get_sample_data(table_name, limit=3)
+            if sample_data:
+                self.logger.info("Sample neighborhood data:")
+                for i, hood in enumerate(sample_data, 1):
+                    self.logger.info(f"  {i}. {hood.get('name', 'N/A')} in {hood.get('city', 'N/A')}")
+        else:
+            self.logger.error(f"Neighborhood data validation failed for {table_name}")
+            self.metrics["records_failed"] += neighborhood_loader.count_records(table_name)
+    
+    def _load_locations(self) -> None:
+        """Load location data from configured file."""
+        self.logger.info("Loading location data...")
+        
+        # Initialize location loader
+        location_loader = LocationLoader(self.settings)
+        location_loader.set_connection(self.connection_manager.get_connection())
+        
+        # Load data
+        table_name = location_loader.load()
+        
+        # Validate data
+        if location_loader.validate(table_name):
+            record_count = location_loader.count_records(table_name)
+            self.metrics["records_processed"] += record_count
+            self.metrics["bronze_records"] += record_count
+            self.metrics["tables_created"] += 1
+            
+            # Track table for recovery
+            self.state_manager.record_table("bronze", table_name)
+            
+            self.logger.success(f"Loaded {record_count} locations into {table_name} (Bronze tier)")
+        else:
+            self.logger.error(f"Location data validation failed for {table_name}")
+            self.metrics["records_failed"] += location_loader.count_records(table_name)
+    
+    def _load_wikipedia(self) -> None:
+        """Load Wikipedia data from SQLite database."""
+        self.logger.info("Loading Wikipedia data...")
+        
+        # Initialize Wikipedia loader
+        wikipedia_loader = WikipediaLoader(self.settings)
+        wikipedia_loader.set_connection(self.connection_manager.get_connection())
+        
+        # Load data
+        table_name = wikipedia_loader.load()
+        
+        # Validate data
+        if wikipedia_loader.validate(table_name):
+            record_count = wikipedia_loader.count_records(table_name)
+            self.metrics["records_processed"] += record_count
+            self.metrics["bronze_records"] += record_count
+            self.metrics["tables_created"] += 1
+            
+            # Track table for recovery
+            self.state_manager.record_table("bronze", table_name)
+            
+            self.logger.success(f"Loaded {record_count} Wikipedia articles into {table_name} (Bronze tier)")
+            
+            # Show sample data
+            sample_data = wikipedia_loader.get_sample_data(table_name, limit=3)
+            if sample_data:
+                self.logger.info("Sample Wikipedia data:")
+                for i, article in enumerate(sample_data, 1):
+                    self.logger.info(f"  {i}. {article.get('title', 'N/A')} (relevance: {article.get('relevance_score', 0):.2f})")
+        else:
+            self.logger.error(f"Wikipedia data validation failed for {table_name}")
+            self.metrics["records_failed"] += wikipedia_loader.count_records(table_name)
+    
     def _process_silver_tier(self) -> None:
         """Process Bronze data to Silver tier (data cleaning)."""
         if self.metrics["bronze_records"] == 0:
@@ -211,8 +342,8 @@ class PipelineOrchestrator:
         
         self.logger.info("Processing Silver tier (data cleaning)")
         
-        if not self.silver_processor:
-            self.logger.error("Silver processor not initialized")
+        if not self.property_silver_processor:
+            self.logger.error("Property Silver processor not initialized")
             return
         
         try:
@@ -279,6 +410,53 @@ class PipelineOrchestrator:
         except Exception as e:
             self.logger.error(f"Silver tier processing error: {e}")
             raise
+        
+        # Process neighborhoods through silver tier
+        self._process_neighborhoods_silver()
+    
+    def _process_neighborhoods_silver(self) -> None:
+        """Process neighborhoods through Silver tier."""
+        if not self.neighborhood_silver_processor:
+            self.logger.warning("Neighborhood processor not initialized, skipping neighborhood Silver processing")
+            return
+        
+        try:
+            timestamp = int(time.time())
+            batch_id = f"neighborhood_batch_{timestamp}"
+            
+            # Create processing context for neighborhoods
+            context = ProcessingContext(
+                entity_type=EntityType.NEIGHBORHOOD,
+                source_tier=MedallionTier.BRONZE,
+                target_tier=MedallionTier.SILVER,
+                processing_stage=ProcessingStage.CLEANING,
+                source_table=TableIdentifier(
+                    entity_type=EntityType.NEIGHBORHOOD,
+                    tier=MedallionTier.BRONZE,
+                    timestamp=0
+                ),
+                target_table=TableIdentifier(
+                    entity_type=EntityType.NEIGHBORHOOD,
+                    tier=MedallionTier.SILVER,
+                    timestamp=timestamp
+                ),
+                batch_id=batch_id,
+                record_limit=self.settings.data.sample_size
+            )
+            
+            result = self.neighborhood_silver_processor.process_entity(context)
+            
+            if result.success:
+                self.logger.success(
+                    f"Neighborhoods Silver: {result.records_processed} → {result.records_created} records"
+                )
+                self.state_manager.record_table("silver", context.target_table.table_name)
+            else:
+                self.logger.error(f"Neighborhood Silver processing failed: {result.error_message}")
+                
+        except Exception as e:
+            self.logger.error(f"Neighborhood Silver processing error: {e}")
+            # Don't raise - allow pipeline to continue with properties
     
     def _process_gold_tier(self) -> None:
         """Process Silver data to Gold tier (data enrichment)."""
@@ -365,6 +543,64 @@ class PipelineOrchestrator:
         except Exception as e:
             self.logger.error(f"Gold tier processing error: {e}")
             raise
+        
+        # Process neighborhoods through gold tier
+        self._process_neighborhoods_gold()
+    
+    def _process_neighborhoods_gold(self) -> None:
+        """Process neighborhoods through Gold tier."""
+        if not self.neighborhood_gold_processor:
+            self.logger.warning("Neighborhood processor not initialized, skipping neighborhood Gold processing")
+            return
+        
+        try:
+            # Find the neighborhood silver table
+            connection = self.connection_manager.get_connection()
+            result = connection.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'neighborhood_silver_%' ORDER BY table_name DESC LIMIT 1"
+            ).fetchone()
+            
+            if not result:
+                self.logger.warning("No neighborhood Silver table found, skipping Gold processing")
+                return
+            
+            silver_table_name = result[0]
+            timestamp_str = silver_table_name.split('_')[-1]
+            timestamp = int(timestamp_str)
+            
+            batch_id = f"neighborhood_batch_{timestamp}"
+            context = ProcessingContext(
+                entity_type=EntityType.NEIGHBORHOOD,
+                source_tier=MedallionTier.SILVER,
+                target_tier=MedallionTier.GOLD,
+                processing_stage=ProcessingStage.ENRICHMENT,
+                source_table=TableIdentifier(
+                    entity_type=EntityType.NEIGHBORHOOD,
+                    tier=MedallionTier.SILVER,
+                    timestamp=timestamp
+                ),
+                target_table=TableIdentifier(
+                    entity_type=EntityType.NEIGHBORHOOD,
+                    tier=MedallionTier.GOLD,
+                    timestamp=timestamp
+                ),
+                batch_id=batch_id,
+                record_limit=self.settings.data.sample_size
+            )
+            
+            result = self.neighborhood_gold_processor.process_entity(context)
+            
+            if result.success:
+                self.logger.success(
+                    f"Neighborhoods Gold: {result.records_processed} → {result.records_created} records"
+                )
+                self.state_manager.record_table("gold", context.target_table.table_name)
+            else:
+                self.logger.error(f"Neighborhood Gold processing failed: {result.error_message}")
+                
+        except Exception as e:
+            self.logger.error(f"Neighborhood Gold processing error: {e}")
+            # Don't raise - allow pipeline to continue
     
     def _apply_geographic_enrichment(self) -> None:
         """Apply geographic enrichment to Gold tier data."""
@@ -413,8 +649,107 @@ class PipelineOrchestrator:
             self.logger.error(f"Geographic enrichment error: {e}")
             raise
     
+    def _apply_cross_entity_enrichment(self) -> None:
+        """Apply cross-entity enrichment using SQL joins."""
+        self.logger.info("Applying cross-entity enrichment")
+        
+        if not self.cross_entity_enrichment:
+            self.logger.error("Cross-entity enrichment processor not initialized")
+            return
+        
+        try:
+            connection = self.connection_manager.get_connection()
+            
+            # Get the latest tables for each entity type
+            # Properties - get the most enriched version
+            properties_table = self._get_final_table("property")
+            if not properties_table:
+                self.logger.warning("No properties table found for enrichment")
+                return
+            
+            # Neighborhoods - check for Gold tier first, then Silver, then Bronze
+            neighborhoods_table = None
+            for tier_prefix in ["neighborhood_gold", "neighborhood_silver", "bronze_neighborhoods"]:
+                result = connection.execute(
+                    f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{tier_prefix}%' ORDER BY table_name DESC LIMIT 1"
+                ).fetchone()
+                if result:
+                    neighborhoods_table = result[0]
+                    break
+            
+            if not neighborhoods_table:
+                # If no processed version, use Bronze
+                result = connection.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_name = 'bronze_neighborhoods'"
+                ).fetchone()
+                if result:
+                    neighborhoods_table = result[0]
+            
+            # Wikipedia - check for Gold tier first, then Silver, then Bronze
+            wikipedia_table = None
+            for tier_prefix in ["wikipedia_gold", "wikipedia_silver", "bronze_wikipedia"]:
+                result = connection.execute(
+                    f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{tier_prefix}%' ORDER BY table_name DESC LIMIT 1"
+                ).fetchone()
+                if result:
+                    wikipedia_table = result[0]
+                    break
+            
+            if not wikipedia_table:
+                # If no processed version, use Bronze
+                result = connection.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_name = 'bronze_wikipedia'"
+                ).fetchone()
+                if result:
+                    wikipedia_table = result[0]
+            
+            # Step 1: Enrich properties with neighborhoods
+            if neighborhoods_table:
+                enriched_table = self.cross_entity_enrichment.enrich_properties_with_neighborhoods(
+                    properties_table,
+                    neighborhoods_table,
+                    "properties_neighborhood_enriched"
+                )
+                self.metrics["tables_created"] += 1
+                self.state_manager.record_table("enriched", enriched_table)
+                
+                # Use the enriched table for next step
+                properties_table = enriched_table
+            else:
+                self.logger.warning("No neighborhoods table found for enrichment")
+            
+            # Step 2: Enrich with Wikipedia articles
+            if wikipedia_table:
+                wiki_enriched_table = self.cross_entity_enrichment.enrich_with_geographic_proximity(
+                    properties_table,
+                    wikipedia_table,
+                    "properties_fully_enriched",
+                    max_distance_km=5.0
+                )
+                self.metrics["tables_created"] += 1
+                self.state_manager.record_table("enriched", wiki_enriched_table)
+            else:
+                self.logger.warning("No Wikipedia table found for enrichment")
+            
+            # Step 3: Create neighborhood aggregates
+            if neighborhoods_table:
+                stats_table = self.cross_entity_enrichment.create_neighborhood_aggregates(
+                    properties_table,
+                    "neighborhood_statistics"
+                )
+                self.metrics["tables_created"] += 1
+                self.state_manager.record_table("enriched", stats_table)
+            
+            # Get metrics from enrichment processor
+            enrichment_metrics = self.cross_entity_enrichment.get_metrics()
+            self.logger.info(f"Cross-entity enrichment metrics: {enrichment_metrics}")
+            
+        except Exception as e:
+            self.logger.error(f"Cross-entity enrichment error: {e}")
+            raise
+    
     def _generate_embeddings(self) -> None:
-        """Generate embeddings from enriched property data."""
+        """Generate embeddings for all entity types."""
         if not self.settings.processing.generate_embeddings:
             self.logger.info("Embedding generation disabled")
             return
@@ -423,68 +758,107 @@ class PipelineOrchestrator:
             self.logger.warning("No embedding pipeline initialized")
             return
         
-        # Determine which table to use for embedding generation
-        final_table = None
-        if self.metrics.get("gold_records", 0) > 0:
-            # Get the latest enriched table (geographic enrichment or Gold tier)
-            connection = self.connection_manager.get_connection()
-            
-            # Try to get the latest enriched table first
-            enriched_result = connection.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_enriched_%' ORDER BY table_name DESC LIMIT 1"
-            ).fetchone()
-            
-            if enriched_result:
-                final_table = enriched_result[0]
-                self.logger.info("Using geographic enriched data for embeddings")
-            else:
-                # Fall back to Gold tier
-                gold_result = connection.execute(
-                    "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'property_gold_%' ORDER BY table_name DESC LIMIT 1"
-                ).fetchone()
-                if gold_result:
-                    final_table = gold_result[0]
-                    self.logger.info("Using Gold tier data for embeddings")
-        
-        if not final_table:
-            self.logger.warning("No suitable data found for embedding generation")
-            return
-        
-        self.logger.info("Generating embeddings from enriched property data")
+        self.logger.info("Generating embeddings for all entity types")
+        connection = self.connection_manager.get_connection()
+        all_embedded_nodes = []
         
         try:
-            # Extract property data from the final table
-            connection = self.connection_manager.get_connection()
-            properties_data = connection.execute(f"SELECT * FROM {final_table}").fetchall()
+            # 1. Generate embeddings for properties
+            properties_table = self._get_final_table("property")
+            if not properties_table:
+                # Try fully enriched table
+                result = connection.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'properties_%enriched' ORDER BY table_name DESC LIMIT 1"
+                ).fetchone()
+                if result:
+                    properties_table = result[0]
             
-            if not properties_data:
-                self.logger.warning("No property data found for embedding generation")
-                return
+            if properties_table:
+                self.logger.info(f"Generating embeddings for properties from {properties_table}")
+                properties_data = connection.execute(f"SELECT * FROM {properties_table}").fetchall()
+                
+                if properties_data:
+                    # Convert to list of dictionaries
+                    columns = [desc[0] for desc in connection.execute(f"DESCRIBE {properties_table}").fetchall()]
+                    properties_dict = [
+                        {col: row[i] for i, col in enumerate(columns)}
+                        for row in properties_data
+                    ]
+                    
+                    # Process through embedding pipeline
+                    property_nodes = self.embedding_pipeline.process_gold_properties(properties_dict)
+                    all_embedded_nodes.extend(property_nodes)
+                    self.logger.success(f"Generated {len(property_nodes)} property embeddings")
             
-            # Convert to list of dictionaries
-            columns = [desc[0] for desc in connection.execute(f"DESCRIBE {final_table}").fetchall()]
-            properties_dict = [
-                {col: row[i] for i, col in enumerate(columns)}
-                for row in properties_data
-            ]
+            # 2. Generate embeddings for neighborhoods
+            neighborhoods_table = None
+            for prefix in ["neighborhood_gold", "neighborhood_silver", "bronze_neighborhoods"]:
+                result = connection.execute(
+                    f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{prefix}%' ORDER BY table_name DESC LIMIT 1"
+                ).fetchone()
+                if result:
+                    neighborhoods_table = result[0]
+                    break
             
-            self.logger.info(f"Processing {len(properties_dict)} properties for embedding generation")
+            if neighborhoods_table:
+                self.logger.info(f"Generating embeddings for neighborhoods from {neighborhoods_table}")
+                neighborhoods_data = connection.execute(f"SELECT * FROM {neighborhoods_table}").fetchall()
+                
+                if neighborhoods_data:
+                    # Convert to list of dictionaries
+                    columns = [desc[0] for desc in connection.execute(f"DESCRIBE {neighborhoods_table}").fetchall()]
+                    neighborhoods_dict = [
+                        {col: row[i] for i, col in enumerate(columns)}
+                        for row in neighborhoods_data
+                    ]
+                    
+                    # Process through embedding pipeline
+                    neighborhood_nodes = self.embedding_pipeline.process_neighborhoods(neighborhoods_dict)
+                    all_embedded_nodes.extend(neighborhood_nodes)
+                    self.logger.success(f"Generated {len(neighborhood_nodes)} neighborhood embeddings")
             
-            # Process through embedding pipeline
-            embedded_nodes = self.embedding_pipeline.process_gold_properties(properties_dict)
+            # 3. Generate embeddings for Wikipedia articles (summaries only for efficiency)
+            wikipedia_table = None
+            for prefix in ["wikipedia_gold", "wikipedia_silver", "bronze_wikipedia"]:
+                result = connection.execute(
+                    f"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '{prefix}%' ORDER BY table_name DESC LIMIT 1"
+                ).fetchone()
+                if result:
+                    wikipedia_table = result[0]
+                    break
             
-            # Store embedded nodes for output
-            self.embedded_nodes = embedded_nodes
+            if wikipedia_table:
+                self.logger.info(f"Generating embeddings for Wikipedia articles from {wikipedia_table}")
+                # Limit to high-relevance articles for demo efficiency
+                wikipedia_data = connection.execute(
+                    f"SELECT * FROM {wikipedia_table} WHERE relevance_score >= 0.3 OR relevance_score IS NULL LIMIT 100"
+                ).fetchall()
+                
+                if wikipedia_data:
+                    # Convert to list of dictionaries
+                    columns = [desc[0] for desc in connection.execute(f"DESCRIBE {wikipedia_table}").fetchall()]
+                    wikipedia_dict = [
+                        {col: row[i] for i, col in enumerate(columns)}
+                        for row in wikipedia_data
+                    ]
+                    
+                    # Process through embedding pipeline
+                    wikipedia_nodes = self.embedding_pipeline.process_wikipedia(wikipedia_dict)
+                    all_embedded_nodes.extend(wikipedia_nodes)
+                    self.logger.success(f"Generated {len(wikipedia_nodes)} Wikipedia embeddings")
+            
+            # Store all embedded nodes for output
+            self.embedded_nodes = all_embedded_nodes
             
             # Update metrics
             embedding_metrics = self.embedding_pipeline.get_pipeline_metrics()
             self.metrics.update({
                 "documents_converted": embedding_metrics["documents_converted"],
                 "embeddings_generated": embedding_metrics["embeddings_generated"],
-                "embedding_success_rate": embedding_metrics["embedding_success_rate"]
+                "embedding_success_rate": embedding_metrics.get("embedding_success_rate", 0.0)
             })
             
-            self.logger.success(f"Generated embeddings for {len(embedded_nodes)} text nodes")
+            self.logger.success(f"Generated embeddings for {len(all_embedded_nodes)} total text nodes")
             self.logger.info(f"Embedding success rate: {self.metrics['embedding_success_rate']:.2%}")
             
         except Exception as e:
@@ -636,10 +1010,38 @@ class PipelineOrchestrator:
         if properties_table:
             tables["properties"] = properties_table
         
-        # For now, only properties are processed through the medallion architecture
-        # Neighborhoods and Wikipedia could be added later
-        # tables["neighborhoods"] = self._get_final_table("neighborhoods")
-        # tables["wikipedia"] = self._get_final_table("wikipedia")
+        # Get neighborhoods table (check for raw if no processed version exists)
+        neighborhoods_table = self._get_final_table("neighborhood")
+        if not neighborhoods_table:
+            # Fall back to raw table
+            connection = self.connection_manager.get_connection()
+            result = connection.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_name = 'bronze_neighborhoods'"
+            ).fetchone()
+            if result:
+                neighborhoods_table = result[0]
+        if neighborhoods_table:
+            tables["neighborhoods"] = neighborhoods_table
+        
+        # Get locations table (typically stays at bronze/raw level)
+        connection = self.connection_manager.get_connection()
+        result = connection.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_name = 'bronze_locations'"
+        ).fetchone()
+        if result:
+            tables["locations"] = result[0]
+        
+        # Get Wikipedia table (check for processed or raw)
+        wikipedia_table = self._get_final_table("wikipedia")
+        if not wikipedia_table:
+            # Fall back to raw table
+            result = connection.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_name = 'bronze_wikipedia'"
+            ).fetchone()
+            if result:
+                wikipedia_table = result[0]
+        if wikipedia_table:
+            tables["wikipedia"] = wikipedia_table
         
         return tables
     

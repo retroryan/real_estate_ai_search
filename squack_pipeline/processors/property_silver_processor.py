@@ -1,6 +1,14 @@
-"""Silver tier processor for data cleaning and normalization."""
+"""Property-specific Silver tier processor for data cleaning and normalization.
 
-from typing import Dict, Any
+This processor handles the transformation of property data from Bronze to Silver tier,
+preserving nested structures while adding denormalized fields for query optimization.
+
+Tier: Silver (Bronze → Silver)
+Entity: Property
+Purpose: Data cleaning, validation, and denormalization
+"""
+
+from typing import Dict, Any, Optional
 
 from squack_pipeline.config.schemas import MedallionTier
 from squack_pipeline.config.settings import PipelineSettings
@@ -8,14 +16,26 @@ from squack_pipeline.processors.base import TransformationProcessor
 from squack_pipeline.utils.logging import log_execution_time
 
 
-class SilverProcessor(TransformationProcessor):
-    """Processor for Silver tier - data cleaning and normalization."""
+class PropertySilverProcessor(TransformationProcessor):
+    """Processor for Property entities in Silver tier.
+    
+    Transforms property data from Bronze to Silver tier by:
+    - Preserving nested structures (address, property_details, coordinates)
+    - Adding denormalized fields for common queries
+    - Cleaning and validating data
+    - Calculating derived fields
+    """
     
     def __init__(self, settings: PipelineSettings):
-        """Initialize Silver processor."""
+        """Initialize Property Silver processor.
+        
+        Args:
+            settings: Pipeline configuration settings
+        """
         super().__init__(settings)
         self.set_tier(MedallionTier.SILVER)
-        self.metrics = {
+        self.entity_type = "property"
+        self.metrics: Dict[str, Any] = {
             "records_processed": 0,
             "records_cleaned": 0,
             "records_rejected": 0,
@@ -24,75 +44,39 @@ class SilverProcessor(TransformationProcessor):
     
     @log_execution_time
     def get_transformation_query(self, input_table: str) -> str:
-        """Get SQL transformation query for Silver tier processing."""
+        """Get SQL transformation query for Property Silver tier processing.
+        
+        Transforms Bronze property data by:
+        - Preserving nested STRUCT fields (address, property_details, coordinates)
+        - Extracting denormalized fields for query performance
+        - Cleaning and standardizing text fields
+        - Validating numeric values
+        - Calculating derived fields (calculated_price_per_sqft)
+        
+        Args:
+            input_table: Name of the Bronze properties table
+            
+        Returns:
+            SQL query string for transformation
+        """
         return f"""
         SELECT 
             -- Core property fields with validation and cleaning
             TRIM(listing_id) as listing_id,
             COALESCE(TRIM(neighborhood_id), 'unknown') as neighborhood_id,
             
-            -- Address standardization
-            STRUCT_PACK(
-                street := TRIM(address.street),
-                city := UPPER(TRIM(address.city)),
-                county := UPPER(TRIM(address.county)),
-                state := UPPER(TRIM(address.state)),
-                zip := REGEXP_REPLACE(TRIM(address.zip), '[^0-9-]', '', 'g')
-            ) as address,
+            -- Preserve nested structures from Bronze
+            address,  -- Keep as STRUCT
+            property_details,  -- Keep as STRUCT
+            coordinates,  -- Keep as STRUCT
             
-            -- Coordinates validation (ensure within reasonable bounds)
-            STRUCT_PACK(
-                latitude := CASE 
-                    WHEN coordinates.latitude BETWEEN -90 AND 90 
-                    THEN coordinates.latitude 
-                    ELSE NULL 
-                END,
-                longitude := CASE 
-                    WHEN coordinates.longitude BETWEEN -180 AND 180 
-                    THEN coordinates.longitude 
-                    ELSE NULL 
-                END
-            ) as coordinates,
-            
-            -- Property details cleaning and validation
-            STRUCT_PACK(
-                square_feet := CASE 
-                    WHEN property_details.square_feet > 0 
-                    THEN property_details.square_feet 
-                    ELSE NULL 
-                END,
-                bedrooms := CASE 
-                    WHEN property_details.bedrooms >= 0 
-                    THEN property_details.bedrooms 
-                    ELSE 0 
-                END,
-                bathrooms := CASE 
-                    WHEN property_details.bathrooms >= 0 
-                    THEN property_details.bathrooms 
-                    ELSE 0 
-                END,
-                property_type := LOWER(TRIM(property_details.property_type)),
-                year_built := CASE 
-                    WHEN property_details.year_built BETWEEN 1800 AND 2100 
-                    THEN property_details.year_built 
-                    ELSE NULL 
-                END,
-                lot_size := CASE 
-                    WHEN property_details.lot_size >= 0 
-                    THEN property_details.lot_size 
-                    ELSE NULL 
-                END,
-                stories := CASE 
-                    WHEN property_details.stories >= 1 
-                    THEN property_details.stories 
-                    ELSE 1 
-                END,
-                garage_spaces := CASE 
-                    WHEN property_details.garage_spaces >= 0 
-                    THEN property_details.garage_spaces 
-                    ELSE 0 
-                END
-            ) as property_details,
+            -- Denormalized fields for common queries (extracted from nested structures)
+            UPPER(TRIM(address.city)) as city,
+            UPPER(TRIM(address.state)) as state,
+            property_details.bedrooms as bedrooms,
+            property_details.bathrooms as bathrooms,
+            LOWER(TRIM(property_details.property_type)) as property_type,
+            property_details.square_feet as square_feet,
             
             -- Price validation and normalization
             CASE 
@@ -106,6 +90,13 @@ class SilverProcessor(TransformationProcessor):
                 THEN ROUND(price_per_sqft, 2) 
                 ELSE NULL 
             END as price_per_sqft,
+            
+            -- Calculated fields
+            CASE 
+                WHEN listing_price > 0 AND property_details.square_feet > 0
+                THEN ROUND(listing_price / property_details.square_feet, 2)
+                ELSE NULL
+            END as calculated_price_per_sqft,
             
             -- Description cleaning
             TRIM(REGEXP_REPLACE(description, '\\s+', ' ', 'g')) as description,
@@ -130,12 +121,12 @@ class SilverProcessor(TransformationProcessor):
             -- Images array cleaning
             LIST_FILTER(images, x -> LENGTH(TRIM(x)) > 0) as images,
             
-            -- Price history validation
+            -- Price history preserved
             price_history,
             
             -- Add Silver tier metadata
             CURRENT_TIMESTAMP as silver_processed_at,
-            'silver_processor_v1.0' as processing_version
+            'silver_processor_v3.0_nested_structures' as processing_version
             
         FROM {input_table}
         WHERE 
@@ -149,7 +140,19 @@ class SilverProcessor(TransformationProcessor):
         """
     
     def validate_input(self, table_name: str) -> bool:
-        """Validate input data for Silver processing."""
+        """Validate Bronze property data before Silver processing.
+        
+        Checks:
+        - Table exists and has data
+        - Required columns are present
+        - Nested structures are STRUCT types
+        
+        Args:
+            table_name: Name of the Bronze properties table
+            
+        Returns:
+            True if validation passes, False otherwise
+        """
         if not self.connection:
             return False
         
@@ -160,10 +163,11 @@ class SilverProcessor(TransformationProcessor):
                 self.logger.error(f"Input table {table_name} is empty")
                 return False
             
-            # Check required columns exist
+            # Check required columns exist (Bronze layer nested structure fields)
             required_columns = [
-                'listing_id', 'listing_price', 'property_details', 
-                'address', 'coordinates', 'description'
+                'listing_id', 'listing_price', 'neighborhood_id',
+                'address', 'property_details', 'coordinates',
+                'description', 'features', 'images'
             ]
             
             schema = self.get_table_schema(table_name)
@@ -173,6 +177,12 @@ class SilverProcessor(TransformationProcessor):
                 self.logger.error(f"Missing required columns: {missing_columns}")
                 return False
             
+            # Verify nested structures are actually STRUCT types
+            nested_fields = ['address', 'property_details', 'coordinates']
+            for field in nested_fields:
+                if field in schema and 'STRUCT' not in schema[field].upper():
+                    self.logger.warning(f"Field {field} is not a STRUCT type: {schema[field]}")
+            
             self.logger.success(f"Input validation passed for {table_name}")
             return True
             
@@ -181,7 +191,19 @@ class SilverProcessor(TransformationProcessor):
             return False
     
     def validate_output(self, table_name: str) -> bool:
-        """Validate Silver tier output data quality."""
+        """Validate Silver property data quality after transformation.
+        
+        Checks:
+        - Nested structures are preserved
+        - Denormalized fields exist
+        - Data quality metrics meet thresholds
+        
+        Args:
+            table_name: Name of the Silver properties table
+            
+        Returns:
+            True if validation passes, False otherwise
+        """
         if not self.connection:
             return False
         
@@ -191,7 +213,25 @@ class SilverProcessor(TransformationProcessor):
                 self.logger.error("No records in Silver output")
                 return False
             
-            # Check data quality metrics
+            # Check that nested structures are preserved
+            schema = self.get_table_schema(table_name)
+            nested_fields = ['address', 'property_details', 'coordinates']
+            for field in nested_fields:
+                if field not in schema:
+                    self.logger.error(f"Nested structure {field} missing in Silver output")
+                    return False
+                if 'STRUCT' not in schema[field].upper():
+                    self.logger.error(f"Field {field} is not a STRUCT in Silver output: {schema[field]}")
+                    return False
+            
+            # Check that denormalized fields exist
+            denorm_fields = ['city', 'state', 'bedrooms', 'bathrooms', 'property_type', 'square_feet']
+            missing_denorm = [f for f in denorm_fields if f not in schema]
+            if missing_denorm:
+                self.logger.error(f"Missing denormalized fields: {missing_denorm}")
+                return False
+            
+            # Check data quality metrics using nested field access
             quality_query = f"""
             SELECT 
                 COUNT(*) as total_records,
@@ -233,5 +273,13 @@ class SilverProcessor(TransformationProcessor):
             return False
     
     def get_metrics(self) -> Dict[str, Any]:
-        """Get Silver processing metrics."""
+        """Get Property Silver processing metrics.
+        
+        Returns:
+            Dictionary containing:
+            - records_processed: Total records processed
+            - records_cleaned: Records successfully cleaned
+            - records_rejected: Records rejected due to quality issues
+            - data_quality_score: Overall quality score (0.0-1.0)
+        """
         return self.metrics.copy()

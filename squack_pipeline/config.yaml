@@ -6,10 +6,20 @@ name: squack_pipeline
 version: 1.0.0
 
 # Data Sources Configuration
+data_sources:
+  properties_files:
+    - real_estate_data/properties_sf.json
+    - real_estate_data/properties_pc.json
+  neighborhoods_files:
+    - real_estate_data/neighborhoods_sf.json
+    - real_estate_data/neighborhoods_pc.json
+  wikipedia_db_path: data/wikipedia/wikipedia.db
+  locations_file: real_estate_data/locations.json
+
+# Data Processing Configuration  
 data:
   input_path: real_estate_data
   output_path: ./squack_pipeline_output
-  properties_file: properties_sf.json
   sample_size: null  # null means process all records
 
 # DuckDB Configuration
@@ -71,13 +81,6 @@ output:
     username: elastic  # Default username
     # Password from ELASTICSEARCH_PASSWORD environment variable
     timeout: 30
-
-# Medallion Architecture Configuration
-medallion:
-  enable_bronze: true
-  enable_silver: true
-  enable_gold: true
-  enable_geographic_enrichment: true
 
 # Logging Configuration
 logging:

@@ -1,4 +1,4 @@
-"""Property data loader using DuckDB best practices for nested data."""
+"""Neighborhood data loader using DuckDB best practices for nested data."""
 
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -10,47 +10,47 @@ from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.loaders.base import BaseLoader
 from squack_pipeline.loaders.connection import DuckDBConnectionManager
 from squack_pipeline.models.duckdb_models import TableIdentifier
-from squack_pipeline.models.data_models import Property, DataLoadingMetrics, ValidationResult
+from squack_pipeline.models.data_models import Neighborhood, DataLoadingMetrics, ValidationResult
 from squack_pipeline.utils.logging import log_execution_time
 
 
-class PropertyLoader(BaseLoader):
-    """Loader for property JSON data preserving nested structures."""
+class NeighborhoodLoader(BaseLoader):
+    """Loader for neighborhood JSON data preserving nested structures."""
     
     def __init__(self, settings: PipelineSettings):
-        """Initialize property loader."""
+        """Initialize neighborhood loader."""
         super().__init__(settings)
         self.connection_manager = DuckDBConnectionManager()
     
     def get_schema(self) -> Dict[str, str]:
-        """Get expected property data schema with nested STRUCT types."""
+        """Get expected neighborhood data schema with nested STRUCT types."""
         return {
-            "listing_id": "VARCHAR",
             "neighborhood_id": "VARCHAR",
-            "address": "STRUCT(street VARCHAR, city VARCHAR, county VARCHAR, state VARCHAR, zip VARCHAR)",
+            "name": "VARCHAR",
+            "city": "VARCHAR",
+            "county": "VARCHAR",
+            "state": "VARCHAR",
             "coordinates": "STRUCT(latitude DOUBLE, longitude DOUBLE)",
-            "property_details": "STRUCT(square_feet INTEGER, bedrooms INTEGER, bathrooms DOUBLE, property_type VARCHAR, year_built INTEGER, lot_size DOUBLE, stories INTEGER, garage_spaces INTEGER)",
-            "listing_price": "INTEGER",
-            "price_per_sqft": "DOUBLE",
+            "characteristics": "STRUCT(walkability_score INTEGER, transit_score INTEGER, school_rating INTEGER, safety_rating INTEGER, nightlife_score INTEGER, family_friendly_score INTEGER)",
+            "demographics": "STRUCT(primary_age_group VARCHAR, vibe VARCHAR, population INTEGER, median_household_income INTEGER)",
             "description": "VARCHAR",
-            "features": "VARCHAR[]",
-            "listing_date": "VARCHAR",
-            "days_on_market": "INTEGER",
-            "virtual_tour_url": "VARCHAR",
-            "images": "VARCHAR[]",
-            "price_history": "JSON"
+            "amenities": "VARCHAR[]",
+            "lifestyle_tags": "VARCHAR[]",
+            "median_home_price": "INTEGER",
+            "price_trend": "VARCHAR",
+            "wikipedia_correlations": "JSON"
         }
     
     @log_execution_time
-    def load(self, source: Optional[Path] = None, table_name: str = "bronze_properties", sample_size: Optional[int] = None) -> str:
-        """Load property data from JSON files into DuckDB preserving nested structures using STRUCT types."""
-        # Use configured property files
-        property_files = self.settings.data_sources.properties_files
+    def load(self, source: Optional[Path] = None, table_name: str = "bronze_neighborhoods", sample_size: Optional[int] = None) -> str:
+        """Load neighborhood data from JSON files into DuckDB preserving nested structures using STRUCT types."""
+        # Use configured neighborhood files
+        neighborhood_files = self.settings.data_sources.neighborhoods_files
         
         # Validate files exist
-        for file_path in property_files:
+        for file_path in neighborhood_files:
             if not file_path.exists():
-                raise FileNotFoundError(f"Property data file not found: {file_path}")
+                raise FileNotFoundError(f"Neighborhood data file not found: {file_path}")
         
         # Create validated table identifier
         table = TableIdentifier(name=table_name)
@@ -67,9 +67,9 @@ class PropertyLoader(BaseLoader):
         sample_size = sample_size or self.settings.data.sample_size
         
         # Load data using DuckDB's read_json with auto_detect for STRUCT types
-        self.logger.info("Loading property data with nested structures preserved...")
+        self.logger.info("Loading neighborhood data with nested structures preserved...")
         
-        for idx, file_path in enumerate(property_files):
+        for idx, file_path in enumerate(neighborhood_files):
             # Validate data with Pydantic first
             validation_result = self._validate_json_file(file_path, sample_size)
             if not validation_result.is_valid:
@@ -128,12 +128,12 @@ class PropertyLoader(BaseLoader):
         
         # Log loading results
         count = self.count_records(table.name)
-        self.logger.success(f"Loaded {count} properties with nested structures preserved into Bronze layer")
+        self.logger.success(f"Loaded {count} neighborhoods with nested structures preserved into Bronze layer")
         
         return table.name
     
     def validate(self, table_name: str) -> bool:
-        """Validate loaded property data with nested structure."""
+        """Validate loaded neighborhood data with nested structure."""
         table = TableIdentifier(name=table_name)
         
         try:
@@ -149,16 +149,14 @@ class PropertyLoader(BaseLoader):
             
             # Validate required nested fields using dot notation
             required_fields = [
-                "listing_id", 
-                "listing_price", 
-                "description",
-                "address.city",
-                "address.state",
-                "property_details.bedrooms",
-                "property_details.bathrooms",
-                "property_details.square_feet",
+                "neighborhood_id",
+                "name",
+                "city",
+                "state",
                 "coordinates.latitude",
-                "coordinates.longitude"
+                "coordinates.longitude",
+                "characteristics.walkability_score",
+                "characteristics.school_rating"
             ]
             
             for field in required_fields:
@@ -171,16 +169,6 @@ class PropertyLoader(BaseLoader):
                 if null_count > 0:
                     self.logger.warning(f"Found {null_count} null values in {field}")
             
-            # Validate price values are positive
-            result = self.connection_manager.execute_safe(
-                f"SELECT COUNT(*) FROM {table.qualified_name} WHERE listing_price <= 0"
-            )
-            
-            invalid_prices = result.fetchone()[0] if result else 0
-            if invalid_prices > 0:
-                self.logger.error(f"Found {invalid_prices} properties with invalid prices")
-                return False
-            
             # Validate coordinate ranges using nested field access
             result = self.connection_manager.execute_safe(
                 f"""
@@ -192,10 +180,24 @@ class PropertyLoader(BaseLoader):
             
             invalid_coords = result.fetchone()[0] if result else 0
             if invalid_coords > 0:
-                self.logger.error(f"Found {invalid_coords} properties with invalid coordinates")
+                self.logger.error(f"Found {invalid_coords} neighborhoods with invalid coordinates")
                 return False
             
-            self.logger.success(f"Bronze layer property data validation passed for {table.name}")
+            # Validate score ranges using nested field access
+            result = self.connection_manager.execute_safe(
+                f"""
+                SELECT COUNT(*) FROM {table.qualified_name} 
+                WHERE characteristics.walkability_score < 0 OR characteristics.walkability_score > 100 
+                   OR characteristics.school_rating < 0 OR characteristics.school_rating > 10
+                """
+            )
+            
+            invalid_scores = result.fetchone()[0] if result else 0
+            if invalid_scores > 0:
+                self.logger.error(f"Found {invalid_scores} neighborhoods with invalid scores")
+                return False
+            
+            self.logger.success(f"Bronze layer neighborhood data validation passed for {table.name}")
             return True
             
         except Exception as e:
@@ -203,7 +205,7 @@ class PropertyLoader(BaseLoader):
             return False
     
     def get_sample_data(self, table_name: str, limit: int = 5) -> Optional[list]:
-        """Get sample property data with nested structures."""
+        """Get sample neighborhood data with nested structures."""
         table = TableIdentifier(name=table_name)
         
         if not isinstance(limit, int) or limit <= 0:
@@ -214,17 +216,17 @@ class PropertyLoader(BaseLoader):
             result = connection.execute(
                 f"""
                 SELECT 
-                    listing_id,
-                    listing_price,
-                    property_details.bedrooms as bedrooms,
-                    property_details.bathrooms as bathrooms,
-                    address.city as city,
-                    property_details.property_type as property_type,
-                    property_details.square_feet as square_feet,
+                    neighborhood_id,
+                    name,
+                    city,
+                    state,
+                    characteristics.walkability_score as walkability_score,
+                    characteristics.school_rating as school_rating,
+                    demographics.population as population,
                     description,
-                    address,
-                    property_details,
-                    coordinates
+                    coordinates,
+                    characteristics,
+                    demographics
                 FROM {table.qualified_name}
                 LIMIT {limit}
                 """
@@ -258,7 +260,7 @@ class PropertyLoader(BaseLoader):
             
             for i, record in enumerate(data_to_validate):
                 try:
-                    Property(**record)
+                    Neighborhood(**record)
                     valid_records += 1
                 except ValidationError as e:
                     # Just log first few errors to avoid spam
@@ -276,7 +278,7 @@ class PropertyLoader(BaseLoader):
         )
     
     def validate_source_data(self, file_paths: List[Path]) -> ValidationResult:
-        """Validate source property data using Pydantic models."""
+        """Validate source neighborhood data using Pydantic models."""
         total_records = 0
         valid_records = 0
         all_errors = []

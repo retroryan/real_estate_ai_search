@@ -15,6 +15,11 @@ from squack_pipeline.writers.elasticsearch.models import (
     TransformationConfig,
     IndexMapping,
 )
+from squack_pipeline.transformers import (
+    PropertyTransformer,
+    NeighborhoodTransformer,
+    WikipediaTransformer
+)
 from squack_pipeline.utils.logging import PipelineLogger
 
 
@@ -33,6 +38,18 @@ class ElasticsearchWriter:
         
         # Initialize Elasticsearch client
         self.client = self._create_client()
+        
+        # Initialize transformers for each entity type
+        self.property_transformer = PropertyTransformer()
+        self.neighborhood_transformer = NeighborhoodTransformer()
+        self.wikipedia_transformer = WikipediaTransformer()
+        
+        # Map entity types to transformers
+        self.transformers = {
+            EntityType.PROPERTIES: self.property_transformer,
+            EntityType.NEIGHBORHOODS: self.neighborhood_transformer,
+            EntityType.WIKIPEDIA: self.wikipedia_transformer,
+        }
         
         # Default transformation config
         self.transform_config = TransformationConfig()
@@ -76,7 +93,8 @@ class ElasticsearchWriter:
             WriteResult with operation status
         """
         start_time = time.time()
-        index_name = f"{self.config.index_prefix}_{entity_type.value}"
+        # Use exact index names without prefix to match Elasticsearch templates
+        index_name = entity_type.value  # Just "properties", "neighborhoods", "wikipedia"
         mapping = self.mappings[entity_type]
         
         if not data:
@@ -92,11 +110,19 @@ class ElasticsearchWriter:
         self.logger.info(f"Writing {len(data)} {entity_type.value} records to {index_name}")
         
         try:
-            # Transform records
-            transformed_data = [
-                self._transform_record(record, entity_type, mapping)
-                for record in data
-            ]
+            # Transform records using appropriate transformer
+            transformer = self.transformers.get(entity_type)
+            if transformer:
+                transformed_data = [
+                    transformer.transform(record)
+                    for record in data
+                ]
+            else:
+                # Fallback to basic transformation if no transformer
+                transformed_data = [
+                    self._transform_record(record, entity_type, mapping)
+                    for record in data
+                ]
             
             # Create bulk operation
             bulk_op = BulkOperation(

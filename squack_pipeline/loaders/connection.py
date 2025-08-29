@@ -137,7 +137,7 @@ class DuckDBConnectionManager:
         """Check if table exists using safe query."""
         result = self.execute_safe(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
-            (table.name, table.schema if table.schema else 'main')
+            (table.name, table.schema_name if table.schema_name else 'main')
         )
         row = result.fetchone() if result else None
         return bool(row and row[0] > 0)
@@ -150,7 +150,7 @@ class DuckDBConnectionManager:
         # Get schema
         schema_result = self.execute_safe(
             "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
-            (table.name, table.schema)
+            (table.name, table.schema_name)
         )
         schema_rows = schema_result.fetchall() if schema_result else []
         
@@ -193,7 +193,7 @@ class DuckDBConnectionManager:
         """Check if table exists using safe query."""
         result = self.execute_safe(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = COALESCE(?, 'main')",
-            (table.name, table.schema)
+            (table.name, table.schema_name)
         )
         row = result.fetchone()
         return bool(row and row[0] > 0)

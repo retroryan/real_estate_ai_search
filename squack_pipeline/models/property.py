@@ -1,6 +1,6 @@
 """Property data models using Pydantic V2."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -15,7 +15,7 @@ class Address(BaseModel):
     city: str
     county: str
     state: str
-    zip: str
+    zip_code: str  # Changed from 'zip' to match Elasticsearch template
 
 
 class Coordinates(BaseModel):
@@ -63,6 +63,7 @@ class Property(BaseModel):
     
     listing_id: str
     neighborhood_id: Optional[str] = None
+    neighborhood: Optional[str] = None  # Denormalized neighborhood name
     address: Address
     coordinates: Coordinates
     property_details: PropertyDetails
@@ -70,11 +71,28 @@ class Property(BaseModel):
     price_per_sqft: float = Field(gt=0)
     description: str
     features: List[str] = Field(default_factory=list)
+    amenities: List[str] = Field(default_factory=list)  # Added for Elasticsearch
+    status: str = Field(default="active")  # Added for Elasticsearch
     listing_date: date
+    last_updated: Optional[datetime] = None  # Added for Elasticsearch
     days_on_market: int = Field(ge=0)
     virtual_tour_url: Optional[str] = None
     images: List[str] = Field(default_factory=list)
     price_history: List[PriceHistory] = Field(default_factory=list)
+    
+    # Additional fields from Elasticsearch template
+    mls_number: Optional[str] = None
+    tax_assessed_value: Optional[int] = None
+    annual_tax: Optional[float] = None
+    hoa_fee: Optional[float] = None
+    walkability_score: Optional[int] = Field(default=None, ge=0, le=100)
+    school_rating: Optional[float] = Field(default=None, ge=0, le=10)
+    
+    # Embedding fields for vector search
+    embedding: Optional[List[float]] = None
+    embedding_model: Optional[str] = None
+    embedding_dimension: Optional[int] = None
+    embedded_at: Optional[datetime] = None
     
     @field_validator('listing_price', 'price_per_sqft')
     @classmethod
