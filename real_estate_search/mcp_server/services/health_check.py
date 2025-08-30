@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from typing import Dict, Any, Literal
 
-from ..config.settings import MCPServerConfig
+from ..settings import MCPServerConfig
 from ..models.search import HealthCheckResponse
 from .elasticsearch_client import ElasticsearchClient
 from ..utils.logging import get_logger

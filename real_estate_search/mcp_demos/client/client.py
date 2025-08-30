@@ -4,12 +4,13 @@ This module provides a clean, Pydantic-based client for interacting with the MCP
 It uses the FastMCP client under the hood and provides convenience methods for common operations.
 """
 
+import os
 from typing import Dict, Any, Optional
 from pathlib import Path
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from .client_factory import create_stdio_client, ConfiguredMCPClient
+from .client_factory import create_stdio_client, create_client_from_config, ConfiguredMCPClient
 from ..utils.models import (
     PropertySearchRequest,
     PropertySearchResponse,
@@ -174,7 +175,8 @@ _client_instance: Optional[RealEstateSearchClient] = None
 def get_mcp_client() -> RealEstateSearchClient:
     """Get or create the global MCP client instance.
     
-    This function returns a singleton client instance configured for stdio transport.
+    This function returns a singleton client instance. If MCP_CONFIG_PATH is set,
+    it will use that configuration file, otherwise defaults to stdio transport.
     
     Returns:
         RealEstateSearchClient ready for use
@@ -182,8 +184,16 @@ def get_mcp_client() -> RealEstateSearchClient:
     global _client_instance
     
     if _client_instance is None:
-        # Create the underlying MCP client with stdio transport
-        mcp_client = create_stdio_client()
+        # Check for custom config path from environment
+        config_path = os.getenv('MCP_CONFIG_PATH')
+        
+        if config_path:
+            # Use the specified config file
+            mcp_client = create_client_from_config(config_path=Path(config_path))
+        else:
+            # Default to consolidated config file (HTTP transport)
+            default_config = Path(__file__).parent.parent / "config.yaml"
+            mcp_client = create_client_from_config(config_path=default_config)
         
         # Wrap it in our high-level client
         _client_instance = RealEstateSearchClient(mcp_client=mcp_client)

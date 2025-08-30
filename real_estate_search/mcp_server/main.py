@@ -11,22 +11,24 @@ from fastmcp import FastMCP, Context
 if __name__ == "__main__" and __package__ is None:
     # Running as script, add parent directory to path
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from real_estate_search.mcp_server.config.settings import MCPServerConfig
+    from real_estate_search.mcp_server.settings import MCPServerConfig
     from real_estate_search.mcp_server.services.elasticsearch_client import ElasticsearchClient
-    from real_estate_search.mcp_server.services.embedding_service import EmbeddingService
+    from real_estate_search.embeddings import QueryEmbeddingService, EmbeddingConfig
     from real_estate_search.mcp_server.services.property_search import PropertySearchService
     from real_estate_search.mcp_server.services.wikipedia_search import WikipediaSearchService
+    from real_estate_search.mcp_server.services.natural_language_search import NaturalLanguageSearchService
     from real_estate_search.mcp_server.services.health_check import HealthCheckService
     from real_estate_search.mcp_server.utils.logging import setup_logging, get_logger
     from real_estate_search.mcp_server.tools.property_tools import search_properties, get_property_details
     from real_estate_search.mcp_server.tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
 else:
     # Running as module
-    from .config.settings import MCPServerConfig
+    from .settings import MCPServerConfig
     from .services.elasticsearch_client import ElasticsearchClient
-    from .services.embedding_service import EmbeddingService
+    from ..embeddings import QueryEmbeddingService, EmbeddingConfig
     from .services.property_search import PropertySearchService
     from .services.wikipedia_search import WikipediaSearchService
+    from .services.natural_language_search import NaturalLanguageSearchService
     from .services.health_check import HealthCheckService
     from .utils.logging import setup_logging, get_logger
     from .tools.property_tools import search_properties, get_property_details
@@ -57,9 +59,10 @@ class MCPServer:
         
         # Initialize services
         self.es_client: Optional[ElasticsearchClient] = None
-        self.embedding_service: Optional[EmbeddingService] = None
+        self.embedding_service: Optional[QueryEmbeddingService] = None
         self.property_search_service: Optional[PropertySearchService] = None
         self.wikipedia_search_service: Optional[WikipediaSearchService] = None
+        self.natural_language_search_service: Optional[NaturalLanguageSearchService] = None
         self.health_check_service: Optional[HealthCheckService] = None
         
         # Initialize FastMCP app
@@ -78,8 +81,10 @@ class MCPServer:
             logger.info("Elasticsearch client initialized")
             
             # Embedding service
-            self.embedding_service = EmbeddingService(self.config.embedding)
-            logger.info(f"Embedding service initialized with {self.config.embedding.provider}")
+            embedding_config = EmbeddingConfig()  # Uses defaults and loads API key from env
+            self.embedding_service = QueryEmbeddingService(config=embedding_config)
+            self.embedding_service.initialize()
+            logger.info(f"Embedding service initialized with {embedding_config.provider}")
             
             # Search services
             self.property_search_service = PropertySearchService(
@@ -95,6 +100,13 @@ class MCPServer:
                 self.embedding_service
             )
             logger.info("Wikipedia search service initialized")
+            
+            self.natural_language_search_service = NaturalLanguageSearchService(
+                self.config,
+                self.es_client,
+                self.embedding_service
+            )
+            logger.info("Natural language search service initialized")
             
             # Health check service
             self.health_check_service = HealthCheckService(
@@ -246,6 +258,50 @@ class MCPServer:
                 size=size
             )
         
+        # Natural language semantic search tool
+        @self.app.tool()
+        async def natural_language_search_tool(
+            query: str,
+            search_type: str = "semantic",
+            size: int = 10
+        ) -> Dict[str, Any]:
+            """Advanced natural language semantic search with AI embeddings.
+            
+            Perform sophisticated natural language search using AI embeddings that understand
+            intent and context beyond simple keyword matching. Choose from different search types
+            to explore semantic understanding capabilities.
+            
+            Args:
+                query: Natural language query (e.g., "cozy family home near good schools")
+                search_type: Type of search:
+                    - "semantic": Pure AI embedding search (default)
+                    - "examples": Run 5 diverse example queries to show capabilities
+                    - "comparison": Compare semantic vs keyword search side-by-side
+                size: Number of results to return (1-50, default 10)
+                
+            Returns:
+                Advanced search results with AI-powered semantic understanding
+            """
+            if not self.natural_language_search_service:
+                return {"error": "Natural language search service not initialized"}
+            
+            try:
+                if __name__ == "__main__" and __package__ is None:
+                    from real_estate_search.mcp_server.models.search import NaturalLanguageSearchRequest
+                else:
+                    from .models.search import NaturalLanguageSearchRequest
+                
+                request = NaturalLanguageSearchRequest(
+                    query=query,
+                    search_type=search_type,
+                    size=size
+                )
+                
+                return await self.natural_language_search_service.search(request)
+            except Exception as e:
+                logger.error(f"Natural language search failed: {e}")
+                return {"error": str(e)}
+        
         # Health check tool
         @self.app.tool()
         async def health_check_tool() -> Dict[str, Any]:
@@ -291,12 +347,24 @@ class MCPServer:
             "embedding_service": self.embedding_service,
             "property_search_service": self.property_search_service,
             "wikipedia_search_service": self.wikipedia_search_service,
+            "natural_language_search_service": self.natural_language_search_service,
             "health_check_service": self.health_check_service
         })
     
-    def start(self):
-        """Start the MCP server."""
-        logger.info("Starting MCP server")
+    def start(self, transport: str = None, host: str = None, port: int = None):
+        """Start the MCP server.
+        
+        Args:
+            transport: Transport mode override - if None, uses config
+            host: Host override - if None, uses config
+            port: Port override - if None, uses config
+        """
+        # Use config values if not overridden
+        transport = transport or self.config.transport.mode
+        host = host or self.config.transport.host  
+        port = port or self.config.transport.port
+        
+        logger.info(f"Starting MCP server with {transport} transport")
         
         try:
             # Initialize services
@@ -310,9 +378,16 @@ class MCPServer:
             else:
                 logger.info(f"System health: {health_response.status}")
             
-            # Start FastMCP server (synchronous)
+            # Start FastMCP server with specified transport
+            if transport == "http" or transport == "streamable-http":
+                logger.info(f"Starting HTTP server on {host}:{port}")
+                logger.info(f"MCP endpoint will be available at: http://{host}:{port}/mcp")
+                self.app.run(transport="streamable-http", host=host, port=port)
+            else:
+                logger.info("Starting STDIO server")
+                self.app.run(transport="stdio")
+            
             logger.info(f"MCP server ready: {self.config.server_name} v{self.config.server_version}")
-            self.app.run(transport="stdio")  # Use stdio transport by default
             
         except Exception as e:
             logger.error(f"Failed to start MCP server: {e}")
@@ -333,35 +408,148 @@ class MCPServer:
             logger.error(f"Error stopping server: {e}")
 
 
-def main():
-    """Main entry point."""
-    # Get config path from command line or use default
+def print_startup_banner():
+    """Print startup banner."""
+    print("\n" + "="*60)
+    print("🏠 Real Estate Search MCP Server")
+    print("="*60)
+    print("Starting Model Context Protocol server...")
+    print("Configuration: Looking for config.yaml in multiple locations")
+    print("-"*60)
+
+
+def print_available_tools():
+    """Print information about available tools."""
+    print("\n📦 Available MCP Tools:")
+    print("  • search_properties_tool - Natural language property search")
+    print("  • get_property_details_tool - Get property details by ID") 
+    print("  • search_wikipedia_tool - Search Wikipedia content")
+    print("  • get_wikipedia_article_tool - Get Wikipedia article by ID")
+    print("  • search_wikipedia_by_location_tool - Location-based Wikipedia search")
+    print("  • natural_language_search_tool - Advanced AI semantic search with examples")
+    print("  • health_check_tool - Check system health status")
+    print("-"*60)
+
+
+def parse_arguments():
+    """Parse command line arguments."""
     config_path = None
-    if len(sys.argv) > 1:
-        config_path = Path(sys.argv[1])
+    transport = None
+    host = None
+    port = None
+    
+    args = sys.argv[1:]
+    transport_explicitly_set = False
+    i = 0
+    
+    while i < len(args):
+        arg = args[i]
+        if arg == "--transport" and i + 1 < len(args):
+            transport = args[i + 1]
+            transport_explicitly_set = True
+            i += 2
+        elif arg == "--host" and i + 1 < len(args):
+            host = args[i + 1]
+            i += 2
+        elif arg == "--port" and i + 1 < len(args):
+            try:
+                port = int(args[i + 1])
+            except ValueError:
+                print(f"⚠️  Warning: Invalid port '{args[i + 1]}', using default")
+            i += 2
+        elif arg == "--config" and i + 1 < len(args):
+            config_path = Path(args[i + 1])
+            i += 2
+        elif arg == "--help" or arg == "-h":
+            print("Usage: python -m real_estate_search.mcp_server.main [options]")
+            print("Options:")
+            print("  --transport <stdio|http|streamable-http>  Transport mode")
+            print("  --host <host>                            Host for HTTP server")
+            print("  --port <port>                            Port for HTTP server")
+            print("  --config <path>                          Path to config file")
+            print("  --help, -h                               Show this help")
+            sys.exit(0)
+        elif not config_path and not arg.startswith("--"):
+            config_path = Path(arg)
+            i += 1
+        else:
+            print(f"⚠️  Warning: Unknown argument '{arg}'")
+            i += 1
+    
+    # Validate config file
+    if config_path and not config_path.exists():
+        print(f"⚠️  Warning: Config file not found at {config_path}")
+        config_path = None
+    elif config_path:
+        print(f"✅ Using config file: {config_path}")
     else:
-        # Try default config locations
-        default_configs = [
-            Path(__file__).parent / "config" / "config.yaml",
+        # Look for config in default locations
+        possible_configs = [
+            Path(__file__).parent / "config.yaml",
             Path.cwd() / "config.yaml"
         ]
-        for path in default_configs:
-            if path.exists():
-                config_path = path
+        for cfg in possible_configs:
+            if cfg.exists():
+                config_path = cfg
+                print(f"✅ Found config file: {config_path}")
                 break
     
-    # Create and start server
-    server = MCPServer(config_path)
+    return config_path, transport, host, port, transport_explicitly_set
+
+
+def main():
+    """Main entry point."""
+    print_startup_banner()
+    
+    config_path, transport, host, port, transport_explicitly_set = parse_arguments()
     
     try:
-        server.start()
+        # Initialize the server
+        print("\n🚀 Initializing MCP Server...")
+        server = MCPServer(config_path)
+        
+        print(f"✅ Server initialized: {server.config.server_name} v{server.config.server_version}")
+        print(f"📡 Elasticsearch: {server.config.elasticsearch.url}")
+        print(f"🧠 Embedding provider: {server.config.embedding.provider}")
+        print(f"🚀 Transport: {server.config.transport.mode} (config)")
+        
+        if server.config.transport.mode in ["http", "streamable-http"]:
+            print(f"🌐 HTTP Server: http://{server.config.transport.host}:{server.config.transport.port}/mcp")
+        
+        print_available_tools()
+        
+        print("\n✨ MCP Server is ready!")
+        print("="*60)
+        if server.config.transport.mode in ["http", "streamable-http"]:
+            print(f"\nHTTP server starting on http://{server.config.transport.host}:{server.config.transport.port}/mcp")
+            print("Press Ctrl+C to stop.\n")
+        else:
+            print("\nSTDIO server is running. Press Ctrl+C to stop.\n")
+        
+        # Start the server with appropriate transport
+        if transport_explicitly_set and transport == "stdio":
+            server.start(transport="stdio")
+        elif len(sys.argv) == 1:
+            server.start()
+        else:
+            server.start(transport=transport, host=host, port=port)
+        
     except KeyboardInterrupt:
-        logger.info("Received shutdown signal")
+        print("\n\n🛑 Received shutdown signal...")
+        if 'server' in locals():
+            asyncio.run(server.stop())
+        print("👋 MCP Server stopped gracefully.")
     except Exception as e:
-        logger.error(f"Server error: {e}")
-    finally:
-        # Stop is async, so we need to run it in an event loop
-        asyncio.run(server.stop())
+        print(f"\n❌ Error starting server: {e}")
+        print("\nTroubleshooting tips:")
+        print("1. Ensure Elasticsearch is running on localhost:9200")
+        print("2. Check that API keys are set in environment variables or .env file")
+        print("3. Verify config.yaml exists and is valid")
+        print("4. Run with DEBUG=true for more details")
+        print("\nTo start Elasticsearch:")
+        print("  docker run -d -p 9200:9200 -e 'discovery.type=single-node' \\")
+        print("    -e 'xpack.security.enabled=false' elasticsearch:8.11.0")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

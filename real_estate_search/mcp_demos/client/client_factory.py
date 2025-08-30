@@ -33,15 +33,12 @@ class ConfiguredMCPClient(MCPClientWrapper):
     
     def _setup_logging(self):
         """Configure logging based on settings."""
-        if self.config.connection.enable_logging:
-            level = getattr(logging, self.config.connection.log_level)
-            logging.basicConfig(
-                level=level,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            self.logger = logging.getLogger(__name__)
-        else:
-            self.logger = None
+        # Always enable basic logging for demos
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        self.logger = logging.getLogger(__name__)
     
     def _build_stdio_transport(self) -> PythonStdioTransport:
         """Build stdio transport from configuration.
@@ -49,28 +46,27 @@ class ConfiguredMCPClient(MCPClientWrapper):
         Returns:
             Configured PythonStdioTransport instance
         """
-        stdio_config = self.config.stdio
-        
-        # Resolve server path
-        server_path = stdio_config.server_path
+        # Resolve server path from simplified config
+        server_path = self.config.server_path
         if not server_path.is_absolute():
             # Try to find it relative to project root
-            project_root = Path(__file__).parent.parent.parent
+            project_root = Path(__file__).parent.parent.parent.parent
             server_path = project_root / server_path
             if not server_path.exists():
                 # Fall back to original path
-                server_path = stdio_config.server_path
+                server_path = self.config.server_path
         
         if self.logger:
             self.logger.info(f"Creating STDIO transport with server: {server_path}")
         
-        # Use configured Python or current interpreter
-        python_cmd = stdio_config.python_executable or sys.executable
+        # Use current Python interpreter
+        python_cmd = sys.executable
         
-        # Create the transport
+        # Create the transport with stdio argument
         return PythonStdioTransport(
             str(server_path),
-            python_cmd=python_cmd
+            python_cmd=python_cmd,
+            args=["--transport", "stdio"]
         )
     
     def _build_http_transport(self) -> str:
@@ -79,13 +75,12 @@ class ConfiguredMCPClient(MCPClientWrapper):
         Returns:
             HTTP URL for the MCP server
         """
-        http_config = self.config.http
-        
         if self.logger:
-            self.logger.info(f"Creating HTTP transport with URL: {http_config.base_url}")
+            self.logger.info(f"Creating HTTP transport with URL: {self.config.base_url}")
         
         # For HTTP, FastMCP Client accepts the URL directly
-        return http_config.base_url
+        # FastMCP automatically detects HTTP transport from URL
+        return self.config.base_url
     
     async def call_tool_with_config(
         self,
@@ -104,10 +99,10 @@ class ConfiguredMCPClient(MCPClientWrapper):
         response = MCPResponse(success=False)
         
         try:
-            # Build Client kwargs based on configuration
+            # Build Client kwargs with simplified config
             client_kwargs = {
-                "timeout": self.config.connection.request_timeout,
-                "init_timeout": self.config.connection.init_timeout
+                "timeout": self.config.timeout,
+                "init_timeout": 10  # Fixed reasonable default
             }
             
             # Create client with configuration

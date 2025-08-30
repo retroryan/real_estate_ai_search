@@ -99,9 +99,9 @@ async def demo_semantic_vs_text_comparison(
         )
         comparison_table.add_row(
             "Top Score",
-            f"{semantic_response.properties[0].score:.3f}" if semantic_response.properties else "N/A",
-            f"{text_response.properties[0].score:.3f}" if text_response.properties else "N/A",
-            f"{hybrid_response.properties[0].score:.3f}" if hybrid_response.properties else "N/A"
+            f"{semantic_response.properties[0].score:.3f}" if (semantic_response.properties and semantic_response.properties[0].score is not None) else "N/A",
+            f"{text_response.properties[0].score:.3f}" if (text_response.properties and text_response.properties[0].score is not None) else "N/A",
+            f"{hybrid_response.properties[0].score:.3f}" if (hybrid_response.properties and hybrid_response.properties[0].score is not None) else "N/A"
         )
         
         console.print(comparison_table)
@@ -117,7 +117,7 @@ async def demo_semantic_vs_text_comparison(
         for idx, prop in enumerate(semantic_response.properties[:3], 1):
             semantic_text.append(f"{idx}. {prop.property_type} - ${prop.price:,.0f}\n", style="green")
             semantic_text.append(f"   {prop.description[:50]}...\n", style="dim")
-            semantic_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score else "\n\n", style="yellow dim")
+            semantic_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score is not None else "   Score: N/A\n\n", style="yellow dim")
         
         # Text results
         text_text = Text()
@@ -127,7 +127,7 @@ async def demo_semantic_vs_text_comparison(
         for idx, prop in enumerate(text_response.properties[:3], 1):
             text_text.append(f"{idx}. {prop.property_type} - ${prop.price:,.0f}\n", style="blue")
             text_text.append(f"   {prop.description[:50]}...\n", style="dim")
-            text_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score else "\n\n", style="yellow dim")
+            text_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score is not None else "   Score: N/A\n\n", style="yellow dim")
         
         # Hybrid results
         hybrid_text = Text()
@@ -137,7 +137,7 @@ async def demo_semantic_vs_text_comparison(
         for idx, prop in enumerate(hybrid_response.properties[:3], 1):
             hybrid_text.append(f"{idx}. {prop.property_type} - ${prop.price:,.0f}\n", style="yellow")
             hybrid_text.append(f"   {prop.description[:50]}...\n", style="dim")
-            hybrid_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score else "\n\n", style="yellow dim")
+            hybrid_text.append(f"   Score: {prop.score:.3f}\n\n" if prop.score is not None else "   Score: N/A\n\n", style="yellow dim")
         
         # Display results in columns
         console.print(Columns([

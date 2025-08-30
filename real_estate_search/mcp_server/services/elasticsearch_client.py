@@ -13,7 +13,7 @@ from tenacity import (
     before_sleep_log
 )
 
-from ..config.settings import ElasticsearchConfig
+from ..settings import ElasticsearchConfig
 from ..models.search import ErrorResponse
 
 

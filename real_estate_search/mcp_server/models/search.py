@@ -158,6 +158,46 @@ class WikipediaSearchResponse(BaseModel):
     search_in: str = Field(..., description="What was searched")
 
 
+class NaturalLanguageSearchRequest(BaseModel):
+    """Natural language semantic search request."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    query: str = Field(..., min_length=1, description="Natural language search query")
+    size: int = Field(default=10, ge=1, le=50, description="Number of results to return")
+    search_type: Literal["semantic", "comparison", "examples"] = Field(
+        default="semantic",
+        description="Type of natural language search"
+    )
+
+
+class NaturalLanguageSearchResponse(BaseModel):
+    """Natural language semantic search response."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    query_name: str = Field(..., description="Name of the query executed")
+    query_description: str = Field(..., description="Description of what was searched")
+    execution_time_ms: int = Field(..., ge=0, description="Total execution time")
+    total_hits: int = Field(..., ge=0, description="Total number of matches")
+    returned_hits: int = Field(..., ge=0, description="Number of results returned")
+    results: List[Dict[str, Any]] = Field(default_factory=list, description="Search results")
+    search_features: List[str] = Field(default_factory=list, description="Search features used")
+    original_query: str = Field(..., description="Original search query")
+
+
+class SemanticComparisonResponse(BaseModel):
+    """Response for semantic vs keyword comparison."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    query: str = Field(..., description="Query that was compared")
+    semantic: Dict[str, Any] = Field(..., description="Semantic search results")
+    keyword: Dict[str, Any] = Field(..., description="Keyword search results")
+    comparison: Dict[str, Any] = Field(..., description="Comparison metrics")
+    execution_time_ms: int = Field(..., ge=0, description="Total execution time")
+
+
 class HealthCheckResponse(BaseModel):
     """Health check response."""
     

@@ -3,6 +3,9 @@
     "listing_id": {
       "type": "keyword"
     },
+    "neighborhood_id": {
+      "type": "keyword"
+    },
     "property_type": {
       "type": "keyword",
       "normalizer": "lowercase_normalizer"

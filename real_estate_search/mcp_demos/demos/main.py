@@ -8,6 +8,11 @@ from rich.table import Table
 from rich.panel import Panel
 
 from .property_search import demo_basic_property_search, demo_property_filter
+from .natural_language_demo import (
+    demo_natural_language_semantic_search, 
+    demo_natural_language_examples, 
+    demo_semantic_vs_keyword_comparison
+)
 
 
 console = Console()
@@ -24,6 +29,21 @@ DEMOS = {
         "name": "Property Filter Search",
         "description": "Search with specific filters (type, price, location)",
         "function": demo_property_filter
+    },
+    12: {
+        "name": "Natural Language Semantic Search",
+        "description": "AI-powered semantic search using natural language",
+        "function": lambda: demo_natural_language_semantic_search("cozy family home near good schools and parks")
+    },
+    13: {
+        "name": "Natural Language Examples",
+        "description": "Multiple diverse natural language search examples",
+        "function": demo_natural_language_examples
+    },
+    14: {
+        "name": "Semantic vs Keyword Comparison",
+        "description": "Compare AI semantic search with traditional keyword search",
+        "function": lambda: demo_semantic_vs_keyword_comparison("stunning views from modern kitchen")
     }
 }
 

@@ -39,8 +39,8 @@ EOF
 
 From the project root directory:
 ```bash
-# Option 1: Using Python script
-python start_mcp_server.py
+# Option 1: Using Python module
+python -m real_estate_search.mcp_server.main
 
 # Option 2: Using shell script (includes environment checks)
 ./start_mcp_server.sh

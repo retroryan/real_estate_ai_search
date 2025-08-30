@@ -167,7 +167,7 @@ transport: stdio  # or 'http'
 
 # STDIO settings
 stdio:
-  server_path: start_mcp_server.py
+  server_module: real_estate_search.mcp_server.main
   startup_timeout: 5
 
 # Connection settings  

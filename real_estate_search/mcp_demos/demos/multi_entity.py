@@ -7,6 +7,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 
 from ..client.client import get_mcp_client
 from ..utils.models import (

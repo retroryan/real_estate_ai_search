@@ -3,7 +3,7 @@
 import time
 from typing import Dict, Any, List, Optional
 
-from ..config.settings import MCPServerConfig
+from ..settings import MCPServerConfig
 from ..models.search import (
     PropertySearchRequest,
     PropertySearchResponse,
@@ -12,7 +12,7 @@ from ..models.search import (
     Aggregation
 )
 from .elasticsearch_client import ElasticsearchClient
-from .embedding_service import EmbeddingService
+from ...embeddings import QueryEmbeddingService
 from ..utils.logging import get_logger
 
 
@@ -26,7 +26,7 @@ class PropertySearchService:
         self,
         config: MCPServerConfig,
         es_client: ElasticsearchClient,
-        embedding_service: EmbeddingService
+        embedding_service: QueryEmbeddingService
     ):
         """Initialize property search service.
         
@@ -319,7 +319,7 @@ class PropertySearchService:
             # Build main query based on search type
             if request.search_type == "semantic":
                 # Pure vector search
-                query_embedding = self.embedding_service.embed_text(request.query)
+                query_embedding = self.embedding_service.embed_query(request.query)
                 main_query = self.build_vector_query(query_embedding)
             elif request.search_type == "text":
                 # Pure text search
@@ -327,7 +327,7 @@ class PropertySearchService:
             else:  # hybrid
                 # Combined text and vector search
                 text_query = self.build_text_query(request.query)
-                query_embedding = self.embedding_service.embed_text(request.query)
+                query_embedding = self.embedding_service.embed_query(request.query)
                 vector_query = self.build_vector_query(query_embedding)
                 main_query = self.build_hybrid_query(text_query, vector_query)
             

@@ -7,7 +7,7 @@ from typing import Optional
 from pathlib import Path
 from datetime import datetime
 
-from ..config.settings import LoggingConfig
+from ..settings import LoggingConfig
 
 
 class StructuredFormatter(logging.Formatter):

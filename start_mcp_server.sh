@@ -46,15 +46,29 @@ fi
 # Check if Elasticsearch is running
 ES_HOST="${ELASTICSEARCH_HOST:-localhost}"
 ES_PORT="${ELASTICSEARCH_PORT:-9200}"
+ES_USERNAME="${ELASTICSEARCH_USERNAME:-}"
+ES_PASSWORD="${ELASTICSEARCH_PASSWORD:-}"
 
 echo -n "Checking Elasticsearch at ${ES_HOST}:${ES_PORT}... "
-if curl -s -o /dev/null -w "%{http_code}" "http://${ES_HOST}:${ES_PORT}/_cluster/health" 2>/dev/null | grep -q "200"; then
+
+# Build curl authentication if credentials are available
+AUTH_ARGS=""
+if [ -n "$ES_USERNAME" ] && [ -n "$ES_PASSWORD" ]; then
+    AUTH_ARGS="-u ${ES_USERNAME}:${ES_PASSWORD}"
+fi
+
+if curl -s -o /dev/null -w "%{http_code}" $AUTH_ARGS "http://${ES_HOST}:${ES_PORT}/_cluster/health" 2>/dev/null | grep -q "200"; then
     echo -e "${GREEN}✅ Connected${NC}"
     
     # Check if indices exist
     echo -n "Checking indices... "
-    if curl -s "http://${ES_HOST}:${ES_PORT}/_cat/indices" 2>/dev/null | grep -q "properties"; then
-        echo -e "${GREEN}✅ Properties index found${NC}"
+    if curl -s $AUTH_ARGS "http://${ES_HOST}:${ES_PORT}/_cat/indices" 2>/dev/null | grep -q "properties"; then
+        PROPERTY_COUNT=$(curl -s $AUTH_ARGS "http://${ES_HOST}:${ES_PORT}/properties/_count" 2>/dev/null | grep -o '"count":[0-9]*' | cut -d':' -f2)
+        if [ -n "$PROPERTY_COUNT" ]; then
+            echo -e "${GREEN}✅ Properties index found (${PROPERTY_COUNT} documents)${NC}"
+        else
+            echo -e "${GREEN}✅ Properties index found${NC}"
+        fi
     else
         echo -e "${YELLOW}⚠️  Properties index not found${NC}"
         echo "   Run data pipeline to create and populate indices"
@@ -63,6 +77,11 @@ else
     echo -e "${YELLOW}⚠️  Cannot connect to Elasticsearch${NC}"
     echo "   The server will start but may not function properly"
     echo ""
+    if [ -z "$ES_USERNAME" ] || [ -z "$ES_PASSWORD" ]; then
+        echo "   Note: No Elasticsearch credentials found in .env file"
+        echo "   Add ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD to .env if needed"
+        echo ""
+    fi
     echo "   To start Elasticsearch with Docker:"
     echo "   docker run -d --name elasticsearch -p 9200:9200 \\"
     echo "     -e 'discovery.type=single-node' \\"
@@ -80,7 +99,7 @@ else
 fi
 
 # Check for config file
-CONFIG_FILE="real_estate_search/mcp_server/config/config.yaml"
+CONFIG_FILE="real_estate_search/mcp_server/config.yaml"
 if [ -f "$CONFIG_FILE" ]; then
     echo -e "${GREEN}✅ Found config file: ${CONFIG_FILE}${NC}"
     CONFIG_ARG="$CONFIG_FILE"
@@ -93,9 +112,9 @@ echo "=========================================="
 echo -e "${GREEN}Starting MCP Server...${NC}"
 echo ""
 
-# Run the Python script
+# Run the MCP server module
 if [ -n "$CONFIG_ARG" ]; then
-    python3 start_mcp_server.py "$CONFIG_ARG"
+    python3 -m real_estate_search.mcp_server.main --config "$CONFIG_ARG"
 else
-    python3 start_mcp_server.py
+    python3 -m real_estate_search.mcp_server.main
 fi

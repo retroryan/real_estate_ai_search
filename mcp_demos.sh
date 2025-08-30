@@ -4,14 +4,15 @@
 # MCP Real Estate Demo Runner
 # ============================================================================
 # 
-# This script provides easy access to all MCP demo queries.
-# It demonstrates interaction with the MCP server for property searches.
+# This script provides easy access to all MCP demo queries with support for
+# both STDIO and HTTP transport modes.
 #
 # Usage:
-#   ./mcp_demos.sh         # List all available demos
-#   ./mcp_demos.sh 1       # Run demo number 1
-#   ./mcp_demos.sh --help  # Show help
-#   ./mcp_demos.sh --list  # List all demos with descriptions
+#   ./mcp_demos.sh                  # List all available demos (stdio)
+#   ./mcp_demos.sh 1                # Run demo 1 with stdio transport
+#   ./mcp_demos.sh 1 --http         # Run demo 1 with HTTP transport
+#   ./mcp_demos.sh --all            # Run all demos
+#   ./mcp_demos.sh --help           # Show help
 #
 # ============================================================================
 
@@ -26,17 +27,20 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Default demo number
-DEFAULT_DEMO=1
-
 # Script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
+
+# Default settings
+TRANSPORT="http"
+CONFIG_FILE=""
+VERBOSE="false"
 
 # Function to show header
 show_header() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║              ${PURPLE}MCP Real Estate Demo Runner${CYAN}                    ║${NC}"
+    echo -e "${CYAN}║          ${BLUE}Supporting STDIO and HTTP Transports${CYAN}               ║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
 }
@@ -45,18 +49,30 @@ show_header() {
 show_help() {
     show_header
     echo -e "${GREEN}Usage:${NC}"
-    echo "  ./mcp_demos.sh [options] [demo_number]"
+    echo "  ./mcp_demos.sh [options] [demo_number|command]"
+    echo
+    echo -e "${GREEN}Transport Options:${NC}"
+    echo "  --http         Use HTTP transport (default)"
+    echo "  --stdio        Use STDIO transport"
+    echo "  --config FILE  Use custom config file"
+    echo
+    echo -e "${GREEN}Commands:${NC}"
+    echo "  1-8,12-14      Run specific demo number"
+    echo "  --all          Run all demos"
+    echo "  --list, -l     List all available demos"
+    echo "  --test         Run quick connectivity test"
     echo
     echo -e "${GREEN}Options:${NC}"
     echo "  --help, -h     Show this help message"
-    echo "  --list, -l     List all available demos"
     echo "  --verbose, -v  Show detailed output"
     echo
     echo -e "${GREEN}Examples:${NC}"
-    echo "  ./mcp_demos.sh              # List all demos"
-    echo "  ./mcp_demos.sh 1            # Run demo number 1"
-    echo "  ./mcp_demos.sh 1 -v         # Run demo 1 with verbose output"
-    echo "  ./mcp_demos.sh --list       # Show all available demos"
+    echo "  ./mcp_demos.sh                    # List all demos (HTTP)"
+    echo "  ./mcp_demos.sh 1                  # Run demo 1 with HTTP"
+    echo "  ./mcp_demos.sh 1 --stdio          # Run demo 1 with STDIO"
+    echo "  ./mcp_demos.sh --all --http       # Run all demos with HTTP"
+    echo "  ./mcp_demos.sh --test --stdio     # Test STDIO connection"
+    echo "  ./mcp_demos.sh --config my.yaml 1 # Use custom config for demo 1"
     echo
     echo -e "${GREEN}Available Demos:${NC}"
     list_demos
@@ -64,62 +80,251 @@ show_help() {
 
 # Function to list all demos
 list_demos() {
-    python -m real_estate_search.mcp_demos.main --list
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}Demo #  Description${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo "  1     Basic Property Search - Search with natural language"
+    echo "  2     Filtered Property Search - Search with price/type filters"
+    echo "  3     Wikipedia Search - Search Wikipedia articles"
+    echo "  4     Wikipedia Location Context - Search Wikipedia by location"
+    echo "  5     Location Discovery - Discover properties and info by location"
+    echo "  6     Multi-Entity Search - Search properties and Wikipedia together"
+    echo "  7     Property Details - Get detailed property information"
+    echo "  8     Search Comparison - Compare semantic vs text search"
+    echo " 12     Natural Language Semantic Search - AI-powered natural language"
+    echo " 13     Natural Language Examples - Multiple diverse AI search examples"
+    echo " 14     Semantic vs Keyword Comparison - Compare AI vs traditional search"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
-# Function to check MCP server
-check_mcp_server() {
-    echo -e "${YELLOW}Checking MCP server status...${NC}"
+# Function to check prerequisites
+check_prerequisites() {
+    local transport=$1
     
-    # Check if MCP server script exists
-    if [ ! -f "start_mcp_server.py" ]; then
-        echo -e "${RED}Error: MCP server script not found!${NC}"
-        echo "Expected location: $SCRIPT_DIR/start_mcp_server.py"
-        return 1
+    echo -e "${YELLOW}Checking prerequisites for ${transport} transport...${NC}"
+    
+    # Check Python
+    if ! command -v python &> /dev/null; then
+        echo -e "${RED}Error: Python is not installed!${NC}"
+        exit 1
     fi
     
-    # Check if Elasticsearch is running
+    # Check if MCP demos module exists
+    if ! python -c "import real_estate_search.mcp_demos" &> /dev/null; then
+        echo -e "${RED}Error: MCP demos module not found!${NC}"
+        echo "Please ensure you're in the correct directory and the module is installed."
+        exit 1
+    fi
+    
+    if [ "$transport" = "stdio" ]; then
+        # Check if MCP server module exists
+        if ! python -c "import real_estate_search.mcp_server.main" &> /dev/null; then
+            echo -e "${RED}Error: MCP server module not found!${NC}"
+            echo "Expected: real_estate_search.mcp_server.main"
+            return 1
+        else
+            echo -e "${GREEN}✓ MCP server module found${NC}"
+        fi
+    elif [ "$transport" = "http" ]; then
+        # Check if HTTP server is accessible (customize port as needed)
+        HTTP_URL="${HTTP_URL:-http://localhost:8000}"
+        if ! curl -s -o /dev/null -w "%{http_code}" "$HTTP_URL/health" | grep -q "200\|404"; then
+            echo -e "${YELLOW}Warning: HTTP MCP server may not be running on $HTTP_URL${NC}"
+            echo -e "${YELLOW}To start HTTP server, run the MCP server in HTTP mode${NC}"
+        else
+            echo -e "${GREEN}✓ HTTP server is accessible at $HTTP_URL${NC}"
+        fi
+    fi
+    
+    # Check Elasticsearch
     if ! curl -s -o /dev/null -w "%{http_code}" http://localhost:9200 | grep -q "200"; then
-        echo -e "${RED}Warning: Elasticsearch may not be running on localhost:9200${NC}"
+        echo -e "${YELLOW}Warning: Elasticsearch may not be running on localhost:9200${NC}"
         echo -e "${YELLOW}To start Elasticsearch:${NC}"
         echo "  docker run -d -p 9200:9200 -e 'discovery.type=single-node' \\"
         echo "    -e 'xpack.security.enabled=false' elasticsearch:8.11.0"
-        echo
     else
         echo -e "${GREEN}✓ Elasticsearch is accessible${NC}"
     fi
     
-    return 0
+    echo
 }
 
-# Function to run a demo
-run_demo() {
-    local demo_num=$1
-    local verbose_flag=$2
+# Function to get config file based on transport
+get_config_file() {
+    local transport=$1
     
-    echo -e "${GREEN}Running MCP Demo $demo_num...${NC}"
+    if [ -n "$CONFIG_FILE" ]; then
+        # User specified custom config
+        echo "$CONFIG_FILE"
+    else
+        # Use consolidated config file
+        echo "real_estate_search/mcp_demos/config.yaml"
+    fi
+}
+
+# Function to read transport from config file
+get_transport_from_config() {
+    local config_file=$1
+    
+    if [ -f "$config_file" ]; then
+        python -c "
+import yaml
+try:
+    with open('$config_file') as f:
+        config = yaml.safe_load(f)
+    print(config.get('transport', 'http'))
+except:
+    print('http')
+"
+    else
+        echo "http"
+    fi
+}
+
+# Function to run connectivity test
+run_test() {
+    local config_file=$(get_config_file $TRANSPORT)
+    
+    echo -e "${GREEN}Running connectivity test with $TRANSPORT transport...${NC}"
+    echo -e "${BLUE}Config: $config_file${NC}"
     echo
     
-    # Build the command
-    cmd="python -m real_estate_search.mcp_demos.main $demo_num"
+    # Set environment variables for config and transport override
+    export MCP_CONFIG_PATH="$config_file"
+    export MCP_TRANSPORT="$TRANSPORT"
     
-    # Add verbose flag if requested
-    if [ "$verbose_flag" = "true" ]; then
-        cmd="$cmd --verbose"
-    fi
+    # Run the test script
+    python real_estate_search/mcp_demos/test_quick_start.py
+}
+
+# Function to run a single demo
+run_demo() {
+    local demo_num=$1
+    local config_file=$(get_config_file $TRANSPORT)
     
-    # Execute the command
-    eval $cmd
+    echo -e "${GREEN}Running Demo $demo_num with $TRANSPORT transport...${NC}"
+    echo -e "${BLUE}Config: $config_file${NC}"
+    echo
+    
+    # Set environment variables for config and transport override
+    export MCP_CONFIG_PATH="$config_file"
+    export MCP_TRANSPORT="$TRANSPORT"
+    
+    # Map demo numbers to actual demo functions
+    case $demo_num in
+        1)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_basic_property_search
+asyncio.run(demo_basic_property_search('modern home with pool'))
+"
+            ;;
+        2)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_property_filter
+asyncio.run(demo_property_filter())
+"
+            ;;
+        3)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_wikipedia_search
+asyncio.run(demo_wikipedia_search('San Francisco'))
+"
+            ;;
+        4)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_wikipedia_location_context
+asyncio.run(demo_wikipedia_location_context('San Francisco', 'CA'))
+"
+            ;;
+        5)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_location_based_discovery
+asyncio.run(demo_location_based_discovery('Oakland', 'CA'))
+"
+            ;;
+        6)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_multi_entity_search
+asyncio.run(demo_multi_entity_search('downtown living'))
+"
+            ;;
+        7)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_property_details_deep_dive
+asyncio.run(demo_property_details_deep_dive('luxury'))
+"
+            ;;
+        8)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos import demo_semantic_vs_text_comparison
+asyncio.run(demo_semantic_vs_text_comparison('modern kitchen'))
+"
+            ;;
+        12)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_semantic_search
+asyncio.run(demo_natural_language_semantic_search('cozy family home near good schools and parks'))
+"
+            ;;
+        13)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_examples
+asyncio.run(demo_natural_language_examples())
+"
+            ;;
+        14)
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demos.natural_language_demo import demo_semantic_vs_keyword_comparison
+asyncio.run(demo_semantic_vs_keyword_comparison('stunning views from modern kitchen'))
+"
+            ;;
+        *)
+            echo -e "${RED}Error: Invalid demo number '$demo_num'${NC}"
+            echo "Valid demo numbers are 1-8, 12-14"
+            exit 1
+            ;;
+    esac
     
     echo
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
+# Function to run all demos
+run_all_demos() {
+    local config_file=$(get_config_file $TRANSPORT)
+    
+    echo -e "${GREEN}Running ALL demos with $TRANSPORT transport...${NC}"
+    echo -e "${BLUE}Config: $config_file${NC}"
+    echo
+    
+    # Set environment variables for config and transport override
+    export MCP_CONFIG_PATH="$config_file"
+    export MCP_TRANSPORT="$TRANSPORT"
+    
+    # Run the comprehensive demo script
+    if [ "$VERBOSE" = "true" ]; then
+        python real_estate_search/mcp_demos/run_all_demos.py
+    else
+        python real_estate_search/mcp_demos/run_all_demos.py 2>/dev/null
+    fi
+}
+
 # Main script logic
 main() {
     local demo_number=""
-    local verbose="false"
-    local show_list="false"
+    local command=""
+    local transport_explicitly_set="false"
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -128,15 +333,37 @@ main() {
                 show_help
                 exit 0
                 ;;
+            --stdio)
+                TRANSPORT="stdio"
+                transport_explicitly_set="true"
+                shift
+                ;;
+            --http)
+                TRANSPORT="http"
+                transport_explicitly_set="true"
+                shift
+                ;;
+            --config)
+                CONFIG_FILE="$2"
+                shift 2
+                ;;
             --list|-l)
-                show_list="true"
+                command="list"
+                shift
+                ;;
+            --test)
+                command="test"
+                shift
+                ;;
+            --all)
+                command="all"
                 shift
                 ;;
             --verbose|-v)
-                verbose="true"
+                VERBOSE="true"
                 shift
                 ;;
-            [0-9]*)
+            [1-8]|1[2-4])
                 demo_number=$1
                 shift
                 ;;
@@ -150,28 +377,39 @@ main() {
     
     show_header
     
-    # Check MCP server prerequisites
-    check_mcp_server
-    
-    if [ "$show_list" = "true" ] || [ -z "$demo_number" ]; then
-        # Show list of demos
-        list_demos
-        if [ -z "$demo_number" ]; then
-            echo
-            echo -e "${YELLOW}Tip: Run './mcp_demos.sh <number>' to execute a specific demo${NC}"
-        fi
+    # If custom config provided, read transport from config unless explicitly overridden
+    if [ -n "$CONFIG_FILE" ] && [ "$transport_explicitly_set" = "false" ]; then
+        # Transport not explicitly set, check if config overrides default
+        config_transport=$(get_transport_from_config "$CONFIG_FILE")
+        TRANSPORT="$config_transport"
     fi
     
-    # Run demo if specified
-    if [ -n "$demo_number" ]; then
-        # Validate demo number
-        if ! [[ "$demo_number" =~ ^[1-9][0-9]*$ ]]; then
-            echo -e "${RED}Error: Invalid demo number '$demo_number'${NC}"
-            echo "Use --list to see all available demos."
-            exit 1
+    # Show transport mode
+    TRANSPORT_UPPER=$(echo "$TRANSPORT" | tr '[:lower:]' '[:upper:]')
+    echo -e "${PURPLE}Transport Mode: ${YELLOW}${TRANSPORT_UPPER}${NC}"
+    if [ -n "$CONFIG_FILE" ]; then
+        echo -e "${PURPLE}Config File: ${YELLOW}$CONFIG_FILE${NC}"
+    fi
+    echo
+    
+    # Check prerequisites
+    check_prerequisites $TRANSPORT
+    
+    # Execute command or demo
+    if [ "$command" = "list" ] || ([ -z "$demo_number" ] && [ -z "$command" ]); then
+        list_demos
+        if [ -z "$demo_number" ] && [ "$command" != "list" ]; then
+            echo
+            echo -e "${YELLOW}Tip: Run './mcp_demos.sh <number>' to execute a specific demo${NC}"
+            echo -e "${YELLOW}     Run './mcp_demos.sh --all' to execute all demos${NC}"
+            echo -e "${YELLOW}     Add '--stdio' to use STDIO transport instead of HTTP${NC}"
         fi
-        
-        run_demo $demo_number $verbose
+    elif [ "$command" = "test" ]; then
+        run_test
+    elif [ "$command" = "all" ]; then
+        run_all_demos
+    elif [ -n "$demo_number" ]; then
+        run_demo $demo_number
     fi
 }
 

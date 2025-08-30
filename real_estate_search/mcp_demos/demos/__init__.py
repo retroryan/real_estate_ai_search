@@ -15,6 +15,11 @@ from .location_discovery import demo_location_based_discovery
 from .multi_entity import demo_multi_entity_search
 from .property_details import demo_property_details_deep_dive
 from .search_comparison import demo_semantic_vs_text_comparison
+from .natural_language_demo import (
+    demo_natural_language_semantic_search,
+    demo_natural_language_examples,
+    demo_semantic_vs_keyword_comparison
+)
 
 __all__ = [
     'demo_basic_property_search',
@@ -24,5 +29,8 @@ __all__ = [
     'demo_location_based_discovery',
     'demo_multi_entity_search',
     'demo_property_details_deep_dive',
-    'demo_semantic_vs_text_comparison'
+    'demo_semantic_vs_text_comparison',
+    'demo_natural_language_semantic_search',
+    'demo_natural_language_examples',
+    'demo_semantic_vs_keyword_comparison'
 ]

@@ -22,17 +22,17 @@ class MCPResponse(BaseModel):
 class MCPClientWrapper:
     """Wrapper for FastMCP Client with simplified interface."""
     
-    def __init__(self, server_path: Optional[Path] = None):
+    def __init__(self, server_module: Optional[str] = None):
         """Initialize the MCP client wrapper.
         
         Args:
-            server_path: Path to the MCP server script
+            server_module: Python module path for the MCP server
         """
-        if server_path is None:
-            server_path = Path(__file__).parent.parent.parent / "start_mcp_server.py"
+        if server_module is None:
+            server_module = "real_estate_search.mcp_server.main"
         
-        self.server_path = server_path
-        self.transport = PythonStdioTransport(str(self.server_path))
+        self.server_module = server_module
+        self.transport = PythonStdioTransport(self.server_module, python_path=[str(Path(__file__).parent.parent.parent)])
     
     @staticmethod
     def parse_mcp_content(content: List[Any]) -> Dict[str, Any]:
@@ -130,13 +130,13 @@ class MCPClientWrapper:
         return response.success and response.data and response.data.get("status") == "healthy"
 
 
-def create_mcp_client(server_path: Optional[Path] = None) -> MCPClientWrapper:
+def create_mcp_client(server_module: Optional[str] = None) -> MCPClientWrapper:
     """Factory function to create an MCP client wrapper.
     
     Args:
-        server_path: Optional path to the MCP server script
+        server_module: Optional Python module path for the MCP server
         
     Returns:
         Configured MCPClientWrapper instance
     """
-    return MCPClientWrapper(server_path)
+    return MCPClientWrapper(server_module)

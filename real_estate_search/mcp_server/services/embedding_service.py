@@ -4,7 +4,7 @@ import os
 from typing import List, Optional, Dict, Any
 from abc import ABC, abstractmethod
 
-from ..config.settings import EmbeddingConfig
+from ..settings import EmbeddingConfig
 from ..utils.logging import get_logger
 
 

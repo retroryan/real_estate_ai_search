@@ -1,0 +1,1 @@
+"""Data models for SQUACK Pipeline V2."""
