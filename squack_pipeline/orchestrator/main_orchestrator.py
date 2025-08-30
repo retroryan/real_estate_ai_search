@@ -50,8 +50,7 @@ class MainPipelineOrchestrator:
         self,
         entities: Optional[List[EntityType]] = None,
         sample_size: Optional[int] = None,
-        dry_run: bool = False,
-        skip_elasticsearch: bool = False
+        dry_run: bool = False
     ) -> PipelineMetrics:
         """Run the complete pipeline for specified entities.
         
@@ -59,7 +58,6 @@ class MainPipelineOrchestrator:
             entities: List of entity types to process (default: all)
             sample_size: Optional number of records to process per entity
             dry_run: If True, validate configuration without processing
-            skip_elasticsearch: Whether to skip writing to Elasticsearch
             
         Returns:
             Dictionary of overall metrics
@@ -87,8 +85,7 @@ class MainPipelineOrchestrator:
                 try:
                     # Run entity-specific pipeline
                     entity_metrics = orchestrator.run(
-                        sample_size=sample_size,
-                        skip_elasticsearch=skip_elasticsearch
+                        sample_size=sample_size
                     )
                     
                     # Store metrics

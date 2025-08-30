@@ -40,10 +40,6 @@ def run(
         bool,
         typer.Option("--dry-run", help="Run without writing output")
     ] = False,
-    skip_elasticsearch: Annotated[
-        bool,
-        typer.Option("--skip-elasticsearch", help="Skip writing to Elasticsearch")
-    ] = False,
     validate: Annotated[
         bool,
         typer.Option("--validate", help="Validate configuration and exit")
@@ -81,6 +77,7 @@ def run(
             settings.logging.level = "DEBUG"
         if generate_embeddings is not None:
             settings.processing.generate_embeddings = generate_embeddings
+        
         
         # Initialize logging
         PipelineLogger.setup(settings.logging)
@@ -124,8 +121,7 @@ def run(
         metrics = orchestrator.run(
             entities=entities_to_process,
             sample_size=sample_size,
-            dry_run=dry_run,
-            skip_elasticsearch=skip_elasticsearch
+            dry_run=dry_run
         )
         
         if not dry_run:

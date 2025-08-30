@@ -1,0 +1,37 @@
+# MCP Demo Configuration - HTTP Transport
+# This configuration uses HTTP/HTTPS communication with a remote MCP server
+
+# Transport selection
+transport: http
+
+# HTTP transport settings
+http:
+  # Base URL for the MCP HTTP endpoint
+  base_url: http://localhost:8000/mcp
+  
+  # Request timeout in seconds
+  timeout: 30
+  
+  # Maximum retry attempts for failed requests
+  max_retries: 3
+  
+  # SSL certificate verification
+  verify_ssl: true
+
+# Connection settings
+connection:
+  # Timeout for individual MCP requests (seconds)
+  request_timeout: 60
+  
+  # Timeout for client initialization (seconds)
+  init_timeout: 10
+  
+  # Enable detailed logging
+  enable_logging: true
+  
+  # Logging level: DEBUG, INFO, WARNING, ERROR
+  log_level: INFO
+
+# Demo settings
+demo_mode: true
+rich_output: true

@@ -92,12 +92,10 @@ class TestEndToEndElasticsearch:
         from squack_pipeline.config.settings import ElasticsearchConfig
         
         # Get Elasticsearch config from output settings or create default
-        if settings.output.elasticsearch:
-            es_config = settings.output.elasticsearch
-        else:
-            es_config = ElasticsearchConfig()
+        if not settings.output.elasticsearch:
+            settings.output.elasticsearch = ElasticsearchConfig()
         
-        writer = ElasticsearchWriter(es_config)
+        writer = ElasticsearchWriter(settings)
         
         # Verify connection
         assert writer.verify_connection(), "Failed to connect to Elasticsearch"
