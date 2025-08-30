@@ -167,7 +167,7 @@ def demo_natural_language_search(
 def demo_natural_language_examples(
     es_client: Elasticsearch,
     config: Optional[AppConfig] = None
-) -> DemoQueryResult:
+) -> List[DemoQueryResult]:
     """
     Run multiple natural language search examples.
     
@@ -179,20 +179,18 @@ def demo_natural_language_examples(
         config: Application configuration
         
     Returns:
-        DemoQueryResult with aggregated example results
+        List of DemoQueryResult objects, one for each example query
     """
     
     example_queries = [
-        "cozy family home near good schools and parks",
-        "modern downtown condo with city views",
-        "spacious property with home office and fast internet",
-        "eco-friendly house with solar panels and energy efficiency",
-        "luxury estate with pool and entertainment areas"
+        ("cozy family home near good schools and parks", "Family-oriented home search"),
+        ("modern downtown condo with city views", "Urban condo search"),
+        ("spacious property with home office and fast internet", "Work-from-home property search"),
+        ("eco-friendly house with solar panels and energy efficiency", "Sustainable home search"),
+        ("luxury estate with pool and entertainment areas", "Luxury property search")
     ]
     
-    all_results = []
-    total_time = 0
-    total_hits_all = 0
+    demo_results = []
     
     # Load config if not provided
     if config is None:
@@ -204,77 +202,95 @@ def demo_natural_language_examples(
         embedding_service.initialize()
     except Exception as e:
         logger.error(f"Failed to initialize embedding service: {e}")
-        return DemoQueryResult(
-            query_name="Natural Language Examples",
-            query_description="Multiple natural language semantic search examples",
-            execution_time_ms=0,
-            total_hits=0,
-            returned_hits=0,
-            results=[],
-            query_dsl={"error": str(e)}
-        )
+        # Return empty list on initialization failure
+        return []
     
     try:
-        for i, query in enumerate(example_queries, 1):
+        for i, (query_text, query_description) in enumerate(example_queries, 1):
             # Generate embedding
             start_time = time.time()
-            query_embedding = embedding_service.embed_query(query)
+            try:
+                query_embedding = embedding_service.embed_query(query_text)
+            except Exception as e:
+                logger.error(f"Failed to generate embedding for query {i}: {e}")
+                # Create error result for this query
+                demo_results.append(DemoQueryResult(
+                    query_name=f"Example {i}: {query_description}",
+                    query_description=f"Natural language search: '{query_text}'",
+                    execution_time_ms=0,
+                    total_hits=0,
+                    returned_hits=0,
+                    results=[],
+                    query_dsl={"error": f"Embedding generation failed: {str(e)}"},
+                    es_features=[f"Failed to generate embedding for query {i}"]
+                ))
+                continue
             
             # Build and execute query
             es_query = {
                 "knn": {
                     "field": "embedding",
                     "query_vector": query_embedding,
-                    "k": 3,
-                    "num_candidates": 30
+                    "k": 5,
+                    "num_candidates": 50
                 },
-                "size": 3,
-                "_source": ["listing_id", "property_type", "price", "address"]
+                "size": 5,
+                "_source": [
+                    "listing_id", "property_type", "price", "bedrooms", "bathrooms",
+                    "square_feet", "address", "description"
+                ]
             }
             
-            response = es_client.search(index="properties", body=es_query)
-            query_time = (time.time() - start_time) * 1000
-            total_time += query_time
-            
-            # Collect top result from each query
-            if response['hits']['hits']:
-                hit = response['hits']['hits'][0]
-                result = {
-                    'example_number': i,
-                    'query': query,
-                    'top_match': hit['_source'],
-                    'score': hit['_score'],
-                    'total_hits': response['hits']['total']['value']
-                }
-                all_results.append(result)
-                total_hits_all += response['hits']['total']['value']
+            try:
+                response = es_client.search(index="properties", body=es_query)
+                query_time = (time.time() - start_time) * 1000
+                
+                # Process results for this query
+                results = []
+                for hit in response['hits']['hits']:
+                    result = hit['_source']
+                    result['_score'] = hit['_score']
+                    result['_similarity_score'] = hit['_score']
+                    results.append(result)
+                
+                # Create DemoQueryResult for this specific example
+                demo_results.append(DemoQueryResult(
+                    query_name=f"Example {i}: {query_description}",
+                    query_description=f"Natural language search: '{query_text}'",
+                    execution_time_ms=int(query_time),
+                    total_hits=response['hits']['total']['value'],
+                    returned_hits=len(results),
+                    results=results,
+                    query_dsl=es_query,
+                    es_features=[
+                        f"Query {i} of {len(example_queries)}: {query_description}",
+                        f"Execution time: {query_time:.1f}ms",
+                        "KNN search with 1024-dimensional embeddings",
+                        "Semantic understanding of natural language"
+                    ],
+                    indexes_used=[
+                        "properties index with pre-computed embeddings",
+                        f"Found {response['hits']['total']['value']} semantically similar properties"
+                    ]
+                ))
+                
+            except Exception as e:
+                logger.error(f"Search failed for query {i}: {e}")
+                demo_results.append(DemoQueryResult(
+                    query_name=f"Example {i}: {query_description}",
+                    query_description=f"Natural language search: '{query_text}'",
+                    execution_time_ms=int((time.time() - start_time) * 1000),
+                    total_hits=0,
+                    returned_hits=0,
+                    results=[],
+                    query_dsl=es_query,
+                    es_features=[f"Search failed: {str(e)}"]
+                ))
     
     finally:
         embedding_service.close()
     
-    return DemoQueryResult(
-        query_name="Demo 13: Natural Language Search Examples",
-        query_description="Demonstrates semantic understanding across 5 diverse natural language queries",
-        execution_time_ms=int(total_time),
-        total_hits=total_hits_all,
-        returned_hits=len(all_results),
-        results=all_results,
-        query_dsl={
-            "description": "5 different KNN queries with natural language embeddings",
-            "queries_tested": example_queries
-        },
-        es_features=[
-            f"Tested {len(example_queries)} diverse natural language queries",
-            f"Average query time: {total_time/len(example_queries):.1f}ms",
-            "Query types: family homes, condos, work-from-home, eco-friendly, luxury",
-            "Each query generates unique 1024-dimensional embedding",
-            "Demonstrates semantic understanding beyond keywords"
-        ],
-        indexes_used=[
-            "properties index with pre-computed embeddings",
-            f"Total matches across all queries: {total_hits_all}"
-        ]
-    )
+    return demo_results
 
 
 def demo_semantic_vs_keyword_comparison(

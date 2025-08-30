@@ -1,0 +1,422 @@
+{
+  "query_type": "wikipedia_fulltext",
+  "description": "Evaluation dataset for Wikipedia fulltext search queries",
+  "generated_at": "2025-08-30T14:57:59.956531",
+  "test_cases": [
+    {
+      "test_id": "wiki_fulltext_1",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Golden Gate Bridge history and construction",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Golden Gate Bridge history and construction",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "architecture",
+        "transportation"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_2",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "San Francisco earthquake 1906 building codes",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: San Francisco earthquake 1906 building codes",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "architecture"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_3",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Victorian architecture preservation",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Victorian architecture preservation",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "architecture",
+        "culture"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_4",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Silicon Valley tech boom housing impact",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Silicon Valley tech boom housing impact",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "technology",
+        "housing"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_5",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Bay Area rapid transit development",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Bay Area rapid transit development",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "transportation"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_6",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Alcatraz Island tourism influence",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Alcatraz Island tourism influence",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "tourism"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_7",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "California housing crisis causes",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: California housing crisis causes",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "housing"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_8",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Sustainable building practices Bay Area",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Sustainable building practices Bay Area",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "architecture",
+        "environment"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_9",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Historic Painted Ladies Victorian homes",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Historic Painted Ladies Victorian homes",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "housing"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_10",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "San Francisco zoning laws evolution",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: San Francisco zoning laws evolution",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "policy"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_11",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Fisherman's Wharf commercial development",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Fisherman's Wharf commercial development",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "tourism"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_12",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Mission District gentrification history",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Mission District gentrification history",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "history",
+        "urban"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_13",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Cable car system urban planning",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Cable car system urban planning",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "transportation",
+        "urban"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_14",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Bay Bridge engineering marvel",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Bay Bridge engineering marvel",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "transportation"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_15",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Climate change coastal properties",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Climate change coastal properties",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "housing",
+        "environment"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_16",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Affordable housing initiatives SF",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Affordable housing initiatives SF",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "housing",
+        "policy"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_17",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Chinatown cultural preservation",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Chinatown cultural preservation",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "culture"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_18",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Golden Gate Park urban design",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Golden Gate Park urban design",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "architecture",
+        "urban"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_19",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Tech industry housing displacement",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Tech industry housing displacement",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "technology",
+        "housing"
+      ]
+    },
+    {
+      "test_id": "wiki_fulltext_20",
+      "query_type": "wikipedia_fulltext_search",
+      "parameters": {
+        "search_query": "Rent control policies San Francisco",
+        "use_fuzzy_matching": true,
+        "include_snippets": true,
+        "max_results": 10,
+        "min_relevance_score": 0.6
+      },
+      "expected_behavior": "Should return Wikipedia articles relevant to: Rent control policies San Francisco",
+      "validation_criteria": {
+        "relevance_to_topic": true,
+        "has_snippets": true,
+        "fuzzy_matching_works": true
+      },
+      "expected_themes": [
+        "policy"
+      ]
+    }
+  ]
+}

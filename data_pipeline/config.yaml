@@ -1,6 +1,6 @@
 # Data Pipeline Configuration
 # All settings except secrets are configured here
-# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD, ELASTICSEARCH_PASSWORD
+# Use environment variables for: VOYAGE_API_KEY, OPENAI_API_KEY, NEO4J_PASSWORD, ES_PASSWORD
 
 name: real_estate_data_pipeline
 version: 1.0.0
@@ -51,4 +51,4 @@ output:
     hosts:
       - localhost:9200
     username: elastic
-    # Password from ELASTICSEARCH_PASSWORD environment variable
+    # Password from ES_PASSWORD environment variable

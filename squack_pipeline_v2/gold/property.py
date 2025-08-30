@@ -40,9 +40,9 @@ class PropertyGoldEnricher(GoldEnricher):
             year_built,
             lot_size,
             
-            -- Price fields
-            price,
-            price_per_sqft,
+            -- Price fields (cast to FLOAT for Elasticsearch)
+            CAST(price AS FLOAT) AS price,
+            CAST(price_per_sqft AS FLOAT) AS price_per_sqft,
             
             -- Address object with location inside (already structured in Silver)
             address,
@@ -58,7 +58,7 @@ class PropertyGoldEnricher(GoldEnricher):
             
             -- Text and media
             description,
-            features,
+            COALESCE(features, LIST_VALUE()) AS features,  -- Ensure always a list
             virtual_tour_url,
             images,
             

@@ -12,6 +12,7 @@ from ..models.search import (
 from .elasticsearch_client import ElasticsearchClient
 from ...embeddings import QueryEmbeddingService
 from ..utils.logging import get_logger
+from ...indexer.enums import IndexName
 
 
 logger = get_logger(__name__)
@@ -38,9 +39,9 @@ class WikipediaSearchService:
         self.embedding_service = embedding_service
         
         # Determine index based on search target
-        self.chunks_index = f"{config.elasticsearch.wiki_chunks_index_prefix}_*"
-        self.summaries_index = f"{config.elasticsearch.wiki_summaries_index_prefix}_*"
-        self.full_index = "wikipedia"  # Main Wikipedia index
+        self.chunks_index = f"{IndexName.WIKIPEDIA}_chunks_*"
+        self.summaries_index = f"{IndexName.WIKIPEDIA}_summaries_*"
+        self.full_index = IndexName.WIKIPEDIA  # Main Wikipedia index
     
     def get_index_for_search(self, search_in: str) -> str:
         """Get the appropriate index for search type.

@@ -1,6 +1,6 @@
 # SQUACK Pipeline Configuration
 # Core configuration for DuckDB-based real estate data processing pipeline
-# Use environment variables for: VOYAGE_API_KEY, ELASTICSEARCH_PASSWORD
+# Use environment variables for: VOYAGE_API_KEY, ES_PASSWORD
 
 name: squack_pipeline
 version: 1.0.0

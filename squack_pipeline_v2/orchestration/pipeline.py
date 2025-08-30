@@ -386,7 +386,6 @@ class PipelineOrchestrator:
     def run_full_pipeline(
         self,
         sample_size: Optional[int] = None,
-        generate_embeddings: bool = True,
         write_parquet: bool = True,
         write_elasticsearch: bool = False
     ) -> PipelineMetrics:
@@ -394,7 +393,6 @@ class PipelineOrchestrator:
         
         Args:
             sample_size: Optional sample size for testing
-            generate_embeddings: Generate embeddings
             write_parquet: Export to Parquet
             write_elasticsearch: Export to Elasticsearch
             
@@ -429,10 +427,8 @@ class PipelineOrchestrator:
                     )
             
             # Embeddings
-            embedding_stats = {}
-            if generate_embeddings and self.settings.processing.generate_embeddings:
-                logger.info("Generating embeddings...")
-                embedding_stats = self.run_embeddings()
+            logger.info("Generating embeddings...")
+            embedding_stats = self.run_embeddings()
             
             # Writers
             writer_stats = {}
@@ -483,9 +479,12 @@ class PipelineOrchestrator:
                 entity.embeddings_table
             ])
         
+        from squack_pipeline_v2.core.table_identifier import TableIdentifier
+        
         stats = {}
         for table in tables:
-            if self.connection_manager.table_exists(table):
+            table_id = TableIdentifier(name=table)
+            if self.connection_manager.table_exists(table_id):
                 count = self.connection_manager.execute(
                     f"SELECT COUNT(*) FROM {table}"
                 ).fetchone()[0]

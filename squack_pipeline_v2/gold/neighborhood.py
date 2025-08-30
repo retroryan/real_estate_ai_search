@@ -51,10 +51,10 @@ class NeighborhoodGoldEnricher(GoldEnricher):
             
             -- Flattened metrics (already at top level from Silver)
             COALESCE(population, 0) as population,
-            COALESCE(median_income, 0) as median_income,
+            CAST(COALESCE(median_income, 0) AS FLOAT) as median_income,
             
-            -- Add derived price field for ES compatibility
-            COALESCE(median_income, 0) * 4 as median_home_price,
+            -- Add derived price field for ES compatibility (cast to FLOAT)
+            CAST(COALESCE(median_income, 0) * 4 AS FLOAT) as median_home_price,
             
             -- Scores with defaults
             COALESCE(walkability_score, 0.0) as walkability_score,
@@ -64,7 +64,7 @@ class NeighborhoodGoldEnricher(GoldEnricher):
             (COALESCE(walkability_score, 0.0) + COALESCE(school_rating, 0.0) * 10) / 2 as overall_livability_score,
             
             -- Nested objects (preserved from Bronze via Silver)
-            COALESCE(demographics, struct_pack()) as demographics,
+            demographics,
             wikipedia_correlations,
             
             -- Text and arrays

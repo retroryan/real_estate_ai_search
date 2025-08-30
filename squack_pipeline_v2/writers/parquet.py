@@ -12,6 +12,7 @@ from pathlib import Path
 import logging
 from datetime import datetime
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager as ConnectionManager
+from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import log_stage
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,8 @@ class ParquetWriter:
             output_name = table_name
         
         # Check table exists
-        if not self.connection_manager.table_exists(table_name):
+        table_id = TableIdentifier(name=table_name)
+        if not self.connection_manager.table_exists(table_id):
             raise ValueError(f"Table {table_name} does not exist")
         
         # Get record count
@@ -224,7 +226,8 @@ class ParquetWriter:
         total_size = 0
         
         for table_name, output_path, layer in exports:
-            if self.connection_manager.table_exists(table_name):
+            table_id = TableIdentifier(name=table_name)
+            if self.connection_manager.table_exists(table_id):
                 try:
                     stats = self.write_table(table_name, output_path)
                     all_stats[layer][table_name] = stats
@@ -254,12 +257,14 @@ class ParquetWriter:
             Export statistics
         """
         # Check if required tables exist
-        if not self.connection_manager.table_exists("gold_properties"):
+        gold_props_id = TableIdentifier(name="gold_properties")
+        if not self.connection_manager.table_exists(gold_props_id):
             logger.warning("gold_properties table not found")
             return {"error": "gold_properties not found"}
         
         # Build denormalized query
-        if self.connection_manager.table_exists("gold_neighborhoods"):
+        gold_neighborhoods_id = TableIdentifier(name="gold_neighborhoods")
+        if self.connection_manager.table_exists(gold_neighborhoods_id):
             query = """
             SELECT 
                 p.*,
@@ -268,7 +273,7 @@ class ParquetWriter:
                 n.population as neighborhood_population,
                 n.median_income as neighborhood_median_income,
                 n.walkability_score as neighborhood_walkability_score,
-                n.school_rating as neighborhood_school_score,
+                n.school_score as neighborhood_school_score,
                 n.walkability_score as neighborhood_livability_score
             FROM gold_properties p
             LEFT JOIN gold_neighborhoods n
@@ -278,7 +283,8 @@ class ParquetWriter:
             query = "SELECT * FROM gold_properties"
         
         # Add embeddings if available
-        if self.connection_manager.table_exists("embeddings_properties"):
+        embeddings_props_id = TableIdentifier(name="embeddings_properties")
+        if self.connection_manager.table_exists(embeddings_props_id):
             query = f"""
             WITH base AS ({query})
             SELECT 

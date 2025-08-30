@@ -64,20 +64,30 @@ class WikipediaBronzeIngester:
             # Drop existing Bronze table if it exists
             self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
             
-            # Create Bronze table with raw data from SQLite articles table
-            # NO TRANSFORMATIONS - just copy all columns as-is
+            # Create Bronze table with raw data from SQLite articles table joined with page_summaries for location data
+            # NO TRANSFORMATIONS - just copy all columns as-is from both tables
             if sample_size:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT * 
-                FROM wiki_db.articles
+                SELECT 
+                    a.*,
+                    ps.best_city,
+                    ps.best_county,
+                    ps.best_state
+                FROM wiki_db.articles a
+                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 LIMIT {sample_size}
                 """
             else:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT * 
-                FROM wiki_db.articles
+                SELECT 
+                    a.*,
+                    ps.best_city,
+                    ps.best_county,
+                    ps.best_state
+                FROM wiki_db.articles a
+                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 """
             
             self.connection_manager.execute(create_query)

@@ -62,8 +62,8 @@ class TestEndToEndElasticsearch:
         # Get credentials from environment
         es_host = os.getenv('ELASTICSEARCH_HOST', 'localhost')
         es_port = int(os.getenv('ELASTICSEARCH_PORT', '9200'))
-        es_username = os.getenv('ELASTICSEARCH_USERNAME', 'elastic')
-        es_password = os.getenv('ELASTICSEARCH_PASSWORD')
+        es_username = os.getenv('ES_USERNAME', 'elastic')
+        es_password = os.getenv('ES_PASSWORD')
         
         client_config = {
             'hosts': [{'host': es_host, 'port': es_port, 'scheme': 'http'}],

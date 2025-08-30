@@ -135,8 +135,8 @@ class DuckDBConnectionManager:
             return conn.execute(query, parameters)
         return conn.execute(query)
     
-    def table_exists(self, table: TableIdentifier) -> bool:
-        """Check if a table exists using safe identifier.
+    def table_exists(self, table: 'TableIdentifier') -> bool:
+        """Check if a table exists.
         
         Args:
             table: TableIdentifier for SQL-safe table reference
@@ -144,21 +144,19 @@ class DuckDBConnectionManager:
         Returns:
             True if table exists
         """
-        # Use parameterized query for table name check
         result = self.execute(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = ?",
             (table.name, table.schema)
         ).fetchone()
         return result[0] > 0 if result else False
     
-    def drop_table(self, table: TableIdentifier) -> None:
-        """Drop a table if it exists using safe identifier.
+    def drop_table(self, table: 'TableIdentifier') -> None:
+        """Drop a table if it exists.
         
         Args:
             table: TableIdentifier for SQL-safe table reference
         """
-        if self.table_exists(table):
-            self.execute(table.drop_statement())
+        self.execute(table.drop_statement())
     
     def count_records(self, table: TableIdentifier) -> int:
         """Count records in a table using safe identifier.

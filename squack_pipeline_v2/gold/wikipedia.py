@@ -70,9 +70,9 @@ class WikipediaGoldEnricher(GoldEnricher):
                 ELSE 'low'
             END as article_quality,
             
-            -- Location context (set null, can be enriched later)
-            CAST(NULL AS VARCHAR) as best_city,
-            CAST(NULL AS VARCHAR) as best_state,
+            -- Location context from Silver layer (loaded from page_summaries at Bronze)
+            best_city,
+            best_state,
             
             -- Metadata
             crawled_at as last_updated,

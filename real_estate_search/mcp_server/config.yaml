@@ -16,10 +16,6 @@ transport:
 elasticsearch:
   host: localhost
   port: 9200
-  property_index: real_estate_properties
-  neighborhood_index: real_estate_neighborhoods
-  wiki_chunks_index_prefix: real_estate_wikipedia
-  wiki_summaries_index_prefix: real_estate_wikipedia
   request_timeout: 30
   verify_certs: false
   max_retries: 3

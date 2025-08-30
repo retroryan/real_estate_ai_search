@@ -21,6 +21,7 @@ from real_estate_search.mcp_server.models.search import (
     PropertySearchResponse,
     WikipediaSearchResponse
 )
+from real_estate_search.indexer.enums import IndexName
 
 
 class TestEmbeddingService:
@@ -151,7 +152,7 @@ class TestPropertySearchService:
         assert service.config == config
         assert service.es_client == mock_es_client
         assert service.embedding_service == mock_embedding_service
-        assert service.index_name == config.elasticsearch.property_index
+        assert service.index_name == IndexName.PROPERTIES
     
     def test_build_filter_query(self, mock_es_client, mock_embedding_service):
         """Test filter query building."""

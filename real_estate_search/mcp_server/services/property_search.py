@@ -14,6 +14,7 @@ from ..models.search import (
 from .elasticsearch_client import ElasticsearchClient
 from ...embeddings import QueryEmbeddingService
 from ..utils.logging import get_logger
+from ...indexer.enums import IndexName
 
 
 logger = get_logger(__name__)
@@ -38,7 +39,7 @@ class PropertySearchService:
         self.config = config
         self.es_client = es_client
         self.embedding_service = embedding_service
-        self.index_name = config.elasticsearch.property_index
+        self.index_name = IndexName.PROPERTIES
     
     def build_filter_query(self, filters: Optional[PropertyFilter]) -> List[Dict[str, Any]]:
         """Build Elasticsearch filter query from filters.
@@ -157,17 +158,12 @@ class PropertySearchService:
                 "query": query,
                 "fields": [
                     "description^3",
-                    "enriched_search_text^2",
                     "features^1.5",
                     "amenities^1.5",
                     "search_tags",
                     "address.street",
                     "address.city",
-                    "neighborhood.name",
-                    "location_context.location_summary",
-                    "location_context.historical_significance",
-                    "neighborhood_context.description",
-                    "neighborhood_context.character"
+                    "neighborhood.name"
                 ],
                 "type": "best_fields",
                 "fuzziness": "AUTO" if self.config.search.enable_fuzzy else None
@@ -355,7 +351,6 @@ class PropertySearchService:
                 body["highlight"] = {
                     "fields": {
                         "description": {},
-                        "enriched_search_text": {},
                         "features": {},
                         "amenities": {}
                     }

@@ -195,10 +195,10 @@ class MCPServerConfig(BaseSettings):
         # Load Elasticsearch credentials
         es_updates = {}
         if not self.elasticsearch.username:
-            if username := os.getenv("ELASTICSEARCH_USERNAME"):
+            if username := os.getenv("ES_USERNAME"):
                 es_updates["username"] = username
         if not self.elasticsearch.password:
-            if password := os.getenv("ELASTICSEARCH_PASSWORD"):
+            if password := os.getenv("ES_PASSWORD"):
                 es_updates["password"] = password
         if not self.elasticsearch.api_key:
             if api_key := os.getenv("ELASTICSEARCH_API_KEY"):

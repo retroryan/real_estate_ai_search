@@ -16,7 +16,7 @@ class EnrichedNeighborhood(BaseModel):
     
     # Location
     city: str = Field(description="City")
-    state_code: str = Field(description="State code")
+    state: str = Field(description="State")
     county: str = Field(description="County")
     
     # Demographics

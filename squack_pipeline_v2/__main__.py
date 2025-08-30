@@ -12,9 +12,6 @@ Examples:
     # Run with sample data
     python -m squack_pipeline_v2 --sample-size 100
     
-    # Skip embeddings
-    python -m squack_pipeline_v2 --no-embeddings
-    
     # Export to Elasticsearch
     python -m squack_pipeline_v2 --elasticsearch
 """
@@ -43,7 +40,6 @@ def parse_arguments() -> argparse.Namespace:
 Examples:
   %(prog)s                     # Run full pipeline
   %(prog)s --sample-size 100   # Test with 100 records
-  %(prog)s --no-embeddings     # Skip embedding generation
   %(prog)s --elasticsearch     # Export to Elasticsearch
         """
     )
@@ -72,12 +68,6 @@ Examples:
         "--skip-gold",
         action="store_true",
         help="Skip Gold layer (use existing gold tables)"
-    )
-    
-    parser.add_argument(
-        "--no-embeddings",
-        action="store_true",
-        help="Skip embedding generation"
     )
     
     # Output options
@@ -187,8 +177,11 @@ def clean_tables(orchestrator: PipelineOrchestrator) -> None:
         "embeddings_properties", "embeddings_neighborhoods", "embeddings_wikipedia"
     ]
     
+    from squack_pipeline_v2.core.table_identifier import TableIdentifier
+    
     for table in tables:
-        if orchestrator.connection_manager.table_exists(table):
+        table_id = TableIdentifier(name=table)
+        if orchestrator.connection_manager.table_exists(table_id):
             orchestrator.connection_manager.execute(f"DROP TABLE {table}")
             print(f"  Dropped {table}")
     
@@ -266,7 +259,7 @@ def main() -> int:
         print("=" * 60)
         print(f"Config: {args.config}")
         print(f"Sample size: {args.sample_size or settings.data.sample_size or 'full data'}")
-        print(f"Embeddings: {'enabled' if not args.no_embeddings and settings.processing.generate_embeddings else 'disabled'}")
+        print(f"Embeddings: enabled")
         print(f"Parquet export: {'enabled' if not args.no_parquet and settings.output.parquet_enabled else 'disabled'}")
         print(f"Elasticsearch: {'enabled' if args.elasticsearch or settings.output.elasticsearch_enabled else 'disabled'}")
         print("=" * 60 + "\n")
@@ -289,9 +282,8 @@ def main() -> int:
             orchestrator.run_gold_layer()
         
         # Embeddings
-        if not args.no_embeddings and settings.processing.generate_embeddings:
-            print("Generating embeddings...")
-            orchestrator.run_embeddings()
+        print("Generating embeddings...")
+        orchestrator.run_embeddings()
         
         # Writers
         write_parquet = not args.no_parquet and settings.output.parquet_enabled

@@ -110,7 +110,7 @@ def _apply_environment_secrets(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     
     Only applies environment variables for sensitive data:
     - API keys (VOYAGE_API_KEY, OPENAI_API_KEY, etc.)
-    - Database passwords (NEO4J_PASSWORD, ELASTICSEARCH_PASSWORD)
+    - Database passwords (NEO4J_PASSWORD, ES_PASSWORD)
     
     Args:
         config_dict: Configuration dictionary from YAML
@@ -126,7 +126,7 @@ def _apply_environment_secrets(config_dict: Dict[str, Any]) -> Dict[str, Any]:
         config_dict["output"]["neo4j"]["password"] = neo4j_password
     
     # Elasticsearch password from environment
-    elastic_password = os.environ.get("ELASTICSEARCH_PASSWORD")
+    elastic_password = os.environ.get("ES_PASSWORD")
     if elastic_password and "output" in config_dict:
         if "elasticsearch" not in config_dict["output"]:
             config_dict["output"]["elasticsearch"] = {}

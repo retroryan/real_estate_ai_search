@@ -187,7 +187,7 @@ class ElasticsearchConfig(BaseModel):
     @property
     def password(self) -> Optional[str]:
         """Get Elasticsearch password from environment variable."""
-        return os.getenv('ELASTICSEARCH_PASSWORD')
+        return os.getenv('ES_PASSWORD')
 
 
 class MedallionConfig(BaseModel):

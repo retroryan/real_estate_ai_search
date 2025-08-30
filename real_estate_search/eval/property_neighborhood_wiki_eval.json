@@ -1,0 +1,397 @@
+{
+  "query_type": "property_neighborhood_wiki",
+  "description": "Evaluation dataset for multi-index queries combining properties, neighborhoods, and Wikipedia data",
+  "generated_at": "2025-08-30T14:57:59.956215",
+  "test_cases": [
+    {
+      "test_id": "property_full_context_1",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Mission District",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "cultural history",
+        "focus_area": "Latino heritage and murals"
+      },
+      "expected_behavior": "Should return properties in Mission District with neighborhood and Wikipedia context about cultural history",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_1",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Mission District",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "cultural history",
+          "Latino heritage and murals"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Mission District with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_2",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Pacific Heights",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "luxury real estate",
+        "focus_area": "mansion architecture"
+      },
+      "expected_behavior": "Should return properties in Pacific Heights with neighborhood and Wikipedia context about luxury real estate",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_2",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Pacific Heights",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "luxury real estate",
+          "mansion architecture"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Pacific Heights with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_3",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "SOMA",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "tech industry",
+        "focus_area": "startup culture and lofts"
+      },
+      "expected_behavior": "Should return properties in SOMA with neighborhood and Wikipedia context about tech industry",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_3",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "SOMA",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "tech industry",
+          "startup culture and lofts"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for SOMA with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_4",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Haight-Ashbury",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "1960s history",
+        "focus_area": "counterculture and Victorian homes"
+      },
+      "expected_behavior": "Should return properties in Haight-Ashbury with neighborhood and Wikipedia context about 1960s history",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_4",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Haight-Ashbury",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "1960s history",
+          "counterculture and Victorian homes"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Haight-Ashbury with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_5",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Financial District",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "business center",
+        "focus_area": "high-rise condos and commerce"
+      },
+      "expected_behavior": "Should return properties in Financial District with neighborhood and Wikipedia context about business center",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_5",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Financial District",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "business center",
+          "high-rise condos and commerce"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Financial District with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_6",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Castro",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "LGBTQ history",
+        "focus_area": "community and nightlife"
+      },
+      "expected_behavior": "Should return properties in Castro with neighborhood and Wikipedia context about LGBTQ history",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_6",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Castro",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "LGBTQ history",
+          "community and nightlife"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Castro with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_7",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Chinatown",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "cultural heritage",
+        "focus_area": "Asian culture and cuisine"
+      },
+      "expected_behavior": "Should return properties in Chinatown with neighborhood and Wikipedia context about cultural heritage",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_7",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Chinatown",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "cultural heritage",
+          "Asian culture and cuisine"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Chinatown with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_8",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "North Beach",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "Italian heritage",
+        "focus_area": "restaurants and Beat Generation"
+      },
+      "expected_behavior": "Should return properties in North Beach with neighborhood and Wikipedia context about Italian heritage",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_8",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "North Beach",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "Italian heritage",
+          "restaurants and Beat Generation"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for North Beach with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_9",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Marina District",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "waterfront living",
+        "focus_area": "bay views and recreation"
+      },
+      "expected_behavior": "Should return properties in Marina District with neighborhood and Wikipedia context about waterfront living",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_9",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Marina District",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "waterfront living",
+          "bay views and recreation"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Marina District with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    },
+    {
+      "test_id": "property_full_context_10",
+      "query_type": "property_with_full_context",
+      "parameters": {
+        "location": "Richmond District",
+        "search_properties": true,
+        "include_neighborhood_data": true,
+        "include_wikipedia_context": true,
+        "context_theme": "residential diversity",
+        "focus_area": "parks and multicultural community"
+      },
+      "expected_behavior": "Should return properties in Richmond District with neighborhood and Wikipedia context about residential diversity",
+      "validation_criteria": {
+        "has_property_data": true,
+        "has_neighborhood_info": true,
+        "has_wikipedia_context": true,
+        "context_relevant": true
+      }
+    },
+    {
+      "test_id": "neighborhood_wiki_enriched_10",
+      "query_type": "neighborhood_properties_and_wiki",
+      "parameters": {
+        "neighborhood": "Richmond District",
+        "include_properties": true,
+        "include_wikipedia": true,
+        "wikipedia_topics": [
+          "residential diversity",
+          "parks and multicultural community"
+        ],
+        "max_properties": 5
+      },
+      "expected_behavior": "Should return neighborhood data for Richmond District with properties and relevant Wikipedia articles",
+      "validation_criteria": {
+        "neighborhood_data_complete": true,
+        "properties_in_neighborhood": true,
+        "wikipedia_relevant": true
+      }
+    }
+  ]
+}

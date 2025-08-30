@@ -8,6 +8,7 @@ from ..settings import MCPServerConfig
 from ..models.search import HealthCheckResponse
 from .elasticsearch_client import ElasticsearchClient
 from ..utils.logging import get_logger
+from ...indexer.enums import IndexName
 
 
 logger = get_logger(__name__)
@@ -46,7 +47,7 @@ class HealthCheckService:
             
             # Check indices exist
             properties_exists = self.es_client.index_exists(
-                self.config.elasticsearch.property_index
+                IndexName.PROPERTIES
             )
             
             # Count documents
@@ -54,7 +55,7 @@ class HealthCheckService:
             if properties_exists:
                 try:
                     property_count = self.es_client.count(
-                        self.config.elasticsearch.property_index
+                        IndexName.PROPERTIES
                     )
                 except Exception as e:
                     logger.warning(f"Failed to count properties: {e}")

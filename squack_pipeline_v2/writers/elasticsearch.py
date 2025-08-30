@@ -7,14 +7,14 @@ Following best practices:
 - Direct field access only
 """
 
-from typing import Dict, Any, List
-from datetime import datetime
-from decimal import Decimal
+from typing import Dict, Any, List, Optional, Tuple
+from datetime import datetime, date
 import logging
 import os
 import json
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, field_serializer, field_validator
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager as ConnectionManager
+from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import log_stage
 from squack_pipeline_v2.core.settings import ElasticsearchConfig
 
@@ -52,18 +52,16 @@ class PropertyDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
     
     listing_id: str
-    neighborhood_id: str  # CRITICAL: Added missing field
+    neighborhood_id: str = ""
     price: float
     bedrooms: int
     bathrooms: float
-    square_feet: float
+    square_feet: int
     property_type: str
     year_built: int = 0
-    lot_size: float = 0.0
-    address: AddressInfo  # Changed to nested object
+    lot_size: int = 0
+    address: AddressInfo
     price_per_sqft: float = 0.0
-    price_category: str = ""
-    market_heat_score: float = 0.0
     parking: ParkingInfo
     description: str = ""
     features: List[str] = Field(default_factory=list)
@@ -140,79 +138,79 @@ class WikipediaDocument(BaseModel):
 # ============================================================================
 
 class PropertyInput(BaseModel):
-    """Property input from DuckDB with proper type handling."""
+    """Property input from DuckDB - matches exact types returned."""
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
+    # Core fields from gold_properties (types after Gold layer processing)
     listing_id: str
-    neighborhood_id: str  # CRITICAL: Added missing field
-    price: Decimal
+    neighborhood_id: Optional[str] = None
+    price: float  # Gold layer casts to float
     bedrooms: int
-    bathrooms: Decimal
-    square_feet: Decimal
+    bathrooms: float
+    square_feet: int
     property_type: str
     year_built: int = 0
-    lot_size: Decimal = Decimal("0")
-    address: Dict[str, Any]  # Address object from Gold layer
-    price_per_sqft: Decimal = Decimal("0")
-    price_category: str = ""
-    market_heat_score: Decimal = Decimal("0")
-    parking: Dict[str, Any] = Field(default_factory=dict)  # Parking object from Gold
+    lot_size: int = 0
+    
+    # Complex fields
+    address: Dict[str, Any] = Field(default_factory=dict)
+    price_per_sqft: float = 0.0  # Gold layer casts to float
+    parking: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Text fields
     description: str = ""
     features: List[str] = Field(default_factory=list)
-    listing_date: str = ""
+    
+    # Date fields - DuckDB returns date objects
+    listing_date: Optional[date] = None
     days_on_market: int = 0
+    
+    # URLs and media
     virtual_tour_url: str = ""
     images: List[str] = Field(default_factory=list)
-    embedding: List[float] = Field(default_factory=list)
+    
+    # Embedding fields from embeddings_properties join
+    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple, not list!
     embedding_model: str = ""
     embedding_dimension: int = 0
-    embedded_at: datetime = Field(default_factory=datetime.now)
-    
-    @field_serializer('price', 'bathrooms', 'square_feet', 'lot_size', 'price_per_sqft', 'market_heat_score')
-    def serialize_decimal(self, value: Decimal) -> float:
-        """Convert Decimal to float for serialization."""
-        return float(value)
+    embedded_at: Optional[datetime] = None
 
 
 class NeighborhoodInput(BaseModel):
-    """Neighborhood input from DuckDB with proper type handling."""
+    """Neighborhood input from DuckDB - matches exact types returned."""
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     neighborhood_id: str
     name: str
     city: str
-    state: str  # Changed from state_code - comes from address.state in Silver
+    state: str
     population: int
-    median_income: Decimal
-    median_home_price: Decimal
-    walkability_score: Decimal = Decimal("0")
-    school_score: Decimal = Decimal("0")
-    overall_livability_score: Decimal = Decimal("0")
-    center_latitude: Decimal = Decimal("0")
-    center_longitude: Decimal = Decimal("0")
+    median_income: float  # Gold layer casts to float
+    median_home_price: float  # Gold layer casts to float
+    walkability_score: float = 0.0
+    school_score: float = 0.0
+    overall_livability_score: float = 0.0
+    center_latitude: float = 0.0
+    center_longitude: float = 0.0
     description: str = ""
     amenities: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
-    embedding: List[float] = Field(default_factory=list)
+    
+    # Embedding fields from embeddings_neighborhoods join
+    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
     embedding_model: str = ""
     embedding_dimension: int = 0
-    embedded_at: datetime = Field(default_factory=datetime.now)
-    
-    @field_serializer('median_income', 'median_home_price', 'walkability_score',
-                      'school_score', 'overall_livability_score', 
-                      'center_latitude', 'center_longitude')
-    def serialize_decimal(self, value: Decimal) -> float:
-        """Convert Decimal to float for serialization."""
-        return float(value)
+    embedded_at: Optional[datetime] = None
 
 
 class WikipediaInput(BaseModel):
-    """Wikipedia input from DuckDB with proper type handling."""
+    """Wikipedia input from DuckDB - matches exact types returned."""
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
+    # Core fields from gold_wikipedia
     page_id: int
     title: str
     url: str = ""
@@ -222,24 +220,25 @@ class WikipediaInput(BaseModel):
     full_content: str = ""
     content_length: int = 0
     content_loaded: bool = False
-    content_loaded_at: datetime = Field(default_factory=datetime.now)
-    categories: str = ""  # JSON string from DB
-    key_topics: List[str] = Field(default_factory=list)
-    relevance_score: Decimal = Decimal("0")
-    article_quality_score: Decimal = Decimal("0")
+    content_loaded_at: Optional[datetime] = None  # Can be None
+    
+    # Categories is JSON string from DB
+    categories: str = ""
+    
+    # These fields can be None from DuckDB
+    key_topics: Optional[List[str]] = None
+    relevance_score: float = 0.0
+    article_quality_score: float = 0.0
     article_quality: str = ""
-    best_city: str = ""
-    best_state: str = ""
-    last_updated: datetime = Field(default_factory=datetime.now)
-    embedding: List[float] = Field(default_factory=list)
+    best_city: Optional[str] = None  # Can be None
+    best_state: Optional[str] = None  # Can be None
+    last_updated: Optional[datetime] = None
+    
+    # Embedding fields from embeddings_wikipedia join
+    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
     embedding_model: str = ""
     embedding_dimension: int = 0
-    embedded_at: datetime = Field(default_factory=datetime.now)
-    
-    @field_serializer('relevance_score', 'article_quality_score')
-    def serialize_decimal(self, value: Decimal) -> float:
-        """Convert Decimal to float for serialization."""
-        return float(value)
+    embedded_at: Optional[datetime] = None
     
     def parse_categories(self) -> List[str]:
         """Parse categories from JSON string."""
@@ -292,32 +291,38 @@ class PropertyTransformer:
             type=parking_data.get('type', 'none')
         )
         
-        # Create document with all required fields
+        # Convert date to ISO string for ES
+        listing_date_str = ""
+        if input_data.listing_date:
+            listing_date_str = input_data.listing_date.isoformat()
+        
+        # Convert tuple embedding to list for ES
+        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        
+        # Create document - types already correct from Gold layer
         return PropertyDocument(
             listing_id=input_data.listing_id,
-            neighborhood_id=input_data.neighborhood_id,  # CRITICAL: Include neighborhood_id
-            price=float(input_data.price),
+            neighborhood_id=input_data.neighborhood_id or "",
+            price=input_data.price,  # Already float from Gold layer
             bedrooms=input_data.bedrooms,
-            bathrooms=float(input_data.bathrooms),
-            square_feet=float(input_data.square_feet),
+            bathrooms=input_data.bathrooms,
+            square_feet=input_data.square_feet,
             property_type=input_data.property_type,
             year_built=input_data.year_built,
-            lot_size=float(input_data.lot_size),
-            address=address,  # Nested address object
-            price_per_sqft=float(input_data.price_per_sqft),
-            price_category=input_data.price_category,
-            market_heat_score=float(input_data.market_heat_score),
+            lot_size=input_data.lot_size,
+            address=address,
+            price_per_sqft=input_data.price_per_sqft,  # Already float from Gold layer
             parking=parking,
             description=input_data.description,
-            features=input_data.features,
-            listing_date=input_data.listing_date,
+            features=input_data.features,  # Already list from Gold layer
+            listing_date=listing_date_str,  # date -> string for ES
             days_on_market=input_data.days_on_market,
             virtual_tour_url=input_data.virtual_tour_url,
             images=input_data.images,
-            embedding=input_data.embedding,
+            embedding=embedding_list,  # tuple -> list for ES
             embedding_model=input_data.embedding_model,
             embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at
+            embedded_at=input_data.embedded_at or datetime.now()
         )
 
 
@@ -332,30 +337,33 @@ class NeighborhoodTransformer:
         
         # Create geo point from center coordinates
         location = GeoPoint(
-            lat=float(input_data.center_latitude),
-            lon=float(input_data.center_longitude)
+            lat=input_data.center_latitude,
+            lon=input_data.center_longitude
         )
         
-        # Create document with corrected field names
+        # Convert tuple embedding to list for ES
+        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        
+        # Create document - types already correct from Gold layer
         return NeighborhoodDocument(
             neighborhood_id=input_data.neighborhood_id,
             name=input_data.name,
             city=input_data.city,
-            state=input_data.state,  # Using 'state' not 'state_code'
+            state=input_data.state,
             population=input_data.population,
-            median_income=float(input_data.median_income),
-            median_home_price=float(input_data.median_home_price),
-            walkability_score=float(input_data.walkability_score),
-            school_score=float(input_data.school_score),
-            overall_livability_score=float(input_data.overall_livability_score),
-            location=location,  # Standard geo_point
+            median_income=input_data.median_income,  # Already float from Gold layer
+            median_home_price=input_data.median_home_price,  # Already float from Gold layer
+            walkability_score=input_data.walkability_score,
+            school_score=input_data.school_score,
+            overall_livability_score=input_data.overall_livability_score,
+            location=location,
             description=input_data.description,
-            amenities=input_data.amenities,
+            amenities=input_data.amenities,  # Already list from Gold layer
             demographics=input_data.demographics,
-            embedding=input_data.embedding,
+            embedding=embedding_list,  # tuple -> list for ES
             embedding_model=input_data.embedding_model,
             embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at
+            embedded_at=input_data.embedded_at or datetime.now()
         )
 
 
@@ -368,9 +376,12 @@ class WikipediaTransformer:
         # Parse input with proper type handling
         input_data = WikipediaInput(**record)
         
+        # Convert tuple embedding to list for ES
+        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        
         # Create document with explicit conversions
         return WikipediaDocument(
-            page_id=str(input_data.page_id),
+            page_id=str(input_data.page_id),  # int -> string for ES
             title=input_data.title,
             url=input_data.url,
             article_filename=input_data.article_filename,
@@ -379,19 +390,19 @@ class WikipediaTransformer:
             full_content=input_data.full_content,
             content_length=input_data.content_length,
             content_loaded=input_data.content_loaded,
-            content_loaded_at=input_data.content_loaded_at,
+            content_loaded_at=input_data.content_loaded_at or datetime.now(),
             categories=input_data.parse_categories(),
-            key_topics=input_data.key_topics,
-            relevance_score=float(input_data.relevance_score),
-            article_quality_score=float(input_data.article_quality_score),
+            key_topics=input_data.key_topics or [],  # None -> empty list
+            relevance_score=input_data.relevance_score,  # already float
+            article_quality_score=input_data.article_quality_score,  # already float
             article_quality=input_data.article_quality,
-            best_city=input_data.best_city,
-            best_state=input_data.best_state,
-            last_updated=input_data.last_updated,
-            embedding=input_data.embedding,
+            best_city=input_data.best_city or "",  # None -> empty string
+            best_state=input_data.best_state or "",  # None -> empty string
+            last_updated=input_data.last_updated or datetime.now(),
+            embedding=embedding_list,  # tuple -> list for ES
             embedding_model=input_data.embedding_model,
             embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at
+            embedded_at=input_data.embedded_at or datetime.now()
         )
 
 
@@ -426,8 +437,8 @@ class ElasticsearchWriter:
         """Create Elasticsearch client."""
         from elasticsearch import Elasticsearch
         
-        es_user = os.getenv("ELASTICSEARCH_USERNAME")
-        es_password = os.getenv("ELASTICSEARCH_PASSWORD")
+        es_user = os.getenv("ES_USERNAME")
+        es_password = os.getenv("ES_PASSWORD")
         es_url = f"http://{self.config.host}:{self.config.port}"
         
         if es_user and es_password:
@@ -456,7 +467,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index properties to Elasticsearch."""
         embeddings_table = "embeddings_properties"
-        has_embeddings = self.connection_manager.table_exists(embeddings_table)
+        embeddings_table_id = TableIdentifier(name=embeddings_table)
+        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
         
         if has_embeddings:
             query = f"""
@@ -490,7 +502,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index neighborhoods to Elasticsearch."""
         embeddings_table = "embeddings_neighborhoods"
-        has_embeddings = self.connection_manager.table_exists(embeddings_table)
+        embeddings_table_id = TableIdentifier(name=embeddings_table)
+        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
         
         if has_embeddings:
             query = f"""
@@ -524,7 +537,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index Wikipedia articles to Elasticsearch."""
         embeddings_table = "embeddings_wikipedia"
-        has_embeddings = self.connection_manager.table_exists(embeddings_table)
+        embeddings_table_id = TableIdentifier(name=embeddings_table)
+        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
         
         if has_embeddings:
             query = f"""
@@ -608,23 +622,29 @@ class ElasticsearchWriter:
                     actions.append(action)
                     
                 except Exception as e:
-                    logger.debug(f"Validation error for {id_field}={record.get(id_field, 'unknown')}: {e}")
+                    logger.error(f"Validation error for {id_field}={record.get(id_field, 'unknown')}: {e}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
                     validation_errors += 1
             
             # Bulk index
             if actions:
                 try:
-                    success, failed = bulk(
+                    result = bulk(
                         self.es_client,
                         actions,
                         raise_on_error=False,
-                        raise_on_exception=False
+                        raise_on_exception=False,
+                        stats_only=False
                     )
-                    indexed += success
-                    if failed:
-                        errors += len(failed)
-                        for failure in failed[:3]:
-                            logger.warning(f"Indexing failure: {failure}")
+                    success_count = result[0]
+                    failures = result[1]
+                    
+                    indexed += success_count
+                    if failures:
+                        errors += len(failures)
+                        for failure in failures[:3]:
+                            logger.error(f"Indexing failure: {failure}")
                         
                 except Exception as e:
                     logger.error(f"Bulk indexing error: {e}")
@@ -665,7 +685,8 @@ class ElasticsearchWriter:
         ]
         
         for table_name, index_name, index_method in tables:
-            if self.connection_manager.table_exists(table_name):
+            table_id = TableIdentifier(name=table_name)
+            if self.connection_manager.table_exists(table_id):
                 stats[index_name] = index_method()
         
         return {

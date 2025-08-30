@@ -182,6 +182,37 @@ class DemoRunner:
             # Execute the demo query
             result = query_func(self.es_client)
             
+            # Handle demo 13 which returns a list of results
+            if demo_number == 13:
+                # demo_natural_language_examples returns List[DemoQueryResult]
+                if not result:  # Empty list means initialization failed
+                    return DemoExecutionResult(
+                        demo_number=demo_number,
+                        demo_name=demo.name,
+                        success=False,
+                        error="Failed to initialize embedding service"
+                    )
+                
+                # Aggregate statistics from all example results
+                total_time = sum(r.execution_time_ms for r in result)
+                total_hits = sum(r.total_hits for r in result)
+                total_returned = sum(r.returned_hits for r in result)
+                
+                # Create execution result with aggregated stats
+                execution_result = DemoExecutionResult(
+                    demo_number=demo_number,
+                    demo_name=demo.name,
+                    success=True,
+                    execution_time_ms=total_time,
+                    total_hits=total_hits,
+                    returned_hits=total_returned,
+                    query_dsl={"examples_count": len(result)} if verbose else None
+                )
+                
+                self.logger.info(f"Successfully executed {len(result)} examples for demo {demo_number}")
+                return execution_result
+            
+            # Standard handling for demos that return single DemoQueryResult
             # Extract query DSL if verbose
             query_dsl = None
             if verbose and hasattr(result, 'query'):

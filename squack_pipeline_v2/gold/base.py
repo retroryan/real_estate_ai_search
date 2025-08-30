@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
+from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import PipelineLogger, log_execution_time
 from squack_pipeline_v2.core.settings import PipelineSettings
 
@@ -50,20 +51,24 @@ class GoldEnricher:
         # Reset enrichments list
         self.enrichments_applied = []
         
+        # Create TableIdentifier objects for type-safe operations
+        input_table_id = TableIdentifier(name=input_table)
+        output_table_id = TableIdentifier(name=output_table)
+        
         # Validate input
-        if not self.connection_manager.table_exists(input_table):
+        if not self.connection_manager.table_exists(input_table_id):
             raise ValueError(f"Input table {input_table} does not exist")
         
-        input_count = self.connection_manager.count_records(input_table)
+        input_count = self.connection_manager.count_records(input_table_id)
         
         # Drop output table if exists
-        self.connection_manager.drop_table(output_table)
+        self.connection_manager.drop_table(output_table_id)
         
         # Apply enrichments
         self._apply_enrichments(input_table, output_table)
         
         # Get output count
-        output_count = self.connection_manager.count_records(output_table)
+        output_count = self.connection_manager.count_records(output_table_id)
         
         # Create metadata
         metadata = GoldMetadata(

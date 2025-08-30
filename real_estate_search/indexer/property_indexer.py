@@ -20,6 +20,7 @@ from wikipedia.enricher import PropertyEnricher
 from wikipedia.extractor import WikipediaExtractor
 from indexer.mappings import get_property_mappings
 from indexer.models import IndexStats, Property
+from .enums import IndexName
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class PropertyIndexer:
         # Use config, fallback to loading from yaml
         self.config = config or AppConfig.from_yaml()
         self.es_client = es_client or self._create_es_client()
-        self.index_name = index_name or self.config.elasticsearch.property_index
+        self.index_name = index_name or IndexName.PROPERTIES
         self.enricher = PropertyEnricher()
     
     def _create_es_client(self) -> Elasticsearch:

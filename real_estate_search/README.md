@@ -273,8 +273,8 @@ log_level: INFO
 
 ```bash
 # Elasticsearch authentication
-export ELASTICSEARCH_USERNAME="elastic"
-export ELASTICSEARCH_PASSWORD="your-password"
+export ES_USERNAME="elastic"
+export ES_PASSWORD="your-password"
 ```
 
 ## Technical Architecture

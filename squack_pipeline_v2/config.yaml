@@ -50,7 +50,6 @@ processing:
   max_workers: 2
   show_progress: true
   rate_limit_delay: 0.1
-  generate_embeddings: true
 
 # Output Configuration
 output:

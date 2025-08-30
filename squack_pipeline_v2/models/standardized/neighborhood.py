@@ -16,7 +16,7 @@ class StandardizedNeighborhood(BaseModel):
     
     # Location (standardized)
     city: str = Field(description="Standardized city name")
-    state_code: str = Field(pattern="^[A-Z]{2}$", description="2-letter state code")
+    state: str = Field(pattern="^[A-Z]{2}$", description="2-letter state code")
     county: str = Field(default="", description="County name")
     
     # Demographics (validated)

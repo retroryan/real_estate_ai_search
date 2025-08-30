@@ -49,6 +49,11 @@ class WikipediaSilverTransformer(SilverTransformer):
             latitude,
             longitude,
             
+            -- Location data from Bronze layer (loaded from page_summaries)
+            best_city,
+            best_county,
+            best_state,
+            
             -- Metrics and metadata
             relevance_score,
             depth,

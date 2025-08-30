@@ -55,7 +55,6 @@ class ProcessingConfig(BaseModel):
     max_workers: int = Field(default=2)
     show_progress: bool = Field(default=True)
     rate_limit_delay: float = Field(default=0.1)
-    generate_embeddings: bool = Field(default=True)
 
 
 class ElasticsearchConfig(BaseModel):

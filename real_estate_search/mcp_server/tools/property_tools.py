@@ -6,6 +6,7 @@ from fastmcp import Context
 from ..models.search import PropertySearchRequest, PropertyFilter
 from ..services.property_search import PropertySearchService
 from ..utils.logging import get_request_logger
+from ...indexer.enums import IndexName
 
 
 async def search_properties(
@@ -146,7 +147,7 @@ async def get_property_details(
         
         # Get property document
         property_doc = es_client.get_document(
-            index=config.elasticsearch.property_index,
+            index=IndexName.PROPERTIES,
             doc_id=listing_id
         )
         

@@ -30,8 +30,8 @@ VOYAGE_API_KEY=your-voyage-api-key-here
 # GOOGLE_API_KEY=your-gemini-key-here
 
 # Optional Elasticsearch credentials
-# ELASTICSEARCH_USERNAME=elastic
-# ELASTICSEARCH_PASSWORD=your-password
+# ES_USERNAME=elastic
+# ES_PASSWORD=your-password
 EOF
 ```
 
@@ -134,8 +134,8 @@ OPENAI_API_KEY=your-key
 GOOGLE_API_KEY=your-key
 
 # Elasticsearch (optional)
-ELASTICSEARCH_USERNAME=elastic
-ELASTICSEARCH_PASSWORD=password
+ES_USERNAME=elastic
+ES_PASSWORD=password
 ELASTICSEARCH_API_KEY=your-api-key
 ELASTICSEARCH_CLOUD_ID=your-cloud-id
 ```

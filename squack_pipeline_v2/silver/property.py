@@ -40,7 +40,8 @@ class PropertySilverTransformer(SilverTransformer):
             property_details.square_feet as square_feet,
             property_details.property_type as property_type,
             property_details.year_built as year_built,
-            property_details.lot_size as lot_size,
+            -- Convert lot_size from acres to square feet (ES expects integer sq ft)
+            CAST(ROUND(COALESCE(property_details.lot_size * 43560, 0)) AS INTEGER) as lot_size,
             property_details.garage_spaces as garage_spaces,
             
             -- Price fields (at top level)

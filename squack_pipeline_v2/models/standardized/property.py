@@ -34,7 +34,7 @@ class StandardizedProperty(BaseModel):
     # Location (standardized)
     street_address: str = Field(description="Cleaned street address")
     city: str = Field(description="Standardized city name")
-    state_code: str = Field(pattern="^[A-Z]{2}$", description="2-letter state code")
+    state: str = Field(pattern="^[A-Z]{2}$", description="2-letter state code")
     zip_code: str = Field(pattern="^\\d{5}$", description="5-digit ZIP code")
     neighborhood_id: Optional[str] = Field(default=None, description="Linked neighborhood")
     

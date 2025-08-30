@@ -43,9 +43,9 @@ else
 fi
 
 # Verify Elasticsearch credentials are set
-if [ -z "$ELASTICSEARCH_PASSWORD" ] && [ -z "$ELASTIC_PASSWORD" ]; then
+if [ -z "$ES_PASSWORD" ]; then
     echo -e "${RED}Error: Elasticsearch password not found in .env!${NC}"
-    echo "Please set ELASTICSEARCH_PASSWORD or ELASTIC_PASSWORD in .env file."
+    echo "Please set ES_PASSWORD in .env file."
     exit 1
 fi
 

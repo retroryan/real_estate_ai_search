@@ -13,10 +13,6 @@ elasticsearch:
   # password: your-password
   # api_key: your-api-key-here
   # cloud_id: your-cloud-id-here
-  property_index: real_estate_properties
-  neighborhood_index: real_estate_neighborhoods  
-  wiki_chunks_index_prefix: real_estate_wikipedia
-  wiki_summaries_index_prefix: real_estate_wikipedia
   request_timeout: 30
   verify_certs: false
 

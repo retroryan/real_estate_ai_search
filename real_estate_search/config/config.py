@@ -117,26 +117,6 @@ class ElasticsearchConfig(BaseSettings):
         description="Maximum number of retries"
     )
     
-    # Index names
-    property_index: str = Field(
-        default="properties",
-        min_length=1,
-        max_length=255,
-        description="Property index name"
-    )
-    wiki_chunks_index_prefix: str = Field(
-        default="wiki_chunks",
-        min_length=1,
-        max_length=255,
-        description="Wikipedia chunks index prefix"
-    )
-    wiki_summaries_index_prefix: str = Field(
-        default="wiki_summaries",
-        min_length=1,
-        max_length=255,
-        description="Wikipedia summaries index prefix"
-    )
-    
     @computed_field
     @property
     def url(self) -> str:

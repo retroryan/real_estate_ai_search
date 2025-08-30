@@ -13,6 +13,7 @@ from ..settings import MCPServerConfig
 from .elasticsearch_client import ElasticsearchClient
 from ...embeddings import QueryEmbeddingService
 from ..utils.logging import get_logger
+from ...indexer.enums import IndexName
 
 logger = get_logger(__name__)
 
@@ -36,7 +37,7 @@ class NaturalLanguageSearchService:
         self.config = config
         self.es_client = es_client
         self.embedding_service = embedding_service
-        self.index_name = config.elasticsearch.property_index
+        self.index_name = IndexName.PROPERTIES
 
     async def semantic_search(
         self, 

@@ -750,6 +750,20 @@ class PropertyNeighborhoodWikiDemo:
         - Historical context for real estate
         - Tourism and relocation guides
         """
+        # Use default values if not provided
+        if city is None:
+            city = DEFAULT_DEMO_CITY
+        if state is None:
+            # Determine which state value to use based on context
+            property_state = PROPERTY_STATE_ABBR  # For property queries
+            wikipedia_state = WIKIPEDIA_STATE_FULL  # For Wikipedia queries
+        else:
+            # If state is provided, use it for properties and try to map for Wikipedia
+            property_state = state
+            # Map common abbreviations to full names for Wikipedia
+            state_mapping = {"CA": "California", "NY": "New York", "TX": "Texas"}
+            wikipedia_state = state_mapping.get(state, state)
+        
         # Build multi-search request
         msearch_body = []
         
@@ -761,7 +775,7 @@ class PropertyNeighborhoodWikiDemo:
                     "bool": {
                         "filter": [
                             {"term": {"address.city.keyword": city}},
-                            {"term": {"address.state.keyword": state}}
+                            {"term": {"address.state.keyword": property_state}}
                         ]
                     }
                 },

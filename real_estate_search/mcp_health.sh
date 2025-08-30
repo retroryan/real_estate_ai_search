@@ -134,8 +134,8 @@ echo -n "Testing connection to $ES_URL... "
 
 # Prepare curl authentication options
 CURL_AUTH=""
-if [ -n "$ELASTICSEARCH_USERNAME" ] && [ -n "$ELASTICSEARCH_PASSWORD" ]; then
-    CURL_AUTH="-u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD"
+if [ -n "$ES_USERNAME" ] && [ -n "$ES_PASSWORD" ]; then
+    CURL_AUTH="-u $ES_USERNAME:$ES_PASSWORD"
 elif [ -n "$ELASTICSEARCH_API_KEY" ]; then
     CURL_AUTH="-H 'Authorization: ApiKey $ELASTICSEARCH_API_KEY'"
 elif [ -n "$ELASTICSEARCH_CLOUD_ID" ]; then
@@ -170,8 +170,8 @@ if [ "$HTTP_CODE" = "200" ]; then
         echo -e "   Nodes: ${CYAN}$NODE_COUNT${NC}"
         
         # Show authentication method used
-        if [ -n "$ELASTICSEARCH_USERNAME" ]; then
-            echo -e "   Auth: ${CYAN}Basic (user: $ELASTICSEARCH_USERNAME)${NC}"
+        if [ -n "$ES_USERNAME" ]; then
+            echo -e "   Auth: ${CYAN}Basic (user: $ES_USERNAME)${NC}"
         elif [ -n "$ELASTICSEARCH_API_KEY" ]; then
             echo -e "   Auth: ${CYAN}API Key${NC}"
         else
@@ -214,7 +214,7 @@ elif [ "$HTTP_CODE" = "401" ]; then
     echo -e "${RED}❌ Authentication failed (401)${NC}"
     echo ""
     echo -e "${BLUE}💡 Authentication Issues:${NC}"
-    echo "   • Check ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD"
+    echo "   • Check ES_USERNAME and ES_PASSWORD"
     echo "   • Check ELASTICSEARCH_API_KEY is valid"
     echo "   • Verify Elasticsearch security is configured correctly"
     ES_CONNECTED=false

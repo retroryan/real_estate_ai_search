@@ -261,7 +261,9 @@ class EmbeddingGenerator:
         
         for entity_config in entities:
             # Check if input table exists
-            if self.connection_manager.table_exists(entity_config["input_table"]):
+            from squack_pipeline_v2.core.table_identifier import TableIdentifier
+            input_table_id = TableIdentifier(name=entity_config["input_table"])
+            if self.connection_manager.table_exists(input_table_id):
                 entity_stats = self.generate_for_entity(**entity_config)
                 stats[entity_config["entity_type"]] = entity_stats
             else:

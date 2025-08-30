@@ -25,7 +25,7 @@ class EnrichedProperty(BaseModel):
     # Location
     street_address: str = Field(description="Street address")
     city: str = Field(description="City")
-    state_code: str = Field(description="State code")
+    state: str = Field(description="State")
     zip_code: str = Field(description="ZIP code")
     latitude: float = Field(description="Latitude")
     longitude: float = Field(description="Longitude")

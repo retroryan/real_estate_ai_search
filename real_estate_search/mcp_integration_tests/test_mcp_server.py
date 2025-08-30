@@ -149,7 +149,6 @@ class TestPropertyTools:
         context = Mock()
         es_client = Mock()
         config = Mock()
-        config.elasticsearch.property_index = "properties"
         
         es_client.get_document.return_value = {
             "listing_id": "PROP-001",

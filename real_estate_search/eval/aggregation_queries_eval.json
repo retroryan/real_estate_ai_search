@@ -1,0 +1,327 @@
+{
+  "query_type": "aggregation_queries",
+  "description": "Evaluation dataset for aggregation queries including neighborhood stats and price distributions",
+  "generated_at": "2025-08-30T14:57:59.954543",
+  "test_cases": [
+    {
+      "test_id": "neighborhood_stats_1",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Pacific Heights",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Pacific Heights",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_2",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Mission District",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Mission District",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_3",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Sunset District",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Sunset District",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_4",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "SOMA",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for SOMA",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_5",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Noe Valley",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Noe Valley",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_6",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Temescal",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Temescal",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_7",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Rockridge",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Rockridge",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_8",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Oldtown Salinas",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Oldtown Salinas",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_9",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Creekbridge",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Creekbridge",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "neighborhood_stats_10",
+      "query_type": "neighborhood_stats",
+      "parameters": {
+        "neighborhood_name": "Willow Glen",
+        "include_property_types": true,
+        "include_price_stats": true,
+        "include_size_stats": true
+      },
+      "expected_behavior": "Should return comprehensive statistics for Willow Glen",
+      "validation_criteria": {
+        "has_price_stats": true,
+        "has_property_distribution": true,
+        "has_size_metrics": true
+      }
+    },
+    {
+      "test_id": "price_distribution_1",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 100000,
+        "min_price": 200000,
+        "max_price": 2000000,
+        "neighborhood": null
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_2",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 100000,
+        "min_price": 200000,
+        "max_price": 2000000,
+        "neighborhood": "Mission District"
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_3",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 250000,
+        "min_price": 0,
+        "max_price": 5000000,
+        "neighborhood": null
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_4",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 250000,
+        "min_price": 0,
+        "max_price": 5000000,
+        "neighborhood": "Mission District"
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_5",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 500000,
+        "min_price": 500000,
+        "max_price": 3000000,
+        "neighborhood": null
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_6",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 500000,
+        "min_price": 500000,
+        "max_price": 3000000,
+        "neighborhood": "Mission District"
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_7",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 50000,
+        "min_price": 300000,
+        "max_price": 1000000,
+        "neighborhood": null
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_8",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 50000,
+        "min_price": 300000,
+        "max_price": 1000000,
+        "neighborhood": "Mission District"
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_9",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 200000,
+        "min_price": 400000,
+        "max_price": 2000000,
+        "neighborhood": null
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    },
+    {
+      "test_id": "price_distribution_10",
+      "query_type": "price_distribution",
+      "parameters": {
+        "bucket_interval": 200000,
+        "min_price": 400000,
+        "max_price": 2000000,
+        "neighborhood": "Mission District"
+      },
+      "expected_behavior": "Should return price distribution in specified buckets",
+      "validation_criteria": {
+        "has_buckets": true,
+        "bucket_size_correct": true,
+        "total_count_accurate": true
+      }
+    }
+  ]
+}

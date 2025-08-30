@@ -46,8 +46,8 @@ fi
 # Check if Elasticsearch is running
 ES_HOST="${ELASTICSEARCH_HOST:-localhost}"
 ES_PORT="${ELASTICSEARCH_PORT:-9200}"
-ES_USERNAME="${ELASTICSEARCH_USERNAME:-}"
-ES_PASSWORD="${ELASTICSEARCH_PASSWORD:-}"
+ES_USERNAME="${ES_USERNAME:-}"
+ES_PASSWORD="${ES_PASSWORD:-}"
 
 echo -n "Checking Elasticsearch at ${ES_HOST}:${ES_PORT}... "
 
@@ -79,7 +79,7 @@ else
     echo ""
     if [ -z "$ES_USERNAME" ] || [ -z "$ES_PASSWORD" ]; then
         echo "   Note: No Elasticsearch credentials found in .env file"
-        echo "   Add ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD to .env if needed"
+        echo "   Add ES_USERNAME and ES_PASSWORD to .env if needed"
         echo ""
     fi
     echo "   To start Elasticsearch with Docker:"
