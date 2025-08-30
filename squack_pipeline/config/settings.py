@@ -128,7 +128,7 @@ class DataConfig(BaseSettings):
     )
     
     input_path: Path = Field(default=Path("real_estate_data"), description="Input data directory")
-    output_path: Path = Field(default=Path("squack_pipeline_output"), description="Output directory")
+    output_path: Path = Field(default=Path("squack_pipeline/squack_pipeline_output"), description="Output directory")
     sample_size: Optional[int] = Field(default=None, ge=1, description="Sample size for testing")
 
 
