@@ -398,7 +398,7 @@ python -m squack_pipeline run \
 
 ## 🔍 Output Files
 
-The pipeline generates files in the `squack_pipeline_output/` directory:
+The pipeline generates files in the `squack_pipeline/squack_pipeline_output/` directory:
 
 ### Property Data
 - `properties_[env]_[timestamp].parquet` - Enriched property data

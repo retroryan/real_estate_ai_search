@@ -19,7 +19,7 @@ data_sources:
 # Data Processing Configuration  
 data:
   input_path: real_estate_data
-  output_path: ./squack_pipeline_output
+  output_path: ./squack_pipeline/squack_pipeline_output
   sample_size: null  # null means process all records
 
 # DuckDB Configuration
