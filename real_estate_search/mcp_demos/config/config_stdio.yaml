@@ -1,0 +1,34 @@
+# MCP Demo Configuration - STDIO Transport
+# This configuration uses subprocess communication with the local MCP server
+
+# Transport selection
+transport: stdio
+
+# STDIO transport settings
+stdio:
+  # Path to the MCP server script (relative or absolute)
+  server_path: start_mcp_server.py
+  
+  # Python executable (optional, defaults to current Python)
+  # python_executable: /usr/bin/python3
+  
+  # Server startup timeout in seconds
+  startup_timeout: 5
+
+# Connection settings
+connection:
+  # Timeout for individual MCP requests (seconds)
+  request_timeout: 60
+  
+  # Timeout for client initialization (seconds)
+  init_timeout: 10
+  
+  # Enable detailed logging
+  enable_logging: true
+  
+  # Logging level: DEBUG, INFO, WARNING, ERROR
+  log_level: INFO
+
+# Demo settings
+demo_mode: true
+rich_output: true

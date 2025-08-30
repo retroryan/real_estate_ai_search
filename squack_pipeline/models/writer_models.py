@@ -1,14 +1,15 @@
 """Pydantic models for writer operations."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from squack_pipeline.writers.elasticsearch.models import WriteResult
+from squack_pipeline.models.data_types import OutputDestination
 
 
 class WriteDestinationResults(BaseModel):
     """Results for a specific write destination (Parquet, Elasticsearch, etc)."""
-    destination: str = Field(description="Name of the destination (parquet, elasticsearch)")
+    destination: OutputDestination = Field(description="Output destination enum")
     results: List[WriteResult] = Field(default_factory=list, description="List of write results")
     total_records: int = Field(default=0, description="Total records written across all results")
     total_failed: int = Field(default=0, description="Total records failed across all results")
@@ -24,38 +25,39 @@ class WriteDestinationResults(BaseModel):
 
 
 class WriteOperationResult(BaseModel):
-    """Complete result from a write operation to all destinations."""
-    parquet: Optional[WriteDestinationResults] = Field(default=None, description="Parquet write results")
-    elasticsearch: Optional[WriteDestinationResults] = Field(default=None, description="Elasticsearch write results")
+    """Complete result from a write operation to all destinations.
+    
+    This model is extensible - new destinations can be added without changing the model.
+    Results are stored in a dictionary keyed by OutputDestination enum values.
+    """
+    destinations: Dict[OutputDestination, WriteDestinationResults] = Field(
+        default_factory=dict,
+        description="Results by destination"
+    )
     embeddings_count: int = Field(default=0, ge=0, description="Number of records with embeddings")
     
     def get_total_records(self) -> int:
         """Get total records written across all destinations."""
-        total = 0
-        if self.parquet:
-            total = max(total, self.parquet.total_records)
-        if self.elasticsearch:
-            total = max(total, self.elasticsearch.total_records)
-        return total
+        if not self.destinations:
+            return 0
+        # Return the maximum count since all destinations should have same number of records
+        return max(dest_result.total_records for dest_result in self.destinations.values())
     
     def is_successful(self) -> bool:
         """Check if all writes were successful."""
-        results = []
-        if self.parquet:
-            results.append(self.parquet.is_successful())
-        if self.elasticsearch:
-            results.append(self.elasticsearch.is_successful())
-        return all(results) if results else False
+        if not self.destinations:
+            return False
+        return all(dest_result.is_successful() for dest_result in self.destinations.values())
     
     def get_errors(self) -> List[str]:
         """Get all error messages."""
         errors = []
-        if self.parquet:
-            for result in self.parquet.results:
+        for destination, dest_result in self.destinations.items():
+            for result in dest_result.results:
                 if result.error:
-                    errors.append(f"Parquet: {result.error}")
-        if self.elasticsearch:
-            for result in self.elasticsearch.results:
-                if result.error:
-                    errors.append(f"Elasticsearch: {result.error}")
+                    errors.append(f"{destination.value}: {result.error}")
         return errors
+    
+    def add_destination_result(self, destination: OutputDestination, result: WriteDestinationResults) -> None:
+        """Add results for a destination."""
+        self.destinations[destination] = result

@@ -72,8 +72,8 @@ class BaseEntityOrchestrator(ABC):
         """
         pass
     
-    def write_to_elasticsearch(self, gold_table: ProcessedTable) -> int:
-        """Write Gold data to Elasticsearch.
+    def write_outputs(self, gold_table: ProcessedTable) -> int:
+        """Write Gold data to all configured outputs (Parquet, Elasticsearch, etc).
         
         Args:
             gold_table: Identifier for Gold table
@@ -81,43 +81,44 @@ class BaseEntityOrchestrator(ABC):
         Returns:
             Number of records written
         """
-        # This can be implemented in base class as it's common
         from squack_pipeline.writers.orchestrator import WriterOrchestrator
         
         writer = WriterOrchestrator(self.settings)
         
         # Write using the new entity-specific method
         result = writer.write_entity(
-            self.connection_manager.get_connection(),
-            gold_table.table_name,
-            self.entity_type
+            entity_type=self.entity_type,
+            table_name=gold_table.table_name,
+            connection=self.connection_manager.get_connection()
         )
         
         # Update embedding count in metrics
         self.metrics.embeddings_generated = result.embeddings_count
         
-        # Check Elasticsearch results
-        if result.elasticsearch and result.elasticsearch.results:
-            es_result = result.elasticsearch.results[0]
-            if es_result.success:
-                self.logger.success(
-                    f"Wrote {es_result.record_count} {self.entity_type.value} records to Elasticsearch "
-                    f"({result.embeddings_count} with embeddings)"
-                )
-                return es_result.record_count
-            else:
-                self.logger.error(f"Failed to write to Elasticsearch: {es_result.error}")
-                return 0
-        else:
-            self.logger.warning("No Elasticsearch results returned")
-            return 0
+        # Log results for each destination
+        total_written = 0
+        for dest, dest_results in result.destinations.items():
+            if dest_results.results:
+                for write_result in dest_results.results:
+                    if write_result.success:
+                        self.logger.success(
+                            f"Wrote {write_result.record_count} {self.entity_type.value} records to {dest.value}"
+                        )
+                        total_written = max(total_written, write_result.record_count)
+                    else:
+                        self.logger.error(f"Failed to write to {dest.value}: {write_result.error}")
+        
+        return total_written
     
-    def run(self, sample_size: Optional[int] = None, skip_elasticsearch: bool = False) -> EntityMetrics:
+    def write_to_elasticsearch(self, gold_table: ProcessedTable) -> int:
+        """Legacy method for backward compatibility - calls write_outputs."""
+        return self.write_outputs(gold_table)
+    
+    def run(self, sample_size: Optional[int] = None) -> EntityMetrics:
         """Run the complete pipeline for this entity.
         
         Args:
             sample_size: Optional number of records to process
-            skip_elasticsearch: Whether to skip writing to Elasticsearch
             
         Returns:
             Dictionary of metrics from the run
@@ -143,11 +144,10 @@ class BaseEntityOrchestrator(ABC):
             self.metrics.gold_records = gold_table.record_count
             self.logger.success(f"Gold tier complete: {gold_table.table_name}")
             
-            # Elasticsearch
-            if not skip_elasticsearch:
-                self.logger.info(f"Writing {self.entity_type.value} to Elasticsearch")
-                es_count = self.write_to_elasticsearch(gold_table)
-                self.metrics.elasticsearch_records = es_count
+            # Write to all configured outputs (Parquet, Elasticsearch, etc)
+            self.logger.info(f"Writing {self.entity_type.value} to configured outputs")
+            written_count = self.write_outputs(gold_table)
+            self.metrics.elasticsearch_records = written_count  # For backward compatibility
             
             self.logger.success(
                 f"Completed {self.entity_type.value} pipeline: "

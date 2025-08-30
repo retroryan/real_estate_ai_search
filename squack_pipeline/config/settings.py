@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from squack_pipeline.models.data_types import OutputDestination
+
 # Load environment variables from parent .env file if it exists
 parent_env = Path(__file__).parent.parent.parent / '.env'
 if parent_env.exists():
@@ -203,9 +205,9 @@ class MedallionConfig(BaseModel):
 class OutputConfig(BaseModel):
     """Output destinations configuration."""
     
-    enabled_destinations: List[str] = Field(
-        default=["parquet"],
-        description="List of enabled output destinations (parquet, elasticsearch)"
+    enabled_destinations: List[OutputDestination] = Field(
+        default=[OutputDestination.PARQUET],
+        description="List of enabled output destinations"
     )
     elasticsearch: Optional[ElasticsearchConfig] = Field(
         default=None,
@@ -214,12 +216,9 @@ class OutputConfig(BaseModel):
     
     @field_validator('enabled_destinations')
     @classmethod
-    def validate_destinations(cls, v: List[str]) -> List[str]:
+    def validate_destinations(cls, v: List[OutputDestination]) -> List[OutputDestination]:
         """Validate output destinations."""
-        valid_destinations = {"parquet", "elasticsearch"}
-        invalid = set(v) - valid_destinations
-        if invalid:
-            raise ValueError(f"Invalid destinations: {invalid}. Must be one of {valid_destinations}")
+        # Validation is automatic with enum type
         return v
 
 
@@ -264,7 +263,7 @@ class PipelineSettings(BaseSettings):
             self.data.output_path.mkdir(parents=True, exist_ok=True)
         
         # Initialize Elasticsearch config if needed
-        if "elasticsearch" in self.output.enabled_destinations and self.output.elasticsearch is None:
+        if OutputDestination.ELASTICSEARCH in self.output.enabled_destinations and self.output.elasticsearch is None:
             self.output.elasticsearch = ElasticsearchConfig()
     
     @classmethod

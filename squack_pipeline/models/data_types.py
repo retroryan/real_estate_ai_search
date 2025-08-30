@@ -1,7 +1,14 @@
 """Pydantic models for data types used throughout the pipeline."""
 
+from enum import Enum
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field, ConfigDict, field_validator, ValidationInfo, ValidationError
+
+
+class OutputDestination(str, Enum):
+    """Supported output destinations for the pipeline."""
+    PARQUET = "parquet"
+    ELASTICSEARCH = "elasticsearch"
 
 
 class PipelineMetrics(BaseModel):
@@ -166,18 +173,16 @@ class PropertyRecord(BaseModel):
         listing_price = info.data.get('listing_price')
         property_details = info.data.get('property_details')
         
-        if (listing_price and 
-            property_details and 
-            hasattr(property_details, 'square_feet') and 
-            property_details.square_feet and 
-            property_details.square_feet > 0):
-            
-            calculated = listing_price / property_details.square_feet
-            if abs(v - calculated) > 1.0:  # Allow $1 tolerance for rounding
-                raise ValueError(
-                    f"price_per_sqft ({v}) doesn't match calculated value ({calculated:.2f}) "
-                    f"based on listing_price ({listing_price}) / square_feet ({property_details.square_feet})"
-                )
+        # Check if property_details exists and has valid square_feet
+        # PropertyDetails is a Pydantic model, so we can access fields directly
+        if property_details is not None and listing_price:
+            if property_details.square_feet and property_details.square_feet > 0:
+                calculated = listing_price / property_details.square_feet
+                if abs(v - calculated) > 1.0:  # Allow $1 tolerance for rounding
+                    raise ValueError(
+                        f"price_per_sqft ({v}) doesn't match calculated value ({calculated:.2f}) "
+                        f"based on listing_price ({listing_price}) / square_feet ({property_details.square_feet})"
+                    )
         
         return v
     
