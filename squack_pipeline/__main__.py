@@ -129,7 +129,7 @@ def run(
         )
         
         if not dry_run:
-            logger.success(f"Pipeline completed successfully - {metrics.get('total_records', 0)} records processed")
+            logger.success(f"Pipeline completed successfully - {metrics.total_records} records processed")
         
     except Exception as e:
         typer.echo(f"✗ Pipeline failed: {e}", err=True)

@@ -1,0 +1,46 @@
+# MCP Server Configuration
+
+# Server settings
+server_name: real-estate-search-mcp
+server_version: 0.1.0
+debug: true
+
+# Elasticsearch configuration
+elasticsearch:
+  host: localhost
+  port: 9200
+  property_index: properties
+  wiki_chunks_index_prefix: wiki_chunks
+  wiki_summaries_index_prefix: wiki_summaries
+  request_timeout: 30
+  verify_certs: false
+  max_retries: 3
+  retry_on_timeout: true
+
+# Embedding configuration
+embedding:
+  provider: voyage  # voyage, openai, gemini, ollama
+  model_name: voyage-3
+  dimension: 1024
+  batch_size: 10
+  timeout_seconds: 30.0
+  max_retries: 3
+  # API key loaded from VOYAGE_API_KEY environment variable
+
+# Search configuration
+search:
+  default_size: 20
+  max_size: 100
+  default_sort: relevance
+  highlight_enabled: true
+  aggregations_enabled: true
+  enable_fuzzy: true
+  vector_weight: 0.5
+  text_weight: 0.5
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  structured: false
+  # file_path: logs/mcp_server.log  # Optional log file

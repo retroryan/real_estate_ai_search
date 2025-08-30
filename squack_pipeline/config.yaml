@@ -77,13 +77,12 @@ output:
     host: localhost
     port: 9200
     bulk_size: 500
-    username: elastic  # Default username
-    # Password from ELASTICSEARCH_PASSWORD environment variable
+    # No authentication for local development
     timeout: 30
 
 # Logging Configuration
 logging:
-  level: INFO
+  level: DEBUG
 
 # Environment Configuration
 environment: development  # development, production, test

@@ -114,7 +114,7 @@ For a comprehensive deep-dive into the system architecture, implementation patte
 
 ---
 
-### [2. Spark Data Pipeline](./data_pipeline/)
+### [2. Spark Data Pipeline](./squack_pipeline/)
 **Purpose**: Spark-based distributed data processing and transformation pipeline that adds Vector Embeddings using LlamaIndex  
 **Key Features**:
 - **Scalable ETL Operations**: Distributed processing of property and location data
@@ -311,7 +311,7 @@ Process Wikipedia data from crawling to searchable embeddings:
 python wiki_summary/summarize_main.py --limit 50
 
 # 2. Run Spark pipeline for Wikipedia data
-python -m data_pipeline --data-type wikipedia
+python -m squack_pipeline --data-type wikipedia
 
 # 3. Test embeddings with LlamaIndex
 python -m common_embeddings.main evaluate
@@ -328,7 +328,7 @@ Complete pipeline flow for Elasticsearch-based real estate search:
 python -m real_estate_search.management setup-indices --clear
 
 # 2. Run data pipeline to process and index data
-python -m data_pipeline
+python -m squack_pipeline
 
 # 3. Enrich Wikipedia articles for full-text search
 python -m real_estate_search.management enrich-wikipedia
@@ -354,7 +354,7 @@ Build a complete GraphRAG system with Neo4j:
 docker-compose up -d
 
 # 2. Run Spark pipeline to populate Neo4j
-python -m data_pipeline --output-destination neo4j
+python -m squack_pipeline --output-destination neo4j
 
 # 3. Test hybrid search
 python graph_real_estate/search_properties.py "modern condo with city views" --demo
@@ -421,7 +421,7 @@ real_estate_ai_search/
 │   │   └── wikipedia.db     # SQLite database
 │   └── embeddings/          # Generated embeddings
 │
-├── data_pipeline/            # Spark Data Pipeline
+├── squack_pipeline/          # Spark Data Pipeline
 │   ├── core/                # Core pipeline components
 │   ├── loaders/            # Data loaders
 │   ├── enrichment/         # Enrichment processors

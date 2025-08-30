@@ -34,7 +34,6 @@ class WikipediaLoader(BaseLoader):
             "latitude": "DOUBLE",
             "longitude": "DOUBLE",
             "relevance_score": "DOUBLE",
-            "word_count": "INTEGER",
             "last_modified": "TIMESTAMP"
         }
     
@@ -172,8 +171,7 @@ class WikipediaLoader(BaseLoader):
                     pageid as page_id,
                     title,
                     relevance_score,
-                    word_count,
-                    SUBSTRING(summary, 1, 100) as summary_preview
+                    SUBSTRING(extract, 1, 100) as summary_preview
                 FROM {table.qualified_name}
                 ORDER BY relevance_score DESC NULLS LAST
                 LIMIT {limit}

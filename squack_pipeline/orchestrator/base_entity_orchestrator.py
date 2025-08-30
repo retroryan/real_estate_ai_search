@@ -11,6 +11,7 @@ from squack_pipeline.models import (
     ProcessingContext, TableIdentifier, ProcessingResult
 )
 from squack_pipeline.models.pipeline_models import ProcessedTable
+from squack_pipeline.models.data_types import EntityMetrics
 from squack_pipeline.utils.logging import PipelineLogger
 
 
@@ -27,12 +28,7 @@ class BaseEntityOrchestrator(ABC):
         self.settings = settings
         self.connection_manager = connection_manager
         self.logger = PipelineLogger.get_logger(self.__class__.__name__)
-        self.metrics: Dict[str, Any] = {
-            "bronze_records": 0,
-            "silver_records": 0,
-            "gold_records": 0,
-            "elasticsearch_records": 0,
-        }
+        self.metrics = EntityMetrics()
         
     @property
     @abstractmethod
@@ -90,36 +86,33 @@ class BaseEntityOrchestrator(ABC):
         
         writer = WriterOrchestrator(self.settings)
         
-        # Create tables dict for writer orchestrator
-        # Map entity type to plural form for consistency
-        entity_plural = {
-            "property": "properties",
-            "neighborhood": "neighborhoods", 
-            "wikipedia": "wikipedia"
-        }.get(self.entity_type.value, self.entity_type.value)
+        # Write using the new entity-specific method
+        result = writer.write_entity(
+            self.connection_manager.get_connection(),
+            gold_table.table_name,
+            self.entity_type
+        )
         
-        tables = {entity_plural: gold_table.table_name}
-        
-        # Write using the write_all method
-        results = writer.write_all(self.connection_manager.get_connection(), tables)
+        # Update embedding count in metrics
+        self.metrics.embeddings_generated = result.embeddings_count
         
         # Check Elasticsearch results
-        es_results = results.get('elasticsearch', [])
-        if es_results and len(es_results) > 0:
-            result = es_results[0]
-            if result.success:
+        if result.elasticsearch and result.elasticsearch.results:
+            es_result = result.elasticsearch.results[0]
+            if es_result.success:
                 self.logger.success(
-                    f"Wrote {result.record_count} {self.entity_type.value} records to Elasticsearch"
+                    f"Wrote {es_result.record_count} {self.entity_type.value} records to Elasticsearch "
+                    f"({result.embeddings_count} with embeddings)"
                 )
-                return result.record_count
+                return es_result.record_count
             else:
-                self.logger.error(f"Failed to write to Elasticsearch: {result.error}")
+                self.logger.error(f"Failed to write to Elasticsearch: {es_result.error}")
                 return 0
         else:
             self.logger.warning("No Elasticsearch results returned")
             return 0
     
-    def run(self, sample_size: Optional[int] = None, skip_elasticsearch: bool = False) -> Dict[str, Any]:
+    def run(self, sample_size: Optional[int] = None, skip_elasticsearch: bool = False) -> EntityMetrics:
         """Run the complete pipeline for this entity.
         
         Args:
@@ -135,29 +128,32 @@ class BaseEntityOrchestrator(ABC):
             # Bronze tier
             self.logger.info(f"Loading {self.entity_type.value} Bronze tier")
             bronze_table = self.load_bronze(sample_size)
+            self.metrics.bronze_records = bronze_table.record_count
             self.logger.success(f"Bronze tier complete: {bronze_table.table_name}")
             
             # Silver tier
             self.logger.info(f"Processing {self.entity_type.value} Silver tier")
             silver_table = self.process_silver(bronze_table)
+            self.metrics.silver_records = silver_table.record_count
             self.logger.success(f"Silver tier complete: {silver_table.table_name}")
             
             # Gold tier
             self.logger.info(f"Processing {self.entity_type.value} Gold tier")
             gold_table = self.process_gold(silver_table)
+            self.metrics.gold_records = gold_table.record_count
             self.logger.success(f"Gold tier complete: {gold_table.table_name}")
             
             # Elasticsearch
             if not skip_elasticsearch:
                 self.logger.info(f"Writing {self.entity_type.value} to Elasticsearch")
                 es_count = self.write_to_elasticsearch(gold_table)
-                self.metrics["elasticsearch_records"] = es_count
+                self.metrics.elasticsearch_records = es_count
             
             self.logger.success(
                 f"Completed {self.entity_type.value} pipeline: "
-                f"{self.metrics['bronze_records']} → "
-                f"{self.metrics['silver_records']} → "
-                f"{self.metrics['gold_records']} records"
+                f"{self.metrics.bronze_records} → "
+                f"{self.metrics.silver_records} → "
+                f"{self.metrics.gold_records} records"
             )
             
             return self.metrics

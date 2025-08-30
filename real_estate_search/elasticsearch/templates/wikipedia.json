@@ -76,6 +76,9 @@
     "relevance_score": {
       "type": "float"
     },
+    "article_quality_score": {
+      "type": "float"
+    },
     "embedding": {
       "type": "dense_vector",
       "dims": 1024,

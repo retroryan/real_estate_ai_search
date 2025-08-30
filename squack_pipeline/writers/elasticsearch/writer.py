@@ -2,19 +2,20 @@
 
 import time
 from decimal import Decimal
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk, BulkIndexError
 
 from squack_pipeline.config.settings import ElasticsearchConfig
 from squack_pipeline.writers.elasticsearch.models import (
-    EntityType,
     WriteResult,
     BulkOperation,
     TransformationConfig,
     IndexMapping,
 )
+from squack_pipeline.models import EntityType
+from squack_pipeline.models.data_types import PropertyRecord, NeighborhoodRecord, WikipediaRecord
 from squack_pipeline.transformers import (
     PropertyTransformer,
     NeighborhoodTransformer,
@@ -46,8 +47,8 @@ class ElasticsearchWriter:
         
         # Map entity types to transformers
         self.transformers = {
-            EntityType.PROPERTIES: self.property_transformer,
-            EntityType.NEIGHBORHOODS: self.neighborhood_transformer,
+            EntityType.PROPERTY: self.property_transformer,
+            EntityType.NEIGHBORHOOD: self.neighborhood_transformer,
             EntityType.WIKIPEDIA: self.wikipedia_transformer,
         }
         
@@ -56,8 +57,8 @@ class ElasticsearchWriter:
         
         # Entity mappings
         self.mappings = {
-            EntityType.PROPERTIES: IndexMapping.for_properties(),
-            EntityType.NEIGHBORHOODS: IndexMapping.for_neighborhoods(),
+            EntityType.PROPERTY: IndexMapping.for_properties(),
+            EntityType.NEIGHBORHOOD: IndexMapping.for_neighborhoods(),
             EntityType.WIKIPEDIA: IndexMapping.for_wikipedia(),
         }
     
@@ -80,7 +81,7 @@ class ElasticsearchWriter:
     def write_entity(
         self,
         entity_type: EntityType,
-        data: List[Dict[str, Any]]
+        data: List[Dict]
     ) -> WriteResult:
         """
         Write entity data to Elasticsearch.
@@ -93,8 +94,13 @@ class ElasticsearchWriter:
             WriteResult with operation status
         """
         start_time = time.time()
-        # Use exact index names without prefix to match Elasticsearch templates
-        index_name = entity_type.value  # Just "properties", "neighborhoods", "wikipedia"
+        # Map entity types to Elasticsearch index names (plural forms)
+        index_names = {
+            EntityType.PROPERTY: "properties",
+            EntityType.NEIGHBORHOOD: "neighborhoods",
+            EntityType.WIKIPEDIA: "wikipedia"
+        }
+        index_name = index_names.get(entity_type, entity_type.value)
         mapping = self.mappings[entity_type]
         
         if not data:
@@ -113,10 +119,15 @@ class ElasticsearchWriter:
             # Transform records using appropriate transformer
             transformer = self.transformers.get(entity_type)
             if transformer:
-                transformed_data = [
-                    transformer.transform(record)
-                    for record in data
-                ]
+                transformed_data = []
+                for record in data:
+                    transformed_record = transformer.transform(record)
+                    # If it's a Pydantic model, convert to dict
+                    if hasattr(transformed_record, 'to_elasticsearch_dict'):
+                        transformed_data.append(transformed_record.to_elasticsearch_dict())
+                    else:
+                        # Fallback for dict or other types
+                        transformed_data.append(transformed_record)
             else:
                 # Fallback to basic transformation if no transformer
                 transformed_data = [
@@ -133,10 +144,22 @@ class ElasticsearchWriter:
                 chunk_size=self.config.bulk_size,
             )
             
+            # Debug: Log the first transformed document
+            if transformed_data:
+                sample_doc = transformed_data[0]
+                self.logger.info(f"Sample transformed Wikipedia document fields: {list(sample_doc.keys())}")
+                # Check for specific fields we added
+                if 'article_filename' in sample_doc and 'content_loaded' in sample_doc:
+                    self.logger.info(f"Wikipedia enrichment fields: article_filename={sample_doc['article_filename']}, content_loaded={sample_doc['content_loaded']}")
+            
             # Execute bulk write
             success_count, failed_items = self._execute_bulk(bulk_op)
             
             duration = time.time() - start_time
+            
+            # Ensure we have integer values for comparison
+            failed_items = int(failed_items) if hasattr(failed_items, '__int__') else failed_items
+            success_count = int(success_count) if hasattr(success_count, '__int__') else success_count
             
             result = WriteResult(
                 success=failed_items == 0,
@@ -175,10 +198,10 @@ class ElasticsearchWriter:
     
     def _transform_record(
         self,
-        record: Dict[str, Any],
+        record: Dict,
         entity_type: EntityType,
         mapping: IndexMapping
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         """
         Transform a record for Elasticsearch compatibility.
         
@@ -265,7 +288,8 @@ class ElasticsearchWriter:
         
         try:
             # Execute bulk operation
-            success, failed = bulk(
+            # bulk() returns (success_count, failed_items_list) when raise_on_error=False
+            success_count, failed_items = bulk(
                 self.client,
                 actions,
                 chunk_size=bulk_op.chunk_size,
@@ -274,11 +298,25 @@ class ElasticsearchWriter:
             )
             
             # Process any failed items
-            if failed:
-                for item in failed:
-                    self.logger.debug(f"Failed to index document: {item}")
+            # failed_items is a list of error dictionaries (or empty list)
+            if isinstance(failed_items, list) and failed_items:
+                failed_count = len(failed_items)
+                self.logger.warning(f"Elasticsearch bulk operation failures: {failed_count} items failed")
+                
+                # Show first 3 errors
+                for i, item in enumerate(failed_items[:3]):
+                    try:
+                        error_str = str(item).replace('{', '{{').replace('}', '}}')
+                        self.logger.error(f"Bulk error {i+1}: {error_str}")
+                    except Exception as e:
+                        self.logger.error(f"Bulk error {i+1}: [Unable to format error - {type(item).__name__}]")
+                
+                if len(failed_items) > 3:
+                    self.logger.error(f"... and {len(failed_items) - 3} more errors")
+                
+                return success_count, failed_count
             
-            return success, len(failed)
+            return success_count, 0
             
         except BulkIndexError as e:
             # Handle partial failures
