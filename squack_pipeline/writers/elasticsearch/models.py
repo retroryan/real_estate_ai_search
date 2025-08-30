@@ -1,15 +1,9 @@
 """Pydantic models for Elasticsearch writer."""
 
-from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
-
-class EntityType(str, Enum):
-    """Supported entity types for Elasticsearch indexing."""
-    PROPERTIES = "properties"
-    NEIGHBORHOODS = "neighborhoods"
-    WIKIPEDIA = "wikipedia"
+from squack_pipeline.models import EntityType
 
 
 class WriteResult(BaseModel):
@@ -33,7 +27,7 @@ class BulkOperation(BaseModel):
     
     entity_type: EntityType = Field(description="Type of entity being written")
     index_name: str = Field(description="Target index name")
-    records: List[Dict[str, Any]] = Field(description="Records to write")
+    records: List[Dict] = Field(description="Records to write")
     id_field: str = Field(description="Field to use as document ID")
     chunk_size: int = Field(default=500, ge=1, description="Bulk operation chunk size")
     
@@ -89,7 +83,7 @@ class IndexMapping(BaseModel):
     def for_properties(cls) -> "IndexMapping":
         """Create mapping for property entities."""
         return cls(
-            entity_type=EntityType.PROPERTIES,
+            entity_type=EntityType.PROPERTY,
             id_field="listing_id",
             geo_fields={"location": {"lat": "latitude", "lon": "longitude"}},
             text_fields=["description", "property_type", "city", "state"],
@@ -100,7 +94,7 @@ class IndexMapping(BaseModel):
     def for_neighborhoods(cls) -> "IndexMapping":
         """Create mapping for neighborhood entities."""
         return cls(
-            entity_type=EntityType.NEIGHBORHOODS,
+            entity_type=EntityType.NEIGHBORHOOD,
             id_field="neighborhood_id",
             geo_fields={"location": {"lat": "latitude", "lon": "longitude"}},
             text_fields=["name", "description", "city"],

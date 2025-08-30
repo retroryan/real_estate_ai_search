@@ -97,7 +97,7 @@ class WikipediaEnrichmentConfig(BaseModel):
     batch_size: int = Field(default=50, ge=1, le=500, description="Batch size for bulk updates")
     max_documents: Optional[int] = Field(default=None, ge=1, description="Maximum documents to process")
     dry_run: bool = Field(default=False, description="Perform dry run without updating")
-    data_dir: str = Field(default="../data", description="Data directory path")
+    data_dir: str = Field(default="data", description="Data directory path")
     pipeline_name: str = Field(default="wikipedia_ingest_pipeline", description="Ingest pipeline name")
 
 

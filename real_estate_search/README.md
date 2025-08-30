@@ -115,7 +115,7 @@ python -m real_estate_search.management setup-indices --clear
 ### Step 2: Run Data Pipeline
 Process, enrich, and index property data with neighborhood and Wikipedia correlations:
 ```bash
-python -m data_pipeline
+python -m squack_pipeline
 ```
 
 ### Step 3: Enrich Wikipedia Articles 

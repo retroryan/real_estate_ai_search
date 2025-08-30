@@ -202,7 +202,7 @@ class TestEndToEndElasticsearch:
         print(f"✓ Processed to Gold: {gold_table} with {len(gold_records)} records")
         
         # 2. Write to Elasticsearch
-        result = es_writer.write_entity(EntityType.PROPERTIES, gold_records)
+        result = es_writer.write_entity(EntityType.PROPERTY, gold_records)
         assert result.success, f"Failed to write to Elasticsearch: {result.error}"
         print(f"✓ Written to Elasticsearch: {result.record_count} records in {result.duration_seconds:.2f}s")
         
@@ -342,7 +342,7 @@ class TestEndToEndElasticsearch:
         print(f"✓ Processed to Gold: {gold_table} with {len(gold_records)} records")
         
         # 2. Write to Elasticsearch
-        result = es_writer.write_entity(EntityType.NEIGHBORHOODS, gold_records)
+        result = es_writer.write_entity(EntityType.NEIGHBORHOOD, gold_records)
         assert result.success, f"Failed to write to Elasticsearch: {result.error}"
         print(f"✓ Written to Elasticsearch: {result.record_count} records in {result.duration_seconds:.2f}s")
         
@@ -480,12 +480,12 @@ class TestEndToEndElasticsearch:
         
         # Properties
         _, prop_records = self.process_properties_to_gold(settings, connection)
-        prop_result = es_writer.write_entity(EntityType.PROPERTIES, prop_records)
+        prop_result = es_writer.write_entity(EntityType.PROPERTY, prop_records)
         print(f"  ✓ Properties: {prop_result.record_count} records")
         
         # Neighborhoods
         _, neigh_records = self.process_neighborhoods_to_gold(settings, connection)
-        neigh_result = es_writer.write_entity(EntityType.NEIGHBORHOODS, neigh_records)
+        neigh_result = es_writer.write_entity(EntityType.NEIGHBORHOOD, neigh_records)
         print(f"  ✓ Neighborhoods: {neigh_result.record_count} records")
         
         # Wikipedia

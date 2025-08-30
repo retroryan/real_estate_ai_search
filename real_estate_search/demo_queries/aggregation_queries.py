@@ -89,7 +89,7 @@ def demo_neighborhood_stats(
                     # NESTED BUCKET AGGREGATION: Create sub-buckets within each neighborhood
                     "property_types": {
                         "terms": {
-                            "field": "property_type.keyword",
+                            "field": "property_type",
                             "size": 10  # Top 10 property types per neighborhood
                         }
                     }
@@ -226,7 +226,7 @@ def demo_price_distribution(
                     # Break down each price range by property type
                     "by_property_type": {
                         "terms": {
-                            "field": "property_type.keyword",
+                            "field": "property_type",
                             "size": 10
                         }
                     },
@@ -253,7 +253,7 @@ def demo_price_distribution(
             # COMPLEX NESTED AGGREGATION: Stats per property type
             "by_property_type_stats": {
                 "terms": {
-                    "field": "property_type.keyword",
+                    "field": "property_type",
                     "size": 10
                 },
                 "aggs": {

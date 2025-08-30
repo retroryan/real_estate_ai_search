@@ -7,9 +7,16 @@ import duckdb
 
 from squack_pipeline.config.settings import PipelineSettings
 from squack_pipeline.writers.parquet_writer import ParquetWriter
-from squack_pipeline.writers.elasticsearch import ElasticsearchWriter, EntityType, WriteResult
+from squack_pipeline.writers.elasticsearch import ElasticsearchWriter
+from squack_pipeline.models import EntityType
 from squack_pipeline.models.duckdb_models import TableIdentifier
+from squack_pipeline.writers.elasticsearch.models import WriteResult
+from squack_pipeline.models.writer_models import (
+    WriteDestinationResults,
+    WriteOperationResult
+)
 from squack_pipeline.utils.logging import PipelineLogger
+from squack_pipeline.utils.duckdb_extractor import DuckDBExtractor
 
 
 class WriterOrchestrator:
@@ -24,6 +31,9 @@ class WriterOrchestrator:
         """
         self.settings = settings
         self.logger = PipelineLogger.get_logger(self.__class__.__name__)
+        
+        # Initialize data extractor
+        self.extractor = DuckDBExtractor()
         
         # Initialize writers based on enabled destinations
         self.parquet_writer: Optional[ParquetWriter] = None
@@ -171,10 +181,10 @@ class WriterOrchestrator:
         
         # Map string entity types to EntityType enum
         entity_mapping = {
-            "properties": EntityType.PROPERTIES,
-            "neighborhoods": EntityType.NEIGHBORHOODS,
+            "properties": EntityType.PROPERTY,
+            "neighborhoods": EntityType.NEIGHBORHOOD,
             "wikipedia": EntityType.WIKIPEDIA,
-            "locations": EntityType.NEIGHBORHOODS,  # Use neighborhoods type for locations
+            "locations": EntityType.LOCATION,
         }
         
         for entity_type_str, table_name in tables.items():
@@ -190,14 +200,13 @@ class WriterOrchestrator:
             try:
                 self.logger.info(f"Extracting {entity_type_str} from {table_name}...")
                 
-                # Extract data from DuckDB as DataFrame safely
-                safe_table = TableIdentifier(name=table_name)
-                df = connection.execute(f"SELECT * FROM {safe_table.qualified_name}").df()
+                # Extract data from DuckDB as Pydantic models
+                extraction_result = self.extractor.extract_records(connection, table_name, entity_type)
                 
-                # Convert DataFrame to list of dictionaries
-                data = df.to_dict('records')
+                # Convert Pydantic models to dicts for Elasticsearch
+                data = [record.to_dict() for record in extraction_result.records]
                 
-                self.logger.info(f"Writing {len(data)} {entity_type_str} records to Elasticsearch...")
+                self.logger.info(f"Writing {extraction_result.total_count} {entity_type_str} records to Elasticsearch ({extraction_result.embeddings_count} with embeddings)...")
                 
                 # Write to Elasticsearch
                 result = self.es_writer.write_entity(entity_type, data)
@@ -215,6 +224,111 @@ class WriterOrchestrator:
                 ))
         
         return results
+    
+    def write_entity(
+        self,
+        connection: duckdb.DuckDBPyConnection,
+        table_name: str,
+        entity_type: EntityType
+    ) -> WriteOperationResult:
+        """
+        Write a single entity to all configured destinations.
+        
+        Args:
+            connection: DuckDB connection
+            table_name: Name of the table to write
+            entity_type: Type of entity being written
+            
+        Returns:
+            WriteOperationResult with results from all destinations
+        """
+        result = WriteOperationResult()
+        
+        # Extract data once to get embedding count
+        extraction_result = None
+        
+        # Write to Parquet
+        if self.parquet_writer and "parquet" in self.settings.output.enabled_destinations:
+            self.logger.info(f"Writing {entity_type.value} to Parquet...")
+            parquet_results = []
+            try:
+                # Set connection for ParquetWriter
+                self.parquet_writer.set_connection(connection)
+                
+                # Generate output path
+                timestamp = int(time.time())
+                output_filename = f"{entity_type.value}_{self.settings.environment}_{timestamp}.parquet"
+                output_path = self.settings.data.output_path / output_filename
+                
+                # Write using ParquetWriter's correct method signature
+                written_path = self.parquet_writer.write_with_schema(
+                    table_name=table_name,
+                    output_path=output_path
+                )
+                
+                # Get record count
+                record_count = self.extractor.extract_count(connection, table_name)
+                
+                parquet_results.append(WriteResult(
+                    success=True,
+                    entity_type=entity_type,
+                    record_count=record_count,
+                    failed_count=0,
+                    index_name=written_path.name
+                ))
+            except Exception as e:
+                self.logger.error(f"Failed to write {entity_type.value} to Parquet: {str(e)}")
+                parquet_results.append(WriteResult(
+                    success=False,
+                    entity_type=entity_type,
+                    record_count=0,
+                    failed_count=0,
+                    index_name=table_name,
+                    error=str(e)
+                ))
+            
+            result.parquet = WriteDestinationResults(
+                destination="parquet",
+                results=parquet_results
+            )
+        
+        # Extract data once for embedding count (needed for all destinations)
+        if not extraction_result:
+            try:
+                extraction_result = self.extractor.extract_records(connection, table_name, entity_type)
+                result.embeddings_count = extraction_result.embeddings_count
+            except Exception as e:
+                self.logger.error(f"Failed to extract data from {table_name}: {str(e)}")
+                return result
+        
+        # Write to Elasticsearch
+        if self.es_writer and "elasticsearch" in self.settings.output.enabled_destinations:
+            self.logger.info(f"Writing {entity_type.value} to Elasticsearch...")
+            es_results = []
+            try:
+                # Convert to dicts for Elasticsearch
+                data = [record.to_dict() for record in extraction_result.records]
+                
+                self.logger.info(f"Writing {extraction_result.total_count} {entity_type.value} records to Elasticsearch ({extraction_result.embeddings_count} with embeddings)...")
+                es_write = self.es_writer.write_entity(entity_type, data)
+                es_results.append(es_write)
+            except Exception as e:
+                self.logger.error(f"Failed to write {entity_type.value} to Elasticsearch: {str(e)}")
+                es_results.append(WriteResult(
+                    success=False,
+                    entity_type=entity_type,
+                    record_count=0,
+                    failed_count=0,
+                    index_name=entity_type.value,
+                    error=str(e)
+                ))
+            
+            result.elasticsearch = WriteDestinationResults(
+                destination="elasticsearch",
+                results=es_results
+            )
+        
+        return result
     
     def close(self):
         """Close all writer connections."""

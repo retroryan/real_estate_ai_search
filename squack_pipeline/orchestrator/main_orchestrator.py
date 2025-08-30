@@ -1,7 +1,7 @@
 """Main orchestrator that coordinates entity-specific pipelines."""
 
 import time
-from typing import Dict, Any, Optional, List
+from typing import Optional, List
 from pathlib import Path
 
 from squack_pipeline.config.settings import PipelineSettings
@@ -10,6 +10,7 @@ from squack_pipeline.orchestrator.property_orchestrator import PropertyPipelineO
 from squack_pipeline.orchestrator.neighborhood_orchestrator import NeighborhoodPipelineOrchestrator
 from squack_pipeline.orchestrator.wikipedia_orchestrator import WikipediaPipelineOrchestrator
 from squack_pipeline.models import EntityType
+from squack_pipeline.models.data_types import PipelineMetrics, EntityMetrics
 from squack_pipeline.utils.logging import PipelineLogger, log_execution_time
 
 
@@ -42,11 +43,7 @@ class MainPipelineOrchestrator:
         }
         
         # Overall metrics
-        self.overall_metrics: Dict[str, Any] = {
-            "total_records": 0,
-            "pipeline_duration": 0,
-            "entity_metrics": {},
-        }
+        self.overall_metrics = PipelineMetrics()
     
     @log_execution_time
     def run(
@@ -55,7 +52,7 @@ class MainPipelineOrchestrator:
         sample_size: Optional[int] = None,
         dry_run: bool = False,
         skip_elasticsearch: bool = False
-    ) -> Dict[str, Any]:
+    ) -> PipelineMetrics:
         """Run the complete pipeline for specified entities.
         
         Args:
@@ -95,8 +92,9 @@ class MainPipelineOrchestrator:
                     )
                     
                     # Store metrics
-                    self.overall_metrics["entity_metrics"][entity_type.value] = entity_metrics
-                    self.overall_metrics["total_records"] += entity_metrics.get("gold_records", 0)
+                    self.overall_metrics.entity_metrics[entity_type.value] = entity_metrics
+                    self.overall_metrics.total_records += entity_metrics.gold_records
+                    self.overall_metrics.total_embeddings += entity_metrics.embeddings_generated
                     
                 except Exception as e:
                     self.logger.error(f"Failed to process {entity_type.value}: {e}")
@@ -105,10 +103,11 @@ class MainPipelineOrchestrator:
                         raise
                     else:
                         # Continue with other entities
-                        self.overall_metrics["entity_metrics"][entity_type.value] = {"error": str(e)}
+                        failed_metrics = EntityMetrics(error=str(e))
+                        self.overall_metrics.entity_metrics[entity_type.value] = failed_metrics
             
             # Calculate total duration
-            self.overall_metrics["pipeline_duration"] = time.time() - start_time
+            self.overall_metrics.pipeline_duration = time.time() - start_time
             
             # Log summary
             self._log_summary()
@@ -158,21 +157,28 @@ class MainPipelineOrchestrator:
         self.logger.info("PIPELINE EXECUTION SUMMARY")
         self.logger.info("=" * 60)
         
-        for entity_type, metrics in self.overall_metrics["entity_metrics"].items():
-            if "error" in metrics:
-                self.logger.error(f"{entity_type}: FAILED - {metrics['error']}")
+        for entity_type, metrics in self.overall_metrics.entity_metrics.items():
+            if metrics.error:
+                self.logger.error(f"{entity_type}: FAILED - {metrics.error}")
             else:
                 self.logger.success(
                     f"{entity_type}: "
-                    f"{metrics.get('bronze_records', 0)} → "
-                    f"{metrics.get('silver_records', 0)} → "
-                    f"{metrics.get('gold_records', 0)} records"
+                    f"{metrics.bronze_records} → "
+                    f"{metrics.silver_records} → "
+                    f"{metrics.gold_records} records"
                 )
                 
-                if metrics.get('elasticsearch_records'):
-                    self.logger.info(f"  → Elasticsearch: {metrics['elasticsearch_records']} records")
+                if metrics.elasticsearch_records:
+                    self.logger.info(f"  → Elasticsearch: {metrics.elasticsearch_records} records")
+                
+                if metrics.embeddings_generated:
+                    self.logger.info(f"  → Embeddings: {metrics.embeddings_generated} generated")
         
         self.logger.info("-" * 60)
-        self.logger.info(f"Total records processed: {self.overall_metrics['total_records']}")
-        self.logger.info(f"Total duration: {self.overall_metrics['pipeline_duration']:.2f} seconds")
+        self.logger.info(f"Total records processed: {self.overall_metrics.total_records}")
+        if self.overall_metrics.total_embeddings > 0:
+            self.logger.info(f"Total embeddings generated: {self.overall_metrics.total_embeddings}")
+            embedding_rate = (self.overall_metrics.total_embeddings / self.overall_metrics.total_records * 100) if self.overall_metrics.total_records > 0 else 0
+            self.logger.info(f"Embedding coverage: {embedding_rate:.1f}%")
+        self.logger.info(f"Total duration: {self.overall_metrics.pipeline_duration:.2f} seconds")
         self.logger.info("=" * 60)

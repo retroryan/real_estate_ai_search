@@ -62,12 +62,12 @@ The data pipeline processes property data, neighborhoods, and Wikipedia articles
 
 ```bash
 # Run full pipeline (properties, neighborhoods, Wikipedia)
-python -m data_pipeline
+python -m squack_pipeline
 
 # Or run with specific options:
-python -m data_pipeline \
+python -m squack_pipeline \
   --sample-size 100 \     # Process only 100 items per type
-  --config data_pipeline/config.yaml \
+  --config squack_pipeline/config.yaml \
   --log-level INFO
 ```
 
@@ -95,7 +95,7 @@ The project uses a hierarchical configuration approach:
 
 - `/real_estate_ai_search/.env` - Main environment variables (API keys)
 - `/real_estate_search/config.yaml` - Elasticsearch and search settings
-- `/data_pipeline/config.yaml` - Pipeline and embedding settings
+- `/squack_pipeline/config.yaml` - Pipeline and embedding settings
 
 ### Environment Variable Loading
 
@@ -182,20 +182,20 @@ python -m real_estate_search.management demo 11
 pytest
 
 # Run specific test modules
-pytest data_pipeline/tests/
+pytest squack_pipeline/tests/
 pytest real_estate_search/tests/
 
 # Run integration tests
-pytest data_pipeline/integration_tests/
+pytest squack_pipeline/integration_tests/
 ```
 
 ### Validate Pipeline Output
 ```bash
 # Validate Parquet files
-python -m pytest data_pipeline/integration_tests/test_parquet_validation.py
+python -m pytest squack_pipeline/integration_tests/test_parquet_validation.py
 
 # Check Elasticsearch data
-python data_pipeline/scripts/verify_elasticsearch.py
+python squack_pipeline/scripts/verify_elasticsearch.py
 
 # Validate embeddings
 python -m common_embeddings.main evaluate
@@ -206,17 +206,17 @@ python -m common_embeddings.main evaluate
 ### Pipeline Commands
 ```bash
 # Full pipeline
-python -m data_pipeline
+python -m squack_pipeline
 
 # Test mode (small sample)
-python -m data_pipeline --test-mode
+python -m squack_pipeline --test-mode
 
 # Specific data type only
-python -m data_pipeline --data-type properties
-python -m data_pipeline --data-type wikipedia
+python -m squack_pipeline --data-type properties
+python -m squack_pipeline --data-type wikipedia
 
 # Validate without running
-python -m data_pipeline --validate-only
+python -m squack_pipeline --validate-only
 ```
 
 ### Elasticsearch Management
@@ -271,13 +271,13 @@ python -m real_estate_search.management setup-indices --clear
 ### Issue: "No documents in index"
 **Solution**: Run the data pipeline:
 ```bash
-python -m data_pipeline
+python -m squack_pipeline
 ```
 
 ### Issue: Pipeline hangs on embeddings
 **Solution**: Use smaller batch size or sample size:
 ```bash
-python -m data_pipeline --sample-size 10 --config data_pipeline/config.yaml
+python -m squack_pipeline --sample-size 10 --config squack_pipeline/config.yaml
 ```
 
 ## Project Structure Overview
@@ -285,7 +285,7 @@ python -m data_pipeline --sample-size 10 --config data_pipeline/config.yaml
 ```
 real_estate_ai_search/
 ├── .env                           # API keys (create from .env.example)
-├── data_pipeline/                 # Spark pipeline for data processing
+├── squack_pipeline/               # Spark pipeline for data processing
 │   ├── config.yaml               # Pipeline configuration
 │   └── __main__.py               # Entry point
 ├── real_estate_search/            # Elasticsearch RAG implementation
@@ -301,7 +301,7 @@ real_estate_ai_search/
 
 ### Custom Embedding Configuration
 
-Edit `data_pipeline/config.yaml`:
+Edit `squack_pipeline/config.yaml`:
 ```yaml
 embedding:
   provider: voyage

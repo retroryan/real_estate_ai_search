@@ -330,7 +330,7 @@ class EnrichWikipediaCommand(BaseCommand):
             batch_size=args.batch_size or 50,
             max_documents=args.max_documents,
             dry_run=args.dry_run,
-            data_dir="../data",
+            data_dir="data",
             pipeline_name="wikipedia_ingest_pipeline"
         )
         self.result = WikipediaEnrichmentResult()
@@ -390,7 +390,7 @@ class EnrichWikipediaCommand(BaseCommand):
         if filename.startswith('data/'):
             file_path = Path(filename)
         else:
-            file_path = Path(self.enrichment_config.data_dir) / filename
+            file_path = Path(self.enrichment_config.data_dir) / "wikipedia" / "pages" / filename
         
         if not file_path.exists():
             self.result.files_not_found += 1

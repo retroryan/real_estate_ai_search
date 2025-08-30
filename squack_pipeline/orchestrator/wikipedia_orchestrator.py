@@ -69,7 +69,7 @@ class WikipediaPipelineOrchestrator(BaseEntityOrchestrator):
         
         # Update metrics
         record_count = self.loader.count_records(table_name)
-        self.metrics["bronze_records"] = record_count
+        self.metrics.bronze_records = record_count
         
         # Log sample data
         sample_data = self.loader.get_sample_data(table_name, limit=3)
@@ -113,7 +113,7 @@ class WikipediaPipelineOrchestrator(BaseEntityOrchestrator):
         record_count = result[0] if result else 0
         
         # Update metrics
-        self.metrics["silver_records"] = record_count
+        self.metrics.silver_records = record_count
         
         self.logger.info(
             f"Silver processing: {bronze_table.record_count} → {record_count} records"
@@ -150,7 +150,7 @@ class WikipediaPipelineOrchestrator(BaseEntityOrchestrator):
         record_count = result[0] if result else 0
         
         # Update metrics
-        self.metrics["gold_records"] = record_count
+        self.metrics.gold_records = record_count
         
         self.logger.info(
             f"Gold processing: {silver_table.record_count} → {record_count} records"

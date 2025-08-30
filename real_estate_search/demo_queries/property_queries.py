@@ -362,7 +362,7 @@ class PropertyQueryBuilder:
                 },
                 "property_types": {
                     "terms": {
-                        "field": "property_type.keyword",
+                        "field": "property_type",
                         "size": 10
                     }
                 },
