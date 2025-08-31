@@ -2,7 +2,7 @@
   "title": "Real Estate Search Evaluation Datasets",
   "description": "Comprehensive evaluation datasets for all demo query types in the real estate search system",
   "generated_at": "2025-08-30T14:57:59.957344",
-  "total_test_cases": 189,
+  "total_test_cases": 169,
   "datasets": [
     {
       "filename": "advanced_queries_eval.json",
@@ -45,13 +45,6 @@
       "description": "Evaluation dataset for natural language semantic search queries",
       "test_case_count": 20,
       "path": "real_estate_search/eval/semantic_query_search_eval.json"
-    },
-    {
-      "filename": "property_neighborhood_wiki_eval.json",
-      "query_type": "property_neighborhood_wiki",
-      "description": "Evaluation dataset for multi-index queries combining properties, neighborhoods, and Wikipedia data",
-      "test_case_count": 20,
-      "path": "real_estate_search/eval/property_neighborhood_wiki_eval.json"
     }
   ]
 }

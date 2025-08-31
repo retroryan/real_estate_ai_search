@@ -22,10 +22,18 @@ from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 from elasticsearch import Elasticsearch
 import logging
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
+from rich.columns import Columns
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .base_models import (
     SearchRequest,
     SearchResponse,
+    SourceFilter,
     BoolQuery,
     QueryClause,
     QueryType,
@@ -42,6 +50,10 @@ from .display_formatter import PropertyDisplayFormatter
 
 logger = logging.getLogger(__name__)
 
+
+# ============================================================================
+# ELASTICSEARCH QUERY BUILDERS - Core query logic at the top for clarity
+# ============================================================================
 
 class PropertyQueryBuilder:
     """
@@ -103,14 +115,14 @@ class PropertyQueryBuilder:
         }
         
         request = SearchRequest(
-            index="properties",
+            index=["properties"],
             query=query,
             size=size,
-            source=[  # Only return needed fields
+            source=SourceFilter(includes=[  # Only return needed fields
                 "listing_id", "property_type", "price", 
                 "bedrooms", "bathrooms", "square_feet",
                 "address", "description", "amenities"
-            ]
+            ])
         )
         
         if highlight:
@@ -207,11 +219,11 @@ class PropertyQueryBuilder:
             query = {"match_all": {}}
         
         return SearchRequest(
-            index="properties",
+            index=["properties"],
             query=query,
             size=size,
             sort=[{"price": {"order": "asc"}}],  # Sort by price when filtering
-            source=True  # Return all fields
+            # Return all fields by default
         )
     
     @staticmethod
@@ -295,11 +307,11 @@ class PropertyQueryBuilder:
         ]
         
         return SearchRequest(
-            index="properties",
+            index=["properties"],
             query=query,
             size=size,
             sort=sort,
-            source=True
+            # Return all fields by default
         )
     
     @staticmethod
@@ -373,24 +385,27 @@ class PropertyQueryBuilder:
             }
         
         return SearchRequest(
-            index="properties",
+            index=["properties"],
             query=query,
             size=20,
             aggs=aggs,
             sort=[{"price": {"order": "asc"}}],
-            source=True
+            # Return all fields by default
         )
 
+
+# ============================================================================
+# DEMO EXECUTION - Query execution with display logic separated
+# ============================================================================
 
 class PropertySearchDemo:
     """
     Demo class for property searches using Pydantic models.
     
-    This class demonstrates best practices for:
-    - Executing Elasticsearch queries with proper error handling
-    - Converting responses to strongly-typed entities
-    - Building complex search workflows
-    - Providing useful search metadata
+    Organization:
+    - Elasticsearch query execution methods first
+    - Display/formatting methods at the bottom
+    - Clear separation between query logic and presentation
     """
     
     def __init__(self, es_client: Elasticsearch):
@@ -424,6 +439,10 @@ class PropertySearchDemo:
             execution_time = int((time.time() - start_time) * 1000)
             return None, execution_time
     
+    # ------------------------------------------------------------------------
+    # ELASTICSEARCH QUERY EXECUTION METHODS
+    # ------------------------------------------------------------------------
+    
     def demo_basic_search(
         self,
         query_text: str = "modern home with pool"
@@ -431,22 +450,21 @@ class PropertySearchDemo:
         """
         Execute basic property search demo.
         
-        This demonstrates:
-        - Full-text search across multiple fields
-        - Field boosting for relevance
-        - Fuzzy matching for user-friendly search
+        ELASTICSEARCH FEATURES:
+        - Multi-match query across multiple fields
+        - Field boosting (description^2, amenities^1.5)
+        - Fuzzy matching with AUTO
         - Result highlighting
-        
-        Args:
-            query_text: Search query
-            
-        Returns:
-            DemoQueryResult with typed property entities
         """
+        # BUILD ELASTICSEARCH QUERY
         request = self.query_builder.basic_search(query_text)
+        
+        # EXECUTE QUERY
         response, exec_time = self.execute_search(request)
         
+        # PROCESS RESULTS
         if not response:
+            self._display_no_results("Basic Property Search", exec_time)
             return DemoQueryResult(
                 query_name="Basic Property Search",
                 execution_time_ms=exec_time,
@@ -456,26 +474,10 @@ class PropertySearchDemo:
                 query_dsl=request.to_dict()
             )
         
-        # Convert hits to results with display formatting
-        results = []
-        for hit in response.hits:
-            try:
-                # Create property from source
-                prop = ESProperty(**hit.source)
-                # Format for display
-                formatted = PropertyDisplayFormatter.format_for_display(prop)
-                # Add source data with display info
-                result = {
-                    **hit.source,
-                    '_display': formatted,
-                    '_score': hit.score
-                }
-                if hit.highlight:
-                    result['_highlights'] = hit.highlight
-                results.append(result)
-            except Exception as e:
-                logger.warning(f"Failed to parse property: {e}")
-                continue
+        results = self._process_search_results(response)
+        
+        # DISPLAY RESULTS (separated from query logic)
+        self._display_basic_search(query_text, response, results, exec_time)
         
         return DemoQueryResult(
             query_name=f"Basic Property Search: '{query_text}'",
@@ -526,6 +528,25 @@ class PropertySearchDemo:
         Returns:
             DemoQueryResult with filtered properties
         """
+        console = Console()
+        
+        # Show filter criteria in a nice panel
+        criteria_text = Text()
+        criteria_text.append("🏠 Property Type: ", style="yellow")
+        criteria_text.append(f"{PropertyDisplayFormatter.format_property_type(property_type)}\n", style="cyan")
+        criteria_text.append("💰 Price Range: ", style="yellow")
+        criteria_text.append(f"${min_price:,.0f} - ${max_price:,.0f}\n", style="green")
+        criteria_text.append("🛏️  Bedrooms: ", style="yellow")
+        criteria_text.append(f"{min_bedrooms}+\n", style="cyan")
+        criteria_text.append("🚿 Bathrooms: ", style="yellow")
+        criteria_text.append(f"{min_bathrooms}+", style="cyan")
+        
+        console.print(Panel(
+            criteria_text,
+            title="[bold cyan]🔍 Filtered Property Search[/bold cyan]",
+            border_style="cyan"
+        ))
+        
         request = self.query_builder.filtered_search(
             property_type=property_type,
             min_price=min_price,
@@ -534,9 +555,14 @@ class PropertySearchDemo:
             min_bathrooms=min_bathrooms
         )
         
-        response, exec_time = self.execute_search(request)
+        with console.status("[yellow]Applying filters and searching...[/yellow]") as status:
+            response, exec_time = self.execute_search(request)
         
         if not response:
+            console.print(Panel(
+                "[red]Search failed - no response received[/red]",
+                border_style="red"
+            ))
             return DemoQueryResult(
                 query_name="Filtered Property Search",
                 execution_time_ms=exec_time,
@@ -548,19 +574,67 @@ class PropertySearchDemo:
         
         # Convert hits to results with display formatting
         results = []
-        for hit in response.hits:
-            try:
-                prop = ESProperty(**hit.source)
-                formatted = PropertyDisplayFormatter.format_for_display(prop)
-                result = {
-                    **hit.source,
-                    '_display': formatted,
-                    '_score': hit.score
-                }
-                results.append(result)
-            except Exception as e:
-                logger.warning(f"Failed to parse property: {e}")
-                continue
+        
+        if response.total_hits > 0:
+            # Create property cards layout
+            table = Table(
+                title=f"[bold green]Found {response.total_hits} Matching Properties[/bold green]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                width=120
+            )
+            table.add_column("#", style="dim", width=3)
+            table.add_column("Address", style="cyan", width=35)
+            table.add_column("Price", style="green", justify="right", width=12)
+            table.add_column("Beds/Baths", style="yellow", justify="center", width=10)
+            table.add_column("Sq Ft", style="blue", justify="right", width=10)
+            table.add_column("Type", style="magenta", width=15)
+            
+            for i, hit in enumerate(response.hits[:15], 1):
+                try:
+                    prop = ESProperty(**hit.source)
+                    formatted = PropertyDisplayFormatter.format_for_display(prop)
+                    
+                    beds_baths = f"{prop.bedrooms or 'N/A'}/{prop.bathrooms or 'N/A'}"
+                    sq_ft = f"{prop.square_feet:,}" if prop.square_feet else "N/A"
+                    
+                    table.add_row(
+                        str(i),
+                        formatted['address'],
+                        formatted['price'],
+                        beds_baths,
+                        sq_ft,
+                        formatted['property_type']
+                    )
+                    
+                    result = {
+                        **hit.source,
+                        '_display': formatted,
+                        '_score': hit.score
+                    }
+                    results.append(result)
+                except Exception as e:
+                    logger.warning(f"Failed to parse property: {e}")
+                    continue
+            
+            console.print(table)
+            
+            # Summary stats
+            console.print(Panel(
+                f"[green]✓[/green] Filters applied successfully\n"
+                f"[green]✓[/green] Query time: [bold]{exec_time}ms[/bold]\n"
+                f"[green]✓[/green] Total matches: [bold]{response.total_hits}[/bold]\n"
+                f"[green]✓[/green] Showing: [bold]{len(results)}[/bold] properties",
+                title="[bold]Filter Results[/bold]",
+                border_style="green"
+            ))
+        else:
+            console.print(Panel(
+                "[red]No properties found matching your filters.[/red]\n"
+                "[yellow]Try adjusting your criteria for more results.[/yellow]",
+                border_style="red"
+            ))
         
         return DemoQueryResult(
             query_name="Filtered Property Search",
@@ -609,6 +683,24 @@ class PropertySearchDemo:
         Returns:
             DemoQueryResult with nearby properties
         """
+        console = Console()
+        
+        # Show search parameters with map emoji
+        search_info = Text()
+        search_info.append("📍 Center Location: ", style="yellow")
+        search_info.append(f"({center_lat:.4f}, {center_lon:.4f})\n", style="cyan")
+        search_info.append("📏 Search Radius: ", style="yellow")
+        search_info.append(f"{radius_km} km\n", style="cyan")
+        if max_price:
+            search_info.append("💰 Max Price: ", style="yellow")
+            search_info.append(f"${max_price:,.0f}", style="green")
+        
+        console.print(Panel(
+            search_info,
+            title="[bold cyan]🗺️  Geo-Distance Property Search[/bold cyan]",
+            border_style="cyan"
+        ))
+        
         request = self.query_builder.geo_search(
             center_lat=center_lat,
             center_lon=center_lon,
@@ -616,9 +708,14 @@ class PropertySearchDemo:
             max_price=max_price
         )
         
-        response, exec_time = self.execute_search(request)
+        with console.status("[yellow]Calculating distances and searching...[/yellow]") as status:
+            response, exec_time = self.execute_search(request)
         
         if not response:
+            console.print(Panel(
+                "[red]Search failed - no response received[/red]",
+                border_style="red"
+            ))
             return DemoQueryResult(
                 query_name="Geo-Distance Property Search",
                 execution_time_ms=exec_time,
@@ -630,23 +727,69 @@ class PropertySearchDemo:
         
         # Convert hits to results with display formatting and distance
         results = []
-        for i, hit in enumerate(response.hits):
-            try:
-                prop = ESProperty(**hit.source)
-                formatted = PropertyDisplayFormatter.format_for_display(prop)
-                result = {
-                    **hit.source,
-                    '_display': formatted,
-                    '_score': hit.score
-                }
-                # Add distance from sort values if available
-                sort_values = hit.model_extra.get('sort', [])
-                if sort_values:
-                    result['_distance_km'] = sort_values[0]
-                results.append(result)
-            except Exception as e:
-                logger.warning(f"Failed to parse property: {e}")
-                continue
+        
+        if response.total_hits > 0:
+            # Create distance-sorted table
+            table = Table(
+                title=f"[bold green]Found {response.total_hits} Properties Within {radius_km}km[/bold green]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan"
+            )
+            table.add_column("#", style="dim", width=3)
+            table.add_column("Distance", style="magenta", justify="right", width=10)
+            table.add_column("Address", style="cyan", width=35)
+            table.add_column("Price", style="green", justify="right")
+            table.add_column("Details", style="yellow")
+            
+            for i, hit in enumerate(response.hits[:15], 1):
+                try:
+                    prop = ESProperty(**hit.source)
+                    formatted = PropertyDisplayFormatter.format_for_display(prop)
+                    result = {
+                        **hit.source,
+                        '_display': formatted,
+                        '_score': hit.score
+                    }
+                    
+                    # Get distance from sort values
+                    sort_values = hit.model_extra.get('sort', [])
+                    distance_str = "N/A"
+                    if sort_values:
+                        distance_km = sort_values[0]
+                        result['_distance_km'] = distance_km
+                        distance_str = f"{distance_km:.2f} km"
+                    
+                    table.add_row(
+                        str(i),
+                        distance_str,
+                        formatted['address'],
+                        formatted['price'],
+                        formatted['summary']
+                    )
+                    
+                    results.append(result)
+                except Exception as e:
+                    logger.warning(f"Failed to parse property: {e}")
+                    continue
+            
+            console.print(table)
+            
+            # Show map visualization hint
+            console.print(Panel(
+                f"[green]✓[/green] Found [bold]{response.total_hits}[/bold] properties within [bold]{radius_km}km[/bold]\n"
+                f"[green]✓[/green] Query time: [bold]{exec_time}ms[/bold]\n"
+                f"[green]✓[/green] Results sorted by distance from center\n"
+                f"[dim]💡 Tip: Properties are sorted from nearest to farthest[/dim]",
+                title="[bold]📍 Location Search Results[/bold]",
+                border_style="green"
+            ))
+        else:
+            console.print(Panel(
+                f"[red]No properties found within {radius_km}km of the specified location.[/red]\n"
+                "[yellow]Try increasing the search radius or adjusting the price limit.[/yellow]",
+                border_style="red"
+            ))
         
         return DemoQueryResult(
             query_name="Geo-Distance Property Search",
@@ -671,6 +814,99 @@ class PropertySearchDemo:
             explanation=f"Properties within {radius_km}km of ({center_lat}, {center_lon})"
         )
     
+    # ------------------------------------------------------------------------
+    # RESULT PROCESSING METHODS
+    # ------------------------------------------------------------------------
+    
+    def _process_search_results(self, response: SearchResponse) -> List[Dict[str, Any]]:
+        """Process Elasticsearch response into result list."""
+        results = []
+        for hit in response.hits:
+            try:
+                prop = ESProperty(**hit.source)
+                formatted = PropertyDisplayFormatter.format_for_display(prop)
+                result = {
+                    **hit.source,
+                    '_display': formatted,
+                    '_score': hit.score
+                }
+                if hit.highlight:
+                    result['_highlights'] = hit.highlight
+                results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to parse property: {e}")
+                continue
+        return results
+    
+    # ------------------------------------------------------------------------
+    # DISPLAY METHODS - All UI/formatting logic separated at the bottom
+    # ------------------------------------------------------------------------
+    
+    def _display_no_results(self, query_name: str, exec_time: int):
+        """Display no results message."""
+        console = Console()
+        console.print(Panel(
+            "[red]Search failed - no response received[/red]",
+            border_style="red"
+        ))
+    
+    def _display_basic_search(
+        self,
+        query_text: str,
+        response: SearchResponse,
+        results: List[Dict[str, Any]],
+        exec_time: int
+    ):
+        """Display basic search results with rich formatting."""
+        console = Console()
+        
+        # Header
+        console.print(Panel.fit(
+            f"[bold cyan]🔍 Basic Property Search[/bold cyan]\n[yellow]Query: '{query_text}'[/yellow]",
+            border_style="cyan"
+        ))
+        
+        if response.total_hits == 0:
+            console.print(Panel(
+                "[red]No properties found matching your search.[/red]",
+                border_style="red"
+            ))
+            return
+        
+        # Results table
+        table = Table(
+            title=f"[bold green]Found {response.total_hits} Properties[/bold green]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        table.add_column("#", style="dim", width=3)
+        table.add_column("Address", style="cyan", width=30)
+        table.add_column("Price", style="green", justify="right")
+        table.add_column("Details", style="yellow")
+        table.add_column("Score", style="magenta", justify="right")
+        
+        for i, result in enumerate(results[:10], 1):
+            display = result['_display']
+            table.add_row(
+                str(i),
+                display['address'],
+                display['price'],
+                display['summary'],
+                f"{result.get('_score', 0):.2f}"
+            )
+        
+        console.print(table)
+        
+        # Statistics
+        console.print(Panel(
+            f"[green]✓[/green] Query executed in [bold]{exec_time}ms[/bold]\n"
+            f"[green]✓[/green] Total hits: [bold]{response.total_hits}[/bold]\n"
+            f"[green]✓[/green] Results shown: [bold]{len(results)}[/bold]",
+            title="[bold]Search Statistics[/bold]",
+            border_style="green"
+        ))
+    
     def demo_price_range_with_analytics(
         self,
         min_price: float = 400000,
@@ -692,15 +928,29 @@ class PropertySearchDemo:
         Returns:
             DemoQueryResult with properties and statistics
         """
+        console = Console()
+        
+        # Show price range header
+        console.print(Panel(
+            f"[bold cyan]📊 Price Range Analysis[/bold cyan]\n"
+            f"[yellow]Range:[/yellow] [green]${min_price:,.0f} - ${max_price:,.0f}[/green]",
+            border_style="cyan"
+        ))
+        
         request = self.query_builder.price_range_with_stats(
             min_price=min_price,
             max_price=max_price,
             include_stats=True
         )
         
-        response, exec_time = self.execute_search(request)
+        with console.status("[yellow]Analyzing price distribution...[/yellow]") as status:
+            response, exec_time = self.execute_search(request)
         
         if not response:
+            console.print(Panel(
+                "[red]Analysis failed - no response received[/red]",
+                border_style="red"
+            ))
             return DemoQueryResult(
                 query_name="Price Range Search with Analytics",
                 execution_time_ms=exec_time,
@@ -731,7 +981,7 @@ class PropertySearchDemo:
         if response.aggregations:
             aggregations = {}
             
-            # Price statistics
+            # Show aggregation results in a nice format
             if 'price_stats' in response.aggregations:
                 stats = response.aggregations['price_stats']
                 aggregations['price_stats'] = {
@@ -741,18 +991,76 @@ class PropertySearchDemo:
                     "sum": stats.get('sum', 0),
                     "count": stats.get('count', 0)
                 }
+                
+                # Create statistics panel
+                stats_table = Table(box=box.SIMPLE, show_header=False)
+                stats_table.add_column("Metric", style="yellow")
+                stats_table.add_column("Value", style="green", justify="right")
+                
+                stats_table.add_row("Properties Found", str(stats.get('count', 0)))
+                stats_table.add_row("Minimum Price", f"${stats.get('min', 0):,.0f}")
+                stats_table.add_row("Maximum Price", f"${stats.get('max', 0):,.0f}")
+                stats_table.add_row("Average Price", f"${stats.get('avg', 0):,.0f}")
+                
+                console.print(Panel(
+                    stats_table,
+                    title="[bold]📈 Price Statistics[/bold]",
+                    border_style="blue"
+                ))
             
             # Property type distribution
             if 'property_types' in response.aggregations:
                 aggregations['property_types'] = response.aggregations['property_types']
+                
+                # Show property type distribution
+                type_buckets = response.aggregations['property_types'].get('buckets', [])
+                if type_buckets:
+                    type_table = Table(box=box.SIMPLE, show_header=False)
+                    type_table.add_column("Type", style="cyan")
+                    type_table.add_column("Count", style="magenta", justify="right")
+                    
+                    for bucket in type_buckets[:5]:
+                        prop_type = PropertyDisplayFormatter.format_property_type(bucket['key'])
+                        type_table.add_row(prop_type, str(bucket['doc_count']))
+                    
+                    console.print(Panel(
+                        type_table,
+                        title="[bold]🏠 Property Types[/bold]",
+                        border_style="magenta"
+                    ))
             
             # Price histogram
             if 'price_histogram' in response.aggregations:
                 aggregations['price_histogram'] = response.aggregations['price_histogram']
+                
+                # Show price distribution as a simple bar chart
+                hist_buckets = response.aggregations['price_histogram'].get('buckets', [])
+                if hist_buckets:
+                    console.print(Panel(
+                        "[bold]📊 Price Distribution (in $100k buckets)[/bold]",
+                        border_style="yellow"
+                    ))
+                    
+                    max_count = max(b['doc_count'] for b in hist_buckets) if hist_buckets else 1
+                    for bucket in hist_buckets[:10]:
+                        price_range = f"${bucket['key']/1000:.0f}k"
+                        count = bucket['doc_count']
+                        bar_width = int((count / max_count) * 40)
+                        bar = "█" * bar_width
+                        console.print(f"  {price_range:>10} │ {bar} {count}")
             
             # Bedroom stats
             if 'bedroom_stats' in response.aggregations:
                 aggregations['bedroom_stats'] = response.aggregations['bedroom_stats']
+        
+        # Show final summary
+        console.print(Panel(
+            f"[green]✓[/green] Analysis complete in [bold]{exec_time}ms[/bold]\n"
+            f"[green]✓[/green] Properties analyzed: [bold]{response.total_hits}[/bold]\n"
+            f"[green]✓[/green] Statistical aggregations calculated",
+            title="[bold]✅ Search Complete[/bold]",
+            border_style="green"
+        ))
         
         return DemoQueryResult(
             query_name="Price Range Search with Analytics",

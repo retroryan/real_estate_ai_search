@@ -104,7 +104,7 @@ async def search_properties(
                     "neighborhood": prop.get("neighborhood", {}).get("name") if prop.get("neighborhood") else None,
                     "features": prop.get("features", []),
                     "amenities": prop.get("amenities", []),
-                    "relevance_score": prop.get("_score"),
+                    "score": prop.get("_score"),
                     "highlights": prop.get("_highlights", {})
                 }
                 for prop in response.results

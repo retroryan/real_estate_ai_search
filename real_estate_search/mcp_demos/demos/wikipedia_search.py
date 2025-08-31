@@ -75,7 +75,7 @@ async def demo_wikipedia_location_context(
                 
                 console.print(Panel(
                     content,
-                    title=f"[{idx}] Relevance: {article.get('relevance_score', 0):.2f}",
+                    title=f"[{idx}] Relevance: {article.get('score', 0):.2f}",
                     border_style="blue"
                 ))
         
@@ -148,13 +148,15 @@ async def demo_wikipedia_search(
                 header_style="bold magenta"
             )
             table.add_column("Title", style="cyan")
-            table.add_column("Summary", style="green", max_width=50)
+            table.add_column("Long Summary", style="green", max_width=50)
             table.add_column("Categories", style="yellow")
             table.add_column("Score", justify="right", style="red")
             
             for article in response.articles[:5]:
                 categories = ", ".join(article.categories[:2]) if article.categories else "N/A"
-                summary = article.summary[:100] + "..." if article.summary else "N/A"
+                # Try long_summary first, then short_summary
+                display_summary = getattr(article, 'long_summary', None) or getattr(article, 'short_summary', None)
+                summary = display_summary[:100] + "..." if display_summary else "N/A"
                 
                 table.add_row(
                     article.title,

@@ -15,7 +15,7 @@ DESIGN PRINCIPLES:
 4. Single responsibility (each model has one clear purpose)
 """
 
-from typing import Dict, Any, Optional, List, Union, Literal, TypeVar, Generic
+from typing import Dict, Any, Optional, List, Literal, TypeVar, Generic
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -151,7 +151,7 @@ class Address(BaseModel):
     zip_code: Optional[str] = Field(None, pattern=r"^\d{5}(-\d{4})?$", description="ZIP code")
     county: Optional[str] = Field(None, description="County name")
     country: str = Field("US", description="Country code")
-    location: Optional[Union[GeoPoint, List[float], Dict[str, float]]] = Field(None, description="Geographic coordinates")
+    location: Optional[Dict[str, float]] = Field(None, description="Geographic coordinates in ES geo_point format")
     
     model_config = ConfigDict(extra="ignore")
     
@@ -397,9 +397,16 @@ class WikipediaArticle(BaseModel):
 
 class BucketAggregation(BaseModel):
     """Single bucket in an aggregation result."""
-    key: Union[str, int, float] = Field(..., description="Bucket key")
+    key: str = Field(..., description="Bucket key (converted to string)")
+    key_as_string: Optional[str] = Field(None, description="String representation of key")
     doc_count: int = Field(..., ge=0, description="Document count")
     sub_aggregations: Optional[Dict[str, Any]] = Field(None, description="Nested aggregations")
+    
+    @field_validator('key', mode='before')
+    @classmethod
+    def convert_key_to_string(cls, v):
+        """Convert any key type to string."""
+        return str(v) if v is not None else "unknown"
     
     model_config = ConfigDict(extra="ignore")
 
@@ -429,7 +436,15 @@ class AggregationResult(BaseModel):
     type: AggregationType = Field(..., description="Type of aggregation")
     buckets: Optional[List[BucketAggregation]] = Field(None, description="Bucket results")
     stats: Optional[StatsAggregation] = Field(None, description="Statistical results")
-    value: Optional[Union[float, int]] = Field(None, description="Single value result")
+    value: Optional[float] = Field(None, description="Single value result")
+    
+    @field_validator('value', mode='before')
+    @classmethod
+    def convert_value_to_float(cls, v):
+        """Convert int to float if needed."""
+        if v is not None:
+            return float(v)
+        return v
     
     model_config = ConfigDict(extra="ignore", use_enum_values=True)
 
@@ -449,16 +464,32 @@ class SearchHit(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
+class SourceFilter(BaseModel):
+    """Source filtering configuration."""
+    includes: Optional[List[str]] = Field(None, description="Fields to include")
+    excludes: Optional[List[str]] = Field(None, description="Fields to exclude")
+    
+    def to_dict(self) -> Dict[str, List[str]]:
+        """Convert to ES source filter format."""
+        result = {}
+        if self.includes:
+            result["includes"] = self.includes
+        if self.excludes:
+            result["excludes"] = self.excludes
+        return result if result else True
+
+
 class SearchRequest(BaseModel):
     """Search request configuration."""
-    index: Union[str, List[str]] = Field(..., description="Index(es) to search")
+    index: List[str] = Field(..., description="Index(es) to search")
     query: Dict[str, Any] = Field(..., description="Query DSL")
     size: int = Field(10, ge=0, le=10000, description="Number of results")
     from_: int = Field(0, ge=0, alias="from", description="Starting offset")
     sort: Optional[List[Dict[str, Any]]] = Field(None, description="Sort criteria")
     aggs: Optional[Dict[str, Any]] = Field(None, description="Aggregations")
     highlight: Optional[Dict[str, Any]] = Field(None, description="Highlight configuration")
-    source: Optional[Union[bool, List[str], Dict[str, Any]]] = Field(True, alias="_source", description="Source filtering")
+    source: Optional[SourceFilter] = Field(None, alias="_source", description="Source filtering")
+    source_enabled: bool = Field(True, description="Whether to return source at all")
     
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     
@@ -476,8 +507,10 @@ class SearchRequest(BaseModel):
             query_dict["aggs"] = self.aggs
         if self.highlight:
             query_dict["highlight"] = self.highlight
-        if self.source is not None:
-            query_dict["_source"] = self.source
+        if not self.source_enabled:
+            query_dict["_source"] = False
+        elif self.source:
+            query_dict["_source"] = self.source.to_dict()
             
         return query_dict
 

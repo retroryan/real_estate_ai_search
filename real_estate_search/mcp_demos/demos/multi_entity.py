@@ -110,8 +110,10 @@ async def demo_multi_entity_search(
             for idx, article in enumerate(wikipedia_response.articles[:3], 1):
                 wiki_text.append(f"{idx}. ", style="yellow")
                 wiki_text.append(f"{article.title}\n", style="green")
-                if article.summary:
-                    wiki_text.append(f"   {article.summary[:100]}...\n", style="dim")
+                # Use long_summary or short_summary
+                display_summary = getattr(article, 'long_summary', None) or getattr(article, 'short_summary', None)
+                if display_summary:
+                    wiki_text.append(f"   {display_summary[:100]}...\n", style="dim")
                 if article.categories:
                     cats = ", ".join(article.categories[:3])
                     wiki_text.append(f"   Categories: {cats}\n", style="blue dim")

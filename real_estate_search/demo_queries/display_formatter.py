@@ -7,6 +7,7 @@ All formatting for user display happens here, not in models.
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
 from real_estate_search.demo_queries.es_models import ESProperty, ESNeighborhood, ESWikipedia
 
 
@@ -191,23 +192,49 @@ class WikipediaDisplayFormatter:
         }
 
 
+class PriceBucketData(BaseModel):
+    """Model for price bucket data with proper validation."""
+    key: str = Field(..., description="Bucket key as string")
+    doc_count: int = Field(..., description="Number of documents")
+    stats: Optional[Dict[str, Any]] = Field(None, description="Optional statistics")
+    
+    @field_validator('key', mode='before')
+    @classmethod
+    def normalize_key(cls, v):
+        """Convert any key type to string for consistent handling."""
+        if v is None:
+            return "unknown"
+        return str(v)
+    
+    def format_display(self) -> str:
+        """Format this bucket for display."""
+        # Check if it's a numeric key
+        try:
+            numeric_value = float(self.key)
+            return f"${numeric_value:,.0f}: {self.doc_count} properties"
+        except ValueError:
+            # Not numeric, check if it's a range
+            if "-" in self.key:
+                parts = self.key.split("-")
+                if len(parts) == 2:
+                    try:
+                        start = float(parts[0])
+                        end = float(parts[1])
+                        return f"${start:,.0f} - ${end:,.0f}: {self.doc_count} properties"
+                    except ValueError:
+                        pass
+            # Default formatting
+            return f"{self.key}: {self.doc_count} properties"
+
+
 class AggregationDisplayFormatter:
     """Format aggregation results for user display."""
     
     @staticmethod
     def format_price_bucket(key: Any, doc_count: int, stats: Optional[Dict] = None) -> str:
-        """Format price range bucket for display."""
-        if isinstance(key, (int, float)):
-            # Single value bucket
-            return f"${key:,.0f}: {doc_count} properties"
-        elif isinstance(key, str):
-            # Range bucket (e.g., "100000-200000")
-            if "-" in key:
-                parts = key.split("-")
-                if len(parts) == 2:
-                    return f"${int(parts[0]):,} - ${int(parts[1]):,}: {doc_count} properties"
-            return f"{key}: {doc_count} properties"
-        return f"{key}: {doc_count}"
+        """Format price range bucket for display using Pydantic model."""
+        bucket = PriceBucketData(key=key, doc_count=doc_count, stats=stats)
+        return bucket.format_display()
     
     @staticmethod
     def format_stats(stats: Dict[str, Any]) -> Dict[str, str]:

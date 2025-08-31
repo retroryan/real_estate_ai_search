@@ -116,7 +116,7 @@ class WikipediaArticle(BaseModel):
     page_id: str
     title: str
     url: Optional[str] = None
-    summary: Optional[str] = None
+    short_summary: Optional[str] = None
     long_summary: Optional[str] = None
     categories: Optional[List[str]] = None
     city: Optional[str] = None
@@ -124,7 +124,6 @@ class WikipediaArticle(BaseModel):
     score: Optional[float] = None
     # Additional fields from server
     entity_type: Optional[str] = None
-    relevance_score: Optional[float] = None
     short_summary: Optional[str] = None
     long_summary: Optional[str] = None
     key_topics: Optional[List[str]] = None

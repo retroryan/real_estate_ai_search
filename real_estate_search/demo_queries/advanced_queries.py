@@ -13,6 +13,14 @@ from typing import Dict, Any, Optional, List
 from elasticsearch import Elasticsearch
 import logging
 import random
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
+from rich.columns import Columns
+from rich.syntax import Syntax
+from rich.tree import Tree
 
 from .models import DemoQueryResult
 
@@ -152,17 +160,87 @@ def demo_semantic_search(
         ]
     }
     
-    try:
+    console = Console()
+    
+    # Show reference property details in a nice panel
+    if ref_property_details:
+        ref_text = Text()
+        ref_text.append("🏠 Reference Property\n", style="bold yellow")
+        ref_text.append(f"Address: {street}, {city}\n", style="cyan")
+        ref_text.append(f"Type: {prop_type}\n", style="magenta")
+        ref_text.append(f"Price: {price_fmt}\n", style="green")
+        ref_text.append(f"Size: {beds}bd/{baths}ba | {sqft:,} sqft", style="blue")
         
-        response = es_client.search(index="properties", body=query)
+        console.print(Panel(
+            ref_text,
+            title="[bold cyan]🤖 AI Semantic Similarity Search[/bold cyan]",
+            subtitle=f"Finding similar properties using embeddings",
+            border_style="cyan"
+        ))
+    
+    try:
+        with console.status("[yellow]Searching for semantically similar properties...[/yellow]"):
+            response = es_client.search(index="properties", body=query)
         
         results = []
-        for hit in response['hits']['hits']:
-            result = hit['_source']
-            # Include similarity score for transparency
-            result['_similarity_score'] = hit['_score']
-            result['_reference_property'] = reference_property_id
-            results.append(result)
+        
+        if response['hits']['hits']:
+            # Create similarity results table
+            table = Table(
+                title=f"[bold green]Found {len(response['hits']['hits'])} Similar Properties[/bold green]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan"
+            )
+            table.add_column("#", style="dim", width=3)
+            table.add_column("Similarity", style="magenta", justify="right")
+            table.add_column("Address", style="cyan", width=35)
+            table.add_column("Price", style="green", justify="right")
+            table.add_column("Type", style="yellow")
+            table.add_column("Size", style="blue")
+            
+            for i, hit in enumerate(response['hits']['hits'], 1):
+                result = hit['_source']
+                # Include similarity score for transparency
+                result['_similarity_score'] = hit['_score']
+                result['_reference_property'] = reference_property_id
+                results.append(result)
+                
+                # Format address
+                addr = result.get('address', {})
+                address_str = f"{addr.get('street', 'N/A')}, {addr.get('city', 'N/A')}"
+                
+                # Format price
+                price = result.get('price', 0)
+                price_str = f"${price:,.0f}" if price else "N/A"
+                
+                # Format size
+                beds = result.get('bedrooms', 0)
+                baths = result.get('bathrooms', 0)
+                sqft = result.get('square_feet', 0)
+                size_str = f"{beds}bd/{baths}ba | {sqft:,}sqft"
+                
+                # Add to table
+                table.add_row(
+                    str(i),
+                    f"{hit['_score']:.2f}",
+                    address_str,
+                    price_str,
+                    result.get('property_type', 'N/A').title(),
+                    size_str
+                )
+            
+            console.print(table)
+            
+            # Show AI insights
+            console.print(Panel(
+                f"[green]✓[/green] Found [bold]{len(results)}[/bold] semantically similar properties\n"
+                f"[green]✓[/green] Using [bold]1024-dimensional[/bold] voyage-3 embeddings\n"
+                f"[green]✓[/green] Query time: [bold]{response.get('took', 0)}ms[/bold]\n"
+                f"[dim]💡 Higher similarity scores indicate more similar properties[/dim]",
+                title="[bold]🤖 AI Search Results[/bold]",
+                border_style="green"
+            ))
         
         # Create descriptive query name with reference property info
         query_name = f"Semantic Similarity Search - Finding properties similar to: {street}, {city} ({prop_type}, {price_fmt})"
@@ -285,23 +363,32 @@ def demo_multi_entity_search(
         }
     }
     
-    # INDEX SPECIFICATION: Can use wildcards or comma-separated list
-    indices = "properties,neighborhoods,wikipedia"
-    # Alternative patterns:
-    # indices = "*"  # Search all indices
-    # indices = "prop*,neigh*"  # Wildcard patterns
-    # indices = ["properties", "neighborhoods"]  # List format
+    # INDEX SPECIFICATION: Use list format for multiple indices
+    indices = ["properties", "neighborhoods", "wikipedia"]
+    
+    console = Console()
+    
+    # Show search header
+    console.print(Panel(
+        f"[bold cyan]🌐 Multi-Entity Search[/bold cyan]\n"
+        f"[yellow]Query: '{query_text}'[/yellow]\n"
+        f"[dim]Searching across properties, neighborhoods, and Wikipedia[/dim]",
+        border_style="cyan"
+    ))
     
     try:
-        response = es_client.search(
-            index=indices,  # Multiple indices
-            body=query,
-            # INDEX BOOST: Weight certain indices as more important
-            # Can be specified in URL: "properties^2,neighborhoods^1.5,wikipedia"
-        )
+        with console.status("[yellow]Searching multiple data sources...[/yellow]"):
+            response = es_client.search(
+                index=indices,  # Multiple indices
+                body=query,
+                # INDEX BOOST: Weight certain indices as more important
+                # Can be specified in URL: "properties^2,neighborhoods^1.5,wikipedia"
+            )
         
         # Process results and add entity type
         results = []
+        entity_groups = {'property': [], 'neighborhood': [], 'wikipedia': []}
+        
         for hit in response['hits']['hits']:
             result = hit['_source']
             
@@ -313,10 +400,13 @@ def demo_multi_entity_search(
             # ENTITY TYPE DETECTION: Based on index name
             if 'properties' in hit['_index']:
                 result['_entity_type'] = 'property'
+                entity_groups['property'].append((hit, result))
             elif 'neighborhoods' in hit['_index']:
                 result['_entity_type'] = 'neighborhood'
+                entity_groups['neighborhood'].append((hit, result))
             elif 'wikipedia' in hit['_index']:
                 result['_entity_type'] = 'wikipedia'
+                entity_groups['wikipedia'].append((hit, result))
             else:
                 result['_entity_type'] = 'unknown'
             
@@ -325,6 +415,96 @@ def demo_multi_entity_search(
                 result['_highlights'] = hit['highlight']
             
             results.append(result)
+        
+        # Display results grouped by entity type
+        if entity_groups['property']:
+            prop_table = Table(
+                title="[bold]🏠 Properties[/bold]",
+                box=box.SIMPLE,
+                show_header=True,
+                header_style="cyan"
+            )
+            prop_table.add_column("Score", style="magenta", justify="right", width=8)
+            prop_table.add_column("Address", style="cyan")
+            prop_table.add_column("Price", style="green", justify="right")
+            prop_table.add_column("Type", style="yellow")
+            
+            for hit, result in entity_groups['property'][:5]:
+                addr = result.get('address', {})
+                address_str = f"{addr.get('street', 'N/A')}, {addr.get('city', 'N/A')}"
+                price = result.get('price', 0)
+                price_str = f"${price:,.0f}" if price else "N/A"
+                
+                prop_table.add_row(
+                    f"{hit['_score']:.2f}",
+                    address_str,
+                    price_str,
+                    result.get('property_type', 'N/A').title()
+                )
+            
+            console.print(prop_table)
+        
+        if entity_groups['neighborhood']:
+            neigh_table = Table(
+                title="\n[bold]📍t Neighborhoods[/bold]",
+                box=box.SIMPLE,
+                show_header=True,
+                header_style="cyan"
+            )
+            neigh_table.add_column("Score", style="magenta", justify="right", width=8)
+            neigh_table.add_column("Name", style="cyan")
+            neigh_table.add_column("City", style="green")
+            
+            for hit, result in entity_groups['neighborhood'][:5]:
+                neigh_table.add_row(
+                    f"{hit['_score']:.2f}",
+                    result.get('name', 'N/A'),
+                    result.get('city', 'N/A')
+                )
+            
+            console.print(neigh_table)
+        
+        if entity_groups['wikipedia']:
+            wiki_table = Table(
+                title="\n[bold]📚 Wikipedia Articles[/bold]",
+                box=box.SIMPLE,
+                show_header=True,
+                header_style="cyan"
+            )
+            wiki_table.add_column("Score", style="magenta", justify="right", width=8)
+            wiki_table.add_column("Title", style="cyan")
+            wiki_table.add_column("Categories", style="yellow")
+            
+            for hit, result in entity_groups['wikipedia'][:5]:
+                categories = result.get('categories', [])
+                cat_str = ', '.join(categories[:2]) if categories else 'N/A'
+                
+                wiki_table.add_row(
+                    f"{hit['_score']:.2f}",
+                    result.get('title', 'N/A'),
+                    cat_str
+                )
+            
+            console.print(wiki_table)
+        
+        # Show summary statistics
+        if 'aggregations' in response and 'by_index' in response['aggregations']:
+            stats_text = Text()
+            for bucket in response['aggregations']['by_index']['buckets']:
+                index_name = bucket['key']
+                count = bucket['doc_count']
+                if 'properties' in index_name:
+                    stats_text.append(f"🏠 Properties: {count}  ", style="cyan")
+                elif 'neighborhoods' in index_name:
+                    stats_text.append(f"📍 Neighborhoods: {count}  ", style="yellow")
+                elif 'wikipedia' in index_name:
+                    stats_text.append(f"📚 Wikipedia: {count}  ", style="magenta")
+            
+            console.print(Panel(
+                stats_text,
+                title="[bold]Search Results Summary[/bold]",
+                border_style="green"
+            ))
         
         # Include aggregation results
         aggregations = {}
@@ -352,7 +532,7 @@ def demo_multi_entity_search(
                 "properties index - Real estate property listings",
                 "neighborhoods index - Neighborhood demographics and descriptions",
                 "wikipedia index - Geographic Wikipedia articles",
-                f"Searching {indices} indices simultaneously"
+                f"Searching {', '.join(indices)} indices simultaneously"
             ]
         )
     except Exception as e:
@@ -370,7 +550,7 @@ def demo_multi_entity_search(
 def demo_wikipedia_search(
     es_client: Elasticsearch,
     city: Optional[str] = "San Francisco",
-    state: Optional[str] = "California",
+    state: Optional[str] = "CA",
     topics: Optional[List[str]] = None,
     size: int = 10
 ) -> DemoQueryResult:
@@ -397,8 +577,6 @@ def demo_wikipedia_search(
     Returns:
         DemoQueryResult with Wikipedia articles
     """
-    if topics is None:
-        topics = ["history", "culture", "landmark"]
     
     # BUILD COMPLEX BOOL QUERY
     # Demonstrates query vs filter context usage
@@ -524,7 +702,7 @@ def demo_wikipedia_search(
         
         return DemoQueryResult(
             query_name=f"Demo 8: Wikipedia Location & Topic Search",
-            query_description=f"Searches Wikipedia articles about {', '.join(topics)} in {city}, {state}, demonstrating complex filtering and boosting strategies",
+            query_description=f"Searches Wikipedia articles about {', '.join(topics or [])} in {city}, {state}, demonstrating complex filtering and boosting strategies",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),
@@ -541,7 +719,7 @@ def demo_wikipedia_search(
             ],
             indexes_used=[
                 "wikipedia index - Curated Wikipedia articles with location data",
-                f"Filtering for articles in {city}, {state} about {', '.join(topics)}"
+                f"Filtering for articles in {city}, {state} about {', '.join(topics or [])}"
             ]
         )
     except Exception as e:

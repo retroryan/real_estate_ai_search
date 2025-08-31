@@ -68,7 +68,7 @@ async def search_wikipedia(
                 "page_id": article.get("page_id"),
                 "title": article.get("title"),
                 "entity_type": article.get("entity_type"),
-                "relevance_score": article.get("_score")
+                "score": article.get("_score")
             }
             
             # Add content based on search type
@@ -268,7 +268,7 @@ async def search_wikipedia_by_location(
                     } if article.get("latitude") and article.get("longitude") else None
                 },
                 "key_topics": article.get("key_topics", [])[:10],  # Limit topics
-                "relevance_score": article.get("_score"),
+                "score": article.get("_score"),
                 "highlights": article.get("_highlights", {})
             }
             articles.append(article_data)

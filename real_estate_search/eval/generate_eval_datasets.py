@@ -478,120 +478,6 @@ def generate_advanced_queries_eval():
     print(f"✓ Generated {len(eval_data['test_cases'])} test cases for advanced_queries")
     return eval_data
 
-def generate_property_neighborhood_wiki_eval():
-    """Generate evaluation data for property_neighborhood_wiki.py (multi-index queries)"""
-    print("Generating property-neighborhood-wiki combined queries evaluation data...")
-    
-    eval_data = {
-        "query_type": "property_neighborhood_wiki",
-        "description": "Evaluation dataset for multi-index queries combining properties, neighborhoods, and Wikipedia data",
-        "generated_at": datetime.now().isoformat(),
-        "test_cases": []
-    }
-    
-    # Context-rich location queries
-    location_contexts = [
-        {
-            "location": "Mission District",
-            "context": "cultural history",
-            "focus": "Latino heritage and murals"
-        },
-        {
-            "location": "Pacific Heights",
-            "context": "luxury real estate",
-            "focus": "mansion architecture"
-        },
-        {
-            "location": "SOMA",
-            "context": "tech industry",
-            "focus": "startup culture and lofts"
-        },
-        {
-            "location": "Haight-Ashbury",
-            "context": "1960s history",
-            "focus": "counterculture and Victorian homes"
-        },
-        {
-            "location": "Financial District",
-            "context": "business center",
-            "focus": "high-rise condos and commerce"
-        },
-        {
-            "location": "Castro",
-            "context": "LGBTQ history",
-            "focus": "community and nightlife"
-        },
-        {
-            "location": "Chinatown",
-            "context": "cultural heritage",
-            "focus": "Asian culture and cuisine"
-        },
-        {
-            "location": "North Beach",
-            "context": "Italian heritage",
-            "focus": "restaurants and Beat Generation"
-        },
-        {
-            "location": "Marina District",
-            "context": "waterfront living",
-            "focus": "bay views and recreation"
-        },
-        {
-            "location": "Richmond District",
-            "context": "residential diversity",
-            "focus": "parks and multicultural community"
-        }
-    ]
-    
-    for i, loc_context in enumerate(location_contexts):
-        # Property with full context
-        eval_data["test_cases"].append({
-            "test_id": f"property_full_context_{i+1}",
-            "query_type": "property_with_full_context",
-            "parameters": {
-                "location": loc_context["location"],
-                "search_properties": True,
-                "include_neighborhood_data": True,
-                "include_wikipedia_context": True,
-                "context_theme": loc_context["context"],
-                "focus_area": loc_context["focus"]
-            },
-            "expected_behavior": f"Should return properties in {loc_context['location']} with neighborhood and Wikipedia context about {loc_context['context']}",
-            "validation_criteria": {
-                "has_property_data": True,
-                "has_neighborhood_info": True,
-                "has_wikipedia_context": True,
-                "context_relevant": True
-            }
-        })
-        
-        # Neighborhood with Wikipedia enrichment
-        eval_data["test_cases"].append({
-            "test_id": f"neighborhood_wiki_enriched_{i+1}",
-            "query_type": "neighborhood_properties_and_wiki",
-            "parameters": {
-                "neighborhood": loc_context["location"],
-                "include_properties": True,
-                "include_wikipedia": True,
-                "wikipedia_topics": [loc_context["context"], loc_context["focus"]],
-                "max_properties": 5
-            },
-            "expected_behavior": f"Should return neighborhood data for {loc_context['location']} with properties and relevant Wikipedia articles",
-            "validation_criteria": {
-                "neighborhood_data_complete": True,
-                "properties_in_neighborhood": True,
-                "wikipedia_relevant": True
-            }
-        })
-    
-    # Save the evaluation dataset
-    output_path = eval_dir / 'property_neighborhood_wiki_eval.json'
-    with open(output_path, 'w') as f:
-        json.dump(eval_data, f, indent=2)
-    
-    print(f"✓ Generated {len(eval_data['test_cases'])} test cases for property_neighborhood_wiki")
-    return eval_data
-
 def generate_wikipedia_fulltext_eval():
     """Generate evaluation data for wikipedia_fulltext.py"""
     print("Generating Wikipedia fulltext search evaluation data...")
@@ -847,7 +733,6 @@ def main():
     results.append(generate_aggregation_queries_eval())
     results.append(generate_semantic_queries_eval())
     results.append(generate_advanced_queries_eval())
-    results.append(generate_property_neighborhood_wiki_eval())
     results.append(generate_wikipedia_fulltext_eval())
     results.append(generate_rich_listing_eval())
     

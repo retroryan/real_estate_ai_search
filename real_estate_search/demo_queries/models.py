@@ -1,7 +1,7 @@
 """Pydantic models for demo query inputs and outputs."""
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
 
@@ -60,6 +60,41 @@ class MultiEntitySearchParams(BaseModel):
     include_neighborhoods: bool = Field(True, description="Include neighborhood results")
     include_wikipedia: bool = Field(True, description="Include Wikipedia results")
     size_per_index: int = Field(5, description="Results per index")
+
+
+class PropertyFeatures(BaseModel):
+    """Model for property features to ensure consistent structure."""
+    bedrooms: Optional[int] = Field(0, description="Number of bedrooms")
+    bathrooms: Optional[float] = Field(0, description="Number of bathrooms")
+    square_feet: Optional[int] = Field(0, description="Square footage")
+    
+    @classmethod
+    def from_result(cls, result: Dict[str, Any]) -> 'PropertyFeatures':
+        """Create PropertyFeatures from a result dict."""
+        features = result.get('features', {})
+        
+        # Try to extract from features dict or fall back to top-level
+        try:
+            # Try to use features as a dict
+            if features:
+                bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
+                bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
+                square_feet = features.get('square_feet', result.get('square_feet', 0))
+                return cls(
+                    bedrooms=bedrooms,
+                    bathrooms=bathrooms,
+                    square_feet=square_feet
+                )
+        except (AttributeError, TypeError):
+            # features is not dict-like, fall through to top-level
+            pass
+        
+        # Fall back to top-level fields
+        return cls(
+            bedrooms=result.get('bedrooms', 0),
+            bathrooms=result.get('bathrooms', 0),
+            square_feet=result.get('square_feet', 0)
+        )
 
 
 class DemoQueryResult(BaseModel):
@@ -147,21 +182,13 @@ class DemoQueryResult(BaseModel):
                         f"{result.get('address', {}).get('city', 'N/A')}, "
                         f"{result.get('address', {}).get('state', 'N/A')}"
                     )
-                    # Check if features is a dict with property details
-                    features = result.get('features', {})
-                    if isinstance(features, dict):
-                        bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
-                        bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
-                        square_feet = features.get('square_feet', result.get('square_feet', 0))
-                    else:
-                        bedrooms = result.get('bedrooms', 0)
-                        bathrooms = result.get('bathrooms', 0)
-                        square_feet = result.get('square_feet', 0)
+                    # Use PropertyFeatures model to extract features consistently
+                    prop_features = PropertyFeatures.from_result(result)
                     
                     output.append(
                         f"   ${result.get('price', 0):,.0f} | "
-                        f"{bedrooms}bd/{bathrooms}ba | "
-                        f"{square_feet:,} sqft | "
+                        f"{prop_features.bedrooms}bd/{prop_features.bathrooms}ba | "
+                        f"{prop_features.square_feet:,} sqft | "
                         f"{result.get('property_type', 'N/A')}"
                     )
                     if '_score' in result:

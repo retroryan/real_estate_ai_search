@@ -33,12 +33,14 @@ class ConfiguredMCPClient(MCPClientWrapper):
     
     def _setup_logging(self):
         """Configure logging based on settings."""
-        # Always enable basic logging for demos
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        # Suppress verbose HTTP logs
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+        logging.getLogger("mcp.client").setLevel(logging.WARNING)
+        
+        # Set up logger for this module only
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.WARNING)
     
     def _build_stdio_transport(self) -> PythonStdioTransport:
         """Build stdio transport from configuration.
