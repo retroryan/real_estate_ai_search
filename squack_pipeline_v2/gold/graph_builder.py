@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
-from squack_pipeline_v2.core.connection import DuckDBConnectionManager
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager, TableIdentifier
 from squack_pipeline_v2.core.logging import PipelineLogger, log_stage
 
 
@@ -38,7 +38,7 @@ class RelationshipTableDefinition(BaseModel):
 class GraphBuildMetadata(BaseModel):
     """Metadata for graph building process."""
     
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)
     
     node_tables: List[str] = Field(default_factory=list, description="Node tables created")
     relationship_tables: List[str] = Field(default_factory=list, description="Relationship tables created")
@@ -75,6 +75,18 @@ class GoldGraphBuilder:
         # Drop if exists
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
+        # Check if embedding column exists
+        check_embedding = """
+        SELECT COUNT(*) 
+        FROM information_schema.columns 
+        WHERE table_name = 'gold_properties' 
+        AND column_name = 'embedding'
+        """
+        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        
+        # Build query with or without embeddings
+        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
+        
         # Create property nodes table
         query = f"""
         CREATE TABLE {table_name} AS
@@ -107,7 +119,7 @@ class GoldGraphBuilder:
             listing_date,
             days_on_market,
             
-            embedding,
+            {embedding_select}
             
             'Property' as node_label,
             'property:' || listing_id as graph_node_id
@@ -135,6 +147,17 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
+        # Check if embedding column exists
+        check_embedding = """
+        SELECT COUNT(*) 
+        FROM information_schema.columns 
+        WHERE table_name = 'gold_neighborhoods' 
+        AND column_name = 'embedding'
+        """
+        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        
+        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
+        
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT
@@ -144,14 +167,14 @@ class GoldGraphBuilder:
             state,
             population,
             median_income,
-            median_home_value,
+            median_home_price as median_home_value,
             walkability_score,
-            school_rating,
-            crime_index,
+            school_score as school_rating,
+            NULL::FLOAT as crime_index,  -- Not available in current schema
             description,
-            latitude,
-            longitude,
-            embedding,
+            center_latitude as latitude,
+            center_longitude as longitude,
+            {embedding_select}
             'Neighborhood' as node_label,
             'neighborhood:' || neighborhood_id as graph_node_id
         FROM gold_neighborhoods
@@ -176,14 +199,25 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
+        # Check if embedding column exists
+        check_embedding = """
+        SELECT COUNT(*) 
+        FROM information_schema.columns 
+        WHERE table_name = 'gold_wikipedia' 
+        AND column_name = 'embedding'
+        """
+        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        
+        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
+        
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT
             page_id,
             title,
-            content,
+            full_content as content,
             categories,
-            embedding,
+            {embedding_select}
             'WikipediaArticle' as node_label,
             'wikipedia:' || page_id as graph_node_id
         FROM gold_wikipedia
@@ -589,26 +623,26 @@ class GoldGraphBuilder:
         self.logger.info("Building node tables...")
         
         # Check what tables exist
-        if self.connection_manager.table_exists("gold_properties"):
+        if self.connection_manager.table_exists(TableIdentifier(name="gold_properties")):
             metadata.node_tables.append(self.build_property_nodes())
         
-        if self.connection_manager.table_exists("gold_neighborhoods"):
+        if self.connection_manager.table_exists(TableIdentifier(name="gold_neighborhoods")):
             metadata.node_tables.append(self.build_neighborhood_nodes())
         
-        if self.connection_manager.table_exists("gold_wikipedia"):
+        if self.connection_manager.table_exists(TableIdentifier(name="gold_wikipedia")):
             metadata.node_tables.append(self.build_wikipedia_nodes())
         
         # Build classification and geographic nodes from extraction tables
-        if self.connection_manager.table_exists("silver_features"):
+        if self.connection_manager.table_exists(TableIdentifier(name="silver_features")):
             metadata.node_tables.extend(self.build_classification_nodes())
         
-        if self.connection_manager.table_exists("silver_cities"):
+        if self.connection_manager.table_exists(TableIdentifier(name="silver_cities")):
             metadata.node_tables.extend(self.build_geographic_nodes())
         
         # Build relationship tables
         self.logger.info("Building relationship tables...")
         
-        if self.connection_manager.table_exists("gold_properties"):
+        if self.connection_manager.table_exists(TableIdentifier(name="gold_properties")):
             metadata.relationship_tables.append(self.build_located_in_relationships())
             metadata.relationship_tables.append(self.build_has_feature_relationships())
             metadata.relationship_tables.extend(self.build_geographic_relationships())

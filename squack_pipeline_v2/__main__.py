@@ -288,13 +288,11 @@ def main() -> int:
         # Writers
         write_parquet = not args.no_parquet and settings.output.parquet_enabled
         write_elasticsearch = args.elasticsearch or settings.output.elasticsearch_enabled
+        write_neo4j = settings.output.neo4j.enabled
         
-        if write_parquet or write_elasticsearch:
+        if write_parquet or write_elasticsearch or write_neo4j:
             print("Exporting data...")
-            orchestrator.run_writers(
-                write_parquet=write_parquet,
-                write_elasticsearch=write_elasticsearch
-            )
+            orchestrator.write_outputs()
         
         # Calculate total elapsed time
         end_time = time.time()

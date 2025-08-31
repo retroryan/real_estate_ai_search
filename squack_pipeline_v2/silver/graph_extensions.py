@@ -115,19 +115,34 @@ class SilverGraphExtensions:
             )
         ]
         
-        # Add each column
+        # Recreate table with additional computed columns since DuckDB doesn't support ALTER TABLE ADD COLUMN AS
+        temp_table = f"{table_name}_temp"
+        
+        # Build column expressions
+        column_exprs = []
         for col_def in columns:
-            try:
-                query = f"""
-                ALTER TABLE {table_name} 
-                ADD COLUMN IF NOT EXISTS {col_def.column_name} VARCHAR 
-                AS ({col_def.expression})
-                """
-                self.connection_manager.execute(query)
-                metadata.columns_added.append(col_def.column_name)
-                self.logger.debug(f"Added column {col_def.column_name}: {col_def.description}")
-            except Exception as e:
-                self.logger.warning(f"Could not add column {col_def.column_name}: {e}")
+            column_exprs.append(f"({col_def.expression}) AS {col_def.column_name}")
+            metadata.columns_added.append(col_def.column_name)
+        
+        # Create new table with computed columns
+        query = f"""
+        CREATE OR REPLACE TABLE {temp_table} AS 
+        SELECT 
+            *,
+            {','.join(column_exprs)}
+        FROM {table_name}
+        """
+        
+        try:
+            self.connection_manager.execute(query)
+            # Replace original table
+            self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.connection_manager.execute(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
+            
+            self.logger.debug(f"Extended {table_name} with {len(metadata.columns_added)} graph columns")
+        except Exception as e:
+            self.logger.warning(f"Could not extend {table_name}: {e}")
+            metadata.columns_added = []
         
         return metadata
     
@@ -168,17 +183,34 @@ class SilverGraphExtensions:
             )
         ]
         
+        # Recreate table with additional computed columns
+        temp_table = f"{table_name}_temp"
+        
+        # Build column expressions
+        column_exprs = []
         for col_def in columns:
-            try:
-                query = f"""
-                ALTER TABLE {table_name} 
-                ADD COLUMN IF NOT EXISTS {col_def.column_name} VARCHAR 
-                AS ({col_def.expression})
-                """
-                self.connection_manager.execute(query)
-                metadata.columns_added.append(col_def.column_name)
-            except Exception as e:
-                self.logger.warning(f"Could not add column {col_def.column_name}: {e}")
+            column_exprs.append(f"({col_def.expression}) AS {col_def.column_name}")
+            metadata.columns_added.append(col_def.column_name)
+        
+        # Create new table with computed columns
+        query = f"""
+        CREATE OR REPLACE TABLE {temp_table} AS 
+        SELECT 
+            *,
+            {','.join(column_exprs)}
+        FROM {table_name}
+        """
+        
+        try:
+            self.connection_manager.execute(query)
+            # Replace original table
+            self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.connection_manager.execute(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
+            
+            self.logger.debug(f"Extended {table_name} with {len(metadata.columns_added)} graph columns")
+        except Exception as e:
+            self.logger.warning(f"Could not extend {table_name}: {e}")
+            metadata.columns_added = []
         
         return metadata
     
@@ -202,17 +234,34 @@ class SilverGraphExtensions:
             )
         ]
         
+        # Recreate table with additional computed columns
+        temp_table = f"{table_name}_temp"
+        
+        # Build column expressions
+        column_exprs = []
         for col_def in columns:
-            try:
-                query = f"""
-                ALTER TABLE {table_name} 
-                ADD COLUMN IF NOT EXISTS {col_def.column_name} VARCHAR 
-                AS ({col_def.expression})
-                """
-                self.connection_manager.execute(query)
-                metadata.columns_added.append(col_def.column_name)
-            except Exception as e:
-                self.logger.warning(f"Could not add column {col_def.column_name}: {e}")
+            column_exprs.append(f"({col_def.expression}) AS {col_def.column_name}")
+            metadata.columns_added.append(col_def.column_name)
+        
+        # Create new table with computed columns
+        query = f"""
+        CREATE OR REPLACE TABLE {temp_table} AS 
+        SELECT 
+            *,
+            {','.join(column_exprs)}
+        FROM {table_name}
+        """
+        
+        try:
+            self.connection_manager.execute(query)
+            # Replace original table
+            self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.connection_manager.execute(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
+            
+            self.logger.debug(f"Extended {table_name} with {len(metadata.columns_added)} graph columns")
+        except Exception as e:
+            self.logger.warning(f"Could not extend {table_name}: {e}")
+            metadata.columns_added = []
         
         return metadata
     
@@ -232,12 +281,18 @@ class SilverGraphExtensions:
                 source_table="silver_properties",
                 query="""
                     CREATE TABLE IF NOT EXISTS silver_features AS
+                    WITH feature_list AS (
+                        SELECT 
+                            listing_id,
+                            UNNEST(features) as feature
+                        FROM silver_properties
+                        WHERE features IS NOT NULL AND ARRAY_LENGTH(features) > 0
+                    )
                     SELECT DISTINCT
-                        LOWER(TRIM(unnest(features))) as feature_id,
-                        TRIM(unnest(features)) as feature_name,
+                        LOWER(TRIM(feature)) as feature_id,
+                        TRIM(feature) as feature_name,
                         COUNT(*) as occurrence_count
-                    FROM silver_properties
-                    WHERE features IS NOT NULL
+                    FROM feature_list
                     GROUP BY 1, 2
                 """,
                 description="Extracted features from properties"
@@ -367,13 +422,13 @@ class SilverGraphExtensions:
         }
         
         # Extend main entity tables if they exist
-        if self.connection_manager.table_exists(TableIdentifier("silver_properties")):
+        if self.connection_manager.table_exists(TableIdentifier(name="silver_properties")):
             summary["properties"] = self.extend_properties("silver_properties")
         
-        if self.connection_manager.table_exists(TableIdentifier("silver_neighborhoods")):
+        if self.connection_manager.table_exists(TableIdentifier(name="silver_neighborhoods")):
             summary["neighborhoods"] = self.extend_neighborhoods("silver_neighborhoods")
         
-        if self.connection_manager.table_exists(TableIdentifier("silver_wikipedia")):
+        if self.connection_manager.table_exists(TableIdentifier(name="silver_wikipedia")):
             summary["wikipedia"] = self.extend_wikipedia("silver_wikipedia")
         
         # Create extraction tables

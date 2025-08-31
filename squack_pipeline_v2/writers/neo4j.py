@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from neo4j import GraphDatabase, Driver, Session
 import pandas as pd
 
-from squack_pipeline_v2.core.connection import DuckDBConnectionManager
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager, TableIdentifier
 from squack_pipeline_v2.core.logging import PipelineLogger, log_stage
 
 
@@ -54,11 +54,11 @@ class RelationshipWriteResult(BaseModel):
 class Neo4jWriteMetadata(BaseModel):
     """Complete metadata for Neo4j write operation."""
     
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=False)  # Must be mutable to update fields
     
     start_time: datetime = Field(description="When write started")
-    end_time: datetime = Field(description="When write completed")
-    total_duration_seconds: float = Field(description="Total time taken")
+    end_time: datetime = Field(default=None, description="When write completed")
+    total_duration_seconds: float = Field(default=0.0, description="Total time taken")
     node_results: List[NodeWriteResult] = Field(default_factory=list)
     relationship_results: List[RelationshipWriteResult] = Field(default_factory=list)
     total_nodes: int = Field(default=0, description="Total nodes written")
@@ -171,7 +171,7 @@ class Neo4jWriter:
         table_name = "gold_graph_properties"
         
         # Check if table exists
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             self.logger.warning(f"Table {table_name} does not exist")
             return NodeWriteResult(
                 entity_type="Property",
@@ -222,7 +222,7 @@ class Neo4jWriter:
         start_time = datetime.now()
         table_name = "gold_graph_neighborhoods"
         
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             self.logger.warning(f"Table {table_name} does not exist")
             return NodeWriteResult(
                 entity_type="Neighborhood",
@@ -268,7 +268,7 @@ class Neo4jWriter:
         start_time = datetime.now()
         table_name = "gold_graph_wikipedia"
         
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             self.logger.warning(f"Table {table_name} does not exist")
             return NodeWriteResult(
                 entity_type="WikipediaArticle",
@@ -310,7 +310,7 @@ class Neo4jWriter:
         start_time = datetime.now()
         table_name = "gold_graph_features"
         
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             return NodeWriteResult(
                 entity_type="Feature",
                 table_name=table_name,
@@ -356,7 +356,7 @@ class Neo4jWriter:
         
         # Cities
         table_name = "gold_graph_cities"
-        if self.connection_manager.table_exists(table_name):
+        if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             start_time = datetime.now()
             query = f"SELECT * FROM {table_name}"
             df = self.connection_manager.execute(query).df()
@@ -385,7 +385,7 @@ class Neo4jWriter:
         
         # States
         table_name = "gold_graph_states"
-        if self.connection_manager.table_exists(table_name):
+        if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             start_time = datetime.now()
             query = f"SELECT * FROM {table_name}"
             df = self.connection_manager.execute(query).df()
@@ -414,7 +414,7 @@ class Neo4jWriter:
         
         # Zip Codes
         table_name = "gold_graph_zip_codes"
-        if self.connection_manager.table_exists(table_name):
+        if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             start_time = datetime.now()
             query = f"SELECT * FROM {table_name}"
             df = self.connection_manager.execute(query).df()
@@ -454,7 +454,7 @@ class Neo4jWriter:
         
         # Property Types
         table_name = "gold_graph_property_types"
-        if self.connection_manager.table_exists(table_name):
+        if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             start_time = datetime.now()
             query = f"SELECT * FROM {table_name}"
             df = self.connection_manager.execute(query).df()
@@ -483,7 +483,7 @@ class Neo4jWriter:
         
         # Price Ranges
         table_name = "gold_graph_price_ranges"
-        if self.connection_manager.table_exists(table_name):
+        if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             start_time = datetime.now()
             query = f"SELECT * FROM {table_name}"
             df = self.connection_manager.execute(query).df()
@@ -517,7 +517,7 @@ class Neo4jWriter:
         start_time = datetime.now()
         table_name = "gold_graph_rel_located_in"
         
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             return RelationshipWriteResult(
                 relationship_type="LOCATED_IN",
                 table_name=table_name,
@@ -556,7 +556,7 @@ class Neo4jWriter:
         start_time = datetime.now()
         table_name = "gold_graph_rel_has_feature"
         
-        if not self.connection_manager.table_exists(table_name):
+        if not self.connection_manager.table_exists(TableIdentifier(name=table_name)):
             return RelationshipWriteResult(
                 relationship_type="HAS_FEATURE",
                 table_name=table_name,
@@ -608,7 +608,7 @@ class Neo4jWriter:
         
         # Write each relationship type
         for table_name, rel_type, writer_func in relationships:
-            if self.connection_manager.table_exists(table_name):
+            if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
                 result = writer_func()
                 results.append(result)
                 self.logger.info(f"Wrote {result.records_read} {rel_type} relationships")
@@ -624,7 +624,7 @@ class Neo4jWriter:
         ]
         
         for table_name, rel_type in generic_relationships:
-            if self.connection_manager.table_exists(table_name):
+            if self.connection_manager.table_exists(TableIdentifier(name=table_name)):
                 result = self._write_generic_relationship(table_name, rel_type)
                 results.append(result)
         
