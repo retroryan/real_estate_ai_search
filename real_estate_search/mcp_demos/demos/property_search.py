@@ -116,8 +116,8 @@ async def demo_basic_property_search(query: str = "modern home with pool") -> De
 
 async def demo_property_filter(
     property_type: PropertyType = PropertyType.CONDO,
-    min_price: float = 200000,
-    max_price: float = 500000,
+    min_price: float = 800000,
+    max_price: float = 1500000,
     city: str = "San Francisco"
 ) -> DemoResult:
     """Demo 2: Filtered property search with specific criteria.

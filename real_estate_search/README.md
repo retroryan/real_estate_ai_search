@@ -208,11 +208,8 @@ python -m real_estate_search.management demo 1 --verbose
 # 6. Semantic Similarity Search - AI-powered semantic search
 # 7. Multi-Entity Combined Search - Search across properties, neighborhoods, and Wikipedia
 # 8. Wikipedia Article Search - Search Wikipedia location data
-# 9. Property-Neighborhood-Wikipedia Relationships - Show rich relationships between entities
-# 10. Wikipedia Full-Text Search - Full-text search across complete Wikipedia articles
-
-# Run the standalone relationship demo (Demo 9 with enhanced visualization)
-python -m real_estate_search.demo_queries.demo_relationship_search
+# 9. Wikipedia Full-Text Search - Full-text search across complete Wikipedia articles
+# 10. Property Relationships via Denormalized Index - Single-query retrieval using denormalized index
 ```
 
 ### Search Mode
@@ -223,11 +220,12 @@ Execute specific search queries:
 # List all available demos
 python -m real_estate_search.management demo --list
 
-# Run specific demo (1-15)
+# Run specific demo (1-14)
 python -m real_estate_search.management demo 1  # Basic property search
 python -m real_estate_search.management demo 3  # Geo-distance search
 python -m real_estate_search.management demo 6  # Semantic similarity search
-python -m real_estate_search.management demo 10 # Wikipedia full-text search
+python -m real_estate_search.management demo 9  # Wikipedia full-text search
+python -m real_estate_search.management demo 10 # Property relationships via denormalized index
 
 # Run demo with verbose output (shows Elasticsearch query DSL)
 python -m real_estate_search.management demo 2 --verbose

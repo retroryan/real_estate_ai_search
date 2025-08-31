@@ -1,11 +1,9 @@
 """
-Demo showing simplified property relationship queries using denormalized index.
+Demo showing property relationship queries using denormalized index.
 
-This module demonstrates the dramatic simplification achieved by using
-a denormalized property_relationships index instead of multiple queries.
-
-BEFORE: 3-6 sequential queries with complex error handling
-AFTER: 1 simple query with all data immediately available
+This module demonstrates how a denormalized property_relationships index
+enables single-query retrieval of properties with their complete context
+including neighborhood data and related Wikipedia articles.
 """
 
 import logging
@@ -28,9 +26,8 @@ class SimplifiedRelationshipDemo:
     """
     Demonstrates single-query property relationships using denormalized index.
     
-    This shows the dramatic simplification from:
-    - BEFORE: 200+ lines of complex multi-query logic
-    - AFTER: ~20 lines of simple single query
+    The denormalized index contains all property, neighborhood, and Wikipedia
+    data in a single document, enabling efficient single-query retrieval.
     """
     
     def __init__(self, es_client: Elasticsearch):
@@ -39,15 +36,14 @@ class SimplifiedRelationshipDemo:
         
     def demo_single_query_property(self, property_id: str = None) -> DemoQueryResult:
         """
-        Get complete property context with ONE query.
+        Get complete property context with a single query.
         
-        Compare to demo_relationship_search.py which needs:
-        1. Query property index
-        2. Query neighborhood index using property.neighborhood_id
-        3. Query wikipedia index for each page_id in correlations
+        The denormalized index contains:
+        - All property fields
+        - Embedded neighborhood data
+        - Related Wikipedia articles
         
-        Now it's just:
-        1. Query property_relationships index - DONE!
+        This enables single-query retrieval of all related data.
         
         Args:
             property_id: Optional property ID, otherwise random
@@ -135,10 +131,10 @@ class SimplifiedRelationshipDemo:
     
     def demo_neighborhood_properties_simplified(self, neighborhood_name: str) -> DemoQueryResult:
         """
-        Get all properties in a neighborhood with ONE query.
+        Get all properties in a neighborhood with a single query.
         
-        Before: Query neighborhood, then query properties, then query Wikipedia
-        After: Single query with aggregation
+        The denormalized structure allows filtering by embedded
+        neighborhood fields without additional lookups.
         
         Args:
             neighborhood_name: Neighborhood to search
@@ -191,10 +187,10 @@ class SimplifiedRelationshipDemo:
     
     def demo_location_search_simplified(self, city: str, state: str) -> DemoQueryResult:
         """
-        Search by location with full context in ONE query.
+        Search by location with full context in a single query.
         
-        Before: msearch across 3 indices, then manual assembly
-        After: Single filtered query
+        Location-based filtering with complete property context
+        retrieved from the denormalized index.
         
         Args:
             city: City name
@@ -251,79 +247,57 @@ class SimplifiedRelationshipDemo:
             )
 
 
-def display_comparison(es_client: Elasticsearch):
+def display_denormalized_structure(es_client: Elasticsearch):
     """
-    Display side-by-side comparison of old vs new approach.
+    Display the structure of the denormalized index.
     
-    Shows the dramatic simplification achieved through denormalization.
+    Shows how data from multiple indices is combined into a single document.
     """
-    console.print("\n[bold cyan]Property Relationship Query Comparison[/bold cyan]")
+    console.print("\n[bold cyan]Denormalized Index Structure[/bold cyan]")
     console.print("=" * 70)
     
-    # Create comparison table
-    table = Table(title="Query Complexity Comparison", box=box.ROUNDED)
-    table.add_column("Metric", style="cyan", width=30)
-    table.add_column("BEFORE (Multiple Queries)", style="red", width=20)
-    table.add_column("AFTER (Single Query)", style="green", width=20)
+    # Show index structure
+    console.print("\n[bold]The property_relationships index combines:[/bold]")
+    console.print("• Property data (from properties index)")
+    console.print("• Neighborhood data (from neighborhoods index)")
+    console.print("• Wikipedia articles (from wikipedia index)")
+    console.print("\nThis enables single-query retrieval of all related data.\n")
     
-    table.add_row("Number of Queries", "3-6", "1")
-    table.add_row("Lines of Code", "200+", "~20")
-    table.add_row("Network Round Trips", "3-6", "1")
-    table.add_row("Error Handling Points", "Multiple", "Single")
-    table.add_row("Query Latency", "150-300ms", "~50ms")
-    table.add_row("Code Complexity", "High", "Low")
-    table.add_row("Debugging Difficulty", "Complex", "Simple")
-    table.add_row("Caching Strategy", "Complex", "Simple")
+    # Show sample document structure
+    sample_structure = """{
+  "listing_id": "prop_123",
+  "property_type": "condo",
+  "price": 850000,
+  "bedrooms": 2,
+  "address": {
+    "street": "123 Main St",
+    "city": "San Francisco",
+    "state": "CA"
+  },
+  "neighborhood": {
+    "neighborhood_id": "nhood_456",
+    "name": "Pacific Heights",
+    "walkability_score": 92,
+    "amenities": ["parks", "restaurants", "shopping"]
+  },
+  "wikipedia_articles": [
+    {
+      "page_id": "wiki_789",
+      "title": "Pacific Heights, San Francisco",
+      "summary": "Pacific Heights is a neighborhood...",
+      "relationship_type": "primary",
+      "confidence": 0.95
+    }
+  ]
+}"""
+    console.print(Panel(sample_structure, title="Sample Document Structure", border_style="cyan"))
     
-    console.print(table)
-    
-    # Show code comparison
-    console.print("\n[bold]Code Comparison:[/bold]")
-    
-    console.print("\n[red]BEFORE - Multiple Queries (simplified):[/red]")
-    old_code = """# Step 1: Get property
-property_response = es.search(index="properties", body=property_query)
-property = property_response['hits']['hits'][0]['_source']
-
-# Step 2: Get neighborhood
-neighborhood_id = property['neighborhood_id']
-neighborhood_response = es.search(
-    index="neighborhoods", 
-    body={"query": {"term": {"neighborhood_id": neighborhood_id}}}
-)
-neighborhood = neighborhood_response['hits']['hits'][0]['_source']
-
-# Step 3-6: Get each Wikipedia article
-wikipedia_articles = []
-for wiki_ref in neighborhood['wikipedia_correlations']['articles']:
-    wiki_response = es.search(
-        index="wikipedia",
-        body={"query": {"term": {"page_id": wiki_ref['page_id']}}}
-    )
-    wikipedia_articles.append(wiki_response['hits']['hits'][0]['_source'])
-
-# Complex error handling needed at each step..."""
-    console.print(Panel(old_code, title="Old Approach", border_style="red"))
-    
-    console.print("\n[green]AFTER - Single Query:[/green]")
-    new_code = """# Single query gets everything!
-response = es.search(
-    index="property_relationships",
-    body={"query": {"match_all": {}}, "size": 1}
-)
-
-# All data immediately available
-property = response['hits']['hits'][0]['_source']
-neighborhood = property['neighborhood']
-wikipedia_articles = property['wikipedia_articles']"""
-    console.print(Panel(new_code, title="New Approach", border_style="green"))
-    
-    console.print("\n[bold yellow]Benefits:[/bold yellow]")
-    console.print("• 80% reduction in code complexity")
-    console.print("• 60% improvement in query performance")
-    console.print("• Single point of failure instead of multiple")
-    console.print("• Dramatically simplified error handling")
-    console.print("• Easy to understand and maintain")
+    console.print("\n[bold yellow]Key Benefits:[/bold yellow]")
+    console.print("• Single query retrieves all data")
+    console.print("• No JOIN operations required")
+    console.print("• Optimized for read performance")
+    console.print("• Simplified application logic")
+    console.print("• Consistent data snapshot")
 
 
 def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
@@ -336,16 +310,16 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
     Returns:
         DemoQueryResult with comparison data
     """
-    console.print("\n[bold cyan]Demo 11: Simplified Property Relationships (Denormalized)[/bold cyan]")
+    console.print("\n[bold cyan]Demo 10: Property Relationships via Denormalized Index[/bold cyan]")
     console.print("=" * 70)
     
-    # First show the comparison
-    display_comparison(es_client)
+    # First show the index structure
+    display_denormalized_structure(es_client)
     
     # Then run actual demo
     demo = SimplifiedRelationshipDemo(es_client)
     
-    console.print("\n[bold]Running Simplified Queries:[/bold]")
+    console.print("\n[bold]Running Denormalized Index Queries:[/bold]")
     console.print("-" * 50)
     
     # Demo 1: Single property with full context
@@ -376,9 +350,9 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
     
     total_time = result1.execution_time_ms + result2.execution_time_ms + result3.execution_time_ms
     
-    console.print("\n[green]✓ Simplified demo complete![/green]")
+    console.print("\n[green]✓ Denormalized index demo complete![/green]")
     console.print(f"[yellow]Total query time for 3 operations: {total_time}ms[/yellow]")
-    console.print("[yellow]Compare to old approach: ~500-900ms[/yellow]")
+    console.print("[yellow]All data retrieved with single queries per operation[/yellow]")
     
     # Return combined results
     all_results = []
@@ -390,7 +364,7 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
         all_results.extend(result3.results)
     
     return DemoQueryResult(
-        query_name="Simplified Property Relationships Demo",
+        query_name="Property Relationships via Denormalized Index",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
         returned_hits=len(all_results),
@@ -400,7 +374,7 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
             "comparison": {
                 "before": "3-6 queries, 200+ lines of code",
                 "after": "1 query, ~20 lines of code",
-                "improvement": "80% code reduction, 60% performance gain"
+                "performance": "Single-query retrieval"
             }
         }
     )

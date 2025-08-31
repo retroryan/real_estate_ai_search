@@ -206,43 +206,7 @@ This directory contains demonstration queries showcasing various Elasticsearch s
      - Nested aggregations per bucket
    - **Use case**: Price distribution visualization
 
-### `property_neighborhood_wiki.py`
-**Purpose**: Multi-index searches combining properties, neighborhoods, and Wikipedia
-
-#### Complex Query Patterns:
-
-1. **`demo_property_with_full_context()`**
-   - **Type**: Multi-index search with relationship building
-   - **Features**:
-     - Searches across 3 indexes
-     - Exact filters (term queries) for location matching
-     - Score boosting with should clauses
-     - Post-processing to build relationships
-   - **Process**:
-     1. Get properties by city
-     2. Find related neighborhoods
-     3. Find Wikipedia articles for context
-     4. Combine results maintaining relationships
-
-2. **`demo_neighborhood_properties_and_wiki()`**
-   - **Type**: Neighborhood-centric multi-index search
-   - **Features**:
-     - Starts from neighborhood
-     - Finds properties in neighborhood
-     - Enriches with Wikipedia data
-     - Uses both exact and fuzzy matching
-
-3. **`demo_location_wikipedia_context()`**
-   - **Type**: Location-based Wikipedia enrichment
-   - **Features**:
-     - Bool query with filter + should
-     - Boost clauses for relevance tuning
-     - Combines exact state match with fuzzy city match
-   - **Scoring Strategy**:
-     - Filter ensures state matches (required, no score)
-     - Should clauses boost city mentions (optional, affects score)
-
-### `demo_relationship_search.py` & `demo_single_query_relationships.py`
+### `demo_single_query_relationships.py`
 **Purpose**: Denormalized index queries for performance
 
 #### Key Patterns:
@@ -275,7 +239,7 @@ This directory contains demonstration queries showcasing various Elasticsearch s
 | Feature | Query Type | File | Example |
 |---------|------------|------|---------|
 | **Field Boosting** | multi_match with ^ | property_queries.py | description^2 (2x weight) |
-| **Should Boosting** | bool with should | property_neighborhood_wiki.py | Optional clauses increase score |
+| **Should Boosting** | bool with should | advanced_queries.py | Optional clauses increase score |
 | **Constant Score** | filter context | property_queries.py | Filters don't affect relevance |
 | **Function Score** | function_score | Not shown | Custom scoring functions |
 
@@ -294,7 +258,7 @@ This directory contains demonstration queries showcasing various Elasticsearch s
 |---------|------------|------|---------|
 | **Compound Logic** | bool | All files | Combine must/filter/should/must_not |
 | **Nested Objects** | nested | demo_single_query_relationships.py | Query array items independently |
-| **Multi-Index** | msearch | property_neighborhood_wiki.py | Search multiple indexes |
+| **Multi-Index** | msearch | advanced_queries.py | Search multiple indexes |
 | **Aggregations** | aggs | aggregation_queries.py | Statistics and grouping |
 | **KNN Vector Search** | knn | advanced_queries.py | Semantic similarity with embeddings |
 | **Hybrid Search** | knn + match | advanced_queries.py | Combine vector and text search |
@@ -409,7 +373,7 @@ Combine KNN score with text relevance:
 2. **Add Filters**: Learn bool queries and exact matching
 3. **Explore Text**: wikipedia_fulltext.py - Full-text features
 4. **Analyze Data**: aggregation_queries.py - Statistics
-5. **Go Complex**: property_neighborhood_wiki.py - Multi-index
+5. **Go Complex**: advanced_queries.py - Multi-index search
 6. **Optimize**: demo_single_query_relationships.py - Denormalization
 
 ## 📊 Query Performance Tips

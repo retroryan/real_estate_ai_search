@@ -117,6 +117,7 @@ class WikipediaArticle(BaseModel):
     title: str
     url: Optional[str] = None
     summary: Optional[str] = None
+    long_summary: Optional[str] = None
     categories: Optional[List[str]] = None
     city: Optional[str] = None
     state: Optional[str] = None

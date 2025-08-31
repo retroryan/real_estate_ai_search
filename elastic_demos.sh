@@ -8,7 +8,7 @@
 # It automatically loads authentication from .env file.
 #
 # Usage:
-#   ./elastic_demos.sh         # Run default demo (15 - Rich Property Listing)
+#   ./elastic_demos.sh         # Run default demo (14 - Rich Property Listing)
 #   ./elastic_demos.sh 5       # Run demo number 5
 #   ./elastic_demos.sh --help  # Show all available demos
 #   ./elastic_demos.sh --list  # List all demos with descriptions
@@ -27,7 +27,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default demo number (Rich Property Listing)
-DEFAULT_DEMO=15
+DEFAULT_DEMO=14
 
 # Script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -69,9 +69,9 @@ show_help() {
     echo "  --verbose, -v  Show detailed query DSL"
     echo
     echo -e "${GREEN}Examples:${NC}"
-    echo "  ./elastic_demos.sh              # Run default demo (15)"
+    echo "  ./elastic_demos.sh              # Run default demo (14)"
     echo "  ./elastic_demos.sh 5            # Run demo number 5"
-    echo "  ./elastic_demos.sh 15 -v        # Run demo 15 with verbose output"
+    echo "  ./elastic_demos.sh 14 -v        # Run demo 14 with verbose output"
     echo "  ./elastic_demos.sh --list       # Show all available demos"
     echo
     echo -e "${GREEN}Available Demos:${NC}"
@@ -91,13 +91,12 @@ list_demos() {
     echo " 6  │ Semantic Similarity Search"
     echo " 7  │ Multi-Entity Combined Search"
     echo " 8  │ Wikipedia Article Search"
-    echo " 9  │ Property-Neighborhood-Wikipedia Relationships"
-    echo " 10 │ Wikipedia Full-Text Search"
-    echo " 11 │ Simplified Single-Query Relationships"
-    echo " 12 │ Natural Language Semantic Search"
-    echo " 13 │ Natural Language Examples"
-    echo " 14 │ Semantic vs Keyword Comparison"
-    echo -e "${GREEN} 15 │ 🏡 Rich Real Estate Listing (Single Query) [DEFAULT]${NC}"
+    echo " 9  │ Wikipedia Full-Text Search"
+    echo " 10 │ Property Relationships via Denormalized Index"
+    echo " 11 │ Natural Language Semantic Search"
+    echo " 12 │ Natural Language Examples"
+    echo " 13 │ Semantic vs Keyword Comparison"
+    echo -e "${GREEN} 14 │ 🏡 Rich Real Estate Listing (Single Query) [DEFAULT]${NC}"
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -120,8 +119,8 @@ run_demo() {
     # Execute the command
     eval $cmd
     
-    # Check if it's demo 15 and show HTML file location
-    if [ "$demo_num" = "15" ]; then
+    # Check if it's demo 14 and show HTML file location
+    if [ "$demo_num" = "14" ]; then
         echo
         echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo -e "${GREEN}📄 HTML Report:${NC}"
@@ -159,7 +158,7 @@ main() {
                 verbose="true"
                 shift
                 ;;
-            [0-9]|1[0-5])
+            [0-9]|1[0-4])
                 demo_number=$1
                 shift
                 ;;
@@ -179,9 +178,9 @@ main() {
     fi
     
     # Validate demo number
-    if ! [[ "$demo_number" =~ ^[1-9]$|^1[0-5]$ ]]; then
+    if ! [[ "$demo_number" =~ ^[1-9]$|^1[0-4]$ ]]; then
         echo -e "${RED}Error: Invalid demo number '$demo_number'${NC}"
-        echo "Valid demo numbers are 1-15. Use --list to see all demos."
+        echo "Valid demo numbers are 1-14. Use --list to see all demos."
         exit 1
     fi
     

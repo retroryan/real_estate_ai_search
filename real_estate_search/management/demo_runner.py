@@ -15,14 +15,13 @@ from ..demo_queries import (
     demo_semantic_search,
     demo_multi_entity_search,
     demo_wikipedia_search,
-    demo_relationship_search,
     demo_wikipedia_fulltext,
+    demo_simplified_relationships,
     demo_natural_language_search,
     demo_natural_language_examples,
     demo_semantic_vs_keyword_comparison,
     demo_rich_property_listing
 )
-from ..demo_queries.demo_single_query_relationships import demo_simplified_relationships
 from .models import DemoQuery, DemoExecutionResult
 
 
@@ -98,42 +97,36 @@ class DemoRunner:
             ),
             9: DemoQuery(
                 number=9,
-                name="Property-Neighborhood-Wikipedia Relationships",
-                description="Demonstrates entity linking across indices",
-                query_function="demo_relationship_search"
-            ),
-            10: DemoQuery(
-                number=10,
                 name="Wikipedia Full-Text Search",
                 description="Full-text search across Wikipedia articles",
                 query_function="demo_wikipedia_fulltext"
             ),
-            11: DemoQuery(
-                number=11,
-                name="Simplified Single-Query Relationships",
-                description="Denormalized index for single-query retrieval",
+            10: DemoQuery(
+                number=10,
+                name="Property Relationships via Denormalized Index",
+                description="Demonstrates single-query retrieval using denormalized index",
                 query_function="demo_simplified_relationships"
             ),
-            12: DemoQuery(
-                number=12,
+            11: DemoQuery(
+                number=11,
                 name="Natural Language Semantic Search",
                 description="Convert natural language queries to embeddings for semantic search",
                 query_function="demo_natural_language_search"
             ),
-            13: DemoQuery(
-                number=13,
+            12: DemoQuery(
+                number=12,
                 name="Natural Language Examples",
                 description="Multiple examples of natural language property search",
                 query_function="demo_natural_language_examples"
             ),
-            14: DemoQuery(
-                number=14,
+            13: DemoQuery(
+                number=13,
                 name="Semantic vs Keyword Comparison",
                 description="Compare semantic embedding search with traditional keyword search",
                 query_function="demo_semantic_vs_keyword_comparison"
             ),
-            15: DemoQuery(
-                number=15,
+            14: DemoQuery(
+                number=14,
                 name="Rich Real Estate Listing",
                 description="Complete property listing with neighborhood and Wikipedia data from single query",
                 query_function="demo_rich_property_listing"
@@ -260,13 +253,12 @@ class DemoRunner:
             6: demo_semantic_search,
             7: demo_multi_entity_search,
             8: demo_wikipedia_search,
-            9: demo_relationship_search,
-            10: demo_wikipedia_fulltext,
-            11: demo_simplified_relationships,
-            12: demo_natural_language_search,
-            13: demo_natural_language_examples,
-            14: demo_semantic_vs_keyword_comparison,
-            15: demo_rich_property_listing
+            9: demo_wikipedia_fulltext,
+            10: demo_simplified_relationships,
+            11: demo_natural_language_search,
+            12: demo_natural_language_examples,
+            13: demo_semantic_vs_keyword_comparison,
+            14: demo_rich_property_listing
         }
         
         return demo_functions[demo_number]
@@ -279,34 +271,22 @@ class DemoRunner:
             Dictionary of demo number to special description
         """
         descriptions = {
-            9: """📊 Query Architecture Overview:
-This demo performs three types of relationship queries:
-
-1️⃣  Property → Neighborhood → Wikipedia
-   Starting from a property, finds its neighborhood and related articles
-   Shows: Property details, neighborhood context, location Wikipedia
-
-2️⃣  Neighborhood → Properties + Wikipedia
-   Shows all properties in a neighborhood plus Wikipedia context
-   Example: Pacific Heights with all its properties and articles
-
-3️⃣  Location → Properties + Wikipedia
-   City-level search combining real estate and encyclopedia data
-   Example: All San Francisco properties with city Wikipedia articles
-
-🔗 Relationships established through:
-   • neighborhood_id field linking properties to neighborhoods
-   • Location matching between Wikipedia and property/neighborhood data
-   • Confidence scoring (primary=95%, neighborhood=85%, park=90%, etc.)""",
-            
-            10: """🔍 Full-Text Search Overview:
+            9: """🔍 Full-Text Search Overview:
 This demo showcases Wikipedia full-text search after HTML enrichment:
 
 • Searches across complete Wikipedia article content
 • Demonstrates various query patterns and operators
 • Shows highlighted relevant content from articles""",
             
-            12: """🤖 Natural Language Semantic Search:
+            10: """📊 Denormalized Index Architecture:
+This demo shows property relationships using a denormalized index:
+
+• Single query retrieves property, neighborhood, and Wikipedia data
+• All related data pre-joined at index time for optimal performance
+• Demonstrates production-ready pattern for read-heavy applications
+• Trades storage space for dramatic query performance gains""",
+            
+            11: """🤖 Natural Language Semantic Search:
 This demo uses AI embeddings to understand natural language queries:
 
 • Converts text queries to 1024-dimensional vectors using Voyage-3
@@ -314,7 +294,7 @@ This demo uses AI embeddings to understand natural language queries:
 • Understands semantic meaning beyond simple keyword matching
 • Example: "cozy family home near good schools" finds relevant properties""",
             
-            13: """🔍 Natural Language Search Examples:
+            12: """🔍 Natural Language Search Examples:
 Demonstrates various natural language queries:
 
 • Family-oriented: "cozy family home near good schools and parks"
@@ -323,7 +303,7 @@ Demonstrates various natural language queries:
 • Eco-friendly: "eco-friendly house with solar panels"
 • And more examples showing semantic understanding""",
             
-            14: """⚖️ Semantic vs Keyword Search Comparison:
+            13: """⚖️ Semantic vs Keyword Search Comparison:
 Compares AI-powered semantic search with traditional keyword search:
 
 • Runs the same query using both approaches
@@ -331,7 +311,7 @@ Compares AI-powered semantic search with traditional keyword search:
 • Demonstrates differences in result relevance
 • Highlights unique strengths of each approach""",
             
-            15: """🏡 Rich Real Estate Listing (Single Query):
+            14: """🏡 Rich Real Estate Listing (Single Query):
 Demonstrates the power of denormalized property_relationships index:
 
 ✨ Complete Property Information:
