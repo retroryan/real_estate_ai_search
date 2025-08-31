@@ -198,11 +198,10 @@ class TestSearchEndpoints:
         data = response.json()
         assert data["mode"] == "poi_proximity"
         
-        # Check for POI data in results
+        # Check for results
         if data["properties"]:
             prop = data["properties"][0]
-            if "nearby_pois" in prop and prop["nearby_pois"]:
-                assert len(prop["nearby_pois"]) > 0
+            assert "listing_id" in prop
         
         print(f"✅ POI proximity search passed: {data['total']} properties found")
     
@@ -403,14 +402,9 @@ class TestPropertyEndpoints:
         assert "property_id" in data
         assert data["property_id"] == TEST_PROPERTY_ID
         
-        # Check optional Wikipedia fields
-        if "location_context" in data:
-            context = data["location_context"]
-            if context:
-                assert "wikipedia_title" in context or context is None
-        
-        if "nearby_pois" in data:
-            assert isinstance(data["nearby_pois"], list)
+        # Check basic fields are present
+        assert "listing_id" in data
+        assert "address" in data
         
         print(f"✅ Wikipedia context test passed for ID: {TEST_PROPERTY_ID}")
     

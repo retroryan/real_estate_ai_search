@@ -59,22 +59,6 @@ class Parking(BaseModel):
     type: Optional[str] = Field(None, description="Parking type (garage, carport, street)")
 
 
-class LocationContext(BaseModel):
-    """Location context enriched from Wikipedia."""
-    
-    model_config = ConfigDict(extra='forbid')
-    
-    wikipedia_page_id: Optional[str] = Field(None, description="Wikipedia page ID")
-    wikipedia_title: Optional[str] = Field(None, description="Wikipedia article title")
-    location_summary: Optional[str] = Field(None, description="Location summary")
-    historical_significance: Optional[str] = Field(None, description="Historical significance")
-    key_topics: List[str] = Field(default_factory=list, description="Key topics")
-    cultural_features: List[str] = Field(default_factory=list, description="Cultural features")
-    recreational_features: List[str] = Field(default_factory=list, description="Recreational features")
-    transportation: List[str] = Field(default_factory=list, description="Transportation options")
-    confidence_score: Optional[float] = Field(None, ge=0, le=1, description="Confidence score")
-
-
 class Property(BaseModel):
     """Complete property model."""
     
@@ -118,7 +102,6 @@ class Property(BaseModel):
     mls_number: Optional[str] = Field(None, description="MLS number")
     
     # Enrichment fields
-    location_context: Optional[LocationContext] = Field(None, description="Location context")
     search_tags: List[str] = Field(default_factory=list, description="Search tags")
     
     # Embedding fields

@@ -16,7 +16,6 @@ from real_estate_search.mcp_server.models.property import (
     Address,
     Neighborhood,
     Parking,
-    LocationContext,
     PropertySearchResult
 )
 from real_estate_search.mcp_server.models.wikipedia import (

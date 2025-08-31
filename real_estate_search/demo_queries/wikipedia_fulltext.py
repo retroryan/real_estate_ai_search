@@ -256,8 +256,8 @@ def format_wikipedia_result(hit: Dict[str, Any], query_num: int, total_results: 
     result.append(f"📖 {doc['title']}")
     
     # Show geographic location if available (enrichment from data pipeline)
-    if doc.get('best_city') and doc.get('best_state'):
-        result.append(f"📍 Location: {doc['best_city']}, {doc['best_state']}")
+    if doc.get('city') and doc.get('state'):
+        result.append(f"📍 Location: {doc['city']}, {doc['state']}")
     
     # Display top 3 categories to give context about the article
     # Categories help users understand the article's subject matter
@@ -348,7 +348,7 @@ def execute_search_query(
         "query": query_config["query"],
         "size": 3,  # Limit results for demo purposes
         "_source": [  # Only fetch needed fields to reduce network overhead
-            "page_id", "title", "best_city", "best_state", 
+            "page_id", "title", "city", "state", 
             "categories", "content", "content_length", "short_summary", "url"
         ],
         "highlight": {  # Configure highlighting for context extraction
@@ -441,7 +441,7 @@ def process_results_for_html(search_results: List[Dict[str, Any]], saved_article
                 "page_id": page_id,
                 "title": hit['_source']['title'],
                 "score": hit['_score'],
-                "city": hit['_source'].get('best_city', 'Unknown'),
+                "city": hit['_source'].get('city', 'Unknown'),
                 "categories": hit['_source'].get('categories', []),
                 "content_length": hit['_source'].get('content_length'),
                 "has_full_content": 'content_length' in hit['_source'],

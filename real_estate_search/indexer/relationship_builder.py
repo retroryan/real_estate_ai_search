@@ -31,8 +31,8 @@ class WikipediaArticle(BaseModel):
     title: str = Field(description="Article title")
     url: Optional[str] = Field(default=None, description="Article URL")
     summary: Optional[str] = Field(default=None, description="Article summary")
-    best_city: Optional[str] = Field(default=None, description="Best matching city")
-    best_state: Optional[str] = Field(default=None, description="Best matching state")
+    city: Optional[str] = Field(default=None, description="City")
+    state: Optional[str] = Field(default=None, description="State")
     relationship_type: str = Field(default="neighborhood_related", description="Type of relationship")
     confidence: float = Field(default=0.8, description="Confidence score")
     relevance_score: Optional[float] = Field(default=None, description="Relevance score")
@@ -418,8 +418,8 @@ class PropertyRelationshipBuilder:
                         "title": article_data.get("title"),
                         "url": article_data.get("url"),
                         "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
-                        "best_city": article_data.get("best_city"),
-                        "best_state": article_data.get("best_state"),
+                        "city": article_data.get("city"),
+                        "state": article_data.get("state"),
                         "relationship_type": "primary",
                         "confidence": primary.get("confidence", 0.9),
                         "relevance_score": article_data.get("relevance_score")
@@ -436,8 +436,8 @@ class PropertyRelationshipBuilder:
                             "title": article_data.get("title"),
                             "url": article_data.get("url"),
                             "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
-                            "best_city": article_data.get("best_city"),
-                            "best_state": article_data.get("best_state"),
+                            "city": article_data.get("city"),
+                            "state": article_data.get("state"),
                             "relationship_type": wiki_ref.get("relationship", "related"),
                             "confidence": wiki_ref.get("confidence", 0.8),
                             "relevance_score": article_data.get("relevance_score")

@@ -388,8 +388,6 @@ class WikipediaArticle(BaseModel):
     # Location relevance
     city: Optional[str] = Field(None, description="Associated city")
     state: Optional[str] = Field(None, description="Associated state")
-    best_city: Optional[str] = Field(None, description="Best matched city")
-    best_state: Optional[str] = Field(None, description="Best matched state")
     relevance_score: Optional[float] = Field(None, ge=0, le=100, description="Location relevance")
     
     # Classification
@@ -408,11 +406,9 @@ class WikipediaArticle(BaseModel):
     @property
     def location_string(self) -> str:
         """Get location as string."""
-        city = self.best_city or self.city
-        state = self.best_state or self.state
-        if city and state:
-            return f"{city}, {state}"
-        return city or state or "Location unknown"
+        if self.city and self.state:
+            return f"{self.city}, {self.state}"
+        return self.city or self.state or "Location unknown"
 
 
 # ============================================================================

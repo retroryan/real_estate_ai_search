@@ -268,38 +268,10 @@ class PropertyIndexer:
             stats = self.es_client.indices.stats(index=self.index_name)
             count = self.es_client.count(index=self.index_name)
             
-            # Get Wikipedia coverage stats
-            wiki_coverage = self.es_client.search(
-                index=self.index_name,
-                body={
-                    "size": 0,
-                    "aggs": {
-                        "has_location_context": {
-                            "filter": {"exists": {"field": "location_context.wikipedia_page_id"}}
-                        },
-                        "has_neighborhood_context": {
-                            "filter": {"exists": {"field": "neighborhood_context.wikipedia_page_id"}}
-                        },
-                        "has_pois": {
-                            "filter": {"exists": {"field": "nearby_poi"}}
-                        },
-                        "avg_scores": {
-                            "stats": {"field": "location_scores.overall_desirability"}
-                        }
-                    }
-                }
-            )
-            
             return {
                 "index_name": self.index_name,
                 "document_count": count["count"],
-                "size_in_bytes": stats["indices"][self.index_name]["total"]["store"]["size_in_bytes"],
-                "wikipedia_coverage": {
-                    "location_context": wiki_coverage["aggregations"]["has_location_context"]["doc_count"],
-                    "neighborhood_context": wiki_coverage["aggregations"]["has_neighborhood_context"]["doc_count"],
-                    "has_pois": wiki_coverage["aggregations"]["has_pois"]["doc_count"],
-                    "avg_desirability": wiki_coverage["aggregations"]["avg_scores"].get("avg", 0)
-                }
+                "size_in_bytes": stats["indices"][self.index_name]["total"]["store"]["size_in_bytes"]
             }
             
         except Exception as e:

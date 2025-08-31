@@ -73,13 +73,13 @@ class WikipediaSearchService:
         # City filter
         if request.city:
             filter_clauses.append({
-                "term": {"best_city": request.city.lower()}
+                "term": {"city": request.city.lower()}
             })
         
         # State filter
         if request.state:
             filter_clauses.append({
-                "term": {"best_state": request.state.upper()}
+                "term": {"state": request.state.upper()}
             })
         
         # Categories filter

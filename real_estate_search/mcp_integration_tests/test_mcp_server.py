@@ -288,7 +288,7 @@ class TestToolIntegration:
     """Test tool integration scenarios."""
     
     @pytest.mark.asyncio
-    async def test_property_search_with_location_context(self):
+    async def test_property_search_with_wikipedia(self):
         """Test using Wikipedia tools to provide context for property searches."""
         # This would be a more complex integration test combining both tools
         # For now, we'll test that both tools can work with the same context

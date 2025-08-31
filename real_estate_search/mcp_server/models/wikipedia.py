@@ -26,8 +26,8 @@ class WikipediaArticle(BaseModel):
     content_loaded_at: Optional[datetime] = Field(None, description="Content load timestamp")
     
     # Location fields
-    best_city: Optional[str] = Field(None, description="Best matching city")
-    best_state: Optional[str] = Field(None, description="Best matching state")
+    city: Optional[str] = Field(None, description="City")
+    state: Optional[str] = Field(None, description="State abbreviation")
     latitude: Optional[float] = Field(None, description="Latitude coordinate")
     longitude: Optional[float] = Field(None, description="Longitude coordinate")
     
@@ -58,7 +58,7 @@ class WikipediaArticle(BaseModel):
             raise ValueError(f"Longitude must be between -180 and 180, got {v}")
         return v
     
-    @field_validator('best_state')
+    @field_validator('state')
     @classmethod
     def validate_state(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and len(v) != 2:
@@ -90,8 +90,8 @@ class WikipediaChunk(BaseModel):
     total_chunks: int = Field(..., ge=1, description="Total chunks in article")
     
     # Metadata from parent article
-    best_city: Optional[str] = Field(None, description="Best matching city")
-    best_state: Optional[str] = Field(None, description="Best matching state")
+    city: Optional[str] = Field(None, description="City")
+    state: Optional[str] = Field(None, description="State abbreviation")
     categories: List[str] = Field(default_factory=list, description="Article categories")
     
     # Embedding

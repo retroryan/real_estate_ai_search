@@ -398,7 +398,6 @@ class TestMultiFieldBoosting:
         
         # Check that important fields have higher boosts
         assert "description^3" in fields
-        assert "enriched_search_text^2" in fields
         assert "features^1.5" in fields
         assert "amenities^1.5" in fields
         

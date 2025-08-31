@@ -19,7 +19,6 @@ class ElasticsearchFields:
     FEATURES: Final[str] = "features"
     AMENITIES: Final[str] = "amenities"
     SEARCH_TAGS: Final[str] = "search_tags"
-    ENRICHED_SEARCH_TEXT: Final[str] = "enriched_search_text"
     EMBEDDING: Final[str] = "embedding"
     
     # Address fields
@@ -33,17 +32,11 @@ class ElasticsearchFields:
     NEIGHBORHOOD_ID: Final[str] = "neighborhood.id"
     NEIGHBORHOOD_NAME: Final[str] = "neighborhood.name"
     
-    # Location context fields
-    LOCATION_SUMMARY: Final[str] = "location_context.location_summary"
-    LOCATION_HISTORICAL: Final[str] = "location_context.historical_significance"
-    NEIGHBORHOOD_DESC: Final[str] = "neighborhood_context.description"
-    NEIGHBORHOOD_CHAR: Final[str] = "neighborhood_context.character"
-    
     # Wikipedia fields
     WIKI_PAGE_ID: Final[str] = "page_id"
     WIKI_TITLE: Final[str] = "title"
-    WIKI_BEST_CITY: Final[str] = "best_city"
-    WIKI_BEST_STATE: Final[str] = "best_state"
+    WIKI_CITY: Final[str] = "city"
+    WIKI_STATE: Final[str] = "state"
     WIKI_CATEGORIES: Final[str] = "categories"
     WIKI_RELEVANCE: Final[str] = "relevance_score"
     WIKI_SHORT_SUMMARY: Final[str] = "short_summary"

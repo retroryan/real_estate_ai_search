@@ -49,11 +49,11 @@
     "content_loaded_at": {
       "type": "date"
     },
-    "best_city": {
+    "city": {
       "type": "keyword",
       "normalizer": "lowercase_normalizer"
     },
-    "best_state": {
+    "state": {
       "type": "keyword"
     },
     "location": {

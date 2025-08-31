@@ -88,10 +88,10 @@ async def search_wikipedia(
                 })
             
             # Add location info if available
-            if article.get("best_city"):
+            if article.get("city"):
                 article_data["location"] = {
-                    "city": article.get("best_city"),
-                    "state": article.get("best_state"),
+                    "city": article.get("city"),
+                    "state": article.get("state"),
                     "coordinates": {
                         "lat": article.get("latitude"),
                         "lon": article.get("longitude")
@@ -172,13 +172,13 @@ async def get_wikipedia_article(
             "categories": article_doc.get("categories", []),
             "content_loaded": article_doc.get("content_loaded", False),
             "location": {
-                "city": article_doc.get("best_city"),
-                "state": article_doc.get("best_state"),
+                "city": article_doc.get("city"),
+                "state": article_doc.get("state"),
                 "coordinates": {
                     "lat": article_doc.get("latitude"),
                     "lon": article_doc.get("longitude")
                 } if article_doc.get("latitude") and article_doc.get("longitude") else None
-            } if article_doc.get("best_city") else None
+            } if article_doc.get("city") else None
         }
         
         # Include full content if it's loaded and not too long
@@ -260,8 +260,8 @@ async def search_wikipedia_by_location(
                 "title": article.get("title"),
                 "short_summary": article.get("short_summary", "")[:300],
                 "location_match": {
-                    "city": article.get("best_city"),
-                    "state": article.get("best_state"),
+                    "city": article.get("city"),
+                    "state": article.get("state"),
                     "coordinates": {
                         "lat": article.get("latitude"),
                         "lon": article.get("longitude")
