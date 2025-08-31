@@ -9,6 +9,12 @@ from typing import Dict, Any, Optional, List
 from elasticsearch import Elasticsearch
 import logging
 import time
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import box
+from rich.text import Text
+from rich.columns import Columns
 
 from .models import DemoQueryResult
 from ..embeddings import QueryEmbeddingService, EmbeddingConfig
@@ -20,6 +26,7 @@ from ..embeddings.exceptions import (
 from ..config import AppConfig
 
 logger = logging.getLogger(__name__)
+console = Console()
 
 
 def demo_natural_language_search(
@@ -58,7 +65,7 @@ def demo_natural_language_search(
     except (ConfigurationError, EmbeddingServiceError) as e:
         logger.error(f"Failed to initialize embedding service: {e}")
         return DemoQueryResult(
-            query_name=f"Natural Language Search: '{query[:50]}...'",
+            query_name=f"Natural Language Search: '{query}'",
             query_description="Natural language semantic search using query embeddings",
             execution_time_ms=0,
             total_hits=0,
@@ -78,7 +85,7 @@ def demo_natural_language_search(
     except EmbeddingGenerationError as e:
         logger.error(f"Failed to generate query embedding: {e}")
         return DemoQueryResult(
-            query_name=f"Natural Language Search: '{query[:50]}...'",
+            query_name=f"Natural Language Search: '{query}'",
             query_description="Natural language semantic search using query embeddings",
             execution_time_ms=0,
             total_hits=0,
@@ -122,8 +129,8 @@ def demo_natural_language_search(
         
         total_time_ms = embedding_time_ms + search_time_ms
         
-        return DemoQueryResult(
-            query_name=f"Natural Language Search: '{query[:50]}...'",
+        result = DemoQueryResult(
+            query_name=f"Natural Language Search: '{query}'",
             query_description=f"Semantic search using natural language query: '{query}'",
             execution_time_ms=int(total_time_ms),
             total_hits=response['hits']['total']['value'],
@@ -150,10 +157,14 @@ def demo_natural_language_search(
             }
         )
         
+        # Display rich formatted results
+        display_natural_language_results(result)
+        return result
+        
     except Exception as e:
         logger.error(f"Error in natural language search: {e}")
         return DemoQueryResult(
-            query_name=f"Natural Language Search: '{query[:50]}...'",
+            query_name=f"Natural Language Search: '{query}'",
             query_description="Natural language semantic search using query embeddings",
             execution_time_ms=int(embedding_time_ms),
             total_hits=0,
@@ -290,7 +301,81 @@ def demo_natural_language_examples(
     finally:
         embedding_service.close()
     
+    # Display rich formatted results for all examples
+    display_natural_language_examples_results(demo_results)
     return demo_results
+
+
+def display_natural_language_examples_results(results: List[DemoQueryResult]):
+    """Display natural language examples with rich formatting."""
+    
+    if not results:
+        console.print("[yellow]No results to display[/yellow]")
+        return
+    
+    console.print("\n[bold cyan]Natural Language Query Examples[/bold cyan]")
+    console.print("=" * 70)
+    
+    for idx, result in enumerate(results, 1):
+        # Extract query text from the description
+        query_text = result.query_description.split("'")[1] if "'" in result.query_description else result.query_description
+        
+        # Create a panel for each example
+        panel_content = f"[cyan]Query:[/cyan] [yellow]{query_text}[/yellow]\n"
+        panel_content += f"[green]Found:[/green] {result.total_hits} properties\n"
+        panel_content += f"[yellow]Time:[/yellow] {result.execution_time_ms}ms\n\n"
+        
+        if result.results:
+            panel_content += "[bold]Top 3 Matches:[/bold]\n\n"
+            for i, prop in enumerate(result.results[:3], 1):
+                address = prop.get('address', {})
+                desc = prop.get('description', 'No description available')
+                
+                # Show full description (no truncation)
+                
+                panel_content += f"[bold]{i}. {address.get('street', 'Unknown')}[/bold]\n"
+                panel_content += f"   [green]${prop.get('price', 0):,.0f}[/green] • "
+                panel_content += f"{prop.get('bedrooms', 'N/A')} bed / {prop.get('bathrooms', 'N/A')} bath • "
+                panel_content += f"[cyan]Score: {prop.get('_score', 0):.3f}[/cyan]\n"
+                panel_content += f"   [dim]{desc}[/dim]\n\n"
+        
+        # Add why it matches explanation based on query type
+        match_explanation = get_match_explanation(idx, query_text)
+        if match_explanation:
+            panel_content += f"\n[bold yellow]Why these match:[/bold yellow] {match_explanation}"
+        
+        panel = Panel(
+            panel_content.strip(),
+            title=f"[bold]Example {idx}: {result.query_name.split(': ')[1] if ': ' in result.query_name else result.query_name}[/bold]",
+            border_style="cyan"
+        )
+        console.print(panel)
+    
+    # Summary
+    total_time = sum(r.execution_time_ms for r in results)
+    total_found = sum(r.total_hits for r in results)
+    
+    summary = Panel(
+        f"[green]✓ Completed {len(results)} natural language searches[/green]\n"
+        f"[yellow]Total execution time: {total_time}ms[/yellow]\n"
+        f"[cyan]Total properties found: {total_found}[/cyan]\n"
+        f"[magenta]Average time per query: {total_time/len(results):.1f}ms[/magenta]",
+        title="[bold green]Summary[/bold green]",
+        border_style="green"
+    )
+    console.print(summary)
+
+
+def get_match_explanation(example_idx: int, query_text: str) -> str:
+    """Get explanation for why properties match each specific query type."""
+    explanations = {
+        1: "AI understands 'family' context - properties with multiple bedrooms, residential neighborhoods, space for children",
+        2: "Semantic search identifies urban/city characteristics - downtown locations, modern architecture, high-rise features", 
+        3: "AI recognizes work-from-home needs - spacious properties, dedicated office spaces, quiet environments",
+        4: "Embeddings understand sustainability concepts - energy-efficient features, eco-friendly materials, green amenities",
+        5: "Semantic search finds luxury indicators - high-end finishes, premium amenities, entertainment features"
+    }
+    return explanations.get(example_idx, "")
 
 
 def demo_semantic_vs_keyword_comparison(
@@ -424,7 +509,7 @@ def demo_semantic_vs_keyword_comparison(
         }
     }
     
-    return DemoQueryResult(
+    result = DemoQueryResult(
         query_name="Demo 14: Semantic vs Keyword Search Comparison",
         query_description=f"Comparing semantic and keyword search for: '{query}'",
         execution_time_ms=int(semantic_time + keyword_time),
@@ -457,3 +542,174 @@ def demo_semantic_vs_keyword_comparison(
         ],
         aggregations=comparison_results
     )
+    
+    # Display rich formatted comparison
+    display_semantic_vs_keyword_comparison(result, query, comparison_results)
+    return result
+
+
+def display_semantic_vs_keyword_comparison(result: DemoQueryResult, query: str, comparison: dict):
+    """Display semantic vs keyword comparison with rich formatting."""
+    
+    console.print("\n[bold cyan]Semantic vs Keyword Search Comparison[/bold cyan]")
+    console.print("=" * 70)
+    console.print(f"\n[yellow]Query: '{query}'[/yellow]\n")
+    
+    # Create side-by-side comparison
+    semantic_data = comparison['semantic']
+    keyword_data = comparison['keyword']
+    
+    # Semantic Search Results Panel
+    semantic_content = f"[green]Found:[/green] {semantic_data['total_hits']} properties\n"
+    semantic_content += f"[yellow]Time:[/yellow] {semantic_data['execution_time_ms']:.1f}ms\n"
+    semantic_content += f"[cyan]Top Score:[/cyan] {comparison['comparison']['semantic_top_score']:.3f}\n\n"
+    semantic_content += "[bold]Top 3 Results:[/bold]\n"
+    
+    for i, prop in enumerate(semantic_data['top_results'][:3], 1):
+        addr = prop.get('address', {})
+        semantic_content += f"{i}. {addr.get('street', 'Unknown')}\n"
+        semantic_content += f"   ${prop.get('price', 0):,.0f} • Score: {prop.get('_score', 0):.3f}\n"
+    
+    semantic_panel = Panel(
+        semantic_content.strip(),
+        title="[bold green]🤖 Semantic Search (AI Embeddings)[/bold green]",
+        border_style="green"
+    )
+    
+    # Keyword Search Results Panel  
+    keyword_content = f"[green]Found:[/green] {keyword_data['total_hits']} properties\n"
+    keyword_content += f"[yellow]Time:[/yellow] {keyword_data['execution_time_ms']:.1f}ms\n"
+    keyword_content += f"[cyan]Top Score:[/cyan] {comparison['comparison']['keyword_top_score']:.3f}\n\n"
+    keyword_content += "[bold]Top 3 Results:[/bold]\n"
+    
+    for i, prop in enumerate(keyword_data['top_results'][:3], 1):
+        addr = prop.get('address', {})
+        keyword_content += f"{i}. {addr.get('street', 'Unknown')}\n"
+        keyword_content += f"   ${prop.get('price', 0):,.0f} • Score: {prop.get('_score', 0):.3f}\n"
+    
+    keyword_panel = Panel(
+        keyword_content.strip(),
+        title="[bold blue]📝 Keyword Search (BM25)[/bold blue]",
+        border_style="blue"
+    )
+    
+    # Display side by side
+    columns = Columns([semantic_panel, keyword_panel], equal=True, expand=True)
+    console.print(columns)
+    
+    # Comparison Analysis
+    comp = comparison['comparison']
+    analysis = f"""[bold]Analysis:[/bold]
+    
+• [cyan]Result Overlap:[/cyan] {comp['overlap_count']} properties appear in both top 5 results
+• [green]Unique to Semantic:[/green] {comp['unique_to_semantic']} properties found only by semantic search
+• [blue]Unique to Keyword:[/blue] {comp['unique_to_keyword']} properties found only by keyword search
+
+[bold]Key Insights:[/bold]
+• Semantic search understands meaning and context beyond exact word matches
+• Keyword search is faster and finds exact phrase matches effectively
+• Combining both approaches can provide comprehensive search coverage"""
+    
+    analysis_panel = Panel(
+        analysis,
+        title="[bold yellow]📊 Comparison Analysis[/bold yellow]",
+        border_style="yellow"
+    )
+    console.print(analysis_panel)
+
+
+def display_natural_language_results(result: DemoQueryResult):
+    """Display natural language search results with rich formatting."""
+    
+    if not result.results:
+        console.print("[yellow]No results found[/yellow]")
+        return
+    
+    # Extract query from result name/description
+    query_text = "modern home with mountain views and open floor plan"  # Default query
+    if "'" in result.query_description:
+        query_text = result.query_description.split("'")[1]
+    
+    # Create results table
+    table = Table(title="🤖 Natural Language Search Results", box=box.ROUNDED)
+    table.add_column("#", style="cyan", width=4)
+    table.add_column("Property", style="white")
+    table.add_column("Price", style="green", justify="right")
+    table.add_column("Beds/Baths", style="yellow", justify="center")
+    table.add_column("Sq Ft", style="magenta", justify="right")
+    table.add_column("Score", style="bright_green", justify="right")
+    
+    for i, prop in enumerate(result.results[:10], 1):
+        address = prop.get('address', {})
+        street = address.get('street', 'Unknown')
+        city = address.get('city', '')
+        
+        table.add_row(
+            str(i),
+            f"{street}\n{city}",
+            f"${prop.get('price', 0):,.0f}" if prop.get('price') else 'N/A',
+            f"{prop.get('bedrooms', 'N/A')}/{prop.get('bathrooms', 'N/A')}",
+            f"{prop.get('square_feet', 0):,}" if prop.get('square_feet') else 'N/A',
+            f"{prop.get('_score', 0):.3f}"
+        )
+    
+    console.print(table)
+    
+    # Show detailed match analysis
+    console.print(f"\n[bold cyan]🔍 Why These Properties Match: '{query_text}'[/bold cyan]")
+    
+    # Show property descriptions with match highlighting
+    for i, prop in enumerate(result.results[:3], 1):
+        address = prop.get('address', {})
+        desc = prop.get('description', 'No description available')
+        features = prop.get('features', [])
+        
+        # Show full description (no truncation)
+        
+        # Create match insights based on query keywords
+        insights = []
+        query_lower = query_text.lower()
+        desc_lower = desc.lower()
+        
+        if 'modern' in query_lower and any(word in desc_lower for word in ['modern', 'contemporary', 'updated', 'new']):
+            insights.append("✓ Modern/contemporary features mentioned")
+        if 'mountain' in query_lower and any(word in desc_lower for word in ['view', 'mountain', 'vista', 'scenic']):
+            insights.append("✓ Views/scenic location described")  
+        if 'open' in query_lower and any(word in desc_lower for word in ['open', 'spacious', 'floor plan', 'concept']):
+            insights.append("✓ Open/spacious layout features")
+        if 'home' in query_lower and any(word in desc_lower for word in ['family', 'home', 'residential', 'neighborhood']):
+            insights.append("✓ Family-friendly/residential character")
+            
+        # Add score insight
+        insights.append(f"🎯 Semantic similarity score: {prop.get('_score', 0):.3f}")
+        
+        panel_content = f"[bold]{address.get('street', 'Unknown')}[/bold]\n"
+        panel_content += f"[yellow]${prop.get('price', 0):,.0f}[/yellow] • "
+        panel_content += f"{prop.get('bedrooms', 'N/A')} bed / {prop.get('bathrooms', 'N/A')} bath • "
+        panel_content += f"{prop.get('square_feet', 0):,} sq ft\n\n"
+        panel_content += f"[bright_blue]{desc}[/bright_blue]\n\n"
+        
+        if insights:
+            panel_content += "[bold green]Match Insights:[/bold green]\n"
+            for insight in insights:
+                panel_content += f"{insight}\n"
+        
+        panel = Panel(
+            panel_content.strip(),
+            title=f"Match #{i} - AI Semantic Analysis",
+            border_style="green"
+        )
+        console.print(panel)
+    
+    # Add overall explanation
+    explanation = Panel(
+        f"[bold yellow]How Semantic Search Works:[/bold yellow]\n\n"
+        f"• Query converted to 1024-dimensional vector using Voyage-3 AI model\n"
+        f"• Property descriptions pre-encoded with same model during indexing\n"
+        f"• Vector similarity (cosine distance) finds semantically related properties\n"
+        f"• Results ranked by conceptual similarity, not just keyword matching\n"
+        f"• AI understands context: 'modern home' → contemporary, updated, new construction",
+        title="🧠 AI Understanding",
+        border_style="yellow"
+    )
+    console.print(explanation)

@@ -92,7 +92,8 @@ def demo_semantic_search(
                     'price': ref_doc['_source'].get('price', 0),
                     'bedrooms': ref_doc['_source'].get('bedrooms', 0),
                     'bathrooms': ref_doc['_source'].get('bathrooms', 0),
-                    'square_feet': ref_doc['_source'].get('square_feet', 0)
+                    'square_feet': ref_doc['_source'].get('square_feet', 0),
+                    'description': ref_doc['_source'].get('description', 'No description available')
                 }
                 # Log property details for context
                 addr = ref_property_details['address']
@@ -169,7 +170,9 @@ def demo_semantic_search(
         ref_text.append(f"Address: {street}, {city}\n", style="cyan")
         ref_text.append(f"Type: {prop_type}\n", style="magenta")
         ref_text.append(f"Price: {price_fmt}\n", style="green")
-        ref_text.append(f"Size: {beds}bd/{baths}ba | {sqft:,} sqft", style="blue")
+        ref_text.append(f"Size: {beds}bd/{baths}ba | {sqft:,} sqft\n", style="blue")
+        ref_text.append(f"\n📝 Description:\n", style="bold yellow")
+        ref_text.append(f"{ref_property_details.get('description', 'No description available')[:300]}...", style="bright_blue")
         
         console.print(Panel(
             ref_text,
@@ -190,14 +193,13 @@ def demo_semantic_search(
                 title=f"[bold green]Found {len(response['hits']['hits'])} Similar Properties[/bold green]",
                 box=box.ROUNDED,
                 show_header=True,
-                header_style="bold cyan"
+                header_style="bold cyan",
+                show_lines=True
             )
-            table.add_column("#", style="dim", width=3)
-            table.add_column("Similarity", style="magenta", justify="right")
-            table.add_column("Address", style="cyan", width=35)
-            table.add_column("Price", style="green", justify="right")
-            table.add_column("Type", style="yellow")
-            table.add_column("Size", style="blue")
+            table.add_column("#", style="dim", width=4)
+            table.add_column("Score", style="magenta", justify="right", width=8)
+            table.add_column("Property Details", style="cyan", width=50)
+            table.add_column("Description", style="bright_blue", width=60)
             
             for i, hit in enumerate(response['hits']['hits'], 1):
                 result = hit['_source']
@@ -220,14 +222,23 @@ def demo_semantic_search(
                 sqft = result.get('square_feet', 0)
                 size_str = f"{beds}bd/{baths}ba | {sqft:,}sqft"
                 
+                # Format property details
+                property_details = Text()
+                property_details.append(f"📍 {address_str}\n", style="cyan")
+                property_details.append(f"💰 {price_str} ", style="green")
+                property_details.append(f"• {result.get('property_type', 'N/A').title()}\n", style="yellow")
+                property_details.append(f"🏠 {size_str}", style="blue")
+                
+                # Format description
+                description = result.get('description', 'No description available')
+                desc_text = Text(description[:200] + "..." if len(description) > 200 else description, style="bright_blue")
+                
                 # Add to table
                 table.add_row(
                     str(i),
                     f"{hit['_score']:.2f}",
-                    address_str,
-                    price_str,
-                    result.get('property_type', 'N/A').title(),
-                    size_str
+                    property_details,
+                    desc_text
                 )
             
             console.print(table)
@@ -446,7 +457,7 @@ def demo_multi_entity_search(
         
         if entity_groups['neighborhood']:
             neigh_table = Table(
-                title="\n[bold]📍t Neighborhoods[/bold]",
+                title="\n[bold]📍 Neighborhoods[/bold]",
                 box=box.SIMPLE,
                 show_header=True,
                 header_style="cyan"
@@ -655,8 +666,8 @@ def demo_wikipedia_search(
         "size": size,
         
         "_source": [
-            "page_id", "title", "url", "summary", "city", "state",
-            "location", "article_quality_score", "topics"
+            "page_id", "title", "url", "short_summary", "long_summary", "city", "state",
+            "location", "article_quality_score", "topics", "full_content"
         ],
         
         # HIGHLIGHTING: Show matching content
@@ -679,26 +690,110 @@ def demo_wikipedia_search(
     if not filter_clauses:
         query['query'] = {"bool": {"must": must_clauses}} if must_clauses else {"match_all": {}}
     
+    console = Console()
+    
+    # Show search header
+    console.print(Panel(
+        f"[bold cyan]📚 Wikipedia Article Search[/bold cyan]\n"
+        f"[yellow]Location: {city}, {state}[/yellow]\n"
+        f"[dim]Topics: {', '.join(topics) if topics else 'All topics'}[/dim]",
+        border_style="cyan"
+    ))
+    
     try:
-        response = es_client.search(index="wikipedia", body=query)
+        with console.status("[yellow]Searching Wikipedia articles...[/yellow]"):
+            response = es_client.search(index="wikipedia", body=query)
         
         results = []
-        for hit in response['hits']['hits']:
-            result = hit['_source']
-            result['_score'] = hit['_score']
+        
+        if response['hits']['hits']:
+            # Create results table
+            table = Table(
+                title=f"[bold green]Found {len(response['hits']['hits'])} Wikipedia Articles[/bold green]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                show_lines=True,
+                width=None  # Let table auto-size
+            )
+            table.add_column("ID", style="dim", width=6, no_wrap=True)
+            table.add_column("Score", style="magenta", justify="right", width=6, no_wrap=True)
+            table.add_column("Article", style="cyan", overflow="fold")
+            table.add_column("Summary", style="bright_blue", overflow="fold")
             
-            # Add highlights
-            if 'highlight' in hit:
-                result['_highlights'] = hit['highlight']
+            for i, hit in enumerate(response['hits']['hits'], 1):
+                result = hit['_source']
+                result['_score'] = hit['_score']
+                
+                # Add highlights
+                if 'highlight' in hit:
+                    result['_highlights'] = hit['highlight']
+                
+                # Add computed relevance info
+                result['_relevance_factors'] = {
+                    'score': hit['_score'],
+                    'has_location': 'location' in result,
+                    'quality_score': result.get('article_quality_score', 0)
+                }
+                
+                results.append(result)
+                
+                # Format article info
+                article_info = Text()
+                article_info.append(f"📖 {result.get('title', 'N/A')}\n", style="bold white")
+                article_info.append(f"📍 {result.get('city', 'N/A')}, {result.get('state', 'N/A')}\n", style="green")
+                if result.get('topics'):
+                    topics_str = ", ".join(result['topics'][:3]) if isinstance(result['topics'], list) else str(result['topics'])
+                    article_info.append(f"🏷️ {topics_str}", style="yellow")
+                
+                # Format summary - try multiple fields
+                summary = result.get('short_summary', '').strip()
+                
+                # Fall back to long_summary if short_summary is empty
+                if not summary:
+                    summary = result.get('long_summary', '').strip()
+                
+                # Fall back to extracting from full_content if both summaries are empty
+                if not summary and result.get('full_content'):
+                    content = result['full_content']
+                    # Skip the title line and get actual content
+                    lines = content.split('\n')
+                    # Find first non-empty line after the title
+                    for i, line in enumerate(lines):
+                        if i > 0 and line.strip() and not line.strip() == result.get('title', ''):
+                            # Clean up and take first meaningful content
+                            summary = ' '.join(line.split())[:250]
+                            break
+                
+                if not summary:
+                    summary = 'No summary available'
+                    
+                summary_text = Text(summary[:250] + "..." if len(summary) > 250 else summary, style="bright_blue")
+                
+                # Add to table with article ID
+                article_id = result.get('page_id', hit.get('_id', str(i)))
+                table.add_row(
+                    str(article_id),
+                    f"{hit['_score']:.2f}",
+                    article_info,
+                    summary_text
+                )
             
-            # Add computed relevance info
-            result['_relevance_factors'] = {
-                'score': hit['_score'],
-                'has_location': 'location' in result,
-                'quality_score': result.get('article_quality_score', 0)
-            }
+            console.print(table)
             
-            results.append(result)
+            # Show search insights
+            console.print(Panel(
+                f"[green]✓[/green] Found [bold]{len(results)}[/bold] Wikipedia articles\n"
+                f"[green]✓[/green] Location: [bold]{city}, {state}[/bold]\n"
+                f"[green]✓[/green] Query time: [bold]{response.get('took', 0)}ms[/bold]",
+                title="[bold]📚 Search Results[/bold]",
+                border_style="green"
+            ))
+        else:
+            console.print(Panel(
+                f"[yellow]No Wikipedia articles found for {city}, {state}[/yellow]",
+                border_style="yellow"
+            ))
         
         return DemoQueryResult(
             query_name=f"Demo 8: Wikipedia Location & Topic Search",

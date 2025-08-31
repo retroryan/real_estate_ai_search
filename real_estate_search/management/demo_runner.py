@@ -292,7 +292,7 @@ This demo uses AI embeddings to understand natural language queries:
 • Converts text queries to 1024-dimensional vectors using Voyage-3
 • Performs KNN search against pre-computed property embeddings
 • Understands semantic meaning beyond simple keyword matching
-• Example: "cozy family home near good schools" finds relevant properties""",
+• Example: "modern home with mountain views and open floor plan" finds relevant properties""",
             
             12: """🔍 Natural Language Search Examples:
 Demonstrates various natural language queries:

@@ -423,6 +423,7 @@ main() {
             echo
             echo -e "${YELLOW}Tip: Run './mcp_demos.sh <number>' to execute a specific demo${NC}"
             echo -e "${YELLOW}     Run './mcp_demos.sh --all' to execute all demos${NC}"
+            echo -e "${YELLOW}     Run './mcp_demos.sh --list-tools' to discover and list all MCP server tools${NC}"
             echo -e "${YELLOW}     Add '--stdio' to use STDIO transport instead of HTTP${NC}"
         fi
     elif [ "$command" = "list-tools" ]; then

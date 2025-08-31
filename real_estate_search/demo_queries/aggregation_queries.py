@@ -338,3 +338,192 @@ def demo_price_distribution(
             results=[],
             query_dsl=query
         )
+
+
+# ============================================================================
+# RESULT PROCESSING FUNCTIONS - Data transformation logic
+# ============================================================================
+
+def process_neighborhood_aggregations(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Process neighborhood aggregation results."""
+    results = []
+    if 'aggregations' in response and 'by_neighborhood' in response['aggregations']:
+        for bucket in response['aggregations']['by_neighborhood']['buckets']:
+            results.append({
+                'neighborhood_id': bucket['key'],
+                'property_count': bucket['property_count']['value'],
+                'avg_price': round(bucket['avg_price']['value'], 2) if bucket['avg_price']['value'] else 0,
+                'min_price': bucket['min_price']['value'],
+                'max_price': bucket['max_price']['value'],
+                'avg_bedrooms': round(bucket['avg_bedrooms']['value'], 1) if bucket['avg_bedrooms']['value'] else 0,
+                'avg_square_feet': round(bucket['avg_square_feet']['value'], 0) if bucket['avg_square_feet']['value'] else 0,
+                'price_per_sqft': round(bucket['price_per_sqft']['value'], 2) if bucket['price_per_sqft']['value'] else 0,
+                'property_types': [
+                    {'type': t['key'], 'count': t['doc_count']} 
+                    for t in bucket['property_types']['buckets']
+                ]
+            })
+    return results
+
+
+def process_price_distribution(response: Dict[str, Any], interval: int) -> List[Dict[str, Any]]:
+    """Process price distribution histogram results."""
+    results = []
+    if 'aggregations' in response and 'price_histogram' in response['aggregations']:
+        for bucket in response['aggregations']['price_histogram']['buckets']:
+            range_start = bucket['key']
+            range_end = range_start + interval
+            
+            property_type_breakdown = {}
+            for type_bucket in bucket['by_property_type']['buckets']:
+                property_type_breakdown[type_bucket['key']] = type_bucket['doc_count']
+            
+            results.append({
+                'price_range': f"${range_start:,.0f} - ${range_end:,.0f}",
+                'range_start': range_start,
+                'range_end': range_end,
+                'count': bucket['doc_count'],
+                'property_types': property_type_breakdown,
+                'avg_price': bucket['stats']['avg'] if 'stats' in bucket else None
+            })
+    return results
+
+
+# ============================================================================
+# DISPLAY FUNCTIONS - All UI/formatting logic at the bottom
+# ============================================================================
+
+def display_neighborhood_stats(response: Dict[str, Any], results: List[Dict[str, Any]], size: int):
+    """Display neighborhood statistics with rich formatting."""
+    console = Console()
+    
+    # Header
+    console.print(Panel(
+        f"[bold cyan]📊 Neighborhood Statistics Analysis[/bold cyan]\n"
+        f"[yellow]Analyzing top {size} neighborhoods by property count[/yellow]",
+        border_style="cyan"
+    ))
+    
+    if not results:
+        console.print("[red]No aggregation results found[/red]")
+        return
+    
+    # Create neighborhood stats table
+    table = Table(
+        title=f"[bold green]Neighborhood Property Statistics[/bold green]",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan"
+    )
+    table.add_column("Neighborhood", style="cyan", width=20)
+    table.add_column("Properties", style="yellow", justify="right")
+    table.add_column("Avg Price", style="green", justify="right")
+    table.add_column("Price Range", style="blue", justify="right")
+    table.add_column("Avg Beds", style="magenta", justify="right")
+    table.add_column("Avg SqFt", style="yellow", justify="right")
+    table.add_column("$/SqFt", style="green", justify="right")
+    
+    for neighborhood_data in results:
+        price_range = f"${neighborhood_data['min_price']:,.0f}-${neighborhood_data['max_price']:,.0f}"
+        table.add_row(
+            neighborhood_data['neighborhood_id'],
+            str(neighborhood_data['property_count']),
+            f"${neighborhood_data['avg_price']:,.0f}",
+            price_range,
+            f"{neighborhood_data['avg_bedrooms']:.1f}",
+            f"{neighborhood_data['avg_square_feet']:,.0f}",
+            f"${neighborhood_data['price_per_sqft']:.2f}"
+        )
+    
+    console.print(table)
+    
+    # Show global statistics
+    if 'aggregations' in response and 'total_properties' in response['aggregations']:
+        stats_panel = Panel(
+            f"[green]✓[/green] Total Properties: [bold]{response['aggregations']['total_properties']['value']:.0f}[/bold]\n"
+            f"[green]✓[/green] Overall Average Price: [bold]${response['aggregations']['overall_avg_price']['value']:,.0f}[/bold]\n"
+            f"[green]✓[/green] Neighborhoods Analyzed: [bold]{len(results)}[/bold]\n"
+            f"[green]✓[/green] Query Time: [bold]{response.get('took', 0)}ms[/bold]",
+            title="[bold]📈 Overall Market Statistics[/bold]",
+            border_style="green"
+        )
+        console.print(stats_panel)
+
+
+def display_price_distribution(
+    response: Dict[str, Any], 
+    results: List[Dict[str, Any]], 
+    interval: int,
+    min_price: float,
+    max_price: float
+):
+    """Display price distribution with rich formatting."""
+    console = Console()
+    
+    # Header
+    console.print(Panel(
+        f"[bold cyan]📊 Price Distribution Analysis[/bold cyan]\n"
+        f"[yellow]Range: ${min_price:,.0f} - ${max_price:,.0f}[/yellow]\n"
+        f"[yellow]Bucket Size: ${interval:,.0f}[/yellow]",
+        border_style="cyan"
+    ))
+    
+    if not results:
+        console.print("[red]No distribution results found[/red]")
+        return
+    
+    # Draw histogram
+    console.print("\n[bold]Price Distribution Histogram:[/bold]")
+    max_count = max(r['count'] for r in results) if results else 1
+    
+    for result in results:
+        bar_width = int((result['count'] / max_count) * 50)
+        bar = "█" * bar_width
+        price_label = f"${result['range_start']/1000:.0f}k-${result['range_end']/1000:.0f}k"
+        console.print(f"  {price_label:>15} │ [green]{bar}[/green] {result['count']}")
+    
+    # Show percentiles
+    if 'aggregations' in response and 'price_percentiles' in response['aggregations']:
+        percentiles = response['aggregations']['price_percentiles']['values']
+        
+        percentile_table = Table(
+            title="\n[bold]Price Percentiles[/bold]",
+            box=box.SIMPLE,
+            show_header=False
+        )
+        percentile_table.add_column("Percentile", style="yellow")
+        percentile_table.add_column("Price", style="green", justify="right")
+        
+        for p, value in percentiles.items():
+            percentile_table.add_row(
+                f"{p}th percentile",
+                f"${value:,.0f}" if value else "N/A"
+            )
+        
+        console.print(percentile_table)
+    
+    # Show property type statistics
+    if 'aggregations' in response and 'by_property_type_stats' in response['aggregations']:
+        type_table = Table(
+            title="\n[bold]Statistics by Property Type[/bold]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        type_table.add_column("Type", style="cyan")
+        type_table.add_column("Count", style="yellow", justify="right")
+        type_table.add_column("Avg Price", style="green", justify="right")
+        type_table.add_column("Min Price", style="blue", justify="right")
+        type_table.add_column("Max Price", style="red", justify="right")
+        
+        for type_bucket in response['aggregations']['by_property_type_stats']['buckets']:
+            stats = type_bucket['price_stats']
+            type_table.add_row(
+                type_bucket['key'].title(),
+                str(type_bucket['doc_count']),
+                f"${stats['avg']:,.0f}" if stats['avg'] else "N/A",
+                f"${stats['min']:,.0f}" if stats['min'] else "N/A",
+                f"${stats['max']:,.0f}" if stats['max'] else "N/A"
+            )
+        
+        console.print(type_table)

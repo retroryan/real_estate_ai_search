@@ -263,35 +263,6 @@ def display_denormalized_structure(es_client: Elasticsearch):
     console.print("• Wikipedia articles (from wikipedia index)")
     console.print("\nThis enables single-query retrieval of all related data.\n")
     
-    # Show sample document structure
-    sample_structure = """{
-  "listing_id": "prop_123",
-  "property_type": "condo",
-  "price": 850000,
-  "bedrooms": 2,
-  "address": {
-    "street": "123 Main St",
-    "city": "San Francisco",
-    "state": "CA"
-  },
-  "neighborhood": {
-    "neighborhood_id": "nhood_456",
-    "name": "Pacific Heights",
-    "walkability_score": 92,
-    "amenities": ["parks", "restaurants", "shopping"]
-  },
-  "wikipedia_articles": [
-    {
-      "page_id": "wiki_789",
-      "title": "Pacific Heights, San Francisco",
-      "summary": "Pacific Heights is a neighborhood...",
-      "relationship_type": "primary",
-      "confidence": 0.95
-    }
-  ]
-}"""
-    console.print(Panel(sample_structure, title="Sample Document Structure", border_style="cyan"))
-    
     console.print("\n[bold yellow]Key Benefits:[/bold yellow]")
     console.print("• Single query retrieves all data")
     console.print("• No JOIN operations required")
@@ -319,40 +290,142 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
     # Then run actual demo
     demo = SimplifiedRelationshipDemo(es_client)
     
-    console.print("\n[bold]Running Denormalized Index Queries:[/bold]")
-    console.print("-" * 50)
+    console.print("\n[bold cyan]Running Denormalized Index Queries[/bold cyan]")
+    console.print("=" * 70)
     
     # Demo 1: Single property with full context
-    console.print("\n[cyan]1. Random Property with Full Context (1 query):[/cyan]")
+    console.print("\n[bold]Query 1: Random Property with Full Context[/bold]")
     result1 = demo.demo_single_query_property()
+    
+    # Display query
+    query_panel = Panel(
+        f"""[cyan]Query Type:[/cyan] Single document retrieval
+[cyan]Index:[/cyan] property_relationships  
+[cyan]Method:[/cyan] Random selection with function_score
+
+[yellow]Elasticsearch Query:[/yellow]
+{{
+  "query": {{
+    "function_score": {{
+      "query": {{"match_all": {{}}}},
+      "random_score": {{"seed": 42}}
+    }}
+  }},
+  "size": 1
+}}""",
+        title="[bold cyan]Query[/bold cyan]",
+        border_style="cyan"
+    )
+    console.print(query_panel)
     
     if result1.results:
         property = result1.results[0]
-        console.print(f"   Property: {property.get('address', {}).get('street', 'Unknown')}")
-        console.print(f"   Neighborhood: {property.get('neighborhood', {}).get('name', 'N/A')}")
-        console.print(f"   Wikipedia Articles: {len(property.get('wikipedia_articles', []))}")
-        console.print(f"   [green]Query Time: {result1.execution_time_ms}ms[/green]")
+        
+        # Create results table
+        results_table = Table(title="Query Results", box=box.ROUNDED)
+        results_table.add_column("Field", style="cyan")
+        results_table.add_column("Value", style="white")
+        
+        results_table.add_row("Property Address", property.get('address', {}).get('street', 'Unknown'))
+        results_table.add_row("City", f"{property.get('address', {}).get('city', 'N/A')}, {property.get('address', {}).get('state', 'N/A')}")
+        results_table.add_row("Price", f"${property.get('price', 0):,.0f}" if property.get('price') else 'N/A')
+        results_table.add_row("Bedrooms/Bathrooms", f"{property.get('bedrooms', 'N/A')} bed / {property.get('bathrooms', 'N/A')} bath")
+        results_table.add_row("Neighborhood", property.get('neighborhood', {}).get('name', 'N/A'))
+        results_table.add_row("Wikipedia Articles", str(len(property.get('wikipedia_articles', []))))
+        results_table.add_row("[green]Query Time[/green]", f"[green]{result1.execution_time_ms}ms[/green]")
+        
+        console.print(results_table)
     else:
-        console.print(f"   [yellow]No data in index yet - run data pipeline to populate[/yellow]")
-        console.print(f"   [green]Query Time: {result1.execution_time_ms}ms[/green]")
+        console.print(f"[yellow]No data in index yet - run data pipeline to populate[/yellow]")
+        console.print(f"[green]Query Time: {result1.execution_time_ms}ms[/green]")
     
     # Demo 2: Neighborhood search
-    console.print("\n[cyan]2. Neighborhood Properties (1 query):[/cyan]")
+    console.print("\n[bold]Query 2: Neighborhood Properties Search[/bold]")
     result2 = demo.demo_neighborhood_properties_simplified("Pacific Heights")
-    console.print(f"   Found {result2.total_hits} properties")
-    console.print(f"   [green]Query Time: {result2.execution_time_ms}ms[/green]")
+    
+    query_panel2 = Panel(
+        f"""[cyan]Query Type:[/cyan] Neighborhood filtering
+[cyan]Index:[/cyan] property_relationships
+[cyan]Target:[/cyan] Pacific Heights
+
+[yellow]Elasticsearch Query:[/yellow]
+{{
+  "query": {{
+    "match": {{
+      "neighborhood.name": "Pacific Heights"
+    }}
+  }},
+  "size": 10
+}}""",
+        title="[bold cyan]Query[/bold cyan]",
+        border_style="cyan"
+    )
+    console.print(query_panel2)
+    
+    results_panel2 = Panel(
+        f"""[cyan]Properties Found:[/cyan] {result2.total_hits}
+[cyan]Results Returned:[/cyan] {min(result2.returned_hits, 10)}
+[green]Query Time:[/green] {result2.execution_time_ms}ms""",
+        title="[bold]Results Summary[/bold]",
+        border_style="green"
+    )
+    console.print(results_panel2)
     
     # Demo 3: Location search
-    console.print("\n[cyan]3. Location Search (1 query):[/cyan]")
-    result3 = demo.demo_location_search_simplified("San Francisco", "CA")
-    console.print(f"   Found {result3.total_hits} properties")
-    console.print(f"   [green]Query Time: {result3.execution_time_ms}ms[/green]")
+    console.print("\n[bold]Query 3: Location-Based Search[/bold]")
+    result3 = demo.demo_location_search_simplified("Oakland", "CA")
+    
+    query_panel3 = Panel(
+        f"""[cyan]Query Type:[/cyan] Location filtering with price sort
+[cyan]Index:[/cyan] property_relationships
+[cyan]Location:[/cyan] Oakland, CA
+
+[yellow]Elasticsearch Query:[/yellow]
+{{
+  "query": {{
+    "bool": {{
+      "filter": [
+        {{"term": {{"address.city.keyword": "Oakland"}}}},
+        {{"term": {{"address.state.keyword": "CA"}}}}
+      ]
+    }}
+  }},
+  "size": 5,
+  "sort": [{{"price": {{"order": "desc"}}}}]
+}}""",
+        title="[bold cyan]Query[/bold cyan]",
+        border_style="cyan"
+    )
+    console.print(query_panel3)
+    
+    results_panel3 = Panel(
+        f"""[cyan]Properties Found:[/cyan] {result3.total_hits}
+[cyan]Results Returned:[/cyan] {min(result3.returned_hits, 5)}
+[green]Query Time:[/green] {result3.execution_time_ms}ms""",
+        title="[bold]Results Summary[/bold]",
+        border_style="green"
+    )
+    console.print(results_panel3)
     
     total_time = result1.execution_time_ms + result2.execution_time_ms + result3.execution_time_ms
     
-    console.print("\n[green]✓ Denormalized index demo complete![/green]")
-    console.print(f"[yellow]Total query time for 3 operations: {total_time}ms[/yellow]")
-    console.print("[yellow]All data retrieved with single queries per operation[/yellow]")
+    # Final summary
+    console.print("\n" + "=" * 70)
+    summary_panel = Panel(
+        f"""[green]✓ Denormalized index demo complete![/green]
+
+[yellow]Performance Summary:[/yellow]
+• Total queries executed: 3
+• Total query time: {total_time}ms
+• Average query time: {total_time/3:.1f}ms
+
+[cyan]Key Achievement:[/cyan]
+All property data, neighborhood information, and Wikipedia articles
+retrieved with single queries - no JOINs or multiple lookups needed!""",
+        title="[bold green]Demo Complete[/bold green]",
+        border_style="green"
+    )
+    console.print(summary_panel)
     
     # Return combined results
     all_results = []

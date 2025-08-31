@@ -81,7 +81,7 @@ def get_demo_queries() -> List[Dict[str, Any]]:
             "query": {
                 "multi_match": {
                     "query": "1906 earthquake fire San Francisco reconstruction Golden Gate",
-                    "fields": ["content", "title^2", "summary"],
+                    "fields": ["full_content", "title^2", "short_summary", "long_summary"],
                     "operator": "or"
                 }
             }
@@ -91,9 +91,9 @@ def get_demo_queries() -> List[Dict[str, Any]]:
             "description": "Searching for Victorian architecture and historical buildings",
             "query": {
                 "multi_match": {
-                    "query": "Victorian architecture",
-                    "fields": ["content", "title^2", "summary"],
-                    "type": "phrase"
+                    "query": "Victorian architecture Golden Gate Bridge Coit Tower Painted Ladies",
+                    "fields": ["full_content", "title^2", "short_summary", "long_summary"],
+                    "operator": "or"
                 }
             }
         },
@@ -103,9 +103,10 @@ def get_demo_queries() -> List[Dict[str, Any]]:
             "query": {
                 "bool": {
                     "should": [
-                        {"match": {"content": "cable car system"}},
-                        {"match": {"content": "BART rapid transit"}},
-                        {"match": {"content": "public transportation infrastructure"}}
+                        {"match": {"full_content": "cable car"}},
+                        {"match": {"full_content": "BART"}},
+                        {"match": {"full_content": "public transportation"}},
+                        {"match": {"title": "transportation"}}
                     ],
                     "minimum_should_match": 1
                 }
@@ -116,18 +117,14 @@ def get_demo_queries() -> List[Dict[str, Any]]:
             "description": "Searching for national parks, recreation areas, and natural landmarks",
             "query": {
                 "bool": {
-                    "must": [
-                        {"match": {"content": "park"}},
-                        {
-                            "bool": {
-                                "should": [
-                                    {"match": {"content": "hiking trails"}},
-                                    {"match": {"content": "recreation area"}},
-                                    {"match": {"content": "wildlife preserve"}}
-                                ]
-                            }
-                        }
-                    ]
+                    "should": [
+                        {"match": {"full_content": "Golden Gate Park"}},
+                        {"match": {"full_content": "Presidio"}},
+                        {"match": {"full_content": "Yosemite"}},
+                        {"match": {"full_content": "Muir Woods"}},
+                        {"match": {"title": "park"}}
+                    ],
+                    "minimum_should_match": 1
                 }
             }
         },
@@ -137,7 +134,7 @@ def get_demo_queries() -> List[Dict[str, Any]]:
             "query": {
                 "multi_match": {
                     "query": "museum theater cultural arts gallery exhibition",
-                    "fields": ["content", "title^2", "summary"],
+                    "fields": ["full_content", "title^2", "short_summary", "long_summary"],
                     "type": "most_fields"
                 }
             }
