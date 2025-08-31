@@ -2,6 +2,7 @@
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
+from squack_pipeline_v2.utils import StateStandardizer
 
 
 class WikipediaSilverTransformer(SilverTransformer):
@@ -22,7 +23,8 @@ class WikipediaSilverTransformer(SilverTransformer):
         """Apply Wikipedia standardization transformations.
         
         Silver layer focuses on:
-        - Field name standardization (pageid → page_id)
+        - Field name standardization (pageid → page_id, best_state → state)
+        - Value standardization (state full names → abbreviations)
         - Coordinate validation
         - Text cleaning
         - Keep data structure simple
@@ -31,6 +33,9 @@ class WikipediaSilverTransformer(SilverTransformer):
             input_table: Bronze input table
             output_table: Silver output table
         """
+        # Get state transformation SQL
+        state_case_sql = StateStandardizer.get_sql_case_statement('best_state', 'state')
+        
         query = f"""
         CREATE TABLE {output_table} AS
         SELECT
@@ -49,10 +54,11 @@ class WikipediaSilverTransformer(SilverTransformer):
             latitude,
             longitude,
             
-            -- Location data from Bronze layer (loaded from page_summaries)
-            best_city,
-            best_county,
-            best_state,
+            -- Location data standardized from Bronze layer
+            best_city as city,
+            best_county as county,
+            -- Transform state full names to abbreviations
+            {state_case_sql},
             
             -- Metrics and metadata
             relevance_score,

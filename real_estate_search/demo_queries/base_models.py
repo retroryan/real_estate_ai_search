@@ -155,22 +155,6 @@ class Address(BaseModel):
     
     model_config = ConfigDict(extra="ignore")
     
-    @field_validator('location', mode='before')
-    def convert_location(cls, v):
-        """Convert various location formats to GeoPoint."""
-        if v is None:
-            return None
-        if isinstance(v, GeoPoint):
-            return v
-        if isinstance(v, list) and len(v) == 2:
-            # Elasticsearch returns [lon, lat]
-            return GeoPoint(lon=v[0], lat=v[1])
-        if isinstance(v, dict):
-            if 'lat' in v and 'lon' in v:
-                return GeoPoint(lat=v['lat'], lon=v['lon'])
-            elif 'latitude' in v and 'longitude' in v:
-                return GeoPoint(lat=v['latitude'], lon=v['longitude'])
-        return v
     
     @computed_field  # type: ignore
     @property
@@ -283,11 +267,7 @@ class PropertyListing(BaseModel):
             if self.features.square_feet:
                 parts.append(f"{self.features.square_feet:,} sqft")
         if self.property_type:
-            # Handle both enum and string
-            if isinstance(self.property_type, PropertyType):
-                parts.append(self.property_type.value)
-            else:
-                parts.append(str(self.property_type))
+            parts.append(str(self.property_type))
         return " | ".join(parts) if parts else "Property details not available"
 
 
@@ -467,67 +447,6 @@ class SearchHit(BaseModel):
     highlight: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted fields")
     
     model_config = ConfigDict(extra="allow", populate_by_name=True)
-    
-    def to_entity(self) -> Optional[Union[PropertyListing, Neighborhood, WikipediaArticle]]:
-        """Convert to appropriate entity type based on index."""
-        try:
-            source = self.source.copy()
-            if self.score is not None:
-                source['_score'] = self.score
-            
-            if self.index == IndexName.PROPERTIES.value:
-                # Fix property type mapping
-                if 'property_type' in source:
-                    pt = source['property_type']
-                    if isinstance(pt, str):
-                        # Map common variations
-                        pt_lower = pt.lower()
-                        if pt_lower == 'single-family' or pt_lower == 'single family':
-                            source['property_type'] = 'Single Family'
-                        elif pt_lower == 'condo':
-                            source['property_type'] = 'Condo'
-                        elif pt_lower == 'townhouse':
-                            source['property_type'] = 'Townhouse'
-                        elif pt_lower == 'multi-family':
-                            source['property_type'] = 'Multi-Family'
-                        else:
-                            source['property_type'] = 'Other'
-                
-                # Handle nested address structure
-                if 'address' in source and isinstance(source['address'], dict):
-                    source['address'] = Address(**source['address'])
-                    
-                # Handle features field (list of amenities in Elasticsearch)
-                if 'features' in source and isinstance(source['features'], list):
-                    # Move features list to amenities
-                    if not source.get('amenities'):
-                        source['amenities'] = source['features']
-                    source.pop('features', None)
-                
-                # Create PropertyFeatures from top-level fields
-                source['features'] = PropertyFeatures(
-                    bedrooms=source.get('bedrooms'),
-                    bathrooms=source.get('bathrooms'),
-                    square_feet=source.get('square_feet'),
-                    year_built=source.get('year_built')
-                )
-                
-                return PropertyListing(**source)
-            
-            elif self.index == IndexName.NEIGHBORHOODS.value:
-                if 'demographics' in source and isinstance(source['demographics'], dict):
-                    source['demographics'] = Demographics(**source['demographics'])
-                if 'school_ratings' in source and isinstance(source['school_ratings'], dict):
-                    source['school_ratings'] = SchoolRatings(**source['school_ratings'])
-                return Neighborhood(**source)
-            
-            elif self.index == IndexName.WIKIPEDIA.value:
-                return WikipediaArticle(**source)
-            
-        except Exception as e:
-            logger.error(f"Failed to convert hit to entity: {e}")
-        
-        return None
 
 
 class SearchRequest(BaseModel):
@@ -585,15 +504,6 @@ class SearchResponse(BaseModel):
             hits=[SearchHit(**hit) for hit in response.get("hits", {}).get("hits", [])],
             aggregations=response.get("aggregations")
         )
-    
-    def to_entities(self) -> List[Union[PropertyListing, Neighborhood, WikipediaArticle]]:
-        """Convert all hits to entity objects."""
-        entities = []
-        for hit in self.hits:
-            entity = hit.to_entity()
-            if entity:
-                entities.append(entity)
-        return entities
 
 
 # ============================================================================
@@ -653,7 +563,7 @@ class BoolQuery(BaseModel):
 # DEMO RESULT MODELS
 # ============================================================================
 
-T = TypeVar('T', PropertyListing, Neighborhood, WikipediaArticle)
+T = TypeVar('T')
 
 
 class TypedDemoResult(BaseModel, Generic[T]):

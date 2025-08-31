@@ -240,7 +240,9 @@ curl -X DELETE "localhost:9200/properties,neighborhoods,wiki_*"
 python -c "import os; print('VOYAGE_API_KEY set:', bool(os.getenv('VOYAGE_API_KEY')))"
 
 # Test Elasticsearch connection
-python real_estate_search/scripts/check_connection.py
+curl -X GET "localhost:9200/_cluster/health?pretty"
+# If authentication is required, use ES_PASSWORD from .env:
+# curl -u elastic:$ES_PASSWORD -X GET "localhost:9200/_cluster/health?pretty"
 
 # View sample data
 python -c "import json; print(json.dumps(json.load(open('real_estate_data/properties_sf.json'))[0], indent=2))"

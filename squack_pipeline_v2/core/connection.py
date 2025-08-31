@@ -30,6 +30,7 @@ class DuckDBConnectionManager:
     _instance = None
     _lock = threading.Lock()
     _connection: Optional[duckdb.DuckDBPyConnection] = None
+    _initialized = False
     
     def __new__(cls, settings: DuckDBConfig = None):
         """Ensure singleton instance."""
@@ -46,9 +47,9 @@ class DuckDBConnectionManager:
             settings: DuckDB configuration settings
         """
         # Only initialize once
-        if not hasattr(self, '_initialized'):
+        if not DuckDBConnectionManager._initialized:
             self.settings = settings or DuckDBConfig()
-            self._initialized = True
+            DuckDBConnectionManager._initialized = True
     
     def connect(self) -> duckdb.DuckDBPyConnection:
         """Get or create DuckDB connection with proper configuration.

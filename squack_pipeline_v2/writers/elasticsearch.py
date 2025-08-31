@@ -123,8 +123,8 @@ class WikipediaDocument(BaseModel):
     relevance_score: float = 0.0
     article_quality_score: float = 0.0
     article_quality: str = ""
-    best_city: str = ""
-    best_state: str = ""
+    city: str = ""
+    state: str = ""
     last_updated: datetime = Field(default_factory=datetime.now)
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
@@ -230,8 +230,8 @@ class WikipediaInput(BaseModel):
     relevance_score: float = 0.0
     article_quality_score: float = 0.0
     article_quality: str = ""
-    best_city: Optional[str] = None  # Can be None
-    best_state: Optional[str] = None  # Can be None
+    city: Optional[str] = None  # Can be None
+    state: Optional[str] = None  # Can be None
     last_updated: Optional[datetime] = None
     
     # Embedding fields from embeddings_wikipedia join
@@ -396,8 +396,8 @@ class WikipediaTransformer:
             relevance_score=input_data.relevance_score,  # already float
             article_quality_score=input_data.article_quality_score,  # already float
             article_quality=input_data.article_quality,
-            best_city=input_data.best_city or "",  # None -> empty string
-            best_state=input_data.best_state or "",  # None -> empty string
+            city=input_data.city or "",  # None -> empty string
+            state=input_data.state or "",  # None -> empty string
             last_updated=input_data.last_updated or datetime.now(),
             embedding=embedding_list,  # tuple -> list for ES
             embedding_model=input_data.embedding_model,

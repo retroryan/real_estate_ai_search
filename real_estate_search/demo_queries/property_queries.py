@@ -24,14 +24,11 @@ from elasticsearch import Elasticsearch
 import logging
 
 from .base_models import (
-    PropertyListing,
     SearchRequest,
     SearchResponse,
     BoolQuery,
     QueryClause,
     QueryType,
-    PropertyType,
-    Address,
     GeoPoint,
     TypedDemoResult,
     AggregationType,
@@ -40,6 +37,8 @@ from .base_models import (
     StatsAggregation
 )
 from .models import DemoQueryResult
+from .es_models import ESProperty, ESSearchHit
+from .display_formatter import PropertyDisplayFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -457,21 +456,26 @@ class PropertySearchDemo:
                 query_dsl=request.to_dict()
             )
         
-        # Convert to typed entities
-        properties = response.to_entities()
-        
-        # Convert to legacy format for compatibility
+        # Convert hits to results with display formatting
         results = []
-        for prop in properties:
-            if isinstance(prop, PropertyListing):
-                result = prop.model_dump(exclude_none=True)
-                # Add highlights if available
-                for hit in response.hits:
-                    if hit.source.get('listing_id') == prop.listing_id:
-                        if hit.highlight:
-                            result['_highlights'] = hit.highlight
-                        break
+        for hit in response.hits:
+            try:
+                # Create property from source
+                prop = ESProperty(**hit.source)
+                # Format for display
+                formatted = PropertyDisplayFormatter.format_for_display(prop)
+                # Add source data with display info
+                result = {
+                    **hit.source,
+                    '_display': formatted,
+                    '_score': hit.score
+                }
+                if hit.highlight:
+                    result['_highlights'] = hit.highlight
                 results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to parse property: {e}")
+                continue
         
         return DemoQueryResult(
             query_name=f"Basic Property Search: '{query_text}'",
