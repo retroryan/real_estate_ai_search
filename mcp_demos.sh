@@ -60,6 +60,7 @@ show_help() {
     echo "  1-8,12-14      Run specific demo number"
     echo "  --all          Run all demos"
     echo "  --list, -l     List all available demos"
+    echo "  --list-tools   Discover and list all MCP server tools with metadata"
     echo "  --test         Run quick connectivity test"
     echo
     echo -e "${GREEN}Options:${NC}"
@@ -320,6 +321,22 @@ run_all_demos() {
     fi
 }
 
+# Function to list all MCP server tools
+run_list_tools() {
+    local config_file=$(get_config_file $TRANSPORT)
+    
+    echo -e "${GREEN}Discovering MCP server tools with $TRANSPORT transport...${NC}"
+    echo -e "${BLUE}Config: $config_file${NC}"
+    echo
+    
+    # Set environment variables for config and transport override
+    export MCP_CONFIG_PATH="$config_file"
+    export MCP_TRANSPORT="$TRANSPORT"
+    
+    # Run the tool discovery script
+    python -m real_estate_search.mcp_demos.list_tools
+}
+
 # Main script logic
 main() {
     local demo_number=""
@@ -349,6 +366,10 @@ main() {
                 ;;
             --list|-l)
                 command="list"
+                shift
+                ;;
+            --list-tools)
+                command="list-tools"
                 shift
                 ;;
             --test)
@@ -404,6 +425,8 @@ main() {
             echo -e "${YELLOW}     Run './mcp_demos.sh --all' to execute all demos${NC}"
             echo -e "${YELLOW}     Add '--stdio' to use STDIO transport instead of HTTP${NC}"
         fi
+    elif [ "$command" = "list-tools" ]; then
+        run_list_tools
     elif [ "$command" = "test" ]; then
         run_test
     elif [ "$command" = "all" ]; then

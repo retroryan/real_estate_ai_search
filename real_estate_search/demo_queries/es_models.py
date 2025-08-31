@@ -16,7 +16,7 @@ class ESAddress(BaseModel):
     city: str = ""
     state: str = ""
     zip_code: str = ""
-    location: List[float] = Field(default_factory=list)  # [lon, lat]
+    location: Dict[str, float] = Field(default_factory=dict)  # {"lat": ..., "lon": ...}
     
     model_config = ConfigDict(extra="allow")
 

@@ -260,6 +260,12 @@ elasticsearch:
   property_index: properties
   request_timeout: 30
 
+# Embedding configuration
+embedding:
+  provider: voyage
+  model_name: voyage-3
+  dimension: 1024
+
 # Wikipedia data location
 data:
   wikipedia_db: ../data/wikipedia/wikipedia.db
@@ -268,6 +274,8 @@ data:
 demo_mode: true
 log_level: INFO
 ```
+
+**Important Note**: If you change the embedding dimension in `config.yaml`, you must also update the corresponding `"dims"` value in all Elasticsearch index templates located in `real_estate_search/elasticsearch/templates/`. The templates contain hardcoded dimension values that must match your embedding configuration.
 
 ### Environment Variables (Optional)
 

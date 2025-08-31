@@ -501,7 +501,7 @@ class PropertySearchDemo:
     
     def demo_filtered_search(
         self,
-        property_type: str = "Single Family",
+        property_type: str = "single-family",
         min_price: float = 300000,
         max_price: float = 800000,
         min_bedrooms: int = 3,
@@ -546,14 +546,25 @@ class PropertySearchDemo:
                 query_dsl=request.to_dict()
             )
         
-        # Convert to typed entities
-        properties = response.to_entities()
-        results = [prop.model_dump(exclude_none=True) for prop in properties 
-                  if isinstance(prop, PropertyListing)]
+        # Convert hits to results with display formatting
+        results = []
+        for hit in response.hits:
+            try:
+                prop = ESProperty(**hit.source)
+                formatted = PropertyDisplayFormatter.format_for_display(prop)
+                result = {
+                    **hit.source,
+                    '_display': formatted,
+                    '_score': hit.score
+                }
+                results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to parse property: {e}")
+                continue
         
         return DemoQueryResult(
             query_name="Filtered Property Search",
-            query_description=f"Filter properties by: {property_type} type, ${min_price:,.0f}-${max_price:,.0f} price range, {min_bedrooms}+ bedrooms, {min_bathrooms}+ bathrooms",
+            query_description=f"Filter properties by: {PropertyDisplayFormatter.format_property_type(property_type)} type, ${min_price:,.0f}-${max_price:,.0f} price range, {min_bedrooms}+ bedrooms, {min_bathrooms}+ bathrooms",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
             returned_hits=len(results),
@@ -617,16 +628,25 @@ class PropertySearchDemo:
                 query_dsl=request.to_dict()
             )
         
-        # Convert to typed entities with distance
-        properties = response.to_entities()
+        # Convert hits to results with display formatting and distance
         results = []
-        for i, prop in enumerate(properties):
-            if isinstance(prop, PropertyListing):
-                result = prop.model_dump(exclude_none=True)
-                # Add distance from sort values
-                if i < len(response.hits) and hasattr(response.hits[i], 'sort'):
-                    result['_distance_km'] = response.hits[i].sort[0] if response.hits[i].sort else None
+        for i, hit in enumerate(response.hits):
+            try:
+                prop = ESProperty(**hit.source)
+                formatted = PropertyDisplayFormatter.format_for_display(prop)
+                result = {
+                    **hit.source,
+                    '_display': formatted,
+                    '_score': hit.score
+                }
+                # Add distance from sort values if available
+                sort_values = hit.model_extra.get('sort', [])
+                if sort_values:
+                    result['_distance_km'] = sort_values[0]
                 results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to parse property: {e}")
+                continue
         
         return DemoQueryResult(
             query_name="Geo-Distance Property Search",
@@ -690,10 +710,21 @@ class PropertySearchDemo:
                 query_dsl=request.to_dict()
             )
         
-        # Convert properties
-        properties = response.to_entities()
-        results = [prop.model_dump(exclude_none=True) for prop in properties 
-                  if isinstance(prop, PropertyListing)]
+        # Convert hits to results with display formatting
+        results = []
+        for hit in response.hits:
+            try:
+                prop = ESProperty(**hit.source)
+                formatted = PropertyDisplayFormatter.format_for_display(prop)
+                result = {
+                    **hit.source,
+                    '_display': formatted,
+                    '_score': hit.score
+                }
+                results.append(result)
+            except Exception as e:
+                logger.warning(f"Failed to parse property: {e}")
+                continue
         
         # Process aggregations - keep as dict for compatibility
         aggregations = None
@@ -766,7 +797,7 @@ def demo_basic_property_search(
 
 def demo_filtered_property_search(
     es_client: Elasticsearch,
-    property_type: str = "Single Family",
+    property_type: str = "single-family",
     min_price: float = 300000,
     max_price: float = 800000,
     min_bedrooms: int = 3,
