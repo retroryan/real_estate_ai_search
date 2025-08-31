@@ -128,8 +128,8 @@ check_prerequisites() {
         fi
     elif [ "$transport" = "http" ]; then
         # Check if HTTP server is accessible (customize port as needed)
-        HTTP_URL="${HTTP_URL:-http://localhost:8000}"
-        if ! curl -s -o /dev/null -w "%{http_code}" "$HTTP_URL/health" | grep -q "200\|404"; then
+        HTTP_URL="${HTTP_URL:-http://localhost:8000/mcp}"
+        if ! curl -s -o /dev/null -w "%{http_code}" "$HTTP_URL" | grep -q "307\|406\|200"; then
             echo -e "${YELLOW}Warning: HTTP MCP server may not be running on $HTTP_URL${NC}"
             echo -e "${YELLOW}To start HTTP server, run the MCP server in HTTP mode${NC}"
         else
@@ -188,6 +188,13 @@ run_test() {
     
     echo -e "${GREEN}Running connectivity test with $TRANSPORT transport...${NC}"
     echo -e "${BLUE}Config: $config_file${NC}"
+    echo -e "${YELLOW}Module: real_estate_search.mcp_demos.test_quick_start${NC}"
+    
+    # Show the server endpoint for HTTP transport
+    if [ "$TRANSPORT" = "http" ]; then
+        HTTP_URL="${HTTP_URL:-http://localhost:8000/mcp}"
+        echo -e "${YELLOW}Server URL: $HTTP_URL${NC}"
+    fi
     echo
     
     # Set environment variables for config and transport override
@@ -205,7 +212,12 @@ run_demo() {
     
     echo -e "${GREEN}Running Demo $demo_num with $TRANSPORT transport...${NC}"
     echo -e "${BLUE}Config: $config_file${NC}"
-    echo
+    
+    # Show the server endpoint for HTTP transport
+    if [ "$TRANSPORT" = "http" ]; then
+        HTTP_URL="${HTTP_URL:-http://localhost:8000/mcp}"
+        echo -e "${YELLOW}Server URL: $HTTP_URL${NC}"
+    fi
     
     # Set environment variables for config and transport override
     export MCP_CONFIG_PATH="$config_file"
@@ -214,6 +226,9 @@ run_demo() {
     # Map demo numbers to actual demo functions
     case $demo_num in
         1)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_basic_property_search('modern home with pool')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_basic_property_search('modern home with pool')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_basic_property_search
@@ -221,6 +236,9 @@ asyncio.run(demo_basic_property_search('modern home with pool'))
 "
             ;;
         2)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_property_filter()${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_property_filter()
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_property_filter
@@ -228,6 +246,9 @@ asyncio.run(demo_property_filter())
 "
             ;;
         3)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_wikipedia_search('San Francisco')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_wikipedia_search('San Francisco')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_wikipedia_search
@@ -235,6 +256,9 @@ asyncio.run(demo_wikipedia_search('San Francisco'))
 "
             ;;
         4)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_wikipedia_location_context('San Francisco', 'CA')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_wikipedia_location_context('San Francisco', 'CA')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_wikipedia_location_context
@@ -242,6 +266,9 @@ asyncio.run(demo_wikipedia_location_context('San Francisco', 'CA'))
 "
             ;;
         5)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_location_based_discovery('Oakland', 'CA')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_location_based_discovery('Oakland', 'CA')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_location_based_discovery
@@ -249,6 +276,9 @@ asyncio.run(demo_location_based_discovery('Oakland', 'CA'))
 "
             ;;
         6)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_multi_entity_search('downtown living')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_multi_entity_search('downtown living')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_multi_entity_search
@@ -256,6 +286,9 @@ asyncio.run(demo_multi_entity_search('downtown living'))
 "
             ;;
         7)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_property_details_deep_dive('luxury')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_property_details_deep_dive('luxury')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_property_details_deep_dive
@@ -263,6 +296,9 @@ asyncio.run(demo_property_details_deep_dive('luxury'))
 "
             ;;
         8)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_semantic_vs_text_comparison('modern kitchen')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.demo_semantic_vs_text_comparison('modern kitchen')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_semantic_vs_text_comparison
@@ -270,6 +306,9 @@ asyncio.run(demo_semantic_vs_text_comparison('modern kitchen'))
 "
             ;;
         12)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_semantic_search('cozy family home near good schools and parks')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_semantic_search('cozy family home near good schools and parks')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_semantic_search
@@ -277,6 +316,9 @@ asyncio.run(demo_natural_language_semantic_search('cozy family home near good sc
 "
             ;;
         13)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_examples()${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_examples()
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_examples
@@ -284,6 +326,9 @@ asyncio.run(demo_natural_language_examples())
 "
             ;;
         14)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_semantic_vs_keyword_comparison('stunning views from modern kitchen')${NC}"
+            echo
+            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_semantic_vs_keyword_comparison('stunning views from modern kitchen')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos.natural_language_demo import demo_semantic_vs_keyword_comparison
@@ -307,6 +352,13 @@ run_all_demos() {
     
     echo -e "${GREEN}Running ALL demos with $TRANSPORT transport...${NC}"
     echo -e "${BLUE}Config: $config_file${NC}"
+    echo -e "${YELLOW}Module: real_estate_search.mcp_demos.run_all_demos${NC}"
+    
+    # Show the server endpoint for HTTP transport
+    if [ "$TRANSPORT" = "http" ]; then
+        HTTP_URL="${HTTP_URL:-http://localhost:8000/mcp}"
+        echo -e "${YELLOW}Server URL: $HTTP_URL${NC}"
+    fi
     echo
     
     # Set environment variables for config and transport override
@@ -327,6 +379,15 @@ run_list_tools() {
     
     echo -e "${GREEN}Discovering MCP server tools with $TRANSPORT transport...${NC}"
     echo -e "${BLUE}Config: $config_file${NC}"
+    
+    # Display the exact URL/module being called
+    echo -e "${YELLOW}Module: real_estate_search.mcp_demos.list_tools${NC}"
+    
+    # Show the server endpoint for HTTP transport
+    if [ "$TRANSPORT" = "http" ]; then
+        HTTP_URL="${HTTP_URL:-http://localhost:8000/mcp}"
+        echo -e "${YELLOW}Server URL: $HTTP_URL${NC}"
+    fi
     echo
     
     # Set environment variables for config and transport override

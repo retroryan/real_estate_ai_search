@@ -16,7 +16,7 @@ Key Capabilities Demonstrated:
 6. Geographic and market intelligence integration
 
 Database Context:
-- 420 properties with 768-dimensional embeddings
+- 420 properties with 1024-dimensional embeddings
 - 415+ features across 8 categories with 3,257+ feature relationships
 - 20,000+ property similarities with detailed component scores
 - 15 neighborhoods with lifestyle tags across 2 cities

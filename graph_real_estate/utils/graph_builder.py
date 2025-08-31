@@ -38,12 +38,12 @@ class GraphDatabaseInitializer:
         clear_database(self.driver)
         print("✓ Database cleared")
     
-    def _create_vector_indexes(self, dimension: int = 768) -> None:
+    def _create_vector_indexes(self, dimension: int = 1024) -> None:
         """
         Create vector indexes for embeddings.
         
         Args:
-            dimension: Embedding dimension (default 768 for nomic-embed-text)
+            dimension: Embedding dimension (default 1024 for nomic-embed-text)
         """
         # Define vector indexes to create
         vector_indexes = [
@@ -120,8 +120,7 @@ class GraphDatabaseInitializer:
                 print(f"  ⚠ Index {name}: {e}")
         
         # Create vector indexes for embeddings
-        # Default to 768 (nomic-embed-text), but can be overridden
-        self._create_vector_indexes(768)
+        self._create_vector_indexes(1024)
     
     def initialize_database(self, clear: bool = False) -> bool:
         """

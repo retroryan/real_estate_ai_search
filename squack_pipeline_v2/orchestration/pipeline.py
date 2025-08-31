@@ -27,11 +27,13 @@ from squack_pipeline_v2.bronze.wikipedia import WikipediaBronzeIngester
 from squack_pipeline_v2.silver.property import PropertySilverTransformer
 from squack_pipeline_v2.silver.neighborhood import NeighborhoodSilverTransformer
 from squack_pipeline_v2.silver.wikipedia import WikipediaSilverTransformer
+from squack_pipeline_v2.silver.graph_extensions import SilverGraphExtensions
 
 # Gold layer
 from squack_pipeline_v2.gold.property import PropertyGoldEnricher
 from squack_pipeline_v2.gold.neighborhood import NeighborhoodGoldEnricher
 from squack_pipeline_v2.gold.wikipedia import WikipediaGoldEnricher
+from squack_pipeline_v2.gold.graph_builder import GoldGraphBuilder
 
 # Embeddings
 from squack_pipeline_v2.embeddings.generator import EmbeddingGenerator
@@ -40,6 +42,7 @@ from squack_pipeline_v2.embeddings.providers import create_provider
 # Writers
 from squack_pipeline_v2.writers.parquet import ParquetWriter
 from squack_pipeline_v2.writers.elasticsearch import ElasticsearchWriter
+from squack_pipeline_v2.writers.neo4j import Neo4jWriter, Neo4jConfig
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +238,10 @@ class PipelineOrchestrator:
             end_time=end_time
         )
         
+        # Apply graph extensions to Silver tables (additive only)
+        graph_extensions = SilverGraphExtensions(self.connection_manager)
+        graph_extensions.apply_all_extensions()
+        
         return metrics
     
     @log_stage("Pipeline: Run Gold Layer")
@@ -311,6 +318,10 @@ class PipelineOrchestrator:
             start_time=start_time,
             end_time=end_time
         )
+        
+        # Build graph-specific tables (additive only)
+        graph_builder = GoldGraphBuilder(self.connection_manager)
+        graph_builder.build_all_graph_tables()
         
         return metrics
     
@@ -463,6 +474,80 @@ class PipelineOrchestrator:
                 status="failed",
                 error_messages=[str(e)]
             )
+    
+    @log_stage("Pipeline: Write outputs")
+    def write_outputs(self) -> Dict[str, Any]:
+        """Write Gold data to configured outputs.
+        
+        Returns:
+            Write statistics for each output
+        """
+        stats = {}
+        
+        # Write to Parquet if enabled
+        if self.settings.output.parquet_enabled:
+            logger.info("Writing to Parquet...")
+            parquet_writer = ParquetWriter(
+                self.connection_manager,
+                Path(self.settings.output.parquet_dir)
+            )
+            
+            parquet_stats = {}
+            for entity in ENTITY_TYPES.all_entities():
+                if self.connection_manager.table_exists(entity.gold_table):
+                    parquet_stats[entity.name] = parquet_writer.write_table(
+                        entity.gold_table,
+                        output_name=f"gold_{entity.name}"
+                    )
+            
+            stats["parquet"] = parquet_stats
+        
+        # Write to Elasticsearch if enabled
+        if self.settings.output.elasticsearch_enabled:
+            logger.info("Writing to Elasticsearch...")
+            es_writer = ElasticsearchWriter(
+                self.connection_manager,
+                self.settings.output.elasticsearch
+            )
+            
+            es_stats = {}
+            for entity in ENTITY_TYPES.all_entities():
+                if self.connection_manager.table_exists(entity.gold_table):
+                    es_stats[entity.name] = es_writer.write_entity(
+                        entity.gold_table,
+                        entity.name
+                    )
+            
+            stats["elasticsearch"] = es_stats
+        
+        # Write to Neo4j if enabled
+        if self.settings.output.neo4j.enabled:
+            logger.info("Writing to Neo4j...")
+            neo4j_config = Neo4jConfig(
+                uri=self.settings.output.neo4j.uri,
+                username=self.settings.output.neo4j.username,
+                password=self.settings.output.neo4j.password,
+                database=self.settings.output.neo4j.database
+            )
+            
+            neo4j_writer = Neo4jWriter(
+                self.connection_manager,
+                neo4j_config
+            )
+            
+            try:
+                neo4j_metadata = neo4j_writer.write_all()
+                stats["neo4j"] = {
+                    "total_nodes": neo4j_metadata.total_nodes,
+                    "total_relationships": neo4j_metadata.total_relationships,
+                    "duration_seconds": neo4j_metadata.total_duration_seconds,
+                    "node_results": [r.model_dump() for r in neo4j_metadata.node_results],
+                    "relationship_results": [r.model_dump() for r in neo4j_metadata.relationship_results]
+                }
+            finally:
+                neo4j_writer.close()
+        
+        return stats
     
     def get_table_stats(self) -> Dict[str, int]:
         """Get record counts for all tables.
