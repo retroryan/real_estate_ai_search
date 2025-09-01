@@ -75,11 +75,11 @@ class GoldGraphBuilder:
         # Drop if exists
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embeddings_properties table exists
+        # Check if silver_properties table exists with embeddings
         check_embedding = """
         SELECT COUNT(*) 
         FROM information_schema.tables 
-        WHERE table_name = 'embeddings_properties'
+        WHERE table_name = 'silver_properties'
         """
         has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
@@ -116,13 +116,13 @@ class GoldGraphBuilder:
                 p.listing_date,
                 p.days_on_market,
                 
-                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
                 
                 'Property' as node_label,
                 'property:' || p.listing_id as graph_node_id
                 
             FROM gold_properties p
-            LEFT JOIN embeddings_properties e ON p.listing_id = e.listing_id
+            LEFT JOIN silver_properties s ON p.listing_id = s.listing_id
             WHERE p.listing_id IS NOT NULL
             """
         else:
@@ -208,7 +208,7 @@ class GoldGraphBuilder:
                 n.description,
                 n.center_latitude as latitude,
                 n.center_longitude as longitude,
-                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
                 'Neighborhood' as node_label,
                 'neighborhood:' || n.neighborhood_id as graph_node_id
             FROM gold_neighborhoods n
@@ -271,7 +271,7 @@ class GoldGraphBuilder:
                 w.title,
                 w.full_content as content,
                 w.categories,
-                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
                 'WikipediaArticle' as node_label,
                 'wikipedia:' || w.page_id as graph_node_id
             FROM gold_wikipedia w
