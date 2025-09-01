@@ -46,21 +46,6 @@ class AddressInfo(BaseModel):
     location: GeoPoint
 
 
-class WikipediaArticle(BaseModel):
-    """Wikipedia article reference structure."""
-    page_id: int
-    title: str = ""
-    url: str = ""
-    confidence: float = Field(ge=0.0, le=1.0)
-    relationship: str = ""
-
-
-class WikipediaCorrelations(BaseModel):
-    """Wikipedia correlations structure matching source data."""
-    primary_wiki_article: WikipediaArticle
-    related_wiki_articles: List[WikipediaArticle] = Field(default_factory=list)
-
-
 class PropertyDocument(BaseModel):
     """Property document for Elasticsearch."""
     
@@ -110,7 +95,6 @@ class NeighborhoodDocument(BaseModel):
     description: str = ""
     amenities: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
-    wikipedia_correlations: Dict[str, Any] = Field(default_factory=dict)
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
     embedding_dimension: int = 0
@@ -213,7 +197,6 @@ class NeighborhoodInput(BaseModel):
     description: str = ""
     amenities: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
-    wikipedia_correlations: Dict[str, Any] = Field(default_factory=dict)
     
     # Embedding fields from embeddings_neighborhoods join
     embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
@@ -377,7 +360,6 @@ class NeighborhoodTransformer:
             description=input_data.description,
             amenities=input_data.amenities,  # Already list from Gold layer
             demographics=input_data.demographics,
-            wikipedia_correlations=input_data.wikipedia_correlations,
             embedding=embedding_list,  # tuple -> list for ES
             embedding_model=input_data.embedding_model,
             embedding_dimension=input_data.embedding_dimension,

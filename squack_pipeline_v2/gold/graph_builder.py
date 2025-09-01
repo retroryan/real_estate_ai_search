@@ -75,58 +75,96 @@ class GoldGraphBuilder:
         # Drop if exists
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embedding column exists
+        # Check if embeddings_properties table exists
         check_embedding = """
         SELECT COUNT(*) 
-        FROM information_schema.columns 
-        WHERE table_name = 'gold_properties' 
-        AND column_name = 'embedding'
+        FROM information_schema.tables 
+        WHERE table_name = 'embeddings_properties'
         """
-        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
-        # Build query with or without embeddings
-        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
-        
-        # Create property nodes table
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT 
-            listing_id,
-            neighborhood_id,
-            
-            bedrooms,
-            bathrooms,
-            square_feet,
-            property_type,
-            year_built,
-            lot_size,
-            
-            price,
-            price_per_sqft,
-            
-            address.street as street_address,
-            address.city as city,
-            address.state as state,
-            address.zip_code as zip_code,
-            address.location[1] as longitude,
-            address.location[2] as latitude,
-            
-            description,
-            features,
-            virtual_tour_url,
-            images,
-            
-            listing_date,
-            days_on_market,
-            
-            {embedding_select}
-            
-            'Property' as node_label,
-            'property:' || listing_id as graph_node_id
-            
-        FROM gold_properties
-        WHERE listing_id IS NOT NULL
-        """
+        # Create property nodes table with embeddings if available
+        if has_embedding_table:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT 
+                p.listing_id,
+                p.neighborhood_id,
+                
+                p.bedrooms,
+                p.bathrooms,
+                p.square_feet,
+                p.property_type,
+                p.year_built,
+                p.lot_size,
+                
+                p.price,
+                p.price_per_sqft,
+                
+                p.address.street as street_address,
+                p.address.city as city,
+                p.address.state as state,
+                p.address.zip_code as zip_code,
+                p.address.location[1] as longitude,
+                p.address.location[2] as latitude,
+                
+                p.description,
+                p.features,
+                p.virtual_tour_url,
+                p.images,
+                
+                p.listing_date,
+                p.days_on_market,
+                
+                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                
+                'Property' as node_label,
+                'property:' || p.listing_id as graph_node_id
+                
+            FROM gold_properties p
+            LEFT JOIN embeddings_properties e ON p.listing_id = e.listing_id
+            WHERE p.listing_id IS NOT NULL
+            """
+        else:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT 
+                listing_id,
+                neighborhood_id,
+                
+                bedrooms,
+                bathrooms,
+                square_feet,
+                property_type,
+                year_built,
+                lot_size,
+                
+                price,
+                price_per_sqft,
+                
+                address.street as street_address,
+                address.city as city,
+                address.state as state,
+                address.zip_code as zip_code,
+                address.location[1] as longitude,
+                address.location[2] as latitude,
+                
+                description,
+                features,
+                virtual_tour_url,
+                images,
+                
+                listing_date,
+                days_on_market,
+                
+                NULL::FLOAT[] as embedding,
+                
+                'Property' as node_label,
+                'property:' || listing_id as graph_node_id
+                
+            FROM gold_properties
+            WHERE listing_id IS NOT NULL
+            """
         
         self.connection_manager.execute(query)
         
@@ -147,39 +185,61 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embedding column exists
+        # Check if embeddings_neighborhoods table exists
         check_embedding = """
         SELECT COUNT(*) 
-        FROM information_schema.columns 
-        WHERE table_name = 'gold_neighborhoods' 
-        AND column_name = 'embedding'
+        FROM information_schema.tables 
+        WHERE table_name = 'embeddings_neighborhoods'
         """
-        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
-        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT
-            neighborhood_id,
-            name,
-            city,
-            state,
-            population,
-            median_income,
-            median_home_price as median_home_value,
-            walkability_score,
-            school_score as school_rating,
-            NULL::FLOAT as crime_index,  -- Not available in current schema
-            description,
-            center_latitude as latitude,
-            center_longitude as longitude,
-            {embedding_select}
-            'Neighborhood' as node_label,
-            'neighborhood:' || neighborhood_id as graph_node_id
-        FROM gold_neighborhoods
-        WHERE neighborhood_id IS NOT NULL
-        """
+        if has_embedding_table:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                n.neighborhood_id,
+                n.name,
+                n.city,
+                n.state,
+                n.population,
+                n.median_income,
+                n.median_home_price as median_home_value,
+                n.walkability_score,
+                n.school_score as school_rating,
+                NULL::FLOAT as crime_index,  -- Not available in current schema
+                n.description,
+                n.center_latitude as latitude,
+                n.center_longitude as longitude,
+                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                'Neighborhood' as node_label,
+                'neighborhood:' || n.neighborhood_id as graph_node_id
+            FROM gold_neighborhoods n
+            LEFT JOIN embeddings_neighborhoods e ON n.neighborhood_id = e.neighborhood_id
+            WHERE n.neighborhood_id IS NOT NULL
+            """
+        else:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                neighborhood_id,
+                name,
+                city,
+                state,
+                population,
+                median_income,
+                median_home_price as median_home_value,
+                walkability_score,
+                school_score as school_rating,
+                NULL::FLOAT as crime_index,  -- Not available in current schema
+                description,
+                center_latitude as latitude,
+                center_longitude as longitude,
+                NULL::FLOAT[] as embedding,
+                'Neighborhood' as node_label,
+                'neighborhood:' || neighborhood_id as graph_node_id
+            FROM gold_neighborhoods
+            WHERE neighborhood_id IS NOT NULL
+            """
         
         self.connection_manager.execute(query)
         
@@ -199,30 +259,43 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embedding column exists
+        # Check if embeddings_wikipedia table exists
         check_embedding = """
         SELECT COUNT(*) 
-        FROM information_schema.columns 
-        WHERE table_name = 'gold_wikipedia' 
-        AND column_name = 'embedding'
+        FROM information_schema.tables 
+        WHERE table_name = 'embeddings_wikipedia'
         """
-        has_embedding = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
+        has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
-        embedding_select = "embedding," if has_embedding else "NULL::FLOAT[] as embedding,"
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT
-            page_id,
-            title,
-            full_content as content,
-            categories,
-            {embedding_select}
-            'WikipediaArticle' as node_label,
-            'wikipedia:' || page_id as graph_node_id
-        FROM gold_wikipedia
-        WHERE page_id IS NOT NULL
-        """
+        if has_embedding_table:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                w.page_id,
+                w.title,
+                w.full_content as content,
+                w.categories,
+                COALESCE(e.embedding, NULL::FLOAT[]) as embedding,
+                'WikipediaArticle' as node_label,
+                'wikipedia:' || w.page_id as graph_node_id
+            FROM gold_wikipedia w
+            LEFT JOIN embeddings_wikipedia e ON w.page_id = e.page_id
+            WHERE w.page_id IS NOT NULL
+            """
+        else:
+            query = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                page_id,
+                title,
+                full_content as content,
+                categories,
+                NULL::FLOAT[] as embedding,
+                'WikipediaArticle' as node_label,
+                'wikipedia:' || page_id as graph_node_id
+            FROM gold_wikipedia
+            WHERE page_id IS NOT NULL
+            """
         
         self.connection_manager.execute(query)
         
