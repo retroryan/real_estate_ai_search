@@ -177,11 +177,8 @@ def clean_tables(orchestrator: PipelineOrchestrator) -> None:
         "embeddings_properties", "embeddings_neighborhoods", "embeddings_wikipedia"
     ]
     
-    from squack_pipeline_v2.core.table_identifier import TableIdentifier
-    
     for table in tables:
-        table_id = TableIdentifier(name=table)
-        if orchestrator.connection_manager.table_exists(table_id):
+        if orchestrator.connection_manager.table_exists(table):
             orchestrator.connection_manager.execute(f"DROP TABLE {table}")
             print(f"  Dropped {table}")
     

@@ -1,112 +1,65 @@
-"""Type-safe table name definitions using Pydantic."""
+"""Simple table name constants for the pipeline.
 
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Literal
+Just string constants - no over-engineering.
+Following medallion architecture - Gold tables contain all business-ready data including embeddings.
+"""
 
+# Bronze layer tables
+BRONZE_PROPERTIES = "bronze_properties"
+BRONZE_NEIGHBORHOODS = "bronze_neighborhoods"
+BRONZE_WIKIPEDIA = "bronze_wikipedia"
 
-class TableNames(BaseModel):
-    """Centralized, type-safe table name definitions."""
-    
-    model_config = ConfigDict(frozen=True)
-    
-    # Bronze layer tables
-    bronze_properties: str = Field(default="bronze_properties", description="Bronze properties table")
-    bronze_neighborhoods: str = Field(default="bronze_neighborhoods", description="Bronze neighborhoods table")
-    bronze_wikipedia: str = Field(default="bronze_wikipedia", description="Bronze Wikipedia table")
-    
-    # Silver layer tables
-    silver_properties: str = Field(default="silver_properties", description="Silver properties table")
-    silver_neighborhoods: str = Field(default="silver_neighborhoods", description="Silver neighborhoods table")
-    silver_wikipedia: str = Field(default="silver_wikipedia", description="Silver Wikipedia table")
-    
-    # Gold layer tables
-    gold_properties: str = Field(default="gold_properties", description="Gold properties table")
-    gold_neighborhoods: str = Field(default="gold_neighborhoods", description="Gold neighborhoods table")
-    gold_wikipedia: str = Field(default="gold_wikipedia", description="Gold Wikipedia table")
-    
-    # Embedding tables
-    embeddings_properties: str = Field(default="embeddings_properties", description="Property embeddings table")
-    embeddings_neighborhoods: str = Field(default="embeddings_neighborhoods", description="Neighborhood embeddings table")
-    embeddings_wikipedia: str = Field(default="embeddings_wikipedia", description="Wikipedia embeddings table")
+# Silver layer tables
+SILVER_PROPERTIES = "silver_properties"
+SILVER_NEIGHBORHOODS = "silver_neighborhoods"
+SILVER_WIKIPEDIA = "silver_wikipedia"
+
+# Gold layer tables (contain business data AND embeddings)
+GOLD_PROPERTIES = "gold_properties"
+GOLD_NEIGHBORHOODS = "gold_neighborhoods"
+GOLD_WIKIPEDIA = "gold_wikipedia"
 
 
-class EntityType(BaseModel):
-    """Type-safe entity type definition."""
+# Entity type configuration classes for orchestration
+class EntityType:
+    """Entity type configuration."""
     
-    model_config = ConfigDict(frozen=True)
-    
-    name: Literal["property", "neighborhood", "wikipedia"] = Field(description="Entity type name")
-    bronze_table: str = Field(description="Bronze table name")
-    silver_table: str = Field(description="Silver table name")
-    gold_table: str = Field(description="Gold table name")
-    embeddings_table: str = Field(description="Embeddings table name")
+    def __init__(self, name: str, bronze_table: str, silver_table: str, gold_table: str):
+        self.name = name
+        self.bronze_table = bronze_table
+        self.silver_table = silver_table
+        self.gold_table = gold_table
 
 
-class EntityTypes(BaseModel):
-    """Collection of all entity types."""
+class EntityTypes:
+    """Container for all entity types."""
     
-    model_config = ConfigDict(frozen=True)
-    
-    property: EntityType = Field(
-        default=EntityType(
+    def __init__(self):
+        self.property = EntityType(
             name="property",
-            bronze_table="bronze_properties",
-            silver_table="silver_properties",
-            gold_table="gold_properties",
-            embeddings_table="embeddings_properties"
+            bronze_table=BRONZE_PROPERTIES,
+            silver_table=SILVER_PROPERTIES,
+            gold_table=GOLD_PROPERTIES
         )
-    )
-    
-    neighborhood: EntityType = Field(
-        default=EntityType(
-            name="neighborhood",
-            bronze_table="bronze_neighborhoods",
-            silver_table="silver_neighborhoods",
-            gold_table="gold_neighborhoods",
-            embeddings_table="embeddings_neighborhoods"
+        
+        self.neighborhood = EntityType(
+            name="neighborhood", 
+            bronze_table=BRONZE_NEIGHBORHOODS,
+            silver_table=SILVER_NEIGHBORHOODS,
+            gold_table=GOLD_NEIGHBORHOODS
         )
-    )
-    
-    wikipedia: EntityType = Field(
-        default=EntityType(
+        
+        self.wikipedia = EntityType(
             name="wikipedia",
-            bronze_table="bronze_wikipedia",
-            silver_table="silver_wikipedia",
-            gold_table="gold_wikipedia",
-            embeddings_table="embeddings_wikipedia"
+            bronze_table=BRONZE_WIKIPEDIA,
+            silver_table=SILVER_WIKIPEDIA,
+            gold_table=GOLD_WIKIPEDIA
         )
-    )
     
-    def get_entity(self, name: str) -> EntityType:
-        """Get entity type by name.
-        
-        Args:
-            name: Entity type name
-            
-        Returns:
-            EntityType configuration
-            
-        Raises:
-            ValueError: If entity type not found
-        """
-        if name == "property":
-            return self.property
-        elif name == "neighborhood":
-            return self.neighborhood
-        elif name == "wikipedia":
-            return self.wikipedia
-        else:
-            raise ValueError(f"Unknown entity type: {name}")
-    
-    def all_entities(self) -> list[EntityType]:
-        """Get all entity types.
-        
-        Returns:
-            List of all entity types
-        """
+    def all_entities(self):
+        """Get all entity types."""
         return [self.property, self.neighborhood, self.wikipedia]
 
 
-# Global instance for easy access
-TABLE_NAMES = TableNames()
+# Global instance for easy import
 ENTITY_TYPES = EntityTypes()

@@ -5,6 +5,7 @@ from typing import Optional
 from squack_pipeline_v2.core.settings import PipelineSettings
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage, PipelineLogger
+from squack_pipeline_v2.bronze.metadata import BronzeMetadata
 
 
 class PropertyBronzeIngester:
@@ -29,17 +30,17 @@ class PropertyBronzeIngester:
     @log_stage("Bronze: Property Raw Ingestion")
     def ingest(
         self,
+        table_name: str,
         file_path: Optional[Path] = None,
-        table_name: str = "bronze_properties",
         sample_size: Optional[int] = None
-    ) -> None:
+    ) -> BronzeMetadata:
         """Ingest raw property data from JSON file.
         
         Bronze principle: NO transformations, just raw load.
         
         Args:
-            file_path: Path to JSON file (uses settings if not provided)
             table_name: Target table name in DuckDB
+            file_path: Path to JSON file (uses settings if not provided)
             sample_size: Optional number of records to load for testing
         """
         # Use provided path or get from settings
@@ -53,7 +54,7 @@ class PropertyBronzeIngester:
         self.logger.info(f"Loading raw properties from: {file_path}")
         
         # Drop existing table if it exists
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        self.connection_manager.drop_table(table_name)
         
         # Load JSON directly into DuckDB - let DuckDB handle all structure
         if sample_size:
@@ -83,3 +84,10 @@ class PropertyBronzeIngester:
         self.records_ingested = count_result[0] if count_result else 0
         
         self.logger.info(f"Loaded {self.records_ingested} raw property records into {table_name}")
+        
+        return BronzeMetadata(
+            table_name=table_name,
+            source_path=str(file_path.absolute()),
+            records_loaded=self.records_ingested,
+            sample_size=sample_size if sample_size else 0
+        )

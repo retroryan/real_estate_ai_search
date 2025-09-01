@@ -3,18 +3,17 @@
 Key improvements:
 - Configuration applied during connection creation (not after)
 - Singleton pattern for connection reuse
-- SQL injection prevention via TableIdentifier
+- SQL injection prevention via parameterized queries
 - Thread-safe operations
 """
 
 import duckdb
 import threading
 from pathlib import Path
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 from contextlib import contextmanager
 
 from squack_pipeline_v2.core.settings import DuckDBConfig
-from squack_pipeline_v2.core.table_identifier import TableIdentifier
 
 
 class DuckDBConnectionManager:
@@ -23,7 +22,7 @@ class DuckDBConnectionManager:
     Follows DuckDB best practices:
     - Single connection reused across operations (performance)
     - Configuration applied during connection creation
-    - SQL injection prevention through TableIdentifier
+    - SQL injection prevention through parameterized queries
     - Proper transaction management
     """
     
@@ -85,6 +84,14 @@ class DuckDBConnectionManager:
         
         return self._connection
     
+    def get_connection(self) -> duckdb.DuckDBPyConnection:
+        """Get the DuckDB connection for Relation API usage.
+        
+        Returns:
+            DuckDB connection object
+        """
+        return self.connect()
+    
     def disconnect(self) -> None:
         """Close the DuckDB connection."""
         if self._connection:
@@ -136,94 +143,94 @@ class DuckDBConnectionManager:
             return conn.execute(query, parameters)
         return conn.execute(query)
     
-    def table_exists(self, table: 'TableIdentifier') -> bool:
+    def table_exists(self, table_name: str) -> bool:
         """Check if a table exists.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of the table to check
             
         Returns:
             True if table exists
         """
         result = self.execute(
-            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ? AND table_schema = ?",
-            (table.name, table.schema)
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?",
+            (table_name,)
         ).fetchone()
         return result[0] > 0 if result else False
     
-    def drop_table(self, table: 'TableIdentifier') -> None:
+    def drop_table(self, table_name: str) -> None:
         """Drop a table if it exists.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of the table to drop
         """
-        self.execute(table.drop_statement())
+        self.execute(f"DROP TABLE IF EXISTS {table_name}")
     
-    def count_records(self, table: TableIdentifier) -> int:
-        """Count records in a table using safe identifier.
+    def count_records(self, table_name: str) -> int:
+        """Count records in a table.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of the table
             
         Returns:
             Number of records in table
         """
-        if not self.table_exists(table):
+        if not self.table_exists(table_name):
             return 0
         
-        result = self.execute(table.select_count()).fetchone()
+        result = self.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
         return result[0] if result else 0
     
-    def get_table_schema(self, table: TableIdentifier) -> Dict[str, str]:
-        """Get schema information for a table using safe identifier.
+    def get_table_schema(self, table_name: str) -> list:
+        """Get schema information for a table.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of the table
             
         Returns:
-            Dictionary with column names and types
+            List of tuples with (column_name, column_type)
         """
-        if not self.table_exists(table):
-            return {}
+        if not self.table_exists(table_name):
+            return []
         
-        result = self.execute(table.describe_statement()).fetchall()
-        return {row[0]: row[1] for row in result}
+        result = self.execute(f"DESCRIBE {table_name}").fetchall()
+        return result
     
     def create_table_as(
         self, 
-        table: TableIdentifier, 
+        table_name: str, 
         select_query: str,
         parameters: Optional[tuple] = None
     ) -> None:
-        """Create table from SELECT query using safe identifier.
+        """Create table from SELECT query.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of table to create
             select_query: SELECT query to create table from
             parameters: Optional parameters for the SELECT query
         """
         # Drop if exists
-        self.drop_table(table)
+        self.drop_table(table_name)
         
-        # Create with safe identifier
-        create_sql = table.create_statement(select_query)
+        # Create table
+        create_sql = f"CREATE TABLE {table_name} AS {select_query}"
         self.execute(create_sql, parameters)
     
     def copy_to_parquet(
         self,
-        table: TableIdentifier,
+        table_name: str,
         output_path: Path,
         compression: str = 'snappy'
     ) -> None:
-        """Export table to Parquet file using safe identifier.
+        """Export table to Parquet file.
         
         Args:
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of table to export
             output_path: Path for output Parquet file
             compression: Parquet compression type
         """
         query = f"""
-        COPY {table.qualified_name} 
+        COPY {table_name} 
         TO '{output_path.absolute()}'
         (FORMAT PARQUET, COMPRESSION '{compression}')
         """
@@ -232,14 +239,14 @@ class DuckDBConnectionManager:
     def read_parquet(
         self,
         file_path: Path,
-        table: TableIdentifier,
+        table_name: str,
         sample_size: Optional[int] = None
     ) -> None:
-        """Read Parquet file into table using safe identifier.
+        """Read Parquet file into table.
         
         Args:
             file_path: Path to Parquet file
-            table: TableIdentifier for SQL-safe table reference
+            table_name: Name of table to create
             sample_size: Optional number of records to load
         """
         # Build SELECT query
@@ -247,8 +254,8 @@ class DuckDBConnectionManager:
         if sample_size:
             select_query += f" LIMIT {sample_size}"
         
-        # Create table with safe identifier
-        self.create_table_as(table, select_query)
+        # Create table
+        self.create_table_as(table_name, select_query)
     
     def analyze_query(self, query: str) -> list:
         """Analyze query performance using EXPLAIN ANALYZE.

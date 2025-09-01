@@ -1,10 +1,10 @@
-"""Base interface for Gold layer enrichment."""
+"""Base interface for Gold layer enrichment using DuckDB Relation API."""
 
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
+import duckdb
 
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
-from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import PipelineLogger, log_execution_time
 from squack_pipeline_v2.core.settings import PipelineSettings
 
@@ -51,24 +51,20 @@ class GoldEnricher:
         # Reset enrichments list
         self.enrichments_applied = []
         
-        # Create TableIdentifier objects for type-safe operations
-        input_table_id = TableIdentifier(name=input_table)
-        output_table_id = TableIdentifier(name=output_table)
-        
         # Validate input
-        if not self.connection_manager.table_exists(input_table_id):
+        if not self.connection_manager.table_exists(input_table):
             raise ValueError(f"Input table {input_table} does not exist")
         
-        input_count = self.connection_manager.count_records(input_table_id)
+        input_count = self.connection_manager.count_records(input_table)
         
         # Drop output table if exists
-        self.connection_manager.drop_table(output_table_id)
+        self.connection_manager.drop_table(output_table)
         
         # Apply enrichments
         self._apply_enrichments(input_table, output_table)
         
         # Get output count
-        output_count = self.connection_manager.count_records(output_table_id)
+        output_count = self.connection_manager.count_records(output_table)
         
         # Create metadata
         metadata = GoldMetadata(
@@ -88,16 +84,16 @@ class GoldEnricher:
         return metadata
     
     def _apply_enrichments(self, input_table: str, output_table: str) -> None:
-        """Apply enrichment transformations.
+        """Apply enrichment transformations using DuckDB Relation API.
         
         Args:
             input_table: Name of input table
             output_table: Name of output table
         """
-        # Default implementation - override in subclasses
-        # This is a simple passthrough
-        query = f"CREATE TABLE {output_table} AS SELECT * FROM {input_table}"
-        self.connection_manager.execute(query)
+        # Default implementation using Relation API - override in subclasses
+        conn = self.connection_manager.get_connection()
+        relation = conn.table(input_table)
+        relation.create(output_table)
         self.enrichments_applied.append("passthrough")
     
     def _get_entity_type(self) -> str:
@@ -112,18 +108,35 @@ class GoldEnricher:
     def add_computed_field(self, table_name: str, field_name: str, expression: str) -> None:
         """Add a computed field to the table.
         
+        Note: DuckDB ALTER TABLE ADD COLUMN AS is not fully supported for computed columns,
+        so we recreate the table with the new computed field.
+        
         Args:
             table_name: Table to update
             field_name: Name of the new field
             expression: SQL expression for computing the field
         """
-        query = f"ALTER TABLE {table_name} ADD COLUMN {field_name} AS ({expression})"
-        self.connection_manager.execute(query)
+        conn = self.connection_manager.get_connection()
+        
+        # Create new table with computed field using Relation API
+        temp_table = f"{table_name}_with_{field_name}"
+        enriched_relation = conn.sql(f"""
+            SELECT *, ({expression}) AS {field_name}
+            FROM {table_name}
+        """)
+        
+        # Create new table
+        enriched_relation.create(temp_table)
+        
+        # Replace original table
+        self.connection_manager.drop_table(table_name)
+        self.connection_manager.execute(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
+        
         self.enrichments_applied.append(f"computed_field:{field_name}")
     
     def join_dimension(self, base_table: str, dimension_table: str, 
                       join_key: str, fields: list[str], prefix: str = "") -> None:
-        """Join a dimension table to enrich the base table.
+        """Join a dimension table to enrich the base table using Relation API.
         
         Args:
             base_table: Base table to enrich
@@ -136,6 +149,8 @@ class GoldEnricher:
             self.logger.warning(f"Dimension table {dimension_table} not found, skipping join")
             return
         
+        conn = self.connection_manager.get_connection()
+        
         # Build field list with optional prefix
         field_list = []
         for field in fields:
@@ -144,16 +159,16 @@ class GoldEnricher:
         
         fields_str = ", ".join(field_list)
         
-        # Create enriched table with join
+        # Create enriched table with join using Relation API
         temp_table = f"{base_table}_enriched"
-        query = f"""
-        CREATE TABLE {temp_table} AS
-        SELECT b.*, {fields_str}
-        FROM {base_table} b
-        LEFT JOIN {dimension_table} d ON b.{join_key} = d.{join_key}
-        """
+        enriched_relation = conn.sql(f"""
+            SELECT b.*, {fields_str}
+            FROM {base_table} b
+            LEFT JOIN {dimension_table} d ON b.{join_key} = d.{join_key}
+        """)
         
-        self.connection_manager.execute(query)
+        # Create new table
+        enriched_relation.create(temp_table)
         
         # Replace original table
         self.connection_manager.drop_table(base_table)
@@ -163,7 +178,7 @@ class GoldEnricher:
     
     def create_embedding_text(self, table_name: str, text_field: str, 
                             source_fields: list[str], separator: str = " | ") -> None:
-        """Create a text field for embedding generation.
+        """Create a text field for embedding generation using Relation API.
         
         Args:
             table_name: Table to update
@@ -171,12 +186,25 @@ class GoldEnricher:
             source_fields: Fields to combine for text
             separator: Separator between fields
         """
+        conn = self.connection_manager.get_connection()
+        
         # Build concatenation expression
         concat_parts = [f"COALESCE(CAST({field} AS VARCHAR), '')" for field in source_fields]
         concat_expr = f" || '{separator}' || ".join(concat_parts)
         
-        query = f"ALTER TABLE {table_name} ADD COLUMN {text_field} VARCHAR AS ({concat_expr})"
-        self.connection_manager.execute(query)
+        # Create new table with embedding text field using Relation API
+        temp_table = f"{table_name}_with_embedding"
+        enriched_relation = conn.sql(f"""
+            SELECT *, ({concat_expr}) AS {text_field}
+            FROM {table_name}
+        """)
+        
+        # Create new table
+        enriched_relation.create(temp_table)
+        
+        # Replace original table
+        self.connection_manager.drop_table(table_name)
+        self.connection_manager.execute(f"ALTER TABLE {temp_table} RENAME TO {table_name}")
         
         self.enrichments_applied.append(f"embedding_text:{text_field}")
     

@@ -14,7 +14,6 @@ import os
 import json
 from pydantic import BaseModel, Field, ConfigDict, field_serializer, field_validator
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager as ConnectionManager
-from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import log_stage
 from squack_pipeline_v2.core.settings import ElasticsearchConfig
 
@@ -170,11 +169,9 @@ class PropertyInput(BaseModel):
     virtual_tour_url: str = ""
     images: List[str] = Field(default_factory=list)
     
-    # Embedding fields from embeddings_properties join
-    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple, not list!
-    embedding_model: str = ""
-    embedding_dimension: int = 0
-    embedded_at: Optional[datetime] = None
+    # Embedding fields from Gold layer (medallion architecture)
+    embedding_vector: Tuple[float, ...] = tuple()  # DuckDB returns tuple, not list!
+    embedding_generated_at: Optional[datetime] = None
 
 
 class NeighborhoodInput(BaseModel):
@@ -198,11 +195,9 @@ class NeighborhoodInput(BaseModel):
     amenities: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
     
-    # Embedding fields from embeddings_neighborhoods join
-    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
-    embedding_model: str = ""
-    embedding_dimension: int = 0
-    embedded_at: Optional[datetime] = None
+    # Embedding fields from Gold layer (medallion architecture)
+    embedding_vector: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
+    embedding_generated_at: Optional[datetime] = None
 
 
 class WikipediaInput(BaseModel):
@@ -234,11 +229,9 @@ class WikipediaInput(BaseModel):
     state: Optional[str] = None  # Can be None
     last_updated: Optional[datetime] = None
     
-    # Embedding fields from embeddings_wikipedia join
-    embedding: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
-    embedding_model: str = ""
-    embedding_dimension: int = 0
-    embedded_at: Optional[datetime] = None
+    # Embedding fields from Gold layer (medallion architecture)
+    embedding_vector: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
+    embedding_generated_at: Optional[datetime] = None
     
     def parse_categories(self) -> List[str]:
         """Parse categories from JSON string."""
@@ -297,7 +290,7 @@ class PropertyTransformer:
             listing_date_str = input_data.listing_date.isoformat()
         
         # Convert tuple embedding to list for ES
-        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        embedding_list = list(input_data.embedding_vector) if input_data.embedding_vector else []
         
         # Create document - types already correct from Gold layer
         return PropertyDocument(
@@ -320,9 +313,9 @@ class PropertyTransformer:
             virtual_tour_url=input_data.virtual_tour_url,
             images=input_data.images,
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model=input_data.embedding_model,
-            embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at or datetime.now()
+            embedding_model="voyage-3",  # Fixed model from medallion architecture
+            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
 
@@ -342,7 +335,7 @@ class NeighborhoodTransformer:
         )
         
         # Convert tuple embedding to list for ES
-        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        embedding_list = list(input_data.embedding_vector) if input_data.embedding_vector else []
         
         # Create document - types already correct from Gold layer
         return NeighborhoodDocument(
@@ -361,9 +354,9 @@ class NeighborhoodTransformer:
             amenities=input_data.amenities,  # Already list from Gold layer
             demographics=input_data.demographics,
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model=input_data.embedding_model,
-            embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at or datetime.now()
+            embedding_model="voyage-3",  # Fixed model from medallion architecture
+            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
 
@@ -377,7 +370,7 @@ class WikipediaTransformer:
         input_data = WikipediaInput(**record)
         
         # Convert tuple embedding to list for ES
-        embedding_list = list(input_data.embedding) if input_data.embedding else []
+        embedding_list = list(input_data.embedding_vector) if input_data.embedding_vector else []
         
         # Create document with explicit conversions
         return WikipediaDocument(
@@ -400,9 +393,9 @@ class WikipediaTransformer:
             state=input_data.state or "",  # None -> empty string
             last_updated=input_data.last_updated or datetime.now(),
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model=input_data.embedding_model,
-            embedding_dimension=input_data.embedding_dimension,
-            embedded_at=input_data.embedded_at or datetime.now()
+            embedding_model="voyage-3",  # Fixed model from medallion architecture
+            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
 
@@ -466,24 +459,8 @@ class ElasticsearchWriter:
         batch_size: int = 100
     ) -> Dict[str, Any]:
         """Index properties to Elasticsearch."""
-        embeddings_table = "embeddings_properties"
-        embeddings_table_id = TableIdentifier(name=embeddings_table)
-        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
-        
-        if has_embeddings:
-            query = f"""
-            SELECT 
-                p.*,
-                e.embedding,
-                e.model_name as embedding_model,
-                e.dimension as embedding_dimension,
-                e.generated_at as embedded_at
-            FROM {table_name} p
-            LEFT JOIN {embeddings_table} e
-                ON p.listing_id = e.listing_id
-            """
-        else:
-            query = f"SELECT * FROM {table_name}"
+        # Embeddings are now stored directly in Gold tables (medallion architecture)
+        query = f"SELECT * FROM {table_name}"
         
         return self._index_documents(
             query=query,
@@ -501,24 +478,8 @@ class ElasticsearchWriter:
         batch_size: int = 100
     ) -> Dict[str, Any]:
         """Index neighborhoods to Elasticsearch."""
-        embeddings_table = "embeddings_neighborhoods"
-        embeddings_table_id = TableIdentifier(name=embeddings_table)
-        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
-        
-        if has_embeddings:
-            query = f"""
-            SELECT 
-                n.*,
-                e.embedding,
-                e.model_name as embedding_model,
-                e.dimension as embedding_dimension,
-                e.generated_at as embedded_at
-            FROM {table_name} n
-            LEFT JOIN {embeddings_table} e
-                ON n.neighborhood_id = e.neighborhood_id
-            """
-        else:
-            query = f"SELECT * FROM {table_name}"
+        # Embeddings are now stored directly in Gold tables (medallion architecture)
+        query = f"SELECT * FROM {table_name}"
         
         return self._index_documents(
             query=query,
@@ -536,24 +497,8 @@ class ElasticsearchWriter:
         batch_size: int = 50
     ) -> Dict[str, Any]:
         """Index Wikipedia articles to Elasticsearch."""
-        embeddings_table = "embeddings_wikipedia"
-        embeddings_table_id = TableIdentifier(name=embeddings_table)
-        has_embeddings = self.connection_manager.table_exists(embeddings_table_id)
-        
-        if has_embeddings:
-            query = f"""
-            SELECT 
-                w.*,
-                e.embedding,
-                e.model_name as embedding_model,
-                e.dimension as embedding_dimension,
-                e.generated_at as embedded_at
-            FROM {table_name} w
-            LEFT JOIN {embeddings_table} e
-                ON w.page_id = e.page_id
-            """
-        else:
-            query = f"SELECT * FROM {table_name}"
+        # Embeddings are now stored directly in Gold tables (medallion architecture)
+        query = f"SELECT * FROM {table_name}"
         
         return self._index_documents(
             query=query,
@@ -685,8 +630,7 @@ class ElasticsearchWriter:
         ]
         
         for table_name, index_name, index_method in tables:
-            table_id = TableIdentifier(name=table_name)
-            if self.connection_manager.table_exists(table_id):
+            if self.connection_manager.table_exists(table_name):
                 stats[index_name] = index_method()
         
         return {

@@ -5,6 +5,7 @@ from typing import Optional
 from squack_pipeline_v2.core.settings import PipelineSettings
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage, PipelineLogger
+from squack_pipeline_v2.bronze.metadata import BronzeMetadata
 
 
 class WikipediaBronzeIngester:
@@ -29,17 +30,17 @@ class WikipediaBronzeIngester:
     @log_stage("Bronze: Wikipedia Raw Ingestion from SQLite")
     def ingest(
         self,
+        table_name: str,
         db_path: Optional[Path] = None,
-        table_name: str = "bronze_wikipedia",
         sample_size: Optional[int] = None
-    ) -> None:
+    ) -> BronzeMetadata:
         """Ingest raw Wikipedia data from SQLite database.
         
         Bronze principle: NO transformations, just raw load from SQLite.
         
         Args:
-            db_path: Path to SQLite database (uses settings if not provided)
             table_name: Target table name in DuckDB
+            db_path: Path to SQLite database (uses settings if not provided)
             sample_size: Optional number of records to load for testing
         """
         # Use provided path or get from settings
@@ -62,32 +63,20 @@ class WikipediaBronzeIngester:
             self.connection_manager.execute(attach_query)
             
             # Drop existing Bronze table if it exists
-            self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.connection_manager.drop_table(table_name)
             
-            # Create Bronze table with raw data from SQLite articles table joined with page_summaries for location data
-            # NO TRANSFORMATIONS - just copy all columns as-is from both tables
+            # Create Bronze table with raw data from SQLite articles table
+            # Bronze principle: RAW DATA ONLY - no joins, no transformations
             if sample_size:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT 
-                    a.*,
-                    ps.best_city,
-                    ps.best_county,
-                    ps.best_state
-                FROM wiki_db.articles a
-                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
+                SELECT * FROM wiki_db.articles
                 LIMIT {sample_size}
                 """
             else:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT 
-                    a.*,
-                    ps.best_city,
-                    ps.best_county,
-                    ps.best_state
-                FROM wiki_db.articles a
-                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
+                SELECT * FROM wiki_db.articles
                 """
             
             self.connection_manager.execute(create_query)
@@ -100,9 +89,24 @@ class WikipediaBronzeIngester:
             
             self.logger.info(f"Loaded {self.records_ingested} raw Wikipedia articles into {table_name}")
             
+            return BronzeMetadata(
+                table_name=table_name,
+                source_path=str(db_path.absolute()),
+                records_loaded=self.records_ingested,
+                sample_size=sample_size if sample_size else 0
+            )
+            
         finally:
             # Always detach the SQLite database to release locks
             try:
                 self.connection_manager.execute("DETACH wiki_db")
             except Exception as e:
                 self.logger.warning(f"Could not detach wiki_db: {e}")
+        
+        # Return metadata even if error occurred during detach
+        return BronzeMetadata(
+            table_name=table_name,
+            source_path=str(db_path.absolute()),
+            records_loaded=self.records_ingested,
+            sample_size=sample_size if sample_size else 0
+        )

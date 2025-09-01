@@ -8,7 +8,6 @@ import json
 import duckdb
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager as ConnectionManager
 from squack_pipeline_v2.core.settings import PipelineSettings, DuckDBConfig
-from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.orchestration.pipeline import PipelineOrchestrator
 
 
@@ -73,7 +72,7 @@ class TestPipelineIntegration:
         assert metrics["property"].bronze_metrics.output_records > 0
         
         # Check table exists
-        assert orchestrator.connection_manager.table_exists(TableIdentifier(name="bronze_properties"))
+        assert orchestrator.connection_manager.table_exists("bronze_properties")
         
         # Verify record count
         count = orchestrator.connection_manager.execute(

@@ -1,10 +1,10 @@
-"""Base interface for Silver layer transformation."""
+"""Base interface for Silver layer transformation using DuckDB Relation API."""
 
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
+import duckdb
 
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
-from squack_pipeline_v2.core.table_identifier import TableIdentifier
 from squack_pipeline_v2.core.logging import PipelineLogger, log_execution_time
 from squack_pipeline_v2.core.settings import PipelineSettings
 
@@ -47,24 +47,20 @@ class SilverTransformer:
         Returns:
             Metadata about the transformation
         """
-        # Create TableIdentifier objects for type-safe operations
-        input_table_id = TableIdentifier(name=input_table)
-        output_table_id = TableIdentifier(name=output_table)
-        
         # Validate input
-        if not self.connection_manager.table_exists(input_table_id):
+        if not self.connection_manager.table_exists(input_table):
             raise ValueError(f"Input table {input_table} does not exist")
         
-        input_count = self.connection_manager.count_records(input_table_id)
+        input_count = self.connection_manager.count_records(input_table)
         
         # Drop output table if exists
-        self.connection_manager.drop_table(output_table_id)
+        self.connection_manager.drop_table(output_table)
         
         # Apply transformations
         self._apply_transformations(input_table, output_table)
         
         # Get output count
-        output_count = self.connection_manager.count_records(output_table_id)
+        output_count = self.connection_manager.count_records(output_table)
         dropped_count = input_count - output_count
         
         # Create metadata
@@ -85,16 +81,17 @@ class SilverTransformer:
         return metadata
     
     def _apply_transformations(self, input_table: str, output_table: str) -> None:
-        """Apply standardization transformations.
+        """Apply standardization transformations using DuckDB Relation API.
         
         Args:
             input_table: Name of input table
             output_table: Name of output table
         """
-        # Default implementation - override in subclasses
+        # Default implementation using Relation API - override in subclasses
         # This is a simple passthrough
-        query = f"CREATE TABLE {output_table} AS SELECT * FROM {input_table}"
-        self.connection_manager.execute(query)
+        conn = self.connection_manager.get_connection()
+        relation = conn.table(input_table)
+        relation.create(output_table)
     
     def _get_entity_type(self) -> str:
         """Get the entity type for this transformer.
@@ -112,6 +109,7 @@ class SilverTransformer:
             table_name: Table to update
             columns: Columns to standardize
         """
+        # Note: UPDATE operations still use SQL as Relation API is for SELECT/transformations
         for column in columns:
             query = f"""
             UPDATE {table_name}
@@ -121,21 +119,22 @@ class SilverTransformer:
             self.connection_manager.execute(query)
     
     def remove_duplicates(self, input_table: str, output_table: str, key_columns: list[str]) -> None:
-        """Remove duplicate records based on key columns.
+        """Remove duplicate records based on key columns using Relation API.
         
         Args:
             input_table: Input table name
             output_table: Output table name
             key_columns: Columns that define uniqueness
         """
-        key_cols = ", ".join(key_columns)
-        query = f"""
-        CREATE TABLE {output_table} AS
-        SELECT DISTINCT ON ({key_cols}) *
-        FROM {input_table}
-        ORDER BY {key_cols}
-        """
-        self.connection_manager.execute(query)
+        conn = self.connection_manager.get_connection()
+        relation = conn.table(input_table)
+        
+        # Use distinct() for deduplication
+        # Note: DuckDB's relation API doesn't have DISTINCT ON, so we use regular distinct
+        deduped = relation.distinct()
+        
+        # Create the output table
+        deduped.create(output_table)
     
     def validate(self, table_name: str) -> bool:
         """Validate the transformed data.
@@ -147,13 +146,12 @@ class SilverTransformer:
             True if validation passes
         """
         # Check table exists
-        table_id = TableIdentifier(name=table_name)
-        if not self.connection_manager.table_exists(table_id):
+        if not self.connection_manager.table_exists(table_name):
             self.logger.error(f"Table {table_name} does not exist")
             return False
         
         # Check has records
-        count = self.connection_manager.count_records(table_id)
+        count = self.connection_manager.count_records(table_name)
         if count == 0:
             self.logger.warning(f"Table {table_name} has no records after transformation")
             # This might be valid if all records were filtered

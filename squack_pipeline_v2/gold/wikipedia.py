@@ -1,94 +1,194 @@
-"""Wikipedia Gold layer enrichment - produces fields matching Elasticsearch template exactly."""
+"""Wikipedia Gold layer enrichment using DuckDB Relation API."""
 
 from squack_pipeline_v2.gold.base import GoldEnricher
 from squack_pipeline_v2.core.logging import log_stage
 
 
 class WikipediaGoldEnricher(GoldEnricher):
-    """Enricher for Wikipedia data into Gold layer.
+    """Enricher for Wikipedia data into Gold layer using Relation API.
     
-    Produces fields matching Elasticsearch template exactly:
-    - Maps html_file → article_filename (for enrich-wikipedia command)
-    - Sets content_loaded=false (for enrichment workflow)
-    - Creates proper summaries from extract
-    - Maps all fields to match ES template names
+    Gold layer principles (Medallion Architecture):
+    - Business-ready article analytics
+    - Content quality scoring and categorization
+    - Relevance and authority metrics
+    - Search optimization for knowledge discovery
     """
     
     def _get_entity_type(self) -> str:
         """Return entity type."""
         return "wikipedia"
     
+    @log_stage("Gold: Wikipedia Enrichment")
     def _apply_enrichments(self, input_table: str, output_table: str) -> None:
-        """Apply Wikipedia enrichments to produce fields matching ES template exactly.
+        """Apply Gold enrichments using DuckDB Relation API.
+        
+        Gold layer enrichments:
+        - Article quality and authority scoring
+        - Content categorization and topics
+        - Geographic relevance analysis
+        - Business-ready search optimization
         
         Args:
             input_table: Silver Wikipedia table
-            output_table: Gold Wikipedia table  
+            output_table: Gold Wikipedia table
         """
-        query = f"""
-        CREATE TABLE {output_table} AS
-        SELECT 
-            -- Core identifiers (ES template fields)
-            page_id,
-            title,
-            url,
-            
-            -- CRITICAL: Map html_file to article_filename (for enrich-wikipedia workflow)
-            html_file as article_filename,
-            
-            -- Content fields matching ES template names exactly
-            extract as long_summary,
-            CASE 
-                WHEN LENGTH(extract) > 500 
-                THEN SUBSTRING(extract, 1, 500) || '...'
-                ELSE extract
-            END as short_summary,
-            extract as full_content,  -- Initially same as extract, enriched later
-            LENGTH(extract) as content_length,
-            
-            -- CRITICAL: Set content_loaded=false (for enrich-wikipedia to find documents needing enrichment)
-            false as content_loaded,
-            crawled_at as content_loaded_at,
-            
-            -- Location as geo_point array [lon, lat] for ES
-            CASE 
-                WHEN longitude IS NOT NULL AND latitude IS NOT NULL
-                THEN LIST_VALUE(longitude, latitude)
-                ELSE NULL
-            END as location,
-            
-            -- Categories and topics
-            categories,
-            CAST(NULL AS VARCHAR[]) as key_topics,
-            
-            -- Quality and relevance scoring
-            relevance_score,
-            relevance_score as article_quality_score,
-            CASE 
-                WHEN relevance_score >= 0.8 THEN 'high'
-                WHEN relevance_score >= 0.5 THEN 'medium' 
-                ELSE 'low'
-            END as article_quality,
-            
-            -- Location context from Silver layer (standardized)
-            city,
-            state,
-            
-            -- Metadata
-            crawled_at as last_updated,
-            
-            -- Create embedding text combining key searchable fields
-            COALESCE(title, '') || ' | ' ||
-            COALESCE(extract, '') as embedding_text
-            
-        FROM {input_table}
-        WHERE page_id IS NOT NULL
-        AND title IS NOT NULL
-        """
+        # Get connection for Relation API
+        conn = self.connection_manager.get_connection()
         
-        self.connection_manager.execute(query)
-        self.enrichments_applied.append("field_mapping_to_es_template")
-        self.enrichments_applied.append("article_filename_mapping")
-        self.enrichments_applied.append("content_loaded_false")
-        self.enrichments_applied.append("location_geo_point")
-        self.enrichments_applied.append("content_summaries")
+        # Apply Gold enrichments using SQL within relation
+        gold_relation = conn.sql(f"""
+            SELECT 
+                -- Core identifiers (unchanged)
+                page_id,
+                title,
+                url,
+                
+                -- Content fields with business enhancements
+                extract as long_summary,
+                
+                -- GOLD ENRICHMENT: Dynamic summaries based on content length
+                CASE 
+                    WHEN LENGTH(extract) > 500 
+                    THEN SUBSTRING(extract, 1, 500) || '...'
+                    WHEN LENGTH(extract) > 200
+                    THEN SUBSTRING(extract, 1, 200) || '...'
+                    ELSE extract
+                END as short_summary,
+                
+                extract as full_content,
+                LENGTH(extract) as content_length,
+                
+                -- Business workflow fields
+                false as content_loaded,
+                crawled_at as content_loaded_at,
+                html_file as article_filename,
+                
+                -- Location as geo_point for business mapping
+                CASE 
+                    WHEN longitude IS NOT NULL AND latitude IS NOT NULL
+                    THEN LIST_VALUE(longitude, latitude)
+                    ELSE NULL
+                END as location,
+                
+                -- GOLD ENRICHMENT: Content quality analysis
+                CASE 
+                    WHEN LENGTH(extract) >= 1000 AND links_count >= 10 THEN 'comprehensive'
+                    WHEN LENGTH(extract) >= 500 AND links_count >= 5 THEN 'detailed'
+                    WHEN LENGTH(extract) >= 200 THEN 'basic'
+                    ELSE 'stub'
+                END AS content_depth_category,
+                
+                -- GOLD ENRICHMENT: Business authority scoring
+                CAST((
+                    -- Content length factor (40%)
+                    LEAST(LENGTH(extract) / 1000.0, 1.0) * 40 +
+                    -- Link density factor (30%)
+                    LEAST(COALESCE(links_count, 0) / 20.0, 1.0) * 30 +
+                    -- Relevance factor (30%)
+                    COALESCE(relevance_score, 0) * 30
+                ) AS FLOAT) as authority_score,
+                
+                -- GOLD ENRICHMENT: Content categories for business use
+                categories,
+                
+                -- GOLD ENRICHMENT: Extract key topics from categories
+                CASE 
+                    WHEN categories IS NOT NULL AND LENGTH(categories) > 0
+                    THEN ARRAY[
+                        CASE WHEN categories LIKE '%geography%' OR categories LIKE '%location%' THEN 'geography' END,
+                        CASE WHEN categories LIKE '%history%' OR categories LIKE '%historic%' THEN 'history' END,
+                        CASE WHEN categories LIKE '%business%' OR categories LIKE '%company%' THEN 'business' END,
+                        CASE WHEN categories LIKE '%culture%' OR categories LIKE '%art%' THEN 'culture' END,
+                        CASE WHEN categories LIKE '%transport%' OR categories LIKE '%infrastructure%' THEN 'infrastructure' END
+                    ]
+                    ELSE CAST(NULL AS VARCHAR[])
+                END as key_topics,
+                
+                -- Quality and relevance scoring (enhanced)
+                COALESCE(relevance_score, 0.0) as relevance_score,
+                
+                -- GOLD ENRICHMENT: Multi-factor article quality score
+                CAST((
+                    COALESCE(relevance_score, 0) * 0.4 +
+                    CASE 
+                        WHEN LENGTH(extract) >= 1000 THEN 0.6
+                        WHEN LENGTH(extract) >= 500 THEN 0.4
+                        WHEN LENGTH(extract) >= 200 THEN 0.2
+                        ELSE 0.1
+                    END * 0.3 +
+                    CASE 
+                        WHEN COALESCE(links_count, 0) >= 20 THEN 0.6
+                        WHEN COALESCE(links_count, 0) >= 10 THEN 0.4
+                        WHEN COALESCE(links_count, 0) >= 5 THEN 0.2
+                        ELSE 0.1
+                    END * 0.3
+                ) AS FLOAT) as article_quality_score,
+                
+                -- GOLD ENRICHMENT: Business quality categories
+                CASE 
+                    WHEN (COALESCE(relevance_score, 0) >= 0.8 AND LENGTH(extract) >= 500) THEN 'premium'
+                    WHEN (COALESCE(relevance_score, 0) >= 0.6 AND LENGTH(extract) >= 200) THEN 'high'
+                    WHEN (COALESCE(relevance_score, 0) >= 0.4) THEN 'medium'
+                    ELSE 'basic'
+                END as article_quality,
+                
+                -- GOLD ENRICHMENT: Geographic relevance scoring
+                CASE 
+                    WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 1.0
+                    WHEN latitude IS NOT NULL OR longitude IS NOT NULL THEN 0.5
+                    ELSE 0.0
+                END AS geographic_relevance_score,
+                
+                -- Metadata
+                crawled_at as last_updated,
+                
+                -- GOLD ENRICHMENT: Business-ready embedding text
+                COALESCE(title, '') || ' | ' ||
+                COALESCE(extract, '') || ' | ' ||
+                COALESCE(CAST(key_topics AS VARCHAR), '') as embedding_text,
+                
+                -- GOLD ENRICHMENT: Business search facets
+                ARRAY[
+                    article_quality,
+                    content_depth_category,
+                    CASE WHEN geographic_relevance_score >= 0.5 THEN 'geo_located' ELSE 'no_location' END,
+                    CASE WHEN authority_score >= 70 THEN 'high_authority' ELSE 'standard_authority' END
+                ] AS search_facets,
+                
+                -- GOLD ENRICHMENT: Business intelligence metadata
+                CURRENT_TIMESTAMP as gold_processed_at,
+                'wikipedia_gold_v3_business_ready' as processing_version,
+                
+                -- GOLD ENRICHMENT: Search ranking score
+                CAST((
+                    article_quality_score * 0.5 +
+                    geographic_relevance_score * 0.3 +
+                    CASE WHEN LENGTH(title) BETWEEN 10 AND 100 THEN 0.2 ELSE 0.1 END
+                ) AS FLOAT) as search_ranking_score,
+                
+                -- GOLD ENRICHMENT: Embedding infrastructure (medallion architecture)
+                CAST(NULL AS DOUBLE[1024]) AS embedding_vector,
+                CAST(NULL AS TIMESTAMP) AS embedding_generated_at
+                
+            FROM {input_table}
+            WHERE page_id IS NOT NULL
+            AND title IS NOT NULL
+            AND LENGTH(title) > 0
+        """)
+        
+        # Create the Gold table
+        gold_relation.create(output_table)
+        
+        # Track enrichments applied
+        self.enrichments_applied.extend([
+            "content_quality_analysis",
+            "authority_scoring",
+            "topic_extraction",
+            "geographic_relevance",
+            "business_categorization",
+            "search_optimization",
+            "ranking_algorithms",
+            "business_embedding_text"
+        ])
+        
+        self.logger.info(f"Applied {len(self.enrichments_applied)} Gold enrichments to {output_table}")

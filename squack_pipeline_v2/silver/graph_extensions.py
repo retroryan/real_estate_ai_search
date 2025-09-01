@@ -7,7 +7,7 @@ WITHOUT modifying existing Silver transformers. All changes are additive.
 from typing import List
 from pydantic import BaseModel, Field, ConfigDict
 
-from squack_pipeline_v2.core.connection import DuckDBConnectionManager, TableIdentifier
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import PipelineLogger, log_stage
 
 
@@ -422,13 +422,13 @@ class SilverGraphExtensions:
         }
         
         # Extend main entity tables if they exist
-        if self.connection_manager.table_exists(TableIdentifier(name="silver_properties")):
+        if self.connection_manager.table_exists("silver_properties"):
             summary["properties"] = self.extend_properties("silver_properties")
         
-        if self.connection_manager.table_exists(TableIdentifier(name="silver_neighborhoods")):
+        if self.connection_manager.table_exists("silver_neighborhoods"):
             summary["neighborhoods"] = self.extend_neighborhoods("silver_neighborhoods")
         
-        if self.connection_manager.table_exists(TableIdentifier(name="silver_wikipedia")):
+        if self.connection_manager.table_exists("silver_wikipedia"):
             summary["wikipedia"] = self.extend_wikipedia("silver_wikipedia")
         
         # Create extraction tables

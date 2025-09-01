@@ -475,16 +475,12 @@ class PipelineOrchestrator:
             tables.extend([
                 entity.bronze_table,
                 entity.silver_table,
-                entity.gold_table,
-                entity.embeddings_table
+                entity.gold_table
             ])
-        
-        from squack_pipeline_v2.core.table_identifier import TableIdentifier
         
         stats = {}
         for table in tables:
-            table_id = TableIdentifier(name=table)
-            if self.connection_manager.table_exists(table_id):
+            if self.connection_manager.table_exists(table):
                 count = self.connection_manager.execute(
                     f"SELECT COUNT(*) FROM {table}"
                 ).fetchone()[0]
