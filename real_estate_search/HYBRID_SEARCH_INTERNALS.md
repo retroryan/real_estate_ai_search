@@ -1,0 +1,262 @@
+# Hybrid Search Internals - Location-Aware Real Estate Search
+
+## Overview
+
+This document explains the internal workings of the location-aware hybrid search system for real estate properties. The system combines natural language location understanding with semantic and text-based search capabilities to provide intelligent property search results.
+
+## Architecture Components
+
+### 1. Configuration System
+
+The configuration system loads settings in a hierarchical manner, prioritizing environment variables over configuration files:
+
+- **Primary Source**: Environment variables from `.env` file in the parent directory
+- **Secondary Source**: YAML configuration files (`config.yaml`)
+- **Fallback**: Default values defined in code
+
+The DSPy language model configuration specifically:
+- Reads the OpenRouter API key from environment variables
+- Configures the model (e.g., `openrouter/openai/gpt-4o-mini`)
+- Sets generation parameters like temperature and max tokens
+- Initializes DSPy with JSONAdapter for structured output support
+
+### 2. Location Understanding Module
+
+The location understanding system uses DSPy (Declarative Self-improving Python) to extract location information from natural language queries.
+
+#### Process Flow
+
+1. **Query Reception**
+   - User provides a natural language query like "Find a great family home in Park City"
+   - The query is passed to the LocationUnderstandingModule
+
+2. **DSPy Signature Processing**
+   - The LocationExtractionSignature defines what information to extract
+   - It instructs the language model to identify:
+     - City names (e.g., "San Francisco", "Park City")
+     - State names (e.g., "California", "Utah")
+     - Neighborhood names (e.g., "Mission District", "Downtown")
+     - ZIP codes (e.g., "94102", "84060")
+   - The signature also requests a cleaned version of the query with location terms removed
+
+3. **Language Model Execution**
+   - DSPy uses ChainOfThought reasoning for better extraction accuracy
+   - The LLM processes the query and returns structured output
+   - The system handles the response whether it finds location information or not
+
+4. **Result Parsing**
+   - The raw LLM output is parsed into a LocationIntent Pydantic model
+   - Fields marked as "unknown" by the LLM are converted to None
+   - Confidence scores are validated to be between 0.0 and 1.0
+   - Consistency checks ensure that if no location fields are found, has_location is set to False
+
+5. **Output Structure**
+   - The LocationIntent contains:
+     - Extracted location fields (city, state, neighborhood, zip_code)
+     - A boolean flag indicating if location was found
+     - The cleaned query with location terms removed
+     - A confidence score for the extraction
+
+#### Example Transformations
+
+- **Input**: "2 bedroom apartment in San Francisco"
+  - **City**: San Francisco
+  - **Cleaned Query**: "2 bedroom apartment"
+  - **Confidence**: 0.95
+
+- **Input**: "Modern condo with ocean views"
+  - **Has Location**: False
+  - **Cleaned Query**: "Modern condo with ocean views" (unchanged)
+  - **Confidence**: 0.0
+
+- **Input**: "Downtown Seattle condos"
+  - **City**: Seattle
+  - **State**: Washington
+  - **Neighborhood**: Downtown
+  - **Cleaned Query**: "condos"
+  - **Confidence**: 0.97
+
+### 3. Location Filter Builder
+
+Once location information is extracted, the LocationFilterBuilder converts it into Elasticsearch query filters.
+
+#### Filter Generation Process
+
+The builder examines each field in the LocationIntent and creates appropriate Elasticsearch filters:
+
+1. **City Filter**
+   - If a city is detected, creates a term filter for the `address.city.keyword` field
+   - Uses exact matching to ensure precise city filtering
+
+2. **State Filter**
+   - Creates a term filter for the `address.state` field when state is present
+   - Useful for broader geographic searches
+
+3. **Neighborhood Filter**
+   - Generates a term filter for `neighborhood.name.keyword` when neighborhood is identified
+   - Enables hyper-local property searches
+
+4. **ZIP Code Filter**
+   - Creates a term filter for `address.zip_code` when ZIP code is extracted
+   - Provides precise geographic filtering for specific areas
+
+These filters are combined and can be applied to Elasticsearch queries to limit results to the specified geographic areas.
+
+### 4. Hybrid Search Engine
+
+The HybridSearchEngine combines multiple search strategies using Elasticsearch's native Reciprocal Rank Fusion (RRF).
+
+#### Search Components
+
+1. **Text Search Component**
+   - Uses multi-match queries across property fields
+   - Searches in description, features, amenities, and address fields
+   - Applies field boosting to prioritize certain fields
+   - Includes fuzzy matching for typo tolerance
+   - Uses BM25 scoring for traditional relevance ranking
+
+2. **Vector Search Component**
+   - Performs k-nearest neighbor (KNN) search
+   - Uses 1024-dimensional embeddings generated by Voyage AI
+   - Calculates cosine similarity for semantic matching
+   - Understands conceptual relationships between query and properties
+
+3. **Reciprocal Rank Fusion**
+   - Elasticsearch automatically combines results from both search components
+   - Uses the formula: score = Σ(1 / (k + rank_i))
+   - The rank_constant (k) is typically set to 60
+   - Provides balanced ranking that leverages both semantic and keyword relevance
+
+#### Query Building Process
+
+1. **Embedding Generation**
+   - The query text is converted to a 1024-dimensional vector
+   - Uses the configured embedding service (typically Voyage AI)
+   - The vector captures the semantic meaning of the query
+
+2. **RRF Query Construction**
+   - Creates a retriever configuration with two sub-retrievers
+   - Text retriever: Multi-match query with the cleaned query text
+   - Vector retriever: KNN search with the query embedding
+   - Both retrievers are wrapped in the RRF configuration
+
+3. **Execution and Result Processing**
+   - Elasticsearch executes both searches in parallel
+   - RRF automatically merges and re-ranks the results
+   - Final results include properties that match either semantically or textually
+   - Each result includes the combined RRF score
+
+## Complete Search Flow
+
+Here's how all components work together for a complete search:
+
+1. **User Query Input**
+   - User enters: "Find a modern home with pool in Austin Texas"
+
+2. **Location Extraction**
+   - LocationUnderstandingModule processes the query
+   - Extracts: City="Austin", State="Texas"
+   - Returns cleaned query: "Find a modern home with pool"
+
+3. **Filter Generation**
+   - LocationFilterBuilder creates Elasticsearch filters
+   - Generates term filters for Austin and Texas
+
+4. **Embedding Creation**
+   - Cleaned query is converted to a vector embedding
+   - Captures semantic meaning of "modern home with pool"
+
+5. **Hybrid Search Execution**
+   - Text search finds properties with keywords "modern", "home", "pool"
+   - Vector search finds semantically similar properties
+   - Location filters restrict results to Austin, Texas
+   - RRF combines and ranks all matching properties
+
+6. **Result Delivery**
+   - Properties are returned ranked by combined relevance
+   - Each result includes property details and relevance scores
+   - Results are geographically constrained to the extracted location
+
+## Key Design Decisions
+
+### Synchronous Processing
+All operations are synchronous to ensure predictable behavior and easier debugging. No async/await patterns are used.
+
+### Pydantic Models
+All data structures use Pydantic models for:
+- Automatic validation
+- Type safety
+- Clear documentation of expected fields
+- Serialization/deserialization support
+
+### DSPy Best Practices
+- Uses ChainOfThought for complex reasoning tasks
+- Modules are called as callables, not by calling forward() directly
+- Configuration is initialized once at module level
+- Graceful error handling with fallbacks
+
+### Modular Architecture
+Each component has a single responsibility:
+- Configuration management
+- Location extraction
+- Filter building
+- Search execution
+
+This separation allows for easy testing, maintenance, and future enhancements.
+
+## Performance Considerations
+
+### Caching
+- DSPy responses are cached by default to reduce API calls
+- Embedding service can cache frequently used queries
+- Elasticsearch has built-in query result caching
+
+### Parallel Execution
+- Text and vector searches run in parallel within Elasticsearch
+- RRF fusion happens server-side for optimal performance
+
+### Error Handling
+- Each component has fallback behavior
+- Location extraction failures don't prevent search execution
+- The system degrades gracefully to basic search when needed
+
+## Testing Strategy
+
+### Unit Tests
+- Test each component in isolation
+- Mock external dependencies (LLM, Elasticsearch)
+- Verify data transformations and validations
+
+### Integration Tests
+- Test component interactions
+- Can run with actual LLM for end-to-end validation
+- Verify complete search flows
+
+### Performance Tests
+- Measure query latency
+- Monitor LLM token usage
+- Track Elasticsearch query performance
+
+## Future Enhancements
+
+Potential improvements to the system:
+
+1. **Landmark Recognition**
+   - Identify landmarks like "near Golden Gate Park"
+   - Convert to geographic coordinates
+
+2. **Distance Understanding**
+   - Interpret phrases like "walking distance to downtown"
+   - Convert to radius-based searches
+
+3. **Multi-Location Support**
+   - Handle queries with multiple locations
+   - Support location exclusions
+
+4. **Query Expansion**
+   - Use synonyms for location terms
+   - Handle abbreviations and nicknames
+
+5. **Confidence-Based Filtering**
+   - Apply stricter filters for high-confidence extractions
+   - Use looser matching for uncertain locations

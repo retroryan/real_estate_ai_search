@@ -1,18 +1,17 @@
 """Pydantic models for demo query inputs and outputs."""
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 
 
 class PropertySearchParams(BaseModel):
     """Parameters for property search queries."""
+    model_config = ConfigDict(populate_by_name=True)
+    
     query_text: str = Field(..., description="Search query text")
     size: int = Field(10, description="Number of results to return")
     from_: int = Field(0, description="Offset for pagination", alias="from")
-    
-    class Config:
-        populate_by_name = True
 
 
 class PropertyFilterParams(BaseModel):

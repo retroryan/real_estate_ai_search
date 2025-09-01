@@ -13,10 +13,13 @@ from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.bronze.property import PropertyBronzeIngester
 from squack_pipeline_v2.bronze.neighborhood import NeighborhoodBronzeIngester
 from squack_pipeline_v2.bronze.wikipedia import WikipediaBronzeIngester
+from squack_pipeline_v2.bronze.location import LocationBronzeIngester
 from squack_pipeline_v2.silver.property import PropertySilverTransformer
 from squack_pipeline_v2.silver.neighborhood import NeighborhoodSilverTransformer
 from squack_pipeline_v2.silver.wikipedia import WikipediaSilverTransformer
+from squack_pipeline_v2.silver.location import LocationSilverTransformer
 from squack_pipeline_v2.silver.base import SilverMetadata
+from squack_pipeline_v2.integration_tests.test_utils import MockEmbeddingProvider
 
 
 def test_silver_property_transformation():
@@ -42,8 +45,9 @@ def test_silver_property_transformation():
         sample_size=10
     )
     
-    # Transform to Silver
-    silver_transformer = PropertySilverTransformer(settings, conn_manager)
+    # Transform to Silver with mock embedding provider
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = PropertySilverTransformer(settings, conn_manager, mock_embedding_provider)
     result = silver_transformer.transform(
         input_table="test_bronze_properties",
         output_table="test_silver_properties"
@@ -81,6 +85,24 @@ def test_silver_neighborhood_transformation():
     settings = PipelineSettings()
     conn_manager = DuckDBConnectionManager(settings.duckdb)
     
+    # First ingest location data for enrichment
+    location_ingester = LocationBronzeIngester(settings, conn_manager)
+    location_file = Path("real_estate_data/locations.json")
+    
+    if location_file.exists():
+        location_ingester.ingest(
+            table_name="bronze_locations",
+            file_path=location_file,
+            sample_size=100
+        )
+        
+        # Transform locations to Silver
+        location_transformer = LocationSilverTransformer(settings, conn_manager)
+        location_transformer.transform(
+            input_table="bronze_locations",
+            output_table="silver_locations"
+        )
+    
     # First create Bronze data
     bronze_ingester = NeighborhoodBronzeIngester(settings, conn_manager)
     neighborhood_file = Path("real_estate_data/neighborhoods_sf.json")
@@ -96,8 +118,9 @@ def test_silver_neighborhood_transformation():
         sample_size=5
     )
     
-    # Transform to Silver
-    silver_transformer = NeighborhoodSilverTransformer(settings, conn_manager)
+    # Transform to Silver with mock embedding provider
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = NeighborhoodSilverTransformer(settings, conn_manager, mock_embedding_provider)
     result = silver_transformer.transform(
         input_table="test_bronze_neighborhoods",
         output_table="test_silver_neighborhoods"
@@ -145,8 +168,9 @@ def test_silver_wikipedia_transformation():
         sample_size=10
     )
     
-    # Transform to Silver
-    silver_transformer = WikipediaSilverTransformer(settings, conn_manager)
+    # Transform to Silver with mock embedding provider
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = WikipediaSilverTransformer(settings, conn_manager, mock_embedding_provider)
     result = silver_transformer.transform(
         input_table="test_bronze_wikipedia",
         output_table="test_silver_wikipedia"
@@ -188,7 +212,7 @@ def test_relation_api_usage():
     # Check neighborhood transformer source
     neighborhood_source = inspect.getsource(neighborhood.NeighborhoodSilverTransformer._apply_transformations)
     assert "conn.table" in neighborhood_source, "Neighborhood transformer should use Relation API"
-    assert "filtered.project" in neighborhood_source, "Should use project method"
+    assert ".project" in neighborhood_source, "Should use project method"
     assert ".create(output_table)" in neighborhood_source, "Should create table from relation"
     
     # Check wikipedia transformer source
@@ -219,8 +243,9 @@ def test_medallion_architecture():
             sample_size=5
         )
         
-        # Transform to Silver
-        silver_transformer = PropertySilverTransformer(settings, conn_manager)
+        # Transform to Silver with mock embedding provider
+        mock_embedding_provider = MockEmbeddingProvider()
+        silver_transformer = PropertySilverTransformer(settings, conn_manager, mock_embedding_provider)
         result = silver_transformer.transform(
             input_table="test_medallion_bronze",
             output_table="test_medallion_silver"

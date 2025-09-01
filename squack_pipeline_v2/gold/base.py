@@ -122,7 +122,7 @@ class GoldEnricher(ABC):
         
         # Check view exists using parameterized query
         result = conn.execute(
-            "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = ? AND view_name = ?",
+            "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = ? AND table_name = ?",
             ["main", view_name]
         ).fetchone()
         

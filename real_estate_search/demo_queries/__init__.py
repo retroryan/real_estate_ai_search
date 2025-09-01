@@ -22,6 +22,8 @@ from .semantic_query_search import (
     demo_semantic_vs_keyword_comparison
 )
 from .rich_listing_demo import demo_rich_property_listing
+from .hybrid_search import demo_hybrid_search
+from .location_understanding import demo_location_understanding
 
 __all__ = [
     'demo_basic_property_search',
@@ -37,5 +39,7 @@ __all__ = [
     'demo_natural_language_search',
     'demo_natural_language_examples',
     'demo_semantic_vs_keyword_comparison',
-    'demo_rich_property_listing'
+    'demo_rich_property_listing',
+    'demo_hybrid_search',
+    'demo_location_understanding'
 ]

@@ -23,6 +23,7 @@ class DataSourcesConfig(BaseModel):
         default=["real_estate_data/neighborhoods_sf.json", "real_estate_data/neighborhoods_pc.json"]
     )
     wikipedia_db_path: str = Field(default="data/wikipedia/wikipedia.db")
+    locations_file: str = Field(default="real_estate_data/locations.json")
 
 
 class DataConfig(BaseModel):

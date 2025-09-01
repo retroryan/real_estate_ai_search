@@ -22,16 +22,19 @@ from squack_pipeline_v2.models.pipeline.metrics import PipelineMetrics, EntityMe
 from squack_pipeline_v2.bronze.property import PropertyBronzeIngester
 from squack_pipeline_v2.bronze.neighborhood import NeighborhoodBronzeIngester
 from squack_pipeline_v2.bronze.wikipedia import WikipediaBronzeIngester
+from squack_pipeline_v2.bronze.location import LocationBronzeIngester
 
 # Silver layer
 from squack_pipeline_v2.silver.property import PropertySilverTransformer
 from squack_pipeline_v2.silver.neighborhood import NeighborhoodSilverTransformer
 from squack_pipeline_v2.silver.wikipedia import WikipediaSilverTransformer
+from squack_pipeline_v2.silver.location import LocationSilverTransformer
 
 # Gold layer
 from squack_pipeline_v2.gold.property import PropertyGoldEnricher
 from squack_pipeline_v2.gold.neighborhood import NeighborhoodGoldEnricher
 from squack_pipeline_v2.gold.wikipedia import WikipediaGoldEnricher
+from squack_pipeline_v2.gold.location import LocationGoldEnricher
 
 # Embeddings
 from squack_pipeline_v2.embeddings.providers import create_provider
@@ -188,6 +191,30 @@ class PipelineOrchestrator:
             )
         )
         
+        # Location ingestion
+        entity = ENTITY_TYPES.location
+        ingester = LocationBronzeIngester(self.settings, self.connection_manager)
+        start_time = datetime.now()
+        
+        ingester.ingest(
+            table_name=entity.bronze_table,
+            sample_size=sample_size
+        )
+        
+        end_time = datetime.now()
+        
+        metrics[entity.name] = EntityMetrics(
+            entity_type=entity.name,
+            bronze_metrics=StageMetrics(
+                stage_name="bronze",
+                input_records=ingester.records_ingested,
+                output_records=ingester.records_ingested,
+                dropped_records=0,
+                start_time=start_time,
+                end_time=end_time
+            )
+        )
+        
         return metrics
     
     @log_stage("Pipeline: Run Silver Layer")
@@ -198,6 +225,26 @@ class PipelineOrchestrator:
             Silver layer metrics
         """
         metrics = {}
+        
+        # Location transformation (MUST BE FIRST - neighborhoods depend on it)
+        entity = ENTITY_TYPES.location
+        transformer = LocationSilverTransformer(self.settings, self.connection_manager)
+        start_time = datetime.now()
+        
+        transformer.transform(entity.bronze_table, entity.silver_table)
+        
+        end_time = datetime.now()
+        
+        count = self.connection_manager.count_records(entity.silver_table)
+        
+        metrics[entity.name] = StageMetrics(
+            stage_name="silver",
+            input_records=count,
+            output_records=count,
+            dropped_records=0,
+            start_time=start_time,
+            end_time=end_time
+        )
         
         # Property transformation
         entity = ENTITY_TYPES.property
@@ -220,7 +267,7 @@ class PipelineOrchestrator:
             end_time=end_time
         )
         
-        # Neighborhood transformation
+        # Neighborhood transformation (depends on locations)
         entity = ENTITY_TYPES.neighborhood
         transformer = NeighborhoodSilverTransformer(self.settings, self.connection_manager, self.embedding_provider)
         start_time = datetime.now()
@@ -270,6 +317,29 @@ class PipelineOrchestrator:
             Gold layer metrics
         """
         metrics = {}
+        
+        # Location enrichment (MUST BE FIRST - properties and neighborhoods depend on it)
+        entity = ENTITY_TYPES.location
+        enricher = LocationGoldEnricher(
+            self.settings, 
+            self.connection_manager
+        )
+        start_time = datetime.now()
+        
+        enricher.enrich(entity.silver_table, entity.gold_table)
+        
+        end_time = datetime.now()
+        
+        count = self.connection_manager.count_records(entity.gold_table)
+        
+        metrics[entity.name] = StageMetrics(
+            stage_name="gold",
+            input_records=count,
+            output_records=count,
+            dropped_records=0,
+            start_time=start_time,
+            end_time=end_time
+        )
         
         # Property enrichment
         entity = ENTITY_TYPES.property

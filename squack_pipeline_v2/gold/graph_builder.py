@@ -116,7 +116,7 @@ class GoldGraphBuilder:
                 p.listing_date,
                 p.days_on_market,
                 
-                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
+                s.embedding_vector as embedding,
                 
                 'Property' as node_label,
                 'property:' || p.listing_id as graph_node_id
@@ -208,7 +208,7 @@ class GoldGraphBuilder:
                 n.description,
                 n.center_latitude as latitude,
                 n.center_longitude as longitude,
-                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
+                s.embedding_vector as embedding,
                 'Neighborhood' as node_label,
                 'neighborhood:' || n.neighborhood_id as graph_node_id
             FROM gold_neighborhoods n
@@ -271,7 +271,7 @@ class GoldGraphBuilder:
                 w.title,
                 w.full_content as content,
                 w.categories,
-                COALESCE(s.embedding_vector, NULL::FLOAT[]) as embedding,
+                s.embedding_vector as embedding,
                 'WikipediaArticle' as node_label,
                 'wikipedia:' || w.page_id as graph_node_id
             FROM gold_wikipedia w
@@ -303,7 +303,7 @@ class GoldGraphBuilder:
     
     @log_stage("Graph Builder: County nodes")
     def build_county_nodes(self) -> str:
-        """Build county node table from neighborhood data.
+        """Build county node table from canonical location data.
         
         Returns:
             Name of the created table
@@ -312,18 +312,18 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Extract unique counties from neighborhood wikipedia_correlations
+        # Use canonical location data directly
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            LOWER(REPLACE(wikipedia_correlations.parent_geography.county_wiki.title, ' ', '_')) || '_' || state as county_id,
-            wikipedia_correlations.parent_geography.county_wiki.title as county_name,
-            wikipedia_correlations.parent_geography.county_wiki.page_id as county_wiki_id,
+            county_id,
+            county as county_name,
             state,
             'County' as node_label,
-            LOWER(REPLACE(wikipedia_correlations.parent_geography.county_wiki.title, ' ', '_')) as graph_node_id
-        FROM gold_neighborhoods
-        WHERE wikipedia_correlations.parent_geography.county_wiki.title IS NOT NULL
+            'county:' || county_id as graph_node_id
+        FROM gold_locations
+        WHERE county IS NOT NULL 
+        AND state IS NOT NULL
         """
         
         self.connection_manager.execute(query)
@@ -365,7 +365,7 @@ class GoldGraphBuilder:
     
     @log_stage("Graph Builder: City nodes")
     def build_city_nodes(self) -> str:
-        """Build city nodes from properties and neighborhoods.
+        """Build city nodes from canonical location data.
         
         Returns:
             Name of the created table
@@ -374,21 +374,20 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Extract unique cities
+        # Use canonical location data directly
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            city || '_' || state as city_id,
+            city_id,
             city as city_name,
             state,
+            county,
             'City' as node_label,
-            'city:' || LOWER(REPLACE(city || '_' || state, ' ', '_')) as graph_node_id
-        FROM (
-            SELECT DISTINCT city, state FROM gold_neighborhoods
-            UNION
-            SELECT DISTINCT address.city as city, address.state as state FROM gold_properties
-        ) cities
-        WHERE city IS NOT NULL AND state IS NOT NULL
+            'city:' || city_id as graph_node_id
+        FROM gold_locations
+        WHERE city IS NOT NULL 
+        AND state IS NOT NULL
+        AND (location_type = 'city' OR location_type = 'neighborhood')
         """
         
         self.connection_manager.execute(query)
@@ -400,7 +399,7 @@ class GoldGraphBuilder:
     
     @log_stage("Graph Builder: State nodes")
     def build_state_nodes(self) -> str:
-        """Build state nodes from properties and neighborhoods.
+        """Build state nodes from canonical location data.
         
         Returns:
             Name of the created table
@@ -409,20 +408,16 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Extract unique states
+        # Use canonical location data directly
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            state as state_id,
+            state_id,
             state as state_code,
             state as state_name,
             'State' as node_label,
-            'state:' || state as graph_node_id
-        FROM (
-            SELECT DISTINCT state FROM gold_neighborhoods
-            UNION
-            SELECT DISTINCT address.state as state FROM gold_properties
-        ) states
+            'state:' || LOWER(REPLACE(state, ' ', '_')) as graph_node_id
+        FROM gold_locations
         WHERE state IS NOT NULL
         """
         
@@ -435,7 +430,7 @@ class GoldGraphBuilder:
     
     @log_stage("Graph Builder: ZIP code nodes")
     def build_zip_code_nodes(self) -> str:
-        """Build ZIP code nodes from properties.
+        """Build ZIP code nodes from canonical location data.
         
         Returns:
             Name of the created table
@@ -444,18 +439,21 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Extract unique ZIP codes
+        # Use canonical location data directly
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            address.zip_code as zip_code_id,
-            address.zip_code as zip_code,
-            address.city as city,
-            address.state as state,
+            zip_code as zip_code_id,
+            zip_code,
+            city,
+            county,
+            state,
+            zip_code_status,
             'ZipCode' as node_label,
-            'zip:' || address.zip_code as graph_node_id
-        FROM gold_properties
-        WHERE address.zip_code IS NOT NULL
+            'zip:' || zip_code as graph_node_id
+        FROM gold_locations
+        WHERE zip_code IS NOT NULL 
+        AND zip_code_status = 'valid'
         """
         
         self.connection_manager.execute(query)
@@ -776,8 +774,75 @@ class GoldGraphBuilder:
         
         return table_name
     
-    
-    
+    @log_stage("Graph Builder: Geographic hierarchy relationships")
+    def build_geographic_hierarchy_relationships(self) -> str:
+        """Build geographic hierarchy relationships from location data.
+        
+        Creates IN_CITY, IN_COUNTY, IN_STATE relationships.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_geographic_hierarchy"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Build hierarchy relationships directly from location data
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT * FROM (
+            -- Neighborhood IN_CITY relationships
+            SELECT 
+                'neighborhood:' || neighborhood_id as from_id,
+                'city:' || city_id as to_id,
+                'IN_CITY' as relationship_type
+            FROM gold_locations
+            WHERE location_type = 'neighborhood' 
+            AND neighborhood_id IS NOT NULL 
+            AND city_id IS NOT NULL
+            
+            UNION ALL
+            
+            -- City IN_COUNTY relationships  
+            SELECT 
+                'city:' || city_id as from_id,
+                'county:' || county_id as to_id,
+                'IN_COUNTY' as relationship_type
+            FROM gold_locations
+            WHERE city_id IS NOT NULL 
+            AND county_id IS NOT NULL
+            
+            UNION ALL
+            
+            -- County IN_STATE relationships
+            SELECT 
+                'county:' || county_id as from_id,
+                'state:' || LOWER(REPLACE(state, ' ', '_')) as to_id,
+                'IN_STATE' as relationship_type
+            FROM gold_locations
+            WHERE county_id IS NOT NULL 
+            AND state IS NOT NULL
+            
+            UNION ALL
+            
+            -- ZIP IN_CITY relationships
+            SELECT DISTINCT
+                'zip:' || zip_code as from_id,
+                'city:' || city_id as to_id,
+                'IN_CITY' as relationship_type
+            FROM gold_locations
+            WHERE zip_code IS NOT NULL 
+            AND city_id IS NOT NULL
+            AND zip_code_status = 'valid'
+        ) hierarchy
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} geographic hierarchy relationships")
+        
+        return table_name
     
     @log_stage("Graph Builder: Build all")
     def build_all_graph_tables(self) -> GraphBuildMetadata:
@@ -789,49 +854,43 @@ class GoldGraphBuilder:
         start_time = datetime.now()
         metadata = GraphBuildMetadata()
         
-        # Build node tables (10 types)
+        # Build all node tables (simplified - no existence checks)
         self.logger.info("Building node tables...")
         
         # Core entity nodes
-        if self.connection_manager.table_exists("gold_properties"):
-            metadata.node_tables.append(self.build_property_nodes())
-            # Build nodes derived from properties
-            metadata.node_tables.append(self.build_feature_nodes())
-            metadata.node_tables.append(self.build_property_type_nodes())
-            metadata.node_tables.append(self.build_price_range_nodes())
-            metadata.node_tables.append(self.build_zip_code_nodes())
+        metadata.node_tables.append(self.build_property_nodes())
+        metadata.node_tables.append(self.build_neighborhood_nodes()) 
+        metadata.node_tables.append(self.build_wikipedia_nodes())
         
-        if self.connection_manager.table_exists("gold_neighborhoods"):
-            metadata.node_tables.append(self.build_neighborhood_nodes())
-            # Build county nodes from neighborhood data
-            metadata.node_tables.append(self.build_county_nodes())
+        # Property-derived nodes
+        metadata.node_tables.append(self.build_feature_nodes())
+        metadata.node_tables.append(self.build_property_type_nodes())
+        metadata.node_tables.append(self.build_price_range_nodes())
         
-        if self.connection_manager.table_exists("gold_wikipedia"):
-            metadata.node_tables.append(self.build_wikipedia_nodes())
+        # Geographic hierarchy nodes from location data
+        metadata.node_tables.append(self.build_zip_code_nodes())
+        metadata.node_tables.append(self.build_city_nodes())
+        metadata.node_tables.append(self.build_county_nodes())
+        metadata.node_tables.append(self.build_state_nodes())
         
-        # Geographic hierarchy nodes
-        if self.connection_manager.table_exists("gold_properties") or self.connection_manager.table_exists("gold_neighborhoods"):
-            metadata.node_tables.append(self.build_city_nodes())
-            metadata.node_tables.append(self.build_state_nodes())
-        
-        # Build relationship tables (7 types - 2 existing + 5 new)
+        # Build all relationship tables
         self.logger.info("Building relationship tables...")
         
-        if self.connection_manager.table_exists("gold_properties"):
-            # Property relationships
-            metadata.relationship_tables.append(self.build_located_in_relationships())
-            metadata.relationship_tables.append(self.build_has_feature_relationships())
-            metadata.relationship_tables.append(self.build_of_type_relationships())
-            metadata.relationship_tables.append(self.build_in_price_range_relationships())
+        # Property relationships
+        metadata.relationship_tables.append(self.build_located_in_relationships())
+        metadata.relationship_tables.append(self.build_has_feature_relationships())
+        metadata.relationship_tables.append(self.build_of_type_relationships())
+        metadata.relationship_tables.append(self.build_in_price_range_relationships())
         
-        if self.connection_manager.table_exists("gold_neighborhoods"):
-            # Neighborhood relationships
-            metadata.relationship_tables.append(self.build_part_of_relationships())
-            metadata.relationship_tables.append(self.build_in_county_relationships())
+        # Neighborhood relationships  
+        metadata.relationship_tables.append(self.build_part_of_relationships())
+        metadata.relationship_tables.append(self.build_in_county_relationships())
         
-        if self.connection_manager.table_exists("gold_wikipedia") and self.connection_manager.table_exists("gold_neighborhoods"):
-            # Wikipedia relationships
-            metadata.relationship_tables.append(self.build_describes_relationships())
+        # Wikipedia relationships
+        metadata.relationship_tables.append(self.build_describes_relationships())
+        
+        # Geographic hierarchy relationships from location data
+        metadata.relationship_tables.append(self.build_geographic_hierarchy_relationships())
         
         # Calculate totals
         for table in metadata.node_tables:

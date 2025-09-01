@@ -2,6 +2,8 @@
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
+from squack_pipeline_v2.utils.state_utils import StateStandardizer
+from datetime import datetime
 
 
 class NeighborhoodSilverTransformer(SilverTransformer):
@@ -41,88 +43,120 @@ class NeighborhoodSilverTransformer(SilverTransformer):
         filtered = bronze.filter("""
             neighborhood_id IS NOT NULL 
             AND name IS NOT NULL
-        """)
+        """).set_alias("n")
         
-        # Project to standardized columns using Relation API
-        transformed = filtered.project("""
-            neighborhood_id,
-            name,
-            city,
-            state,
+        # Join with silver_locations to enrich with county data
+        locations = conn.table("silver_locations").set_alias("l")
+        
+        # Join using Relation API to enrich neighborhoods with county data
+        # Use StateStandardizer for consistent state matching
+        enriched = filtered.join(
+            locations,
+            condition="""
+                n.name = l.neighborhood_standardized
+                AND n.city = l.city_standardized
+                AND n.state = l.state_standardized
+            """,
+            how="left"
+        )
+        
+        # Project to standardized columns including enriched county data
+        transformed = enriched.project("""
+            n.neighborhood_id,
+            n.name,
+            n.city,
+            n.state,
+            
+            -- Enriched geographic hierarchy from locations
+            l.county_standardized as county,
+            l.city_id,
+            l.county_id,
+            l.state_id,
             
             CASE 
-                WHEN coordinates.longitude IS NOT NULL AND coordinates.latitude IS NOT NULL
-                THEN LIST_VALUE(coordinates.longitude, coordinates.latitude)
+                WHEN n.coordinates.longitude IS NOT NULL AND n.coordinates.latitude IS NOT NULL
+                THEN LIST_VALUE(n.coordinates.longitude, n.coordinates.latitude)
                 ELSE NULL
             END as location,
             
-            demographics.population as population,
-            characteristics.walkability_score as walkability_score,
-            characteristics.school_rating as school_rating,
+            n.demographics.population as population,
+            n.characteristics.walkability_score as walkability_score,
+            n.characteristics.school_rating as school_rating,
             
-            demographics,
-            description,
-            amenities,
-            lifestyle_tags,
-            wikipedia_correlations,
+            n.demographics,
+            n.description,
+            n.amenities,
+            n.lifestyle_tags,
+            
+            -- Extract wikipedia page_id from STRUCT in Silver layer (not JSON!)
+            n.wikipedia_correlations.primary_wiki_article.page_id as wikipedia_page_id,
+            
             CONCAT_WS(' | ',
-                COALESCE(description, ''),
-                COALESCE(name, ''),
-                CONCAT('Population: ', COALESCE(demographics.population, 0))
+                COALESCE(n.description, ''),
+                COALESCE(n.name, ''),
+                CONCAT('Population: ', COALESCE(n.demographics.population, 0))
             ) as embedding_text
         """)
         
-        if self.embedding_provider:
-            # Get embedding text data using Relation API
-            embedding_data = transformed.project("neighborhood_id, embedding_text").df()
-            
-            # Generate embeddings
-            if len(embedding_data) > 0:
-                embedding_response = self.embedding_provider.generate_embeddings(embedding_data['embedding_text'].tolist())
-                from datetime import datetime
-                embedding_data['embedding_vector'] = embedding_response.embeddings
-                embedding_data['embedding_generated_at'] = datetime.now()
-                conn.register('embedding_data', embedding_data)
-                
-                # Join embeddings using Relation API and create table
-                final_result = (transformed
-                    .join(conn.table('embedding_data'), 'neighborhood_id', how='left')
-                    .project("""
-                        neighborhood_id,
-                        name,
-                        city,
-                        state,
-                        location,
-                        population,
-                        walkability_score,
-                        school_rating,
-                        demographics,
-                        description,
-                        amenities,
-                        lifestyle_tags,
-                        wikipedia_correlations,
-                        embedding_data.embedding_text,
-                        embedding_data.embedding_vector,
-                        embedding_data.embedding_generated_at
-                    """))
-                
-                final_result.create(output_table)
-                conn.unregister('embedding_data')
-            else:
-                # No embeddings generated - add NULL columns
-                no_embeddings = transformed.project("""
-                    *,
-                    CAST(NULL AS DOUBLE[1024]) as embedding_vector,
-                    CAST(NULL AS TIMESTAMP) as embedding_generated_at
-                """)
-                no_embeddings.create(output_table)
-        else:
-            # No embedding provider - add NULL embedding columns
-            no_embeddings = transformed.project("""
-                *,
-                CAST(NULL AS DOUBLE[1024]) as embedding_vector,
-                CAST(NULL AS TIMESTAMP) as embedding_generated_at
-            """)
-            no_embeddings.create(output_table)
+        # Get embedding text data directly from DuckDB without pandas conversion
+        embedding_rows = transformed.project("neighborhood_id, embedding_text").fetchall()
+        
+        # Extract data into separate lists
+        neighborhood_ids = [row[0] for row in embedding_rows]
+        texts = [row[1] for row in embedding_rows]
+        
+        # Generate embeddings using List[str] interface
+        embedding_response = self.embedding_provider.generate_embeddings(texts)
+        
+        # Create temporary table with embeddings
+        current_timestamp = datetime.now()
+        
+        # Build VALUES clause for embedding data
+        values_clause = []
+        for nid, text, embedding in zip(neighborhood_ids, texts, embedding_response.embeddings):
+            # Escape single quotes in text
+            escaped_text = text.replace("'", "''") if text else ''
+            # Format embedding vector as array literal
+            embedding_str = '[' + ','.join(str(v) for v in embedding) + ']'
+            values_clause.append(f"('{nid}', '{escaped_text}', {embedding_str}::DOUBLE[], TIMESTAMP '{current_timestamp}')")
+        
+        # Create embedding table
+        conn.execute(f"""
+            CREATE TABLE embedding_data AS
+            SELECT * FROM (
+                VALUES {','.join(values_clause)}
+            ) AS t(neighborhood_id, embedding_text, embedding_vector, embedding_generated_at)
+        """)
+        
+        # Join embeddings and create final table
+        final_result = (transformed
+            .join(conn.table('embedding_data'), 'neighborhood_id', how='left')
+            .project("""
+                neighborhood_id,
+                name,
+                city,
+                state,
+                county,
+                city_id,
+                county_id,
+                state_id,
+                location,
+                population,
+                walkability_score,
+                school_rating,
+                demographics,
+                description,
+                amenities,
+                lifestyle_tags,
+                wikipedia_page_id,
+                embedding_data.embedding_text,
+                embedding_data.embedding_vector,
+                embedding_data.embedding_generated_at
+            """))
+        
+        final_result.create(output_table)
+        
+        # Clean up temporary table
+        conn.execute("DROP TABLE IF EXISTS embedding_data")
         
         self.logger.info(f"Transformed neighborhoods from {input_table} to {output_table}")

@@ -14,6 +14,7 @@ data_sources:
     - real_estate_data/neighborhoods_sf.json
     - real_estate_data/neighborhoods_pc.json
   wikipedia_db_path: data/wikipedia/wikipedia.db
+  locations_file: real_estate_data/locations.json
 
 # Data Processing Configuration  
 data:

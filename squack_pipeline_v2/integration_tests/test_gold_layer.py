@@ -13,13 +13,17 @@ from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.bronze.property import PropertyBronzeIngester
 from squack_pipeline_v2.bronze.neighborhood import NeighborhoodBronzeIngester
 from squack_pipeline_v2.bronze.wikipedia import WikipediaBronzeIngester
+from squack_pipeline_v2.bronze.location import LocationBronzeIngester
 from squack_pipeline_v2.silver.property import PropertySilverTransformer
 from squack_pipeline_v2.silver.neighborhood import NeighborhoodSilverTransformer
 from squack_pipeline_v2.silver.wikipedia import WikipediaSilverTransformer
+from squack_pipeline_v2.silver.location import LocationSilverTransformer
 from squack_pipeline_v2.gold.property import PropertyGoldEnricher
 from squack_pipeline_v2.gold.neighborhood import NeighborhoodGoldEnricher
 from squack_pipeline_v2.gold.wikipedia import WikipediaGoldEnricher
+from squack_pipeline_v2.gold.location import LocationGoldEnricher
 from squack_pipeline_v2.gold.base import GoldMetadata
+from squack_pipeline_v2.integration_tests.test_utils import MockEmbeddingProvider
 
 
 def test_gold_property_enrichment():
@@ -35,9 +39,38 @@ def test_gold_property_enrichment():
         print(f"Warning: {property_file} not found, skipping property test")
         return
     
-    # Create Bronze → Silver → Gold pipeline
+    # Setup required data first
+    location_file = Path("real_estate_data/locations.json")
+    neighborhood_file = Path("real_estate_data/neighborhoods_sf.json")
+    wiki_file = Path("real_estate_data/wikipedia_sf.json")
+    
+    # Setup location data
+    if location_file.exists():
+        location_ingester = LocationBronzeIngester(settings, conn_manager)
+        location_ingester.ingest("bronze_locations", location_file, sample_size=100)
+        location_transformer = LocationSilverTransformer(settings, conn_manager)
+        location_transformer.transform("bronze_locations", "silver_locations")
+    
+    # Setup neighborhood data
+    if neighborhood_file.exists():
+        neighborhood_ingester = NeighborhoodBronzeIngester(settings, conn_manager)
+        neighborhood_ingester.ingest("bronze_neighborhoods", neighborhood_file, sample_size=10)
+        mock_embedding_provider = MockEmbeddingProvider()
+        neighborhood_transformer = NeighborhoodSilverTransformer(settings, conn_manager, mock_embedding_provider)
+        neighborhood_transformer.transform("bronze_neighborhoods", "silver_neighborhoods")
+    
+    # Setup wikipedia data
+    if wiki_file.exists():
+        wiki_ingester = WikipediaBronzeIngester(settings, conn_manager)
+        wiki_ingester.ingest("bronze_wikipedia", wiki_file, sample_size=10)
+        mock_embedding_provider = MockEmbeddingProvider()
+        wiki_transformer = WikipediaSilverTransformer(settings, conn_manager, mock_embedding_provider)
+        wiki_transformer.transform("bronze_wikipedia", "silver_wikipedia")
+    
+    # Create Bronze → Silver → Gold pipeline for properties
     bronze_ingester = PropertyBronzeIngester(settings, conn_manager)
-    silver_transformer = PropertySilverTransformer(settings, conn_manager)
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = PropertySilverTransformer(settings, conn_manager, mock_embedding_provider)
     gold_enricher = PropertyGoldEnricher(settings, conn_manager)
     
     # Bronze
@@ -105,9 +138,29 @@ def test_gold_neighborhood_enrichment():
         print(f"Warning: {neighborhood_file} not found, skipping neighborhood test")
         return
     
-    # Create Bronze → Silver → Gold pipeline
+    # Setup required data first
+    location_file = Path("real_estate_data/locations.json")
+    wiki_file = Path("real_estate_data/wikipedia_sf.json")
+    
+    # Setup location data
+    if location_file.exists():
+        location_ingester = LocationBronzeIngester(settings, conn_manager)
+        location_ingester.ingest("bronze_locations", location_file, sample_size=100)
+        location_transformer = LocationSilverTransformer(settings, conn_manager)
+        location_transformer.transform("bronze_locations", "silver_locations")
+    
+    # Setup wikipedia data
+    if wiki_file.exists():
+        wiki_ingester = WikipediaBronzeIngester(settings, conn_manager)
+        wiki_ingester.ingest("bronze_wikipedia", wiki_file, sample_size=10)
+        mock_embedding_provider = MockEmbeddingProvider()
+        wiki_transformer = WikipediaSilverTransformer(settings, conn_manager, mock_embedding_provider)
+        wiki_transformer.transform("bronze_wikipedia", "silver_wikipedia")
+    
+    # Create Bronze → Silver → Gold pipeline for neighborhoods
     bronze_ingester = NeighborhoodBronzeIngester(settings, conn_manager)
-    silver_transformer = NeighborhoodSilverTransformer(settings, conn_manager)
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = NeighborhoodSilverTransformer(settings, conn_manager, mock_embedding_provider)
     gold_enricher = NeighborhoodGoldEnricher(settings, conn_manager)
     
     # Bronze
@@ -168,20 +221,21 @@ def test_gold_wikipedia_enrichment():
     settings = PipelineSettings()
     conn_manager = DuckDBConnectionManager(settings.duckdb)
     
-    wiki_db = Path("data/wikipedia/wikipedia.db")
-    if not wiki_db.exists():
-        print(f"Warning: {wiki_db} not found, skipping Wikipedia test")
+    wiki_file = Path("real_estate_data/wikipedia_sf.json")
+    if not wiki_file.exists():
+        print(f"Warning: {wiki_file} not found, skipping Wikipedia test")
         return
     
     # Create Bronze → Silver → Gold pipeline
     bronze_ingester = WikipediaBronzeIngester(settings, conn_manager)
-    silver_transformer = WikipediaSilverTransformer(settings, conn_manager)
+    mock_embedding_provider = MockEmbeddingProvider()
+    silver_transformer = WikipediaSilverTransformer(settings, conn_manager, mock_embedding_provider)
     gold_enricher = WikipediaGoldEnricher(settings, conn_manager)
     
     # Bronze
     bronze_ingester.ingest(
         table_name="test_bronze_wikipedia",
-        db_path=wiki_db,
+        file_path=wiki_file,
         sample_size=10
     )
     
@@ -227,28 +281,130 @@ def test_gold_wikipedia_enrichment():
     print("✓ Wikipedia Gold enrichment test passed")
 
 
-def test_relation_api_usage():
-    """Test that Gold layer creates views properly."""
-    print("\n=== Testing Gold Layer View Creation ===")
+def test_gold_location_enrichment():
+    """Test location Gold enrichment."""
+    print("\n=== Testing Location Gold Enrichment ===")
     
-    # Check that enrichers create views not tables
+    # Setup
+    settings = PipelineSettings()
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
+    
+    location_file = Path("real_estate_data/locations.json")
+    if not location_file.exists():
+        print(f"Warning: {location_file} not found, skipping location test")
+        return
+    
+    # Create Bronze → Silver → Gold pipeline
+    bronze_ingester = LocationBronzeIngester(settings, conn_manager)
+    silver_transformer = LocationSilverTransformer(settings, conn_manager)
+    gold_enricher = LocationGoldEnricher(settings, conn_manager)
+    
+    # Bronze
+    bronze_ingester.ingest(
+        table_name="test_bronze_locations",
+        file_path=location_file,
+        sample_size=20
+    )
+    
+    # Silver
+    silver_transformer.transform(
+        input_table="test_bronze_locations",
+        output_table="test_silver_locations"
+    )
+    
+    # Gold
+    result = gold_enricher.enrich(
+        input_table="test_silver_locations",
+        output_table="test_gold_locations"
+    )
+    
+    # Validate Gold result
+    assert isinstance(result, GoldMetadata), "Should return GoldMetadata"
+    assert result.entity_type == "location"
+    assert result.input_count == 20
+    assert result.output_count == 20
+    
+    # Verify enrichments
+    expected_enrichments = ["hierarchical_ids", "graph_node_ids", "parent_relationships"]
+    for enrichment in expected_enrichments:
+        assert enrichment in result.enrichments_applied, f"Should have {enrichment}"
+    
+    # Verify Gold view structure
+    conn = conn_manager.get_connection()
+    
+    # Check it's a view not a table
+    view_check = conn.execute(
+        "SELECT COUNT(*) FROM information_schema.views WHERE table_schema = ? AND table_name = ?",
+        ["main", "test_gold_locations"]
+    ).fetchone()
+    assert view_check[0] == 1, "Gold locations should be a view"
+    
+    # Verify view has hierarchical data
+    sample = conn.sql("SELECT * FROM test_gold_locations LIMIT 1").df()
+    required_columns = [
+        'neighborhood', 'city', 'county', 'state', 'zip_code',
+        'neighborhood_id', 'city_id', 'county_id', 'state_id',
+        'location_type', 'graph_node_id', 'parent_location_id'
+    ]
+    
+    for col in required_columns:
+        assert col in sample.columns, f"Missing required column: {col}"
+    
+    # Verify hierarchy works
+    hierarchy = conn.sql("""
+        SELECT 
+            COUNT(DISTINCT city_id) as cities,
+            COUNT(DISTINCT county_id) as counties,
+            COUNT(DISTINCT state_id) as states
+        FROM test_gold_locations
+        WHERE city_id IS NOT NULL
+    """).df()
+    
+    assert hierarchy['cities'].iloc[0] > 0, "Should have city IDs"
+    assert hierarchy['counties'].iloc[0] > 0, "Should have county IDs"
+    assert hierarchy['states'].iloc[0] > 0, "Should have state IDs"
+    
+    # Cleanup
+    conn_manager.drop_table("test_bronze_locations")
+    conn_manager.drop_table("test_silver_locations")
+    conn_manager.drop_view("test_gold_locations")
+    
+    print(f"✓ Created location view with {result.output_count} records")
+    print(f"✓ Applied enrichments: {', '.join(result.enrichments_applied)}")
+    print(f"✓ Geographic hierarchy: {hierarchy['cities'].iloc[0]} cities, "
+          f"{hierarchy['counties'].iloc[0]} counties, {hierarchy['states'].iloc[0]} states")
+    print("✓ Location Gold enrichment test passed")
+
+
+def test_relation_api_usage():
+    """Test that Gold layer uses DuckDB Relation API properly."""
+    print("\n=== Testing Gold Layer Relation API Usage ===")
+    
+    # Check that enrichers use Relation API for view creation
     import inspect
     from squack_pipeline_v2.gold import property, neighborhood, wikipedia
     
     # Check property enricher source
     property_source = inspect.getsource(property.PropertyGoldEnricher._create_enriched_view)
-    assert "CREATE OR REPLACE VIEW" in property_source, "Property enricher should create views"
-    assert "conn.execute" in property_source, "Should execute CREATE VIEW statement"
+    assert "conn.table" in property_source, "Property enricher should use Relation API"
+    assert ".create_view" in property_source, "Should use create_view from Relation API"
+    assert ".project" in property_source, "Should use project method"
+    assert ".filter" in property_source, "Should use filter method"
+    assert ".join" in property_source, "Should use join method"
     
     # Check neighborhood enricher source
     neighborhood_source = inspect.getsource(neighborhood.NeighborhoodGoldEnricher._create_enriched_view)
-    assert "CREATE OR REPLACE VIEW" in neighborhood_source, "Neighborhood enricher should create views"
-    assert "conn.execute" in neighborhood_source, "Should execute CREATE VIEW statement"
+    assert "conn.table" in neighborhood_source, "Neighborhood enricher should use Relation API"
+    assert ".create_view" in neighborhood_source, "Should use create_view from Relation API"
+    assert ".project" in neighborhood_source, "Should use project method"
+    assert ".filter" in neighborhood_source, "Should use filter method"
     
     # Check wikipedia enricher source
     wikipedia_source = inspect.getsource(wikipedia.WikipediaGoldEnricher._create_enriched_view)
-    assert "CREATE OR REPLACE VIEW" in wikipedia_source, "Wikipedia enricher should create views"
-    assert "conn.execute" in wikipedia_source, "Should execute CREATE VIEW statement"
+    assert "conn.table" in wikipedia_source, "Wikipedia enricher should use Relation API"
+    assert ".create_view" in wikipedia_source, "Should use create_view from Relation API"
+    assert ".project" in wikipedia_source, "Should use project method"
+    assert ".filter" in wikipedia_source, "Should use filter method"
     
     print("✓ Gold layer view creation test passed")
 
@@ -264,9 +420,38 @@ def test_medallion_architecture():
     property_file = Path("real_estate_data/properties_sf.json")
     
     if property_file.exists():
+        # Setup required data first
+        location_file = Path("real_estate_data/locations.json")
+        neighborhood_file = Path("real_estate_data/neighborhoods_sf.json")
+        wiki_file = Path("real_estate_data/wikipedia_sf.json")
+        
+        # Setup location data
+        if location_file.exists():
+            location_ingester = LocationBronzeIngester(settings, conn_manager)
+            location_ingester.ingest("bronze_locations", location_file, sample_size=100)
+            location_transformer = LocationSilverTransformer(settings, conn_manager)
+            location_transformer.transform("bronze_locations", "silver_locations")
+        
+        # Setup neighborhood data
+        if neighborhood_file.exists():
+            neighborhood_ingester = NeighborhoodBronzeIngester(settings, conn_manager)
+            neighborhood_ingester.ingest("bronze_neighborhoods", neighborhood_file, sample_size=10)
+            mock_embedding_provider = MockEmbeddingProvider()
+            neighborhood_transformer = NeighborhoodSilverTransformer(settings, conn_manager, mock_embedding_provider)
+            neighborhood_transformer.transform("bronze_neighborhoods", "silver_neighborhoods")
+        
+        # Setup wikipedia data
+        if wiki_file.exists():
+            wiki_ingester = WikipediaBronzeIngester(settings, conn_manager)
+            wiki_ingester.ingest("bronze_wikipedia", wiki_file, sample_size=10)
+            mock_embedding_provider = MockEmbeddingProvider()
+            wiki_transformer = WikipediaSilverTransformer(settings, conn_manager, mock_embedding_provider)
+            wiki_transformer.transform("bronze_wikipedia", "silver_wikipedia")
+        
         # Create Bronze → Silver → Gold pipeline
         bronze_ingester = PropertyBronzeIngester(settings, conn_manager)
-        silver_transformer = PropertySilverTransformer(settings, conn_manager)
+        mock_embedding_provider = MockEmbeddingProvider()
+        silver_transformer = PropertySilverTransformer(settings, conn_manager, mock_embedding_provider)
         gold_enricher = PropertyGoldEnricher(settings, conn_manager)
         
         # Bronze (raw)
@@ -334,8 +519,6 @@ def test_clean_pydantic_models():
     """Test that Gold layer uses clean Pydantic models."""
     print("\n=== Testing Clean Pydantic Models ===")
     
-    from squack_pipeline_v2.gold.base import GoldMetadata
-    
     # Test GoldMetadata model
     metadata = GoldMetadata(
         input_table="silver_test",
@@ -380,9 +563,9 @@ def main():
         test_gold_property_enrichment()
         test_gold_neighborhood_enrichment()
         test_gold_wikipedia_enrichment()
+        test_gold_location_enrichment()
         test_relation_api_usage()
         test_medallion_architecture()
-        test_no_tableidentifier()
         test_clean_pydantic_models()
         
         print("\n" + "="*60)

@@ -36,13 +36,11 @@ class WikipediaGoldEnricher(GoldEnricher):
         # Get connection
         conn = self.connection_manager.get_connection()
         
-        # Create Gold view with business-ready enrichments
-        safe_input = DuckDBConnectionManager.safe_identifier(input_table)
-        safe_output = DuckDBConnectionManager.safe_identifier(output_table)
+        # Use DuckDB Relation API for type-safe, lazy-evaluated operations
+        silver_wikipedia = conn.table(input_table).set_alias("w")
         
-        query = f"""
-        CREATE OR REPLACE VIEW {safe_output} AS
-            SELECT 
+        # Project enriched columns using Relation API
+        enriched = silver_wikipedia.project(""" 
                 -- Core identifiers (unchanged)
                 page_id,
                 title,
@@ -180,14 +178,17 @@ class WikipediaGoldEnricher(GoldEnricher):
                 embedding_vector,
                 embedding_generated_at
                 
-            FROM {safe_input}
-            WHERE page_id IS NOT NULL
+        """)
+        
+        # Apply filters (use column names without alias after projection)
+        filtered = enriched.filter("""
+            page_id IS NOT NULL
             AND title IS NOT NULL
             AND LENGTH(title) > 0
-        """
+        """)
         
-        # Execute the CREATE VIEW statement
-        conn.execute(query)
+        # Create view using Relation API
+        filtered.create_view(output_table)
         
         # Track enrichments applied
         self.enrichments_applied.extend([

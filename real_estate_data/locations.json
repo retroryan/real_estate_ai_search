@@ -1708,5 +1708,19 @@
     "county": "Wayne County",
     "state": "Utah",
     "zip_code": "84101"
+  },
+  {
+    "neighborhood": "Creekbridge",
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "CA",
+    "zip_code": "93901"
+  },
+  {
+    "neighborhood": "Oldtown Salinas",
+    "city": "Salinas",
+    "county": "Monterey",
+    "state": "CA",
+    "zip_code": "93901"
   }
 ]
