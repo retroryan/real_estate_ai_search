@@ -599,8 +599,8 @@ class Neo4jWriter:
         
         cypher = """
         UNWIND $rels AS rel
-        MATCH (p:Property {listing_id: rel.from_id})
-        MATCH (n:Neighborhood {neighborhood_id: rel.to_id})
+        MATCH (p:Property {listing_id: REPLACE(rel.from_id, 'property:', '')})
+        MATCH (n:Neighborhood {neighborhood_id: REPLACE(rel.to_id, 'neighborhood:', '')})
         MERGE (p)-[:LOCATED_IN]->(n)
         """
         
@@ -638,8 +638,8 @@ class Neo4jWriter:
         
         cypher = """
         UNWIND $rels AS rel
-        MATCH (p:Property {listing_id: rel.from_id})
-        MATCH (f:Feature {feature_id: rel.to_id})
+        MATCH (p:Property {listing_id: REPLACE(rel.from_id, 'property:', '')})
+        MATCH (f:Feature {feature_id: REPLACE(rel.to_id, 'feature:', '')})
         MERGE (p)-[:HAS_FEATURE]->(f)
         """
         
@@ -794,8 +794,8 @@ class Neo4jWriter:
         
         cypher = """
         UNWIND $rels AS rel
-        MATCH (p:Property {listing_id: rel.from_id})
-        MATCH (pt:PropertyType {property_type_id: rel.to_id})
+        MATCH (p:Property {listing_id: REPLACE(rel.from_id, 'property:', '')})
+        MATCH (pt:PropertyType {property_type_id: REPLACE(rel.to_id, 'type:', '')})
         MERGE (p)-[:OF_TYPE]->(pt)
         """
         
@@ -833,7 +833,7 @@ class Neo4jWriter:
         
         cypher = """
         UNWIND $rels AS rel
-        MATCH (p:Property {listing_id: rel.from_id})
+        MATCH (p:Property {listing_id: REPLACE(rel.from_id, 'property:', '')})
         MATCH (pr:PriceRange {price_range_id: rel.to_id})
         MERGE (p)-[:IN_PRICE_RANGE]->(pr)
         """

@@ -213,7 +213,7 @@ class WikipediaInput(BaseModel):
     page_id: int
     title: str
     url: str = ""
-    article_filename: str = ""
+    article_filename: Optional[str] = ""
     long_summary: str = ""
     short_summary: str = ""
     full_content: str = ""
@@ -221,8 +221,8 @@ class WikipediaInput(BaseModel):
     content_loaded: bool = False
     content_loaded_at: Optional[datetime] = None  # Can be None
     
-    # Categories is JSON string from DB
-    categories: str = ""
+    # Categories is JSON string from DB (can be NULL)
+    categories: Optional[str] = None
     
     # key_topics is always a list (empty if no topics)
     key_topics: List[str] = Field(default_factory=list)
@@ -401,7 +401,7 @@ class WikipediaTransformer:
             page_id=str(input_data.page_id),  # int -> string for ES
             title=input_data.title,
             url=input_data.url,
-            article_filename=input_data.article_filename,
+            article_filename=input_data.article_filename or "",
             long_summary=input_data.long_summary,
             short_summary=input_data.short_summary,
             full_content=input_data.full_content,

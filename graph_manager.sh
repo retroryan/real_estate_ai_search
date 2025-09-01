@@ -460,10 +460,11 @@ driver = GraphDatabase.driver('$NEO4J_URI', auth=('$NEO4J_USER', os.getenv('NEO4
 print('\\n✨ Most common property features (by occurrence count)...')
 with driver.session() as session:
     result = session.run('''
-        MATCH (f:Feature)
-        WHERE f.occurrence_count > 0
-        RETURN f.feature_name as feature, f.occurrence_count as count
-        ORDER BY count DESC
+        MATCH (p:Property) 
+        WHERE p.features IS NOT NULL 
+        UNWIND p.features as feature 
+        RETURN feature, COUNT(*) as count 
+        ORDER BY count DESC 
         LIMIT 10
     ''')
     
@@ -475,13 +476,14 @@ with driver.session() as session:
     result = session.run('''
         MATCH (p:Property)
         WHERE p.features IS NOT NULL
-        RETURN p.listing_id as id, SIZE(p.features) as feature_count
+        RETURN p.listing_id as id, SIZE(p.features) as feature_count, p.features[0..3] as sample_features
         ORDER BY feature_count DESC
         LIMIT 5
     ''')
     
     for record in result:
-        print(f'  {record[\"id\"]}: {record[\"feature_count\"]} features')
+        sample = ', '.join(record['sample_features'][:3]) + ('...' if len(record['sample_features']) > 3 else '')
+        print(f'  {record[\"id\"]}: {record[\"feature_count\"]} features (e.g., {sample})')
 
 driver.close()
 "
