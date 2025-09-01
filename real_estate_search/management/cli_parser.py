@@ -54,8 +54,8 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             'demo_number',
             type=int,
             nargs='?',
-            choices=range(1, 16),
-            help='Demo query number to run (1-15)'
+            choices=range(1, 28),
+            help='Demo query number to run (1-27)'
         )
         
         parser.add_argument(
@@ -168,7 +168,7 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
         # Demo command specific validation
         if args.command == CommandType.DEMO:
             if not args.list and not args.demo_number:
-                return "Please specify a demo number (1-15) or use --list to see available demos"
+                return "Please specify a demo number (1-27) or use --list to see available demos"
         
         # Clear flag only valid for setup-indices
         if args.clear and args.command != CommandType.SETUP_INDICES:
@@ -182,23 +182,16 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
         if args.list and args.command != CommandType.DEMO:
             return "--list flag is only valid for demo command"
         
-        # Verbose flag valid for demo and enrich-wikipedia commands
-        if args.verbose and args.command not in [CommandType.DEMO, CommandType.ENRICH_WIKIPEDIA]:
-            return "--verbose flag is only valid for demo and enrich-wikipedia commands"
+        # Verbose flag valid for demo command
+        if args.verbose and args.command != CommandType.DEMO:
+            return "--verbose flag is only valid for demo command"
         
         # Demo number only valid for demo command
         if args.demo_number and args.command != CommandType.DEMO:
             return "Demo number is only valid for demo command"
         
-        # Wikipedia enrichment specific validation
-        if args.command == CommandType.ENRICH_WIKIPEDIA:
-            if args.batch_size and (args.batch_size < 1 or args.batch_size > 500):
-                return "Batch size must be between 1 and 500"
-            if args.max_documents and args.max_documents < 1:
-                return "Max documents must be greater than 0"
-        else:
-            # These flags only valid for enrich-wikipedia
-            if args.dry_run:
-                return "--dry-run flag is only valid for enrich-wikipedia command"
+        # Check for invalid flags
+        if args.dry_run:
+            return "--dry-run flag is not valid for this command"
         
         return None

@@ -207,8 +207,7 @@ class HybridSearchEngine:
             "field": "embedding",
             "query_vector": query_vector,
             "k": min(params.size * 5, 100),
-            "num_candidates": min(params.size * 10, 200),
-            "boost": params.vector_boost
+            "num_candidates": min(params.size * 10, 200)
         }
         
         # Add filters to vector search if they exist

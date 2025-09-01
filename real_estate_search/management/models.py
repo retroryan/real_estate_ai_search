@@ -15,7 +15,9 @@ class CommandType(str, Enum):
     LIST_INDICES = "list-indices"
     DELETE_TEST_INDICES = "delete-test-indices"
     DEMO = "demo"
-    ENRICH_WIKIPEDIA = "enrich-wikipedia"
+    HEALTH_CHECK = "health-check"
+    STATS = "stats"
+    SAMPLE_QUERY = "sample-query"
 
 
 class LogLevel(str, Enum):
@@ -115,7 +117,7 @@ class WikipediaEnrichmentResult(BaseModel):
 class CLIArguments(BaseModel):
     """Parsed CLI arguments."""
     command: CommandType
-    demo_number: Optional[int] = Field(default=None, ge=1, le=15)
+    demo_number: Optional[int] = Field(default=None, ge=1, le=27)
     clear: bool = False
     list: bool = False
     verbose: bool = False

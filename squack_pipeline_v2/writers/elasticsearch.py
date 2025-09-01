@@ -96,6 +96,7 @@ class NeighborhoodDocument(BaseModel):
     amenities: List[str] = Field(default_factory=list)
     lifestyle_tags: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
+    wikipedia_correlations: Optional[Dict[str, Any]] = None
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
     embedding_dimension: int = 0
@@ -198,6 +199,8 @@ class NeighborhoodInput(BaseModel):
     amenities: List[str] = Field(default_factory=list)
     lifestyle_tags: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
+    wikipedia_page_id: Optional[int] = None
+    wikipedia_correlations: Optional[Dict[str, Any]] = None
     
     # Embedding fields from Gold layer (medallion architecture)
     embedding_vector: Tuple[float, ...] = tuple()  # DuckDB returns tuple!
@@ -371,6 +374,7 @@ class NeighborhoodTransformer:
             amenities=input_data.amenities,  # Already list from Gold layer
             lifestyle_tags=input_data.lifestyle_tags,  # Already list from Gold layer
             demographics=input_data.demographics,
+            wikipedia_correlations=input_data.wikipedia_correlations,
             embedding=embedding_list,  # tuple -> list for ES
             embedding_model=self.embedding_model,
             embedding_dimension=len(embedding_list) if embedding_list else 0,

@@ -18,7 +18,9 @@ from .commands import (
     ListIndicesCommand,
     DeleteTestIndicesCommand,
     DemoCommand,
-    EnrichWikipediaCommand
+    HealthCheckCommand,
+    StatsCommand,
+    SampleQueryCommand
 )
 
 
@@ -52,7 +54,9 @@ def get_command_class(command_type: CommandType) -> Type[BaseCommand]:
         CommandType.LIST_INDICES: ListIndicesCommand,
         CommandType.DELETE_TEST_INDICES: DeleteTestIndicesCommand,
         CommandType.DEMO: DemoCommand,
-        CommandType.ENRICH_WIKIPEDIA: EnrichWikipediaCommand
+        CommandType.HEALTH_CHECK: HealthCheckCommand,
+        CommandType.STATS: StatsCommand,
+        CommandType.SAMPLE_QUERY: SampleQueryCommand
     }
     
     return command_map[command_type]

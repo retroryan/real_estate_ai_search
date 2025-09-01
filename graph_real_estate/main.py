@@ -44,7 +44,7 @@ Examples:
     
     parser.add_argument(
         "action",
-        choices=["init", "clear", "stats", "test", "build-relationships", "demo"],
+        choices=["init", "clear", "stats", "stats-detailed", "test", "build-relationships", "demo", "sample-query"],
         help="Action to perform"
     )
     
@@ -118,19 +118,25 @@ def main():
                 sys.exit(1)
         
         elif args.action == "clear":
-            # Clear database
-            response = input("Are you sure you want to clear the entire database? (yes/no): ")
-            if response.lower() == 'yes':
-                initializer.clear_database()
-                logger.info("✅ Database cleared successfully")
-                sys.exit(0)
-            else:
-                logger.info("Clear operation cancelled")
-                sys.exit(0)
+            # Clear database completely
+            logger.info("Clearing database...")
+            initializer.clear_database_complete()
+            logger.info("✅ Database cleared successfully")
+            sys.exit(0)
         
         elif args.action == "stats":
             # Show database statistics
             initializer.print_stats()
+            sys.exit(0)
+        
+        elif args.action == "stats-detailed":
+            # Show detailed database statistics
+            initializer.show_detailed_stats()
+            sys.exit(0)
+        
+        elif args.action == "sample-query":
+            # Run sample query
+            initializer.run_sample_query()
             sys.exit(0)
         
         elif args.action == "build-relationships":

@@ -24,6 +24,19 @@ from .semantic_query_search import (
 from .rich_listing_demo import demo_rich_property_listing
 from .hybrid_search import demo_hybrid_search
 from .location_understanding import demo_location_understanding
+from .location_aware_demos import (
+    demo_location_aware_waterfront_luxury,
+    demo_location_aware_family_schools,
+    demo_location_aware_urban_modern,
+    demo_location_aware_recreation_mountain,
+    demo_location_aware_historic_urban,
+    demo_location_aware_beach_proximity,
+    demo_location_aware_investment_market,
+    demo_location_aware_luxury_urban_views,
+    demo_location_aware_suburban_architecture,
+    demo_location_aware_neighborhood_character,
+    demo_location_aware_search_showcase
+)
 
 __all__ = [
     'demo_basic_property_search',
@@ -41,5 +54,16 @@ __all__ = [
     'demo_semantic_vs_keyword_comparison',
     'demo_rich_property_listing',
     'demo_hybrid_search',
-    'demo_location_understanding'
+    'demo_location_understanding',
+    'demo_location_aware_waterfront_luxury',
+    'demo_location_aware_family_schools',
+    'demo_location_aware_urban_modern',
+    'demo_location_aware_recreation_mountain',
+    'demo_location_aware_historic_urban',
+    'demo_location_aware_beach_proximity',
+    'demo_location_aware_investment_market',
+    'demo_location_aware_luxury_urban_views',
+    'demo_location_aware_suburban_architecture',
+    'demo_location_aware_neighborhood_character',
+    'demo_location_aware_search_showcase'
 ]

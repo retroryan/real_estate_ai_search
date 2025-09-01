@@ -774,6 +774,64 @@ class GoldGraphBuilder:
         
         return table_name
     
+    @log_stage("Graph Builder: IN_ZIP_CODE relationships")
+    def build_in_zip_code_relationships(self) -> str:
+        """Build IN_ZIP_CODE relationships (Property -> ZipCode).
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_rel_in_zip_code"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            'property:' || listing_id as from_id,
+            'zip:' || address.zip_code as to_id,
+            'IN_ZIP_CODE' as relationship_type
+        FROM gold_properties
+        WHERE address.zip_code IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} IN_ZIP_CODE relationships")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: Neighborhood IN_ZIP_CODE relationships")
+    def build_neighborhood_in_zip_relationships(self) -> str:
+        """Build IN_ZIP_CODE relationships (Neighborhood -> ZipCode).
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_rel_neighborhood_in_zip"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Derive neighborhood to ZIP relationships from properties
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            'neighborhood:' || p.neighborhood_id as from_id,
+            'zip:' || p.address.zip_code as to_id,
+            'IN_ZIP_CODE' as relationship_type
+        FROM gold_properties p
+        WHERE p.neighborhood_id IS NOT NULL 
+        AND p.address.zip_code IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} Neighborhood IN_ZIP_CODE relationships")
+        
+        return table_name
+    
     @log_stage("Graph Builder: Geographic hierarchy relationships")
     def build_geographic_hierarchy_relationships(self) -> str:
         """Build geographic hierarchy relationships from location data.
@@ -881,10 +939,12 @@ class GoldGraphBuilder:
         metadata.relationship_tables.append(self.build_has_feature_relationships())
         metadata.relationship_tables.append(self.build_of_type_relationships())
         metadata.relationship_tables.append(self.build_in_price_range_relationships())
+        metadata.relationship_tables.append(self.build_in_zip_code_relationships())
         
         # Neighborhood relationships  
         metadata.relationship_tables.append(self.build_part_of_relationships())
         metadata.relationship_tables.append(self.build_in_county_relationships())
+        metadata.relationship_tables.append(self.build_neighborhood_in_zip_relationships())
         
         # Wikipedia relationships
         metadata.relationship_tables.append(self.build_describes_relationships())

@@ -852,6 +852,132 @@ class Neo4jWriter:
             duration_seconds=duration
         )
     
+    @log_stage("Neo4j: Write geographic hierarchy relationships")
+    def write_geographic_hierarchy_relationships(self) -> RelationshipWriteResult:
+        """Write geographic hierarchy relationships (IN_CITY, IN_COUNTY, IN_STATE).
+        
+        Reads from the unified geographic hierarchy table.
+        """
+        table_name = "gold_graph_geographic_hierarchy"
+        start_time = datetime.now()
+        
+        if not self.connection_manager.table_exists(table_name):
+            self.logger.warning(f"Table {table_name} does not exist")
+            return RelationshipWriteResult(
+                relationship_type="GEOGRAPHIC_HIERARCHY",
+                table_name=table_name,
+                records_read=0,
+                relationships_created=0,
+                duration_seconds=0.0
+            )
+        
+        records = self._get_records_from_table(table_name)
+        
+        # Write relationships dynamically based on relationship_type
+        total_created = 0
+        with self.driver.session() as session:
+            for rel_type in ['IN_CITY', 'IN_COUNTY', 'IN_STATE']:
+                type_records = [r for r in records if r['relationship_type'] == rel_type]
+                if type_records:
+                    cypher = f"""
+                    UNWIND $rels AS rel
+                    MATCH (from {{graph_node_id: rel.from_id}})
+                    MATCH (to {{graph_node_id: rel.to_id}})
+                    MERGE (from)-[:{rel_type}]->(to)
+                    """
+                    result = session.run(cypher, rels=type_records)
+                    summary = result.consume()
+                    total_created += summary.counters.relationships_created
+                    self.logger.info(f"Created {summary.counters.relationships_created} {rel_type} relationships")
+        
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        return RelationshipWriteResult(
+            relationship_type="GEOGRAPHIC_HIERARCHY",
+            table_name=table_name,
+            records_read=len(records),
+            relationships_created=total_created,
+            duration_seconds=duration
+        )
+    
+    @log_stage("Neo4j: Write IN_ZIP_CODE relationships")
+    def write_in_zip_code_relationships(self) -> RelationshipWriteResult:
+        """Write IN_ZIP_CODE relationships (Property -> ZipCode)."""
+        table_name = "gold_graph_rel_in_zip_code"
+        start_time = datetime.now()
+        
+        if not self.connection_manager.table_exists(table_name):
+            self.logger.warning(f"Table {table_name} does not exist")
+            return RelationshipWriteResult(
+                relationship_type="IN_ZIP_CODE",
+                table_name=table_name,
+                records_read=0,
+                relationships_created=0,
+                duration_seconds=0.0
+            )
+        
+        records = self._get_records_from_table(table_name)
+        
+        cypher = """
+        UNWIND $rels AS rel
+        MATCH (p:Property {graph_node_id: rel.from_id})
+        MATCH (z:ZipCode {graph_node_id: rel.to_id})
+        MERGE (p)-[:IN_ZIP_CODE]->(z)
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(cypher, rels=records)
+            summary = result.consume()
+        
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        return RelationshipWriteResult(
+            relationship_type="IN_ZIP_CODE",
+            table_name=table_name,
+            records_read=len(records),
+            relationships_created=summary.counters.relationships_created,
+            duration_seconds=duration
+        )
+    
+    @log_stage("Neo4j: Write Neighborhood IN_ZIP_CODE relationships")
+    def write_neighborhood_in_zip_relationships(self) -> RelationshipWriteResult:
+        """Write IN_ZIP_CODE relationships (Neighborhood -> ZipCode)."""
+        table_name = "gold_graph_rel_neighborhood_in_zip"
+        start_time = datetime.now()
+        
+        if not self.connection_manager.table_exists(table_name):
+            self.logger.warning(f"Table {table_name} does not exist")
+            return RelationshipWriteResult(
+                relationship_type="NEIGHBORHOOD_IN_ZIP",
+                table_name=table_name,
+                records_read=0,
+                relationships_created=0,
+                duration_seconds=0.0
+            )
+        
+        records = self._get_records_from_table(table_name)
+        
+        cypher = """
+        UNWIND $rels AS rel
+        MATCH (n:Neighborhood {graph_node_id: rel.from_id})
+        MATCH (z:ZipCode {graph_node_id: rel.to_id})
+        MERGE (n)-[:IN_ZIP_CODE]->(z)
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(cypher, rels=records)
+            summary = result.consume()
+        
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        return RelationshipWriteResult(
+            relationship_type="NEIGHBORHOOD_IN_ZIP",
+            table_name=table_name,
+            records_read=len(records),
+            relationships_created=summary.counters.relationships_created,
+            duration_seconds=duration
+        )
+    
     # ============= ORCHESTRATION METHODS =============
     
     @log_stage("Neo4j: Write all nodes")
@@ -905,7 +1031,10 @@ class Neo4jWriter:
             self.write_in_county_relationships,
             self.write_describes_relationships,
             self.write_of_type_relationships,
-            self.write_in_price_range_relationships
+            self.write_in_price_range_relationships,
+            self.write_in_zip_code_relationships,
+            self.write_neighborhood_in_zip_relationships,
+            self.write_geographic_hierarchy_relationships
         ]
         
         for writer in relationship_writers:

@@ -116,6 +116,7 @@ class NeighborhoodGoldEnricher(GoldEnricher):
             -- Nested objects and extracted fields
             n.demographics,
             n.wikipedia_page_id,
+            n.wikipedia_correlations,
             
             -- Text and arrays
             n.description,

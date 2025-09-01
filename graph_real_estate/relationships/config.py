@@ -89,6 +89,11 @@ class RelationshipConfig(BaseModel):
         description="Enable performance monitoring and timing"
     )
     
+    enable_similarity: bool = Field(
+        default=False,
+        description="Enable similarity relationship creation (requires embeddings)"
+    )
+    
     @validator('price_ranges')
     def validate_price_ranges(cls, v):
         """Validate price ranges format."""

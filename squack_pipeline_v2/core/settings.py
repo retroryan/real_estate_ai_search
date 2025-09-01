@@ -37,7 +37,7 @@ class DuckDBConfig(BaseModel):
     """DuckDB configuration."""
     memory_limit: str = Field(default="8GB")
     threads: int = Field(default=4)
-    database_file: str = Field(default="pipeline_v2.duckdb")
+    database_file: str = Field(default="squack_pipeline_v2/output/pipeline_v2.duckdb")
 
 
 class EmbeddingConfig(BaseModel):

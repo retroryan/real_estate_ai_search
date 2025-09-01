@@ -1,5 +1,9 @@
 """
 Geographic relationship builders for Neo4j.
+
+This module only handles complex geographic relationships not covered by the pipeline.
+Basic relationships (LOCATED_IN, IN_ZIP_CODE, IN_CITY, IN_COUNTY, IN_STATE) are 
+created by squack_pipeline_v2.
 """
 
 import logging
@@ -14,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeographicRelationshipBuilder:
-    """Handles creation of geographic relationships."""
+    """Handles creation of complex geographic relationships."""
     
     def __init__(self, driver: Driver, config: Optional[RelationshipConfig] = None):
         """
@@ -72,162 +76,16 @@ class GeographicRelationshipBuilder:
                 execution_time=execution_time
             )
     
-    def create_located_in(self) -> int:
-        """
-        Create LOCATED_IN relationships between Properties and Neighborhoods.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (p:Property)
-        WHERE p.neighborhood_id IS NOT NULL
-        MATCH (n:Neighborhood {neighborhood_id: p.neighborhood_id})
-        MERGE (p)-[:LOCATED_IN]->(n)
-        RETURN count(*) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "LOCATED_IN", 
-            query, 
-            "Properties -> Neighborhoods"
-        )
-        return result.count
-    
-    def create_in_zip_code(self) -> int:
-        """
-        Create IN_ZIP_CODE relationships between Properties and ZipCodes.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (p:Property)
-        WHERE p.zip_code IS NOT NULL
-        MATCH (z:ZipCode {id: p.zip_code})
-        MERGE (p)-[:IN_ZIP_CODE]->(z)
-        RETURN count(*) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "IN_ZIP_CODE", 
-            query, 
-            "Properties -> ZipCodes"
-        )
-        return result.count
-    
-    def create_neighborhood_in_zip(self) -> int:
-        """
-        Create IN_ZIP_CODE relationships between Neighborhoods and ZipCodes.
-        Uses Properties as intermediary to determine neighborhood -> zipcode mapping.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (n:Neighborhood)
-        WHERE n.neighborhood_id IS NOT NULL
-        MATCH (p:Property {neighborhood_id: n.neighborhood_id})
-        WHERE p.zip_code IS NOT NULL
-        MATCH (z:ZipCode {id: p.zip_code})
-        WITH n, z
-        MERGE (n)-[:IN_ZIP_CODE]->(z)
-        RETURN count(DISTINCT z) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "IN_ZIP_CODE", 
-            query, 
-            "Neighborhoods -> ZipCodes"
-        )
-        return result.count
-    
-    def create_zip_in_city(self) -> int:
-        """
-        Create IN_CITY relationships between ZipCodes and Cities.
-        Uses Properties to determine zipcode -> city mapping.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (z:ZipCode)
-        MATCH (p:Property)
-        WHERE (p.city_normalized IS NOT NULL OR p.city_standardized IS NOT NULL) 
-          AND p.state_standardized IS NOT NULL
-        MATCH (c:City)
-        WHERE (c.name = p.city_normalized OR c.name = p.city_standardized)
-          AND c.state = p.state_standardized
-        WITH z, c
-        MERGE (z)-[:IN_CITY]->(c)
-        RETURN count(DISTINCT c) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "IN_CITY", 
-            query, 
-            "ZipCodes -> Cities"
-        )
-        return result.count
-    
-    def create_city_in_county(self) -> int:
-        """
-        Create IN_COUNTY relationships between Cities and Counties.
-        Uses Properties to determine city -> county mapping.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (c:City)
-        MATCH (p:Property)
-        WHERE (p.city_normalized = c.name OR p.city_standardized = c.name)
-          AND p.state_standardized = c.state
-          AND p.county IS NOT NULL
-        MATCH (co:County {name: p.county, state: c.state})
-        WITH c, co
-        MERGE (c)-[:IN_COUNTY]->(co)
-        RETURN count(DISTINCT co) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "IN_COUNTY", 
-            query, 
-            "Cities -> Counties"
-        )
-        return result.count
-    
-    def create_county_in_state(self) -> int:
-        """
-        Create IN_STATE relationships between Counties and States.
-        
-        Returns:
-            Number of relationships created
-        """
-        query = """
-        MATCH (co:County)
-        WHERE co.state IS NOT NULL
-        MATCH (s:State {abbreviation: co.state})
-        MERGE (co)-[:IN_STATE]->(s)
-        RETURN count(*) as count
-        """
-        
-        result = self._execute_relationship_query(
-            "IN_STATE", 
-            query, 
-            "Counties -> States"
-        )
-        return result.count
-    
     def create_near(self) -> int:
         """
         Create NEAR relationships between Neighborhoods in the same city.
-        Uses the new geographic hierarchy through ZIP codes.
+        
+        This creates bidirectional NEAR relationships between neighborhoods
+        that share the same city through the geographic hierarchy.
         
         Returns:
             Number of relationships created
         """
-        # Create bidirectional NEAR relationships between neighborhoods in same city
         query = """
         MATCH (n1:Neighborhood)-[:IN_ZIP_CODE]->(:ZipCode)-[:IN_CITY]->(c:City)
         MATCH (n2:Neighborhood)-[:IN_ZIP_CODE]->(:ZipCode)-[:IN_CITY]->(c)

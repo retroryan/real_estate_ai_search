@@ -141,11 +141,11 @@
       },
       "related_wiki_articles": [
         {
-          "page_id": 27676211,
-          "title": "Mission District, San Francisco, California",
-          "url": "https://en.wikipedia.org/wiki/Mission_District,_San_Francisco,_California",
-          "relationship": "reference",
-          "confidence": 0.9
+          "page_id": 60049,
+          "title": "Mission San Francisco de Asís",
+          "url": "https://en.wikipedia.org/wiki/Mission_San_Francisco_de_Asís",
+          "relationship": "historical",
+          "confidence": 0.85
         },
         {
           "page_id": 1487556,
@@ -222,11 +222,11 @@
       },
       "related_wiki_articles": [
         {
-          "page_id": 25847556,
-          "title": "Sunset District, San Francisco, California",
-          "url": "https://en.wikipedia.org/wiki/Sunset_District,_San_Francisco,_California",
-          "relationship": "reference",
-          "confidence": 0.9
+          "page_id": 1926783,
+          "title": "San Francisco Unified School District",
+          "url": "https://en.wikipedia.org/wiki/San_Francisco_Unified_School_District",
+          "relationship": "educational",
+          "confidence": 0.75
         },
         {
           "page_id": 1487556,
@@ -381,13 +381,6 @@
         "confidence": 0.95
       },
       "related_wiki_articles": [
-        {
-          "page_id": 3148624,
-          "title": "Noe Valley (San Francisco)",
-          "url": "https://en.wikipedia.org/wiki/Noe_Valley_(San_Francisco)",
-          "relationship": "reference",
-          "confidence": 0.9
-        },
         {
           "page_id": 72061403,
           "title": "Noe Valley public toilet",

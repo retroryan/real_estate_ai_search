@@ -91,6 +91,9 @@ class NeighborhoodSilverTransformer(SilverTransformer):
             -- Extract wikipedia page_id from STRUCT in Silver layer (not JSON!)
             n.wikipedia_correlations.primary_wiki_article.page_id as wikipedia_page_id,
             
+            -- Pass through full wikipedia_correlations for Gold layer
+            n.wikipedia_correlations,
+            
             CONCAT_WS(' | ',
                 COALESCE(n.description, ''),
                 COALESCE(n.name, ''),
@@ -149,6 +152,7 @@ class NeighborhoodSilverTransformer(SilverTransformer):
                 amenities,
                 lifestyle_tags,
                 wikipedia_page_id,
+                wikipedia_correlations,
                 embedding_data.embedding_text,
                 embedding_data.embedding_vector,
                 embedding_data.embedding_generated_at
