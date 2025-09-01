@@ -616,7 +616,7 @@ with driver.session() as session:
             ORDER BY rand()
             LIMIT 1
             CALL db.index.vector.queryNodes(
-                'property_embedding_index', 
+                'property_embedding', 
                 5, 
                 p1.embedding
             ) YIELD node as p2, score

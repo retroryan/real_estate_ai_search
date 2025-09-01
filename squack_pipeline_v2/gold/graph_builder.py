@@ -185,11 +185,11 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embeddings_neighborhoods table exists
+        # Check if silver_neighborhoods table exists with embeddings
         check_embedding = """
         SELECT COUNT(*) 
         FROM information_schema.tables 
-        WHERE table_name = 'embeddings_neighborhoods'
+        WHERE table_name = 'silver_neighborhoods'
         """
         has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
@@ -212,7 +212,7 @@ class GoldGraphBuilder:
                 'Neighborhood' as node_label,
                 'neighborhood:' || n.neighborhood_id as graph_node_id
             FROM gold_neighborhoods n
-            LEFT JOIN embeddings_neighborhoods e ON n.neighborhood_id = e.neighborhood_id
+            LEFT JOIN silver_neighborhoods s ON n.neighborhood_id = s.neighborhood_id
             WHERE n.neighborhood_id IS NOT NULL
             """
         else:
@@ -255,11 +255,11 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if embeddings_wikipedia table exists
+        # Check if silver_wikipedia table exists with embeddings
         check_embedding = """
         SELECT COUNT(*) 
         FROM information_schema.tables 
-        WHERE table_name = 'embeddings_wikipedia'
+        WHERE table_name = 'silver_wikipedia'
         """
         has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
         
@@ -275,7 +275,7 @@ class GoldGraphBuilder:
                 'WikipediaArticle' as node_label,
                 'wikipedia:' || w.page_id as graph_node_id
             FROM gold_wikipedia w
-            LEFT JOIN embeddings_wikipedia e ON w.page_id = e.page_id
+            LEFT JOIN silver_wikipedia s ON w.page_id = s.page_id
             WHERE w.page_id IS NOT NULL
             """
         else:
