@@ -1,5 +1,7 @@
 """Configuration settings for MCP Server using Pydantic."""
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -211,7 +213,7 @@ class MCPServerConfig(BaseSettings):
             self.elasticsearch = self.elasticsearch.model_copy(update=es_updates)
     
     @classmethod
-    def from_yaml(cls, config_path: Path) -> "MCPServerConfig":
+    def from_yaml(cls, config_path: Path) -> MCPServerConfig:
         """Load configuration from YAML file."""
         import yaml
         
@@ -224,6 +226,6 @@ class MCPServerConfig(BaseSettings):
         return cls(**config_data)
     
     @classmethod
-    def from_env(cls) -> "MCPServerConfig":
+    def from_env(cls) -> MCPServerConfig:
         """Load configuration from environment variables."""
         return cls()

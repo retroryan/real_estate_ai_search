@@ -278,7 +278,7 @@ class GraphDatabaseInitializer:
             WITH p, n, COLLECT(f.name) as features
             RETURN 
                 p.listing_id as listing_id,
-                p.price as price,
+                p.listing_price as price,
                 p.bedrooms as bedrooms,
                 p.bathrooms as bathrooms,
                 p.square_feet as sqft,
@@ -353,7 +353,7 @@ class GraphDatabaseInitializer:
         rel_types = [
             'LOCATED_IN', 'HAS_FEATURE', 'IN_CITY', 'IN_STATE',
             'IN_ZIP_CODE', 'TYPE_OF', 'IN_PRICE_RANGE', 'SIMILAR_TO',
-            'NEARBY', 'MENTIONED_IN'
+            'NEAR', 'DESCRIBES'
         ]
         
         total_rels = 0

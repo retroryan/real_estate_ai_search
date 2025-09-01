@@ -20,6 +20,8 @@ class DemoEntryPoint(str, Enum):
     RUN_COMPLETE_MARKET_INTELLIGENCE_DEMO = "run_complete_market_intelligence_demo"
     RUN_WIKIPEDIA_DEMO = "run_wikipedia_demo"
     RUN_VECTOR_SEARCH_DEMO = "run_vector_search_demo"
+    RUN_PURE_VECTOR_SEARCH_DEMO = "run_pure_vector_search_demo"
+    RUN_WIKIPEDIA_ENHANCED_DEMO = "run_wikipedia_enhanced_demo"
 
 
 class DemoProtocol(Protocol):
@@ -129,7 +131,7 @@ def create_demo_registry() -> DemoRegistry:
         description="Wikipedia-enhanced property search and analysis",
         demo_type=DemoType.MODULE,
         file_name="demo_4_wikipedia_enhanced.py",
-        entry_point=DemoEntryPoint.MAIN
+        entry_point=DemoEntryPoint.RUN_WIKIPEDIA_ENHANCED_DEMO
     ))
     
     # Demo 7: Pure Vector Search
@@ -139,7 +141,7 @@ def create_demo_registry() -> DemoRegistry:
         description="Pure vector similarity search without graph relationships",
         demo_type=DemoType.MODULE,
         file_name="demo_5_pure_vector_search.py",
-        entry_point=DemoEntryPoint.MAIN
+        entry_point=DemoEntryPoint.RUN_PURE_VECTOR_SEARCH_DEMO
     ))
     
     return registry

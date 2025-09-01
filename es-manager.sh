@@ -96,7 +96,7 @@ setup_indices() {
 load_data_from_pipeline() {
     print_header "Loading Data from SQUACK Pipeline"
     
-    local sample_size=${1:-10}
+    local sample_size=${1:-all}
     
     if [ "$sample_size" == "all" ] || [ "$sample_size" == "ALL" ]; then
         print_info "Running SQUACK pipeline with ALL data (no sample limit)"
@@ -148,7 +148,7 @@ run_sample_query() {
 rebuild_full() {
     print_header "Full Elasticsearch Rebuild"
     
-    local sample_size=${1:-50}
+    local sample_size=${1:-all}
     
     if [ "$sample_size" == "all" ] || [ "$sample_size" == "ALL" ]; then
         print_warning "This will clear and rebuild all indices with ALL data"
@@ -167,6 +167,16 @@ rebuild_full() {
     
     # Load data from pipeline
     load_data_from_pipeline "$sample_size"
+    
+    # Enrich Wikipedia articles
+    print_info "Enriching Wikipedia articles..."
+    cd "$PROJECT_DIR"
+    python -m real_estate_search.management enrich-wikipedia
+    
+    # Build property relationships
+    print_info "Building property relationships..."
+    cd "$PROJECT_DIR"
+    python -m real_estate_search.management setup-indices --build-relationships
     
     # Show final stats
     show_database_stats
@@ -210,7 +220,6 @@ show_menu() {
     echo "7) Show Statistics     - Display index health and stats"
     echo "8) Run Core Demo       - Run core demonstration queries (1-14)"
     echo "9) Run Hybrid Demo     - Run hybrid/location-aware demos (15-27)"
-    echo "10) Quick Setup        - Setup + Load (10 samples)"
     echo "0) Exit"
     echo
 }
@@ -232,11 +241,11 @@ if [ $# -gt 0 ]; then
             ;;
         load)
             activate_venv
-            load_data_from_pipeline "${2:-10}"
+            load_data_from_pipeline "${2:-all}"
             ;;
         rebuild)
             activate_venv
-            rebuild_full "${2:-50}"
+            rebuild_full "${2:-all}"
             ;;
         query)
             activate_venv
@@ -252,7 +261,7 @@ if [ $# -gt 0 ]; then
                 echo
                 echo "Available demos:"
                 echo
-                echo "  ${CYAN}=== Core Search Demos ===${NC}"
+                echo -e "  ${CYAN}=== Core Search Demos ===${NC}"
                 echo "  1) Basic Property Search"
                 echo "  2) Property Filter Search"
                 echo "  3) Geographic Distance Search"
@@ -268,7 +277,7 @@ if [ $# -gt 0 ]; then
                 echo "  13) Semantic vs Keyword Comparison"
                 echo "  14) 🏡 Rich Real Estate Listing (Default)"
                 echo
-                echo "  ${CYAN}=== Hybrid & Location-Aware Demos ===${NC}"
+                echo -e "  ${CYAN}=== Hybrid & Location-Aware Demos ===${NC}"
                 echo "  15) Hybrid Search with RRF"
                 echo "  16) Location Understanding (DSPy)"
                 echo "  17) 🌊 Location-Aware: Waterfront Luxury"
@@ -289,17 +298,11 @@ if [ $# -gt 0 ]; then
             fi
             run_demo "${2:-14}" "$3"
             ;;
-        quick)
-            activate_venv
-            setup_indices
-            load_data_from_pipeline 10
-            show_database_stats
-            ;;
         hybrid-demo)
             activate_venv
             if [ -z "$2" ]; then
                 echo
-                echo "  ${CYAN}=== Hybrid & Location-Aware Demos ===${NC}"
+                echo -e "  ${CYAN}=== Hybrid & Location-Aware Demos ===${NC}"
                 echo "  15) Hybrid Search with RRF"
                 echo "  16) Location Understanding (DSPy)"
                 echo "  17) 🌊 Location-Aware: Waterfront Luxury"
@@ -327,13 +330,12 @@ if [ $# -gt 0 ]; then
             echo "  health                       Check Elasticsearch connection"
             echo "  clear                        Clear all indices from Elasticsearch"
             echo "  setup                        Setup indices with proper mappings"
-            echo "  load [size|all]              Load data from SQUACK pipeline (default: 10)"
-            echo "  rebuild [size|all]           Full rebuild (default: 50)"
+            echo "  load [size|all]              Load data from SQUACK pipeline (default: all)"
+            echo "  rebuild [size|all]           Full rebuild (default: all)"
             echo "  query                        Run sample query"
             echo "  stats                        Show index statistics"
             echo "  demo [num] [--verbose]       Run demo (1-27, default: 14)"
             echo "  hybrid-demo [num] [--verbose] Run hybrid demo (15-27, default: 15)"
-            echo "  quick                        Quick setup with 10 samples"
             echo "  help                         Show this help message"
             echo
             echo "Interactive mode: Run without arguments for menu"
@@ -363,12 +365,12 @@ else
                 setup_indices
                 ;;
             4)
-                read -p "Enter sample size (default: 10, 'all' for full dataset): " size
-                load_data_from_pipeline "${size:-10}"
+                read -p "Enter sample size (default: all, or specify a number): " size
+                load_data_from_pipeline "${size:-all}"
                 ;;
             5)
-                read -p "Enter sample size for rebuild (default: 50, 'all' for full dataset): " size
-                rebuild_full "${size:-50}"
+                read -p "Enter sample size for rebuild (default: all, or specify a number): " size
+                rebuild_full "${size:-all}"
                 ;;
             6)
                 run_sample_query
@@ -395,12 +397,7 @@ else
                 echo "  14) 🏡 Rich Real Estate Listing (Default)"
                 echo
                 read -p "Enter demo number (1-14, default: 14): " demo
-                read -p "Verbose output? (y/n, default: n): " verbose
-                verbose_flag=""
-                if [ "$verbose" = "y" ] || [ "$verbose" = "Y" ]; then
-                    verbose_flag="--verbose"
-                fi
-                run_demo "${demo:-14}" "$verbose_flag"
+                run_demo "${demo:-14}"
                 ;;
             9)
                 echo
@@ -420,18 +417,7 @@ else
                 echo "  27) 🎯 Location-Aware Search Showcase (Multiple)"
                 echo
                 read -p "Enter demo number (15-27, default: 15): " demo
-                read -p "Verbose output? (y/n, default: n): " verbose
-                verbose_flag=""
-                if [ "$verbose" = "y" ] || [ "$verbose" = "Y" ]; then
-                    verbose_flag="--verbose"
-                fi
-                run_demo "${demo:-15}" "$verbose_flag"
-                ;;
-            10)
-                print_info "Running quick setup..."
-                setup_indices
-                load_data_from_pipeline 10
-                show_database_stats
+                run_demo "${demo:-15}"
                 ;;
             0)
                 print_info "Exiting..."

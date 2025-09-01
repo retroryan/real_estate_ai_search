@@ -26,9 +26,9 @@ from graph_real_estate.demos.models import (
 class PropertySample(BaseModel):
     """Sample property data model"""
     street: Optional[str] = Field(None, description="Street address")
-    listing_price: float = Field(0.0, description="Listing price")
-    bedrooms: int = Field(0, description="Number of bedrooms")
-    bathrooms: float = Field(0.0, description="Number of bathrooms")
+    listing_price: Optional[float] = Field(None, description="Listing price")
+    bedrooms: Optional[int] = Field(None, description="Number of bedrooms")
+    bathrooms: Optional[float] = Field(None, description="Number of bathrooms")
     neighborhood: Optional[str] = Field(None, description="Neighborhood name")
     city: Optional[str] = Field(None, description="City name")
 
@@ -189,7 +189,7 @@ class SimpleDemoRunner:
         print("\nSample Properties:")
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
-        RETURN p.street, 
+        RETURN p.street_address, 
                p.listing_price,
                p.bedrooms,
                p.bathrooms,
@@ -203,7 +203,7 @@ class SimpleDemoRunner:
         properties = []
         for result in results:
             prop = PropertySample(
-                street=result.get('p.street'),
+                street=result.get('p.street_address'),
                 listing_price=result.get('p.listing_price', 0.0),
                 bedrooms=result.get('p.bedrooms', 0),
                 bathrooms=result.get('p.bathrooms', 0.0),
@@ -215,7 +215,10 @@ class SimpleDemoRunner:
         # Display properties
         for i, prop in enumerate(properties, 1):
             print(f"\n{i}. {prop.street or 'N/A'}")
-            print(f"   ${prop.listing_price:,.0f} | {prop.bedrooms} bed, {prop.bathrooms} bath")
+            price = prop.listing_price or 0
+            bedrooms = prop.bedrooms or 0
+            bathrooms = prop.bathrooms or 0
+            print(f"   ${price:,.0f} | {bedrooms} bed, {bathrooms} bath")
             print(f"   {prop.neighborhood or 'N/A'}, {prop.city or 'N/A'}")
     
     def _demo_2_relationships(self, run_query):

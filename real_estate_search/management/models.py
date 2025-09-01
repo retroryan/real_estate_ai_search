@@ -18,6 +18,7 @@ class CommandType(str, Enum):
     HEALTH_CHECK = "health-check"
     STATS = "stats"
     SAMPLE_QUERY = "sample-query"
+    ENRICH_WIKIPEDIA = "enrich-wikipedia"
 
 
 class LogLevel(str, Enum):

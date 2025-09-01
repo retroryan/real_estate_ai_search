@@ -79,14 +79,16 @@ def test_hybrid_search():
             print("  📊 Pure Vector Search:")
             vector_results = search.search(query, top_k=3, use_graph_boost=False)
             for i, result in enumerate(vector_results[:2], 1):
-                print(f"    {i}. {result.listing_id} - ${result.listing_price:,}")
+                price = result.listing_price or 0
+                print(f"    {i}. {result.listing_id} - ${price:,}")
                 print(f"       Vector: {result.vector_score:.3f}")
             
             # Enhanced hybrid search  
             print("  🧠 Graph-Enhanced Search:")
             hybrid_results = search.search(query, top_k=3, use_graph_boost=True)
             for i, result in enumerate(hybrid_results[:2], 1):
-                print(f"    {i}. {result.listing_id} - ${result.listing_price:,}")
+                price = result.listing_price or 0
+                print(f"    {i}. {result.listing_id} - ${price:,}")
                 print(f"       Vector: {result.vector_score:.3f} | Graph: {result.graph_score:.3f} | Combined: {result.combined_score:.3f}")
                 if result.similar_properties:
                     print(f"       Connected to {len(result.similar_properties)} similar properties")

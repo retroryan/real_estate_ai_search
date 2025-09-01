@@ -36,7 +36,7 @@ class QueryExecutor:
             List of result records as dictionaries
         """
         # Determine if this is a write operation
-        write_keywords = ['CREATE', 'DELETE', 'SET', 'MERGE', 'REMOVE', 'DETACH']
+        write_keywords = ['CREATE', 'DELETE', 'SET', 'MERGE', 'REMOVE', 'DETACH', 'DROP']
         is_write = any(keyword in query.upper() for keyword in write_keywords)
         
         if is_write:

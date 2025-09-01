@@ -98,7 +98,7 @@ class GoldGraphBuilder:
                 p.year_built,
                 p.lot_size,
                 
-                p.price,
+                p.price as listing_price,
                 p.price_per_sqft,
                 
                 p.address.street as street_address,
@@ -139,7 +139,7 @@ class GoldGraphBuilder:
                 year_built,
                 lot_size,
                 
-                price,
+                price as listing_price,
                 price_per_sqft,
                 
                 address.street as street_address,

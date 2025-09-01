@@ -115,13 +115,13 @@ class AdvancedPathSearchDemo:
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds,
             p.bathrooms as baths,
             all_features[0..5] as top_features,
             SIZE(all_features) as total_features
-        ORDER BY p.price DESC
+        ORDER BY p.listing_price DESC
         LIMIT 5
         """
         
@@ -153,12 +153,12 @@ class AdvancedPathSearchDemo:
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             must_have_count,
             nice_to_have_count,
             score
-        ORDER BY score DESC, p.price ASC
+        ORDER BY score DESC, p.listing_price ASC
         LIMIT 5
         """
         
@@ -193,11 +193,11 @@ class AdvancedPathSearchDemo:
         WITH p, n, COLLECT(DISTINCT feat.name) as features
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds,
             features[0..5] as sample_features
-        ORDER BY p.bedrooms DESC, p.price ASC
+        ORDER BY p.bedrooms DESC, p.listing_price ASC
         LIMIT 5
         """
         
@@ -215,7 +215,7 @@ class AdvancedPathSearchDemo:
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE NOT n.name IN ['Sf-PacificHeights', 'Sf-Presidio', 'Sf-NobHill']
-        WITH n, AVG(p.price) as avg_price, COUNT(p) as count
+        WITH n, AVG(p.listing_price) as avg_price, COUNT(p) as count
         WHERE count >= 5
         RETURN 
             n.name as neighborhood,
@@ -319,10 +319,10 @@ class AdvancedPathSearchDemo:
         RETURN 
             p.listing_id as id,
             p.property_type as type,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             views
-        ORDER BY p.price DESC
+        ORDER BY p.listing_price DESC
         LIMIT 5
         """
         
@@ -341,14 +341,14 @@ class AdvancedPathSearchDemo:
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE (
             // Luxury Downtown option
-            (p.price > 2000000 AND n.city = 'San Francisco' 
+            (p.listing_price > 2000000 AND n.city = 'San Francisco' 
              AND EXISTS {
                 MATCH (p)-[:HAS_FEATURE]->(f:Feature)
                 WHERE f.category = 'Luxury'
              })
         ) OR (
             // Affordable Family option
-            (p.price < 1000000 AND p.bedrooms >= 3
+            (p.listing_price < 1000000 AND p.bedrooms >= 3
              AND EXISTS {
                 MATCH (p)-[:HAS_FEATURE]->(f:Feature)
                 WHERE f.name IN ['Garden', 'Backyard', 'Family Room']
@@ -356,16 +356,16 @@ class AdvancedPathSearchDemo:
         )
         WITH p, n,
              CASE 
-                WHEN p.price > 2000000 THEN 'Luxury Downtown'
+                WHEN p.listing_price > 2000000 THEN 'Luxury Downtown'
                 ELSE 'Affordable Family'
              END as category
         RETURN 
             p.listing_id as id,
             category,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds
-        ORDER BY category, p.price DESC
+        ORDER BY category, p.listing_price DESC
         LIMIT 6
         """
         
@@ -500,7 +500,7 @@ class AdvancedPathSearchDemo:
         WITH f.name as feature, 
              SIZE(properties) as property_count,
              [p IN properties | p.listing_id][0..5] as sample_properties,
-             AVG([p IN properties | p.price]) as avg_price
+             AVG([p IN properties | p.listing_price]) as avg_price
         RETURN 
             feature,
             property_count,

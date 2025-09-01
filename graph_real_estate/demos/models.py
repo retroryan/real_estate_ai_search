@@ -47,12 +47,13 @@ class SearchResult(BaseModel):
     """Hybrid search result with scoring"""
     listing_id: str = Field(..., description="Property listing ID")
     street: Optional[str] = Field(None, description="Street address")
-    listing_price: float = Field(..., description="Property listing price")
+    address: Optional[str] = Field(None, description="Full address")  # For compatibility
+    listing_price: Optional[float] = Field(None, description="Property listing price")
     vector_score: float = Field(0.0, description="Vector similarity score")
     graph_score: float = Field(0.0, description="Graph-based score")
     combined_score: float = Field(0.0, description="Combined search score")
-    neighborhood: str = Field(..., description="Neighborhood name")
-    city: str = Field(..., description="City name")
+    neighborhood: Optional[str] = Field(None, description="Neighborhood name")
+    city: Optional[str] = Field(None, description="City name")
     bedrooms: Optional[int] = Field(None, description="Number of bedrooms")
     bathrooms: Optional[float] = Field(None, description="Number of bathrooms")
     square_feet: Optional[int] = Field(None, description="Square footage")
@@ -153,15 +154,15 @@ class RelationshipCount(BaseModel):
 
 class GeographicHierarchy(BaseModel):
     """Model for geographic hierarchy data"""
-    city: str = Field(..., description="City name")
-    county: str = Field(..., description="County name")
-    state: str = Field(..., description="State name")
+    city: Optional[str] = Field(None, description="City name")
+    county: Optional[str] = Field(None, description="County name")
+    state: Optional[str] = Field(None, description="State name")
     neighborhoods: int = Field(0, description="Number of neighborhoods")
 
 
 class FeatureCount(BaseModel):
     """Model for feature popularity data"""
-    feature: str = Field(..., description="Feature name")
+    feature: Optional[str] = Field(None, description="Feature name")
     properties: int = Field(0, description="Number of properties with this feature")
 
 

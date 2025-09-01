@@ -15,6 +15,8 @@ DESIGN PRINCIPLES:
 4. Single responsibility (each model has one clear purpose)
 """
 
+from __future__ import annotations
+
 from typing import Dict, Any, Optional, List, Literal, TypeVar, Generic
 from datetime import datetime
 from decimal import Decimal
@@ -526,7 +528,7 @@ class SearchResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     @classmethod
-    def from_elasticsearch(cls, response: Dict[str, Any]) -> "SearchResponse":
+    def from_elasticsearch(cls, response: Dict[str, Any]) -> SearchResponse:
         """Create from raw Elasticsearch response."""
         return cls(
             took=response.get("took", 0),

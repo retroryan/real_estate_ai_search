@@ -191,7 +191,7 @@ class PropertyEmbeddingPipeline:
         OPTIONAL MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         RETURN p.listing_id as listing_id,
                p.description as description,
-               p.street as street,
+               p.street_address as street,
                p.city as city,
                p.bedrooms as bedrooms,
                p.bathrooms as bathrooms,

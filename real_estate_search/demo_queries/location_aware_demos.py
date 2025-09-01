@@ -29,9 +29,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
 
 from .models import DemoQueryResult
-from .hybrid_search import HybridSearchEngine
 from .demo_utils import format_demo_header
 from .display_formatter import PropertyDisplayFormatter
+from ..hybrid import HybridSearchEngine
 
 logger = logging.getLogger(__name__)
 

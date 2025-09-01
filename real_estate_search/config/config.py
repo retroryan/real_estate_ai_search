@@ -4,6 +4,8 @@ Single source of truth with clean constructor injection patterns.
 Supports both environment variables and YAML configuration.
 """
 
+from __future__ import annotations
+
 from typing import Optional, Dict, Any, Literal
 from pathlib import Path
 from pydantic import BaseModel, Field, computed_field, ConfigDict
@@ -490,7 +492,7 @@ class DSPyConfig(BaseModel):
             raise
     
     @classmethod
-    def from_env(cls) -> "DSPyConfig":
+    def from_env(cls) -> DSPyConfig:
         """
         Create DSPyConfig from environment variables.
         
@@ -661,7 +663,7 @@ class AppConfig(BaseSettings):
         return self.environment == Environment.DEMO or self.demo_mode
     
     @classmethod
-    def load(cls) -> "AppConfig":
+    def load(cls) -> AppConfig:
         """
         Load configuration from environment variables and .env file.
         
@@ -671,7 +673,7 @@ class AppConfig(BaseSettings):
         return cls()
     
     @classmethod
-    def from_yaml(cls, path: Path = Path("config.yaml")) -> "AppConfig":
+    def from_yaml(cls, path: Path = Path("config.yaml")) -> AppConfig:
         """
         Load configuration from YAML file with environment variable override.
         

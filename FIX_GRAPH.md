@@ -1,5 +1,26 @@
 # Fix Graph Builder - Complete Implementation Proposal
 
+
+ I can already see several issues with the neighborhood.py file:
+
+  1. Column duplication: Lines 114-135 and 141-163 and 166-188 are repeating the same column 
+  list. This violates DRY and creates maintenance issues.
+  2. Hardcoded state mapping: Lines 56-58 have hardcoded state mappings in the JOIN 
+  condition, which should be parameterized or handled differently.
+  3. Mixed pandas/DuckDB: L
+
+review squack_pipeline_v2/DUCK_DB_BEST_PRACTICES_V2.md and ensure that duckdb best 
+  practices are followed.  this is so critical!!! and then Please proceed with implementing
+    the FIX_GEO.md plan phase 4 and update the status and progress in the proposal document after each
+   phase  and remove any code samples and take extra time to think very very deeply to be 
+  sure the implementation is clean and simple and uses pydantic and is modular and  follows
+   the main requirements.  And clean up dead code and review the implementation    once 
+  completed to ensure it is clean and simple. * FOLLOW THE REQUIREMENTS EXACTLY!!! Do not 
+  add new features or functionality beyond the specific requirements requested and 
+  document. 
+  * ALWAYS FIX THE CORE ISSUSE! 
+  * COMPLETE CHANGE: All occurrences must be changed in a single, atomic update
+  * CLEAN IMPLEMENTATION: Simple, direct replacements only
 ## 📝 Questions Requiring Clarification
 
 ### Data Source Questions

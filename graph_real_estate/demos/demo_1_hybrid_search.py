@@ -111,7 +111,8 @@ class AdvancedHybridSearchDemo:
         if result.address:
             output.append(f"   Address: {result.address}")
         output.append(f"   Location: {result.neighborhood}, {result.city}")
-        output.append(f"   Price: ${result.listing_price:,.0f}")
+        price = result.listing_price or 0
+        output.append(f"   Price: ${price:,.0f}")
         
         # Property details
         if result.bedrooms or result.bathrooms or result.square_feet:
@@ -182,7 +183,8 @@ class AdvancedHybridSearchDemo:
             if results:
                 print(f"   Found {len(results)} matches in {search_time*1000:.1f}ms")
                 for j, result in enumerate(results, 1):
-                    print(f"   {j}. {result.listing_id} - ${result.listing_price:,} ({result.neighborhood})")
+                    price = result.listing_price or 0
+                    print(f"   {j}. {result.listing_id} - ${price:,} ({result.neighborhood})")
                     print(f"      Vector Score: {result.vector_score:.3f}")
                     print(f"      Features: {', '.join(result.features[:3]) if result.features else 'None'}")
             else:
@@ -261,7 +263,8 @@ class AdvancedHybridSearchDemo:
             if results:
                 print(f"\n   🏠 Found {len(results)} feature-rich matches:")
                 for j, result in enumerate(results, 1):
-                    print(f"\n   {j}. {result.listing_id} - ${result.listing_price:,}")
+                    price = result.listing_price or 0
+                    print(f"\n   {j}. {result.listing_id} - ${price:,}")
                     print(f"      Combined Score: {result.combined_score:.3f}")
                     if result.features:
                         print(f"      Features ({len(result.features)}): {', '.join(result.features[:6])}")
@@ -344,7 +347,8 @@ class AdvancedHybridSearchDemo:
                 print(f"\n   🗺️  Geographic intelligence results:")
                 for j, result in enumerate(results, 1):
                     print(f"\n   {j}. {result.listing_id} - {result.neighborhood}, {result.city}")
-                    print(f"      Price: ${result.listing_price:,}")
+                    price = result.listing_price or 0
+                    print(f"      Price: ${price:,}")
                     print(f"      Graph Score: {result.graph_score:.3f} (includes proximity relationships)")
                     print(f"      Combined Score: {result.combined_score:.3f}")
                     

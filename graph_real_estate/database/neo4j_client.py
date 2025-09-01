@@ -14,7 +14,7 @@ def run_query(driver, query: str, params: Optional[Dict[str, Any]] = None, datab
     manager = TransactionManager(driver)
     
     # Determine if this is a write operation based on query keywords
-    write_keywords = ['CREATE', 'DELETE', 'SET', 'MERGE', 'REMOVE', 'DETACH']
+    write_keywords = ['CREATE', 'DELETE', 'SET', 'MERGE', 'REMOVE', 'DETACH', 'DROP']
     is_write = any(keyword in query.upper() for keyword in write_keywords)
     
     if is_write:

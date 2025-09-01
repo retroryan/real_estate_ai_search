@@ -20,7 +20,8 @@ from .commands import (
     DemoCommand,
     HealthCheckCommand,
     StatsCommand,
-    SampleQueryCommand
+    SampleQueryCommand,
+    EnrichWikipediaCommand
 )
 
 
@@ -56,7 +57,8 @@ def get_command_class(command_type: CommandType) -> Type[BaseCommand]:
         CommandType.DEMO: DemoCommand,
         CommandType.HEALTH_CHECK: HealthCheckCommand,
         CommandType.STATS: StatsCommand,
-        CommandType.SAMPLE_QUERY: SampleQueryCommand
+        CommandType.SAMPLE_QUERY: SampleQueryCommand,
+        CommandType.ENRICH_WIKIPEDIA: EnrichWikipediaCommand
     }
     
     return command_map[command_type]

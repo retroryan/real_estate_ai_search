@@ -99,8 +99,11 @@ class GraphRelationshipAnalysisDemo:
         for i, hood in enumerate(neighborhoods, 1):
             print(f"\n{i}. {hood['neighborhood']}, {hood['city']}, {hood['state']}")
             print(f"   Properties: {hood['property_count']}")
-            print(f"   Price range: ${hood['min_price']:,.0f} - ${hood['max_price']:,.0f}")
-            print(f"   Average price: ${hood['avg_price']:,.0f}")
+            min_price = hood.get('min_price') or 0
+            max_price = hood.get('max_price') or 0
+            avg_price = hood.get('avg_price') or 0
+            print(f"   Price range: ${min_price:,.0f} - ${max_price:,.0f}")
+            print(f"   Average price: ${avg_price:,.0f}")
         
         # Property price distribution analysis
         print("\n\nPROPERTY PRICE DISTRIBUTION:")
@@ -123,10 +126,16 @@ class GraphRelationshipAnalysisDemo:
         if price_stats and len(price_stats) > 0:
             stats = price_stats[0]
             print(f"   Total properties: {stats['total_properties']:,}")
-            print(f"   Price range: ${stats['min_price']:,.0f} - ${stats['max_price']:,.0f}")
-            print(f"   Average: ${stats['avg_price']:,.0f}")
-            print(f"   Median: ${stats['median_price']:,.0f}")
-            print(f"   Q1-Q3: ${stats['q1_price']:,.0f} - ${stats['q3_price']:,.0f}")
+            min_price = stats.get('min_price') or 0
+            max_price = stats.get('max_price') or 0
+            avg_price = stats.get('avg_price') or 0
+            median_price = stats.get('median_price') or 0
+            q1_price = stats.get('q1_price') or 0
+            q3_price = stats.get('q3_price') or 0
+            print(f"   Price range: ${min_price:,.0f} - ${max_price:,.0f}")
+            print(f"   Average: ${avg_price:,.0f}")
+            print(f"   Median: ${median_price:,.0f}")
+            print(f"   Q1-Q3: ${q1_price:,.0f} - ${q3_price:,.0f}")
         
         # High-value property concentrations
         print("\n\nHIGH-VALUE PROPERTY CLUSTERS:")
@@ -153,7 +162,8 @@ class GraphRelationshipAnalysisDemo:
         for area in luxury_areas:
             print(f"\n{area['neighborhood']}, {area['city']}")
             print(f"   Luxury properties: {area['luxury_count']} of {area['total_props']} ({area['luxury_percentage']:.1f}%)")
-            print(f"   Average luxury price: ${area['avg_luxury_price']:,.0f}")
+            avg_luxury_price = area.get('avg_luxury_price') or 0
+            print(f"   Average luxury price: ${avg_luxury_price:,.0f}")
     
     def demo_2_wikipedia_relationships(self):
         """Demo 2: Wikipedia article relationships and location descriptions"""
@@ -191,7 +201,8 @@ class GraphRelationshipAnalysisDemo:
             print(f"\n{wiki['neighborhood']}, {wiki['city']}, {wiki['state']}")
             print(f"   Wikipedia articles: {wiki['article_count']}")
             print(f"   Sample articles: {', '.join(wiki['sample_articles'])}")
-            print(f"   Properties: {wiki['property_count']} (avg: ${wiki['avg_price']:,.0f})")
+            avg_price = wiki.get('avg_price') or 0
+            print(f"   Properties: {wiki['property_count']} (avg: ${avg_price:,.0f})")
         
         # Most documented locations
         print("\n\nMOST DOCUMENTED LOCATIONS:")
@@ -226,8 +237,10 @@ class GraphRelationshipAnalysisDemo:
             print(f"\n{area['neighborhood']}, {area['city']}")
             print(f"   Detailed articles: {area['detailed_articles']}")
             print(f"   Total content: {area['total_content_length']:,} characters")
-            print(f"   Avg article length: {area['avg_article_length']:,.0f} characters")
-            print(f"   Properties: {area['property_count']} (avg: ${area['avg_price']:,.0f})")
+            avg_article_length = area.get('avg_article_length') or 0
+            avg_price = area.get('avg_price') or 0
+            print(f"   Avg article length: {avg_article_length:,.0f} characters")
+            print(f"   Properties: {area['property_count']} (avg: ${avg_price:,.0f})")
     
     def demo_3_geographic_hierarchies(self):
         """Demo 3: Geographic relationship hierarchies using PART_OF relationships"""
@@ -280,8 +293,11 @@ class GraphRelationshipAnalysisDemo:
         for area in distribution:
             print(f"\n{area['city']}, {area['state']}")
             print(f"   Properties: {area['property_count']}")
-            print(f"   Price range: ${area['min_price']:,.0f} - ${area['max_price']:,.0f}")
-            print(f"   Average: ${area['avg_price']:,.0f}")
+            min_price = area.get('min_price') or 0
+            max_price = area.get('max_price') or 0
+            avg_price = area.get('avg_price') or 0
+            print(f"   Price range: ${min_price:,.0f} - ${max_price:,.0f}")
+            print(f"   Average: ${avg_price:,.0f}")
         
         # Neighborhood proximity analysis
         print("\n\n NEIGHBORHOOD PROXIMITY NETWORKS:")
@@ -313,8 +329,11 @@ class GraphRelationshipAnalysisDemo:
         print("\n   Neighboring areas with largest price differences:")
         for prox in proximity_analysis:
             print(f"   {prox['neighborhood1']} <-> {prox['neighborhood2']} ({prox['city']})")
-            print(f"      ${prox['avg_price1']:,.0f} vs ${prox['avg_price2']:,.0f}")
-            print(f"      Price difference: ${prox['price_difference']:,.0f}")
+            avg_price1 = prox.get('avg_price1') or 0
+            avg_price2 = prox.get('avg_price2') or 0
+            price_difference = prox.get('price_difference') or 0
+            print(f"      ${avg_price1:,.0f} vs ${avg_price2:,.0f}")
+            print(f"      Price difference: ${price_difference:,.0f}")
             print(f"      Properties: {prox['properties1']} vs {prox['properties2']}")
         
         # Cross-city comparison through graph traversal
@@ -356,7 +375,8 @@ class GraphRelationshipAnalysisDemo:
             print(f"   Cities: {', '.join(lifestyle['cities'])}")
             print(f"   Neighborhoods: {lifestyle['neighborhoods']}")
             print(f"   Properties: {lifestyle['properties']}")
-            print(f"   Avg price: ${lifestyle['avg_price']:,.0f}")
+            avg_price = lifestyle.get('avg_price') or 0
+            print(f"   Avg price: ${avg_price:,.0f}")
             print(f"   Avg price/sqft: ${lifestyle['avg_price_per_sqft']:.0f}")
         
         # Lifestyle compatibility analysis
@@ -393,7 +413,9 @@ class GraphRelationshipAnalysisDemo:
         for comp in compatibility:
             print(f"\n{comp['neighborhood1']} ({comp['city1']}) <-> {comp['neighborhood2']} ({comp['city2']})")
             print(f"   Shared lifestyle: {', '.join(comp['shared_tags'])}")
-            print(f"   Pricing: ${comp['avg_price1']:,.0f} vs ${comp['avg_price2']:,.0f}")
+            avg_price1 = comp.get('avg_price1') or 0
+            avg_price2 = comp.get('avg_price2') or 0
+            print(f"   Pricing: ${avg_price1:,.0f} vs ${avg_price2:,.0f}")
         
         # Feature-lifestyle correlation
         print("\n\nLIFESTYLE-FEATURE CORRELATION:")
@@ -436,9 +458,12 @@ class GraphRelationshipAnalysisDemo:
         opportunities = run_query(self.driver, query)
         for opp in opportunities:
             print(f"\n{opp['property_id']}")
-            print(f"   Price: ${opp['listing_price']:,.0f}")
-            print(f"   Neighborhood avg: ${opp['neighborhood_avg']:,.0f}")
-            print(f"   Potential upside: ${opp['potential_upside']:,.0f}")
+            listing_price = opp.get('listing_price') or 0
+            neighborhood_avg = opp.get('neighborhood_avg') or 0
+            potential_upside = opp.get('potential_upside') or 0
+            print(f"   Price: ${listing_price:,.0f}")
+            print(f"   Neighborhood avg: ${neighborhood_avg:,.0f}")
+            print(f"   Potential upside: ${potential_upside:,.0f}")
             print(f"   Location: {opp['neighborhood']}")
             print(f"   High-similarity connections: {opp['high_similarity_count']} (avg score: {opp['avg_similarity_score']:.3f})")
             print(f"   Key features: {', '.join(opp['key_features'])}")
@@ -473,7 +498,9 @@ class GraphRelationshipAnalysisDemo:
         hubs = run_query(self.driver, query)
         for hub in hubs:
             print(f"\n{hub['property_id']} (Investment Hub)")
-            print(f"   ${hub['listing_price']:,.0f} (${hub['price_per_sqft']:.0f}/sqft)")
+            listing_price = hub.get('listing_price') or 0
+            price_per_sqft = hub.get('price_per_sqft') or 0
+            print(f"   ${listing_price:,.0f} (${price_per_sqft:.0f}/sqft)")
             print(f"   {hub['neighborhood']}, {hub['city']}")
             print(f"   Network connectivity: {hub['connectivity']} similar properties")
             print(f"   Avg similarity score: {hub['avg_sim_score']:.3f}")
@@ -517,8 +544,10 @@ class GraphRelationshipAnalysisDemo:
         chains = run_query(self.driver, query)
         for chain in chains:
             print(f"\nSimilarity Chain (length {chain['chain_length']}):")
-            print(f"   Start: {chain['start_property']} (${chain['start_price']:,.0f}) in {chain['start_neighborhood']}")
-            print(f"   End: {chain['end_property']} (${chain['end_price']:,.0f}) in {chain['end_neighborhood']}")
+            start_price = chain.get('start_price') or 0
+            end_price = chain.get('end_price') or 0
+            print(f"   Start: {chain['start_property']} (${start_price:,.0f}) in {chain['start_neighborhood']}")
+            print(f"   End: {chain['end_property']} (${end_price:,.0f}) in {chain['end_neighborhood']}")
             print(f"   Similarity scores: {[f'{score:.3f}' for score in chain['scores']]}")
         
         # Feature influence propagation
@@ -547,7 +576,8 @@ class GraphRelationshipAnalysisDemo:
         for prop in propagation:
             print(f"\n{prop['luxury_feature']} influence:")
             print(f"   Influences {prop['influenced_count']} similar properties")
-            print(f"   Avg influenced property price: ${prop['avg_influenced_price']:,.0f}")
+            avg_influenced_price = prop.get('avg_influenced_price') or 0
+            print(f"   Avg influenced property price: ${avg_influenced_price:,.0f}")
             print(f"   Influenced neighborhoods: {', '.join(prop['influenced_neighborhoods'])}")
         
         # Cross-category feature bridges
@@ -629,7 +659,8 @@ class GraphRelationshipAnalysisDemo:
         influences = run_query(self.driver, query)
         for inf in influences:
             print(f"   {inf['feature']}: +{inf['value_premium']:.1%} value premium")
-            print(f"      Avg price: ${inf['avg_with_feature']:,.0f} ({inf['properties_with_feature']} properties)")
+            avg_with_feature = inf.get('avg_with_feature') or 0
+            print(f"      Avg price: ${avg_with_feature:,.0f} ({inf['properties_with_feature']} properties)")
     
     def _analyze_cross_city_patterns(self):
         """Analyze patterns across cities"""
@@ -647,7 +678,9 @@ class GraphRelationshipAnalysisDemo:
         cities = run_query(self.driver, query)
         print("   Cross-city market comparison:")
         for city in cities:
-            print(f"   {city['city']}: ${city['avg_price']:,.0f} avg (${city['avg_price_per_sqft']:.0f}/sqft)")
+            avg_price = city.get('avg_price') or 0
+            avg_price_per_sqft = city.get('avg_price_per_sqft') or 0
+            print(f"   {city['city']}: ${avg_price:,.0f} avg (${avg_price_per_sqft:.0f}/sqft)")
             print(f"      {city['properties']} properties across {city['neighborhoods']} neighborhoods")
     
     def _analyze_lifestyle_feature_correlation(self):
@@ -690,8 +723,11 @@ class GraphRelationshipAnalysisDemo:
         print("   Largest intra-city price gaps:")
         for arb in arbitrage:
             print(f"   {arb['neighborhood1']} vs {arb['neighborhood2']} ({arb['city']})")
-            print(f"      ${arb['avg_price1']:,.0f} vs ${arb['avg_price2']:,.0f}")
-            print(f"      Gap: ${arb['price_gap']:,.0f}")
+            avg_price1 = arb.get('avg_price1') or 0
+            avg_price2 = arb.get('avg_price2') or 0
+            price_gap = arb.get('price_gap') or 0
+            print(f"      ${avg_price1:,.0f} vs ${avg_price2:,.0f}")
+            print(f"      Gap: ${price_gap:,.0f}")
     
     def _analyze_feature_category_bridges(self):
         """Analyze properties that bridge different feature categories"""
@@ -712,7 +748,8 @@ class GraphRelationshipAnalysisDemo:
         bridges = run_query(self.driver, query)
         print("   Properties bridging multiple feature categories:")
         for bridge in bridges:
-            print(f"   {bridge['property_id']}: ${bridge['listing_price']:,.0f}")
+            listing_price = bridge.get('listing_price') or 0
+            print(f"   {bridge['property_id']}: ${listing_price:,.0f}")
             print(f"      {bridge['neighborhood']}")
             print(f"      {bridge['category_count']} categories: {', '.join(bridge['categories'])}")
     
