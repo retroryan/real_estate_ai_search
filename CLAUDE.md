@@ -1,5 +1,12 @@
 # Real Estate AI Search - Project Guide
 
+## ⚠️ IMPORTANT: DuckDB Pipeline Guidelines
+
+**When working on `squack_pipeline_v2/`, ALWAYS reference:**
+- `squack_pipeline_v2/DUCK_DB_BEST_PRACTICES_V2.md` - Contains critical DuckDB patterns and anti-patterns
+- Pay special attention to the "Quick Reference for LLMs" section at the top
+- The pipeline currently has issues with TableIdentifier objects that need to be removed
+
 ## Quick Start Guide
 
 ### Prerequisites

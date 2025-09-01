@@ -18,60 +18,111 @@ class NeighborhoodSilverTransformer(SilverTransformer):
         """Return entity type."""
         return "neighborhood"
     
+    
     @log_stage("Silver: Neighborhood Transformation")
     def _apply_transformations(self, input_table: str, output_table: str) -> None:
         """Apply neighborhood transformations using DuckDB Relation API.
         
-        Uses the Relation API for:
-        - Lazy evaluation
-        - Query optimization
-        - Clean transformation chains
+        Following DuckDB best practices:
+        - Use Relation API throughout
+        - Single CREATE TABLE operation
+        - No column duplication
         
         Args:
             input_table: Bronze input table
             output_table: Silver output table
         """
-        # Get connection for Relation API
         conn = self.connection_manager.get_connection()
         
-        # Apply transformations using SQL within relation
-        silver_relation = conn.sql(f"""
-            SELECT 
-                -- Core identifiers
-                neighborhood_id,
-                name,
-                city,
-                state,
-                
-                -- Create location as geo_point
-                CASE 
-                    WHEN coordinates.longitude IS NOT NULL AND coordinates.latitude IS NOT NULL
-                    THEN LIST_VALUE(coordinates.longitude, coordinates.latitude)
-                    ELSE NULL
-                END as location,
-                
-                -- Flatten key metrics to top level
-                demographics.population as population,
-                demographics.median_household_income as median_income,
-                characteristics.walkability_score as walkability_score,
-                characteristics.school_rating as school_rating,
-                
-                -- Keep demographics as nested object
-                demographics,
-                
-                -- Text fields
-                description,
-                amenities,
-                
-                -- Keep correlations nested
-                wikipedia_correlations
-                
-            FROM {input_table}
-            WHERE neighborhood_id IS NOT NULL
+        # Use Relation API to create base transformation
+        bronze = conn.table(input_table)
+        
+        # Apply filters using Relation API
+        filtered = bronze.filter("""
+            neighborhood_id IS NOT NULL 
             AND name IS NOT NULL
         """)
         
-        # Create the output table
-        silver_relation.create(output_table)
+        # Project to standardized columns using Relation API
+        transformed = filtered.project("""
+            neighborhood_id,
+            name,
+            city,
+            state,
+            
+            CASE 
+                WHEN coordinates.longitude IS NOT NULL AND coordinates.latitude IS NOT NULL
+                THEN LIST_VALUE(coordinates.longitude, coordinates.latitude)
+                ELSE NULL
+            END as location,
+            
+            demographics.population as population,
+            characteristics.walkability_score as walkability_score,
+            characteristics.school_rating as school_rating,
+            
+            demographics,
+            description,
+            amenities,
+            lifestyle_tags,
+            wikipedia_correlations,
+            CONCAT_WS(' | ',
+                COALESCE(description, ''),
+                COALESCE(name, ''),
+                CONCAT('Population: ', COALESCE(demographics.population, 0))
+            ) as embedding_text
+        """)
+        
+        if self.embedding_provider:
+            # Get embedding text data using Relation API
+            embedding_data = transformed.project("neighborhood_id, embedding_text").df()
+            
+            # Generate embeddings
+            if len(embedding_data) > 0:
+                embedding_response = self.embedding_provider.generate_embeddings(embedding_data['embedding_text'].tolist())
+                from datetime import datetime
+                embedding_data['embedding_vector'] = embedding_response.embeddings
+                embedding_data['embedding_generated_at'] = datetime.now()
+                conn.register('embedding_data', embedding_data)
+                
+                # Join embeddings using Relation API and create table
+                final_result = (transformed
+                    .join(conn.table('embedding_data'), 'neighborhood_id', how='left')
+                    .project("""
+                        neighborhood_id,
+                        name,
+                        city,
+                        state,
+                        location,
+                        population,
+                        walkability_score,
+                        school_rating,
+                        demographics,
+                        description,
+                        amenities,
+                        lifestyle_tags,
+                        wikipedia_correlations,
+                        embedding_data.embedding_text,
+                        embedding_data.embedding_vector,
+                        embedding_data.embedding_generated_at
+                    """))
+                
+                final_result.create(output_table)
+                conn.unregister('embedding_data')
+            else:
+                # No embeddings generated - add NULL columns
+                no_embeddings = transformed.project("""
+                    *,
+                    CAST(NULL AS DOUBLE[1024]) as embedding_vector,
+                    CAST(NULL AS TIMESTAMP) as embedding_generated_at
+                """)
+                no_embeddings.create(output_table)
+        else:
+            # No embedding provider - add NULL embedding columns
+            no_embeddings = transformed.project("""
+                *,
+                CAST(NULL AS DOUBLE[1024]) as embedding_vector,
+                CAST(NULL AS TIMESTAMP) as embedding_generated_at
+            """)
+            no_embeddings.create(output_table)
         
         self.logger.info(f"Transformed neighborhoods from {input_table} to {output_table}")

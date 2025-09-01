@@ -657,14 +657,6 @@ class PropertyListingHTMLGenerator(BaseHTMLGenerator):
             </div>
             """)
         
-        if neighborhood.get('median_income'):
-            stats_html.append(f"""
-            <div class="stat-item">
-                <div class="stat-label">Median Income</div>
-                <div class="stat-value">{self.format_currency(neighborhood['median_income'])}</div>
-            </div>
-            """)
-        
         if neighborhood.get('walkability_score'):
             score = neighborhood['walkability_score']
             stats_html.append(f"""

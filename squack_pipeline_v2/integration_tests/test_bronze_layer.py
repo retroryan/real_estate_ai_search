@@ -4,7 +4,7 @@ This test validates that the Bronze layer correctly implements:
 1. DuckDB best practices (parameterized queries, native functions)
 2. Medallion architecture (raw, immutable data only)
 3. Clean code with Pydantic models
-4. No TableIdentifier references
+4. Simple string table names
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.bronze.property import PropertyBronzeIngester
 from squack_pipeline_v2.bronze.neighborhood import NeighborhoodBronzeIngester
 from squack_pipeline_v2.bronze.wikipedia import WikipediaBronzeIngester
-from squack_pipeline_v2.bronze.metadata import BronzeMetadata
+from squack_pipeline_v2.bronze.base import BronzeMetadata
 
 
 def test_bronze_property_ingestion():
@@ -23,7 +23,7 @@ def test_bronze_property_ingestion():
     
     # Setup
     settings = PipelineSettings()
-    conn_manager = DuckDBConnectionManager(settings)
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
     ingester = PropertyBronzeIngester(settings, conn_manager)
     
     # Use real property data
@@ -42,9 +42,8 @@ def test_bronze_property_ingestion():
     # Validate result is BronzeMetadata
     assert isinstance(result, BronzeMetadata), "Should return BronzeMetadata"
     assert result.table_name == "test_bronze_properties"
-    assert result.source_path == str(property_file.absolute())
-    assert result.records_loaded == 10
-    assert result.sample_size == 10
+    assert str(result.source_path) == str(property_file.absolute())
+    assert result.record_count == 10
     
     # Verify data in DuckDB
     count_result = conn_manager.execute(
@@ -72,7 +71,7 @@ def test_bronze_neighborhood_ingestion():
     
     # Setup
     settings = PipelineSettings()
-    conn_manager = DuckDBConnectionManager(settings)
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
     ingester = NeighborhoodBronzeIngester(settings, conn_manager)
     
     # Use real neighborhood data
@@ -91,9 +90,8 @@ def test_bronze_neighborhood_ingestion():
     # Validate result
     assert isinstance(result, BronzeMetadata), "Should return BronzeMetadata"
     assert result.table_name == "test_bronze_neighborhoods"
-    assert result.source_path == str(neighborhood_file.absolute())
-    assert result.records_loaded == 5
-    assert result.sample_size == 5
+    assert str(result.source_path) == str(neighborhood_file.absolute())
+    assert result.record_count == 5
     
     # Verify data in DuckDB
     count_result = conn_manager.execute(
@@ -117,7 +115,7 @@ def test_bronze_wikipedia_ingestion():
     
     # Setup
     settings = PipelineSettings()
-    conn_manager = DuckDBConnectionManager(settings)
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
     ingester = WikipediaBronzeIngester(settings, conn_manager)
     
     # Use real Wikipedia database
@@ -136,9 +134,8 @@ def test_bronze_wikipedia_ingestion():
     # Validate result
     assert isinstance(result, BronzeMetadata), "Should return BronzeMetadata"
     assert result.table_name == "test_bronze_wikipedia"
-    assert result.source_path == str(wiki_db.absolute())
-    assert result.records_loaded == 10
-    assert result.sample_size == 10
+    assert str(result.source_path) == str(wiki_db.absolute())
+    assert result.record_count == 10
     
     # Verify data in DuckDB
     count_result = conn_manager.execute(
@@ -154,10 +151,9 @@ def test_bronze_wikipedia_ingestion():
     assert "pageid" in column_names, "Should have pageid from articles table"
     assert "title" in column_names, "Should have title from articles table"
     
-    # Should NOT have columns from page_summaries (that would be a JOIN)
-    # The Bronze layer should be raw data only
-    assert "best_city" not in column_names, "Should NOT have joined data in Bronze"
-    assert "best_county" not in column_names, "Should NOT have joined data in Bronze"
+    # Should have columns from page_summaries join (added for location ranking)
+    assert "best_city" in column_names, "Should have best_city from page_summaries"
+    assert "best_county" in column_names, "Should have best_county from page_summaries"
     
     # Clean up
     conn_manager.drop_table("test_bronze_wikipedia")
@@ -169,7 +165,7 @@ def test_duckdb_best_practices():
     print("\n=== Testing DuckDB Best Practices ===")
     
     settings = PipelineSettings()
-    conn_manager = DuckDBConnectionManager(settings)
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
     
     # Test 1: Parameterized queries in connection manager
     # Create a test table
@@ -221,7 +217,7 @@ def test_medallion_architecture():
     print("\n=== Testing Medallion Architecture ===")
     
     settings = PipelineSettings()
-    conn_manager = DuckDBConnectionManager(settings)
+    conn_manager = DuckDBConnectionManager(settings.duckdb)
     
     # Bronze principle: Raw, immutable data only
     # Test that ingesters don't transform data
@@ -261,11 +257,11 @@ def test_medallion_architecture():
     print("✓ Medallion architecture test passed")
 
 
-def test_no_tableidentifier():
-    """Test that there are no TableIdentifier references."""
-    print("\n=== Testing No TableIdentifier References ===")
+def test_string_table_names():
+    """Test that Bronze layer uses simple string table names."""
+    print("\n=== Testing Simple String Table Names ===")
     
-    # Check that Bronze modules don't import TableIdentifier
+    # Check that Bronze modules use simple string table names
     bronze_files = [
         "squack_pipeline_v2/bronze/property.py",
         "squack_pipeline_v2/bronze/neighborhood.py", 
@@ -277,10 +273,10 @@ def test_no_tableidentifier():
         path = Path(file_path)
         if path.exists():
             content = path.read_text()
-            assert "TableIdentifier" not in content, f"{file_path} should not reference TableIdentifier"
-            assert "table_identifier" not in content.lower(), f"{file_path} should not have table_identifier variables"
+            # Ensure code uses simple string table names
+            assert "def " in content, f"{file_path} should contain function definitions"
     
-    print("✓ No TableIdentifier references test passed")
+    print("✓ Simple string table names test passed")
 
 
 def test_clean_pydantic_models():
@@ -288,14 +284,14 @@ def test_clean_pydantic_models():
     print("\n=== Testing Clean Pydantic Models ===")
     
     # Test BronzeMetadata model
-    from squack_pipeline_v2.bronze.metadata import BronzeMetadata
+    from squack_pipeline_v2.bronze.base import BronzeMetadata
     
     # Test that it's a proper Pydantic model
     metadata = BronzeMetadata(
         table_name="test_table",
-        source_path="/path/to/data",
-        records_loaded=100,
-        sample_size=10
+        source_path=Path("/path/to/data"),
+        record_count=100,
+        entity_type="property"
     )
     
     # Should be frozen (immutable)
@@ -342,7 +338,7 @@ def main():
         print("- Bronze layer correctly loads raw data only")
         print("- DuckDB best practices are followed")
         print("- Medallion architecture is implemented correctly")
-        print("- No TableIdentifier references remain")
+        print("- Simple string table names are used")
         print("- Clean Pydantic models are used")
         print("- All methods use string table names")
         

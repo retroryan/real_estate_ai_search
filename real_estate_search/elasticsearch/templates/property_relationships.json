@@ -138,9 +138,6 @@
         "population": {
           "type": "integer"
         },
-        "median_income": {
-          "type": "integer"
-        },
         "walkability_score": {
           "type": "byte"
         },

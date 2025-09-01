@@ -1,1 +1,0 @@
-"""Test suite for SQUACK Pipeline V2."""

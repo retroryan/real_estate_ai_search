@@ -5,10 +5,10 @@ from typing import Optional
 from squack_pipeline_v2.core.settings import PipelineSettings
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage, PipelineLogger
-from squack_pipeline_v2.bronze.metadata import BronzeMetadata
+from squack_pipeline_v2.bronze.base import BronzeIngester, BronzeMetadata
 
 
-class WikipediaBronzeIngester:
+class WikipediaBronzeIngester(BronzeIngester):
     """Ingester for raw Wikipedia data from SQLite database into Bronze layer.
     
     Bronze layer principle: Load data AS-IS from source with NO transformations.
@@ -58,42 +58,56 @@ class WikipediaBronzeIngester:
             self.connection_manager.execute("INSTALL sqlite")
             self.connection_manager.execute("LOAD sqlite")
             
-            # Attach the SQLite database
-            attach_query = f"ATTACH '{db_path.absolute()}' AS wiki_db (TYPE sqlite)"
-            self.connection_manager.execute(attach_query)
+            # Attach the SQLite database - validate path first
+            conn = self.connection_manager.get_connection()
+            # Validate path to prevent injection
+            db_path_str = str(db_path.absolute())
+            if "'" in db_path_str or ";" in db_path_str:
+                raise ValueError(f"Invalid characters in database path: {db_path_str}")
+            
+            conn.execute(f"ATTACH '{db_path_str}' AS wiki_db (TYPE sqlite)")
             
             # Drop existing Bronze table if it exists
             self.connection_manager.drop_table(table_name)
             
-            # Create Bronze table with raw data from SQLite articles table
-            # Bronze principle: RAW DATA ONLY - no joins, no transformations
+            # Use SQL to join articles with page_summaries for location data
+            # Bronze layer principle: Load data AS-IS with NO transformations
             if sample_size:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT * FROM wiki_db.articles
+                SELECT 
+                    a.*,
+                    ps.best_city,
+                    ps.best_county,
+                    ps.best_state
+                FROM wiki_db.articles a
+                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 LIMIT {sample_size}
                 """
             else:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
-                SELECT * FROM wiki_db.articles
+                SELECT 
+                    a.*,
+                    ps.best_city,
+                    ps.best_county,
+                    ps.best_state
+                FROM wiki_db.articles a
+                LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 """
             
-            self.connection_manager.execute(create_query)
+            conn.execute(create_query)
             
             # Get record count for metrics
-            count_result = self.connection_manager.execute(
-                f"SELECT COUNT(*) FROM {table_name}"
-            ).fetchone()
-            self.records_ingested = count_result[0] if count_result else 0
+            self.records_ingested = self.connection_manager.count_records(table_name)
             
             self.logger.info(f"Loaded {self.records_ingested} raw Wikipedia articles into {table_name}")
             
             return BronzeMetadata(
                 table_name=table_name,
-                source_path=str(db_path.absolute()),
-                records_loaded=self.records_ingested,
-                sample_size=sample_size if sample_size else 0
+                source_path=db_path.absolute(),
+                record_count=self.records_ingested,
+                entity_type=self._get_entity_type()
             )
             
         finally:
@@ -106,7 +120,15 @@ class WikipediaBronzeIngester:
         # Return metadata even if error occurred during detach
         return BronzeMetadata(
             table_name=table_name,
-            source_path=str(db_path.absolute()),
-            records_loaded=self.records_ingested,
-            sample_size=sample_size if sample_size else 0
+            source_path=db_path.absolute(),
+            record_count=self.records_ingested,
+            entity_type=self._get_entity_type()
         )
+    
+    def _get_entity_type(self) -> str:
+        """Get the entity type for this ingester.
+        
+        Returns:
+            Entity type string
+        """
+        return "wikipedia"

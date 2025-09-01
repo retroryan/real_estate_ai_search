@@ -80,10 +80,8 @@ class ESNeighborhood(BaseModel):
     
     # Statistics
     population: int = 0
-    median_income: float = 0.0
-    median_home_price: float = 0.0
     walkability_score: float = 0.0
-    school_score: float = 0.0
+    school_rating: float = 0.0
     overall_livability_score: float = 0.0
     
     # Location

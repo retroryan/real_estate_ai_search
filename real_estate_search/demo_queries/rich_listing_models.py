@@ -38,7 +38,6 @@ class NeighborhoodModel(BaseModel):
     city: str = Field(default="")
     state: str = Field(default="")
     population: Optional[int] = Field(default=None)
-    median_income: Optional[int] = Field(default=None)
     walkability_score: Optional[int] = Field(default=None)
     school_rating: Optional[float] = Field(default=None)
     description: Optional[str] = Field(default=None)

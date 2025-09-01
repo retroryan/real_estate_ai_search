@@ -202,10 +202,8 @@ class GoldGraphBuilder:
                 n.city,
                 n.state,
                 n.population,
-                n.median_income,
-                n.median_home_price as median_home_value,
                 n.walkability_score,
-                n.school_score as school_rating,
+                n.school_rating,
                 NULL::FLOAT as crime_index,  -- Not available in current schema
                 n.description,
                 n.center_latitude as latitude,
@@ -226,10 +224,8 @@ class GoldGraphBuilder:
                 city,
                 state,
                 population,
-                median_income,
-                median_home_price as median_home_value,
                 walkability_score,
-                school_score as school_rating,
+                school_rating,
                 NULL::FLOAT as crime_index,  -- Not available in current schema
                 description,
                 center_latitude as latitude,
@@ -271,7 +267,7 @@ class GoldGraphBuilder:
             query = f"""
             CREATE TABLE {table_name} AS
             SELECT
-                w.page_id,
+                w.page_id as wikipedia_id,
                 w.title,
                 w.full_content as content,
                 w.categories,
@@ -286,7 +282,7 @@ class GoldGraphBuilder:
             query = f"""
             CREATE TABLE {table_name} AS
             SELECT
-                page_id,
+                page_id as wikipedia_id,
                 title,
                 full_content as content,
                 categories,
@@ -304,148 +300,265 @@ class GoldGraphBuilder:
         
         return table_name
     
-    @log_stage("Graph Builder: Classification nodes")
-    def build_classification_nodes(self) -> List[str]:
-        """Build classification node tables (features, property types, etc.).
+    
+    @log_stage("Graph Builder: County nodes")
+    def build_county_nodes(self) -> str:
+        """Build county node table from neighborhood data.
         
         Returns:
-            List of tables created
+            Name of the created table
         """
-        tables = []
+        table_name = "gold_graph_counties"
         
-        # Features
-        table_name = "gold_graph_features"
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
+        # Extract unique counties from neighborhood wikipedia_correlations
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            LOWER(REPLACE(wikipedia_correlations.parent_geography.county_wiki.title, ' ', '_')) || '_' || state as county_id,
+            wikipedia_correlations.parent_geography.county_wiki.title as county_name,
+            wikipedia_correlations.parent_geography.county_wiki.page_id as county_wiki_id,
+            state,
+            'County' as node_label,
+            LOWER(REPLACE(wikipedia_correlations.parent_geography.county_wiki.title, ' ', '_')) as graph_node_id
+        FROM gold_neighborhoods
+        WHERE wikipedia_correlations.parent_geography.county_wiki.title IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} county nodes")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: Feature nodes")
+    def build_feature_nodes(self) -> str:
+        """Build feature nodes from property features.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_features"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Extract unique features from properties
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            LOWER(REPLACE(TRIM(unnest(features)), ' ', '_')) as feature_id,
+            LOWER(TRIM(unnest(features))) as feature_name,
+            'Feature' as node_label,
+            'feature:' || LOWER(REPLACE(TRIM(unnest(features)), ' ', '_')) as graph_node_id
+        FROM gold_properties
+        WHERE features IS NOT NULL AND array_length(features) > 0
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} feature nodes")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: City nodes")
+    def build_city_nodes(self) -> str:
+        """Build city nodes from properties and neighborhoods.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_cities"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Extract unique cities
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            city || '_' || state as city_id,
+            city as city_name,
+            state,
+            'City' as node_label,
+            'city:' || LOWER(REPLACE(city || '_' || state, ' ', '_')) as graph_node_id
+        FROM (
+            SELECT DISTINCT city, state FROM gold_neighborhoods
+            UNION
+            SELECT DISTINCT address.city as city, address.state as state FROM gold_properties
+        ) cities
+        WHERE city IS NOT NULL AND state IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} city nodes")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: State nodes")
+    def build_state_nodes(self) -> str:
+        """Build state nodes from properties and neighborhoods.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_states"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Extract unique states
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            state as state_id,
+            state as state_code,
+            state as state_name,
+            'State' as node_label,
+            'state:' || state as graph_node_id
+        FROM (
+            SELECT DISTINCT state FROM gold_neighborhoods
+            UNION
+            SELECT DISTINCT address.state as state FROM gold_properties
+        ) states
+        WHERE state IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} state nodes")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: ZIP code nodes")
+    def build_zip_code_nodes(self) -> str:
+        """Build ZIP code nodes from properties.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_zip_codes"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Extract unique ZIP codes
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            address.zip_code as zip_code_id,
+            address.zip_code as zip_code,
+            address.city as city,
+            address.state as state,
+            'ZipCode' as node_label,
+            'zip:' || address.zip_code as graph_node_id
+        FROM gold_properties
+        WHERE address.zip_code IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} ZIP code nodes")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: Property type nodes")
+    def build_property_type_nodes(self) -> str:
+        """Build property type nodes from properties.
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_property_types"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Extract unique property types
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT 
-            feature_id,
-            feature_name,
-            occurrence_count,
-            'Feature' as node_label,
-            feature_id as graph_node_id
-        FROM silver_features
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} feature nodes")
-        tables.append(table_name)
-        
-        # Property Types
-        table_name = "gold_graph_property_types"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT
-            type_id,
-            type_name,
-            property_count,
+            LOWER(REPLACE(LOWER(property_type), ' ', '_')) as property_type_id,
+            LOWER(property_type) as type_name,
+            COUNT(*) as property_count,
             'PropertyType' as node_label,
-            type_id as graph_node_id
-        FROM silver_property_types
+            'type:' || LOWER(REPLACE(LOWER(property_type), ' ', '_')) as graph_node_id
+        FROM gold_properties
+        WHERE property_type IS NOT NULL
+        GROUP BY LOWER(property_type)
         """
         
         self.connection_manager.execute(query)
+        
         count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
         self.logger.info(f"Created {table_name}: {count} property type nodes")
-        tables.append(table_name)
         
-        # Price Ranges
+        return table_name
+    
+    @log_stage("Graph Builder: Price range nodes")
+    def build_price_range_nodes(self) -> str:
+        """Build price range nodes based on property prices.
+        
+        Returns:
+            Name of the created table
+        """
         table_name = "gold_graph_price_ranges"
+        
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
+        # Create price range buckets
         query = f"""
         CREATE TABLE {table_name} AS
-        SELECT
-            range_id,
+        SELECT 
+            'range:' || LOWER(REPLACE(range_label, ' ', '_')) as price_range_id,
             range_label,
             min_price,
             max_price,
-            property_count,
+            COUNT(*) as property_count,
             'PriceRange' as node_label,
-            range_id as graph_node_id
-        FROM silver_price_ranges
+            'range:' || LOWER(REPLACE(range_label, ' ', '_')) as graph_node_id
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN price < 500000 THEN 'Under $500K'
+                    WHEN price >= 500000 AND price < 750000 THEN '$500K-$750K'
+                    WHEN price >= 750000 AND price < 1000000 THEN '$750K-$1M'
+                    WHEN price >= 1000000 AND price < 1500000 THEN '$1M-$1.5M'
+                    WHEN price >= 1500000 AND price < 2000000 THEN '$1.5M-$2M'
+                    ELSE 'Over $2M'
+                END as range_label,
+                CASE 
+                    WHEN price < 500000 THEN 0
+                    WHEN price >= 500000 AND price < 750000 THEN 500000
+                    WHEN price >= 750000 AND price < 1000000 THEN 750000
+                    WHEN price >= 1000000 AND price < 1500000 THEN 1000000
+                    WHEN price >= 1500000 AND price < 2000000 THEN 1500000
+                    ELSE 2000000
+                END as min_price,
+                CASE 
+                    WHEN price < 500000 THEN 500000
+                    WHEN price >= 500000 AND price < 750000 THEN 750000
+                    WHEN price >= 750000 AND price < 1000000 THEN 1000000
+                    WHEN price >= 1000000 AND price < 1500000 THEN 1500000
+                    WHEN price >= 1500000 AND price < 2000000 THEN 2000000
+                    ELSE 999999999
+                END as max_price,
+                listing_id
+            FROM gold_properties
+            WHERE price IS NOT NULL AND price > 0
+        ) price_ranges
+        GROUP BY range_label, min_price, max_price
+        ORDER BY min_price
         """
         
         self.connection_manager.execute(query)
+        
         count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
         self.logger.info(f"Created {table_name}: {count} price range nodes")
-        tables.append(table_name)
         
-        return tables
-    
-    @log_stage("Graph Builder: Geographic nodes")
-    def build_geographic_nodes(self) -> List[str]:
-        """Build geographic hierarchy node tables.
-        
-        Returns:
-            List of tables created
-        """
-        tables = []
-        
-        # Cities
-        table_name = "gold_graph_cities"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            city_id,
-            name,
-            state,
-            'City' as node_label,
-            city_id as graph_node_id
-        FROM silver_cities
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} city nodes")
-        tables.append(table_name)
-        
-        # States
-        table_name = "gold_graph_states"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            state_id,
-            abbreviation,
-            'State' as node_label,
-            state_id as graph_node_id
-        FROM silver_states
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} state nodes")
-        tables.append(table_name)
-        
-        # Zip Codes
-        table_name = "gold_graph_zip_codes"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            zip_code,
-            city_normalized,
-            state_normalized,
-            'ZipCode' as node_label,
-            zip_code as graph_node_id
-        FROM silver_zip_codes
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} zip code nodes")
-        tables.append(table_name)
-        
-        return tables
+        return table_name
     
     @log_stage("Graph Builder: LOCATED_IN relationships")
     def build_located_in_relationships(self) -> str:
@@ -491,7 +604,7 @@ class GoldGraphBuilder:
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
             'property:' || p.listing_id as from_id,
-            LOWER(TRIM(unnest(p.features))) as to_id,
+            'feature:' || LOWER(REPLACE(TRIM(unnest(p.features)), ' ', '_')) as to_id,
             'HAS_FEATURE' as relationship_type
         FROM gold_properties p
         WHERE p.features IS NOT NULL AND array_length(p.features) > 0
@@ -504,183 +617,167 @@ class GoldGraphBuilder:
         
         return table_name
     
-    @log_stage("Graph Builder: Geographic relationships")
-    def build_geographic_relationships(self) -> List[str]:
-        """Build geographic hierarchy relationships.
+    @log_stage("Graph Builder: PART_OF relationships")
+    def build_part_of_relationships(self) -> str:
+        """Build PART_OF relationships (Neighborhood -> City).
         
         Returns:
-            List of tables created
+            Name of the created table
         """
-        tables = []
+        table_name = "gold_graph_rel_part_of"
         
-        # IN_CITY relationships
-        table_name = "gold_graph_rel_in_city"
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            'property:' || p.listing_id as from_id,
-            p.city_normalized || '_' || p.state_normalized as to_id,
-            'IN_CITY' as relationship_type
-        FROM silver_properties p
-        WHERE p.city_normalized IS NOT NULL AND p.state_normalized IS NOT NULL
+            'neighborhood:' || neighborhood_id as from_id,
+            'city:' || LOWER(REPLACE(city || '_' || state, ' ', '_')) as to_id,
+            'PART_OF' as relationship_type
+        FROM gold_neighborhoods
+        WHERE city IS NOT NULL AND state IS NOT NULL
         """
         
         self.connection_manager.execute(query)
+        
         count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} IN_CITY relationships")
-        tables.append(table_name)
+        self.logger.info(f"Created {table_name}: {count} PART_OF relationships")
         
-        # IN_STATE relationships
-        table_name = "gold_graph_rel_in_state"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            city_id as from_id,
-            state as to_id,
-            'IN_STATE' as relationship_type
-        FROM gold_graph_cities
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} IN_STATE relationships")
-        tables.append(table_name)
-        
-        # IN_ZIP_CODE relationships
-        table_name = "gold_graph_rel_in_zip_code"
-        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        query = f"""
-        CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            'property:' || p.listing_id as from_id,
-            p.zip_code_clean as to_id,
-            'IN_ZIP_CODE' as relationship_type
-        FROM silver_properties p
-        WHERE p.zip_code_clean IS NOT NULL
-        """
-        
-        self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} IN_ZIP_CODE relationships")
-        tables.append(table_name)
-        
-        return tables
+        return table_name
     
-    @log_stage("Graph Builder: Classification relationships")
-    def build_classification_relationships(self) -> List[str]:
-        """Build classification relationships (TYPE_OF, IN_PRICE_RANGE).
+    @log_stage("Graph Builder: IN_COUNTY relationships")
+    def build_in_county_relationships(self) -> str:
+        """Build IN_COUNTY relationships (Neighborhood -> County).
         
         Returns:
-            List of tables created
+            Name of the created table
         """
-        tables = []
+        table_name = "gold_graph_rel_in_county"
         
-        # TYPE_OF relationships
-        table_name = "gold_graph_rel_type_of"
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            'neighborhood:' || neighborhood_id as from_id,
+            LOWER(REPLACE(wikipedia_correlations.parent_geography.county_wiki.title, ' ', '_')) as to_id,
+            'IN_COUNTY' as relationship_type
+        FROM gold_neighborhoods
+        WHERE wikipedia_correlations.parent_geography.county_wiki.title IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} IN_COUNTY relationships")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: DESCRIBES relationships")
+    def build_describes_relationships(self) -> str:
+        """Build DESCRIBES relationships (Wikipedia -> Neighborhood).
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_rel_describes"
+        
+        self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+        # Wikipedia articles describe neighborhoods based on geographic matching
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT DISTINCT
+            'wikipedia:' || CAST(w.page_id AS VARCHAR) as from_id,
+            'neighborhood:' || n.neighborhood_id as to_id,
+            'DESCRIBES' as relationship_type,
+            1.0 as confidence
+        FROM gold_wikipedia w
+        JOIN gold_neighborhoods n ON (
+            -- Match based on title containing neighborhood name and city
+            (LOWER(w.title) LIKE '%' || LOWER(n.name) || '%' 
+             AND LOWER(w.title) LIKE '%' || LOWER(n.city) || '%')
+            OR
+            -- Match based on primary wiki article
+            (n.wikipedia_correlations.primary_wiki_article.page_id = w.page_id)
+        )
+        WHERE w.page_id IS NOT NULL AND n.neighborhood_id IS NOT NULL
+        """
+        
+        self.connection_manager.execute(query)
+        
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} DESCRIBES relationships")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: OF_TYPE relationships")
+    def build_of_type_relationships(self) -> str:
+        """Build OF_TYPE relationships (Property -> PropertyType).
+        
+        Returns:
+            Name of the created table
+        """
+        table_name = "gold_graph_rel_of_type"
+        
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
             'property:' || listing_id as from_id,
-            LOWER(property_type) as to_id,
-            'TYPE_OF' as relationship_type
-        FROM gold_graph_properties
+            'type:' || LOWER(REPLACE(property_type, ' ', '_')) as to_id,
+            'OF_TYPE' as relationship_type
+        FROM gold_properties
         WHERE property_type IS NOT NULL
         """
         
         self.connection_manager.execute(query)
-        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-        self.logger.info(f"Created {table_name}: {count} TYPE_OF relationships")
-        tables.append(table_name)
         
-        # IN_PRICE_RANGE relationships
+        count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+        self.logger.info(f"Created {table_name}: {count} OF_TYPE relationships")
+        
+        return table_name
+    
+    @log_stage("Graph Builder: IN_PRICE_RANGE relationships")
+    def build_in_price_range_relationships(self) -> str:
+        """Build IN_PRICE_RANGE relationships (Property -> PriceRange).
+        
+        Returns:
+            Name of the created table
+        """
         table_name = "gold_graph_rel_in_price_range"
+        
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
         query = f"""
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
-            'property:' || p.listing_id as from_id,
-            p.price_range_category as to_id,
+            'property:' || listing_id as from_id,
+            'range:' || LOWER(REPLACE(
+                CASE 
+                    WHEN price < 500000 THEN 'Under $500K'
+                    WHEN price >= 500000 AND price < 750000 THEN '$500K-$750K'
+                    WHEN price >= 750000 AND price < 1000000 THEN '$750K-$1M'
+                    WHEN price >= 1000000 AND price < 1500000 THEN '$1M-$1.5M'
+                    WHEN price >= 1500000 AND price < 2000000 THEN '$1.5M-$2M'
+                    ELSE 'Over $2M'
+                END, ' ', '_'
+            )) as to_id,
             'IN_PRICE_RANGE' as relationship_type
-        FROM silver_properties p
-        WHERE p.price_range_category IS NOT NULL
+        FROM gold_properties
+        WHERE price IS NOT NULL AND price > 0
         """
         
         self.connection_manager.execute(query)
+        
         count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
         self.logger.info(f"Created {table_name}: {count} IN_PRICE_RANGE relationships")
-        tables.append(table_name)
         
-        return tables
+        return table_name
     
-    @log_stage("Graph Builder: Similarity relationships")
-    def build_similarity_relationships(self) -> List[str]:
-        """Build similarity relationships using embeddings.
-        
-        Returns:
-            List of tables created
-        """
-        tables = []
-        
-        # Check if embeddings exist
-        has_embeddings_query = """
-        SELECT COUNT(*) > 0 as has_embeddings
-        FROM gold_graph_properties
-        WHERE embedding IS NOT NULL
-        LIMIT 1
-        """
-        
-        has_embeddings = self.connection_manager.execute(has_embeddings_query).fetchone()[0]
-        
-        if has_embeddings:
-            # SIMILAR_TO relationships for properties
-            table_name = "gold_graph_rel_similar_properties"
-            self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
-            
-            # Use array operations for cosine similarity
-            query = f"""
-            CREATE TABLE {table_name} AS
-            WITH similarity_scores AS (
-                SELECT 
-                    p1.listing_id as id1,
-                    p2.listing_id as id2,
-                    list_dot_product(p1.embedding, p2.embedding) / 
-                    (sqrt(list_sum(list_transform(p1.embedding, x -> x * x))) * 
-                     sqrt(list_sum(list_transform(p2.embedding, x -> x * x)))) as similarity
-                FROM gold_graph_properties p1
-                CROSS JOIN gold_graph_properties p2
-                WHERE p1.listing_id < p2.listing_id
-                  AND p1.embedding IS NOT NULL
-                  AND p2.embedding IS NOT NULL
-                  AND array_length(p1.embedding) > 0
-                  AND array_length(p2.embedding) > 0
-            )
-            SELECT 
-                'property:' || id1 as from_id,
-                'property:' || id2 as to_id,
-                'SIMILAR_TO' as relationship_type,
-                similarity as weight
-            FROM similarity_scores
-            WHERE similarity > 0.85
-            ORDER BY similarity DESC
-            LIMIT 10000
-            """
-            
-            self.connection_manager.execute(query)
-            count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-            self.logger.info(f"Created {table_name}: {count} SIMILAR_TO relationships")
-            tables.append(table_name)
-        else:
-            self.logger.warning("No embeddings found - skipping similarity relationships")
-        
-        return tables
+    
+    
     
     @log_stage("Graph Builder: Build all")
     def build_all_graph_tables(self) -> GraphBuildMetadata:
@@ -692,51 +789,72 @@ class GoldGraphBuilder:
         start_time = datetime.now()
         metadata = GraphBuildMetadata()
         
-        # Build node tables
+        # Build node tables (10 types)
         self.logger.info("Building node tables...")
         
-        # Check what tables exist
+        # Core entity nodes
         if self.connection_manager.table_exists("gold_properties"):
             metadata.node_tables.append(self.build_property_nodes())
+            # Build nodes derived from properties
+            metadata.node_tables.append(self.build_feature_nodes())
+            metadata.node_tables.append(self.build_property_type_nodes())
+            metadata.node_tables.append(self.build_price_range_nodes())
+            metadata.node_tables.append(self.build_zip_code_nodes())
         
         if self.connection_manager.table_exists("gold_neighborhoods"):
             metadata.node_tables.append(self.build_neighborhood_nodes())
+            # Build county nodes from neighborhood data
+            metadata.node_tables.append(self.build_county_nodes())
         
         if self.connection_manager.table_exists("gold_wikipedia"):
             metadata.node_tables.append(self.build_wikipedia_nodes())
         
-        # Build classification and geographic nodes from extraction tables
-        if self.connection_manager.table_exists("silver_features"):
-            metadata.node_tables.extend(self.build_classification_nodes())
+        # Geographic hierarchy nodes
+        if self.connection_manager.table_exists("gold_properties") or self.connection_manager.table_exists("gold_neighborhoods"):
+            metadata.node_tables.append(self.build_city_nodes())
+            metadata.node_tables.append(self.build_state_nodes())
         
-        if self.connection_manager.table_exists("silver_cities"):
-            metadata.node_tables.extend(self.build_geographic_nodes())
-        
-        # Build relationship tables
+        # Build relationship tables (7 types - 2 existing + 5 new)
         self.logger.info("Building relationship tables...")
         
         if self.connection_manager.table_exists("gold_properties"):
+            # Property relationships
             metadata.relationship_tables.append(self.build_located_in_relationships())
             metadata.relationship_tables.append(self.build_has_feature_relationships())
-            metadata.relationship_tables.extend(self.build_geographic_relationships())
-            metadata.relationship_tables.extend(self.build_classification_relationships())
-            metadata.relationship_tables.extend(self.build_similarity_relationships())
+            metadata.relationship_tables.append(self.build_of_type_relationships())
+            metadata.relationship_tables.append(self.build_in_price_range_relationships())
+        
+        if self.connection_manager.table_exists("gold_neighborhoods"):
+            # Neighborhood relationships
+            metadata.relationship_tables.append(self.build_part_of_relationships())
+            metadata.relationship_tables.append(self.build_in_county_relationships())
+        
+        if self.connection_manager.table_exists("gold_wikipedia") and self.connection_manager.table_exists("gold_neighborhoods"):
+            # Wikipedia relationships
+            metadata.relationship_tables.append(self.build_describes_relationships())
         
         # Calculate totals
         for table in metadata.node_tables:
-            count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            metadata.total_nodes += count
+            try:
+                count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                metadata.total_nodes += count
+            except Exception as e:
+                self.logger.warning(f"Could not count nodes in {table}: {e}")
         
         for table in metadata.relationship_tables:
-            count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-            metadata.total_relationships += count
+            try:
+                count = self.connection_manager.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                metadata.total_relationships += count
+            except Exception as e:
+                self.logger.warning(f"Could not count relationships in {table}: {e}")
         
         # Calculate build time
         metadata.build_time_seconds = (datetime.now() - start_time).total_seconds()
         
         self.logger.info(
-            f"Graph build complete: {metadata.total_nodes} nodes, "
-            f"{metadata.total_relationships} relationships in {metadata.build_time_seconds:.2f}s"
+            f"Graph build complete: {len(metadata.node_tables)} node tables with {metadata.total_nodes} nodes, "
+            f"{len(metadata.relationship_tables)} relationship tables with {metadata.total_relationships} relationships "
+            f"in {metadata.build_time_seconds:.2f}s"
         )
         
         return metadata

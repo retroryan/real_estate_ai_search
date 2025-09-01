@@ -278,19 +278,24 @@ def main() -> int:
             print("Running Gold layer...")
             orchestrator.run_gold_layer()
         
-        # Embeddings
-        print("Generating embeddings...")
-        orchestrator.run_embeddings()
+        # Embeddings are generated in Silver layer (following medallion architecture)
+        
+        # Graph tables for Neo4j
+        write_neo4j = settings.output.neo4j.enabled
+        if write_neo4j:
+            print("Building Graph tables...")
+            orchestrator.run_graph_builder()
         
         # Writers
         write_parquet = not args.no_parquet and settings.output.parquet_enabled
         write_elasticsearch = args.elasticsearch or settings.output.elasticsearch_enabled
         
-        if write_parquet or write_elasticsearch:
+        if write_parquet or write_elasticsearch or write_neo4j:
             print("Exporting data...")
             orchestrator.run_writers(
                 write_parquet=write_parquet,
-                write_elasticsearch=write_elasticsearch
+                write_elasticsearch=write_elasticsearch,
+                write_neo4j=write_neo4j
             )
         
         # Calculate total elapsed time

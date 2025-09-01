@@ -92,6 +92,21 @@ class DuckDBConnectionManager:
         """
         return self.connect()
     
+    @staticmethod
+    def safe_identifier(name: str) -> str:
+        """Safely quote an identifier for DuckDB SQL.
+        
+        Args:
+            name: Identifier name (table, column, etc.)
+            
+        Returns:
+            Safely quoted identifier
+        """
+        # DuckDB uses double quotes for identifiers
+        # Escape any existing quotes
+        escaped = name.replace('"', '""')
+        return f'"{escaped}"'
+    
     def disconnect(self) -> None:
         """Close the DuckDB connection."""
         if self._connection:
@@ -164,10 +179,20 @@ class DuckDBConnectionManager:
         Args:
             table_name: Name of the table to drop
         """
-        self.execute(f"DROP TABLE IF EXISTS {table_name}")
+        safe_name = self.safe_identifier(table_name)
+        self.execute(f"DROP TABLE IF EXISTS {safe_name}")
+    
+    def drop_view(self, view_name: str) -> None:
+        """Drop a view if it exists.
+        
+        Args:
+            view_name: Name of the view to drop
+        """
+        safe_name = self.safe_identifier(view_name)
+        self.execute(f"DROP VIEW IF EXISTS {safe_name}")
     
     def count_records(self, table_name: str) -> int:
-        """Count records in a table.
+        """Count records in a table using Relation API.
         
         Args:
             table_name: Name of the table
@@ -178,7 +203,10 @@ class DuckDBConnectionManager:
         if not self.table_exists(table_name):
             return 0
         
-        result = self.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+        # Use Relation API for aggregation
+        conn = self.get_connection()
+        relation = conn.table(table_name)
+        result = relation.aggregate("count(*)").fetchone()
         return result[0] if result else 0
     
     def get_table_schema(self, table_name: str) -> list:
@@ -193,6 +221,7 @@ class DuckDBConnectionManager:
         if not self.table_exists(table_name):
             return []
         
+        # DESCRIBE is safe with table names
         result = self.execute(f"DESCRIBE {table_name}").fetchall()
         return result
     
@@ -212,7 +241,7 @@ class DuckDBConnectionManager:
         # Drop if exists
         self.drop_table(table_name)
         
-        # Create table
+        # Create table - DuckDB handles table name safety
         create_sql = f"CREATE TABLE {table_name} AS {select_query}"
         self.execute(create_sql, parameters)
     
@@ -222,19 +251,20 @@ class DuckDBConnectionManager:
         output_path: Path,
         compression: str = 'snappy'
     ) -> None:
-        """Export table to Parquet file.
+        """Export table to Parquet file using Relation API.
         
         Args:
             table_name: Name of table to export
             output_path: Path for output Parquet file
             compression: Parquet compression type
         """
-        query = f"""
-        COPY {table_name} 
-        TO '{output_path.absolute()}'
-        (FORMAT PARQUET, COMPRESSION '{compression}')
-        """
-        self.execute(query)
+        conn = self.get_connection()
+        # Use Relation API to write to Parquet
+        relation = conn.table(table_name)
+        relation.write_parquet(
+            str(output_path.absolute()),
+            compression=compression
+        )
     
     def read_parquet(
         self,
@@ -242,20 +272,25 @@ class DuckDBConnectionManager:
         table_name: str,
         sample_size: Optional[int] = None
     ) -> None:
-        """Read Parquet file into table.
+        """Read Parquet file into table using Relation API.
         
         Args:
             file_path: Path to Parquet file
             table_name: Name of table to create
             sample_size: Optional number of records to load
         """
-        # Build SELECT query
-        select_query = f"SELECT * FROM read_parquet('{file_path.absolute()}')"
-        if sample_size:
-            select_query += f" LIMIT {sample_size}"
+        conn = self.get_connection()
         
-        # Create table
-        self.create_table_as(table_name, select_query)
+        # Use Relation API to read Parquet
+        relation = conn.read_parquet(str(file_path.absolute()))
+        
+        # Apply sample limit if needed
+        if sample_size:
+            relation = relation.limit(sample_size)
+        
+        # Create table from relation
+        self.drop_table(table_name)
+        relation.create(table_name)
     
     def analyze_query(self, query: str) -> list:
         """Analyze query performance using EXPLAIN ANALYZE.
@@ -266,8 +301,8 @@ class DuckDBConnectionManager:
         Returns:
             Query execution plan with timing
         """
-        explain_query = f"EXPLAIN ANALYZE {query}"
-        return self.execute(explain_query).fetchall()
+        # EXPLAIN is a meta-command, safe to use directly
+        return self.execute(f"EXPLAIN ANALYZE {query}").fetchall()
     
     def get_query_plan(self, query: str) -> list:
         """Get query execution plan using EXPLAIN.
@@ -278,8 +313,8 @@ class DuckDBConnectionManager:
         Returns:
             Query execution plan
         """
-        explain_query = f"EXPLAIN {query}"
-        return self.execute(explain_query).fetchall()
+        # EXPLAIN is a meta-command, safe to use directly
+        return self.execute(f"EXPLAIN {query}").fetchall()
     
     def __enter__(self):
         """Enter context manager."""

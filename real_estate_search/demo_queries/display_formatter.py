@@ -136,17 +136,11 @@ class NeighborhoodDisplayFormatter:
         if neighborhood.population:
             stats["Population"] = f"{neighborhood.population:,}"
         
-        if neighborhood.median_income:
-            stats["Median Income"] = f"${neighborhood.median_income:,.0f}"
-        
-        if neighborhood.median_home_price:
-            stats["Median Home Price"] = f"${neighborhood.median_home_price:,.0f}"
-        
         if neighborhood.walkability_score:
             stats["Walkability"] = f"{neighborhood.walkability_score:.1f}/100"
         
-        if neighborhood.school_score:
-            stats["School Score"] = f"{neighborhood.school_score:.1f}/10"
+        if neighborhood.school_rating:
+            stats["School Rating"] = f"{neighborhood.school_rating:.1f}/10"
         
         return stats
     

@@ -13,9 +13,9 @@ import logging
 import os
 import json
 from pydantic import BaseModel, Field, ConfigDict, field_serializer, field_validator
-from squack_pipeline_v2.core.connection import DuckDBConnectionManager as ConnectionManager
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager, DuckDBConnectionManager as ConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.core.settings import ElasticsearchConfig
+from squack_pipeline_v2.core.settings import PipelineSettings
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,9 @@ class PropertyDocument(BaseModel):
     parking: ParkingInfo
     description: str = ""
     features: List[str] = Field(default_factory=list)
+    amenities: List[str] = Field(default_factory=list)  # Required by ES queries
+    status: str = "active"  # Required by ES queries
+    search_tags: List[str] = Field(default_factory=list)  # Required by ES queries
     listing_date: str = ""
     days_on_market: int = 0
     virtual_tour_url: str = ""
@@ -85,14 +88,13 @@ class NeighborhoodDocument(BaseModel):
     city: str
     state: str  # Changed from state_code
     population: int
-    median_income: float
-    median_home_price: float
     walkability_score: float = 0.0
-    school_score: float = 0.0
+    school_rating: float = 0.0
     overall_livability_score: float = 0.0
     location: GeoPoint  # Using standard geo_point
     description: str = ""
     amenities: List[str] = Field(default_factory=list)
+    lifestyle_tags: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
@@ -160,6 +162,9 @@ class PropertyInput(BaseModel):
     # Text fields
     description: str = ""
     features: List[str] = Field(default_factory=list)
+    amenities: List[str] = Field(default_factory=list)  # From Gold layer
+    status: str = "active"  # From Gold layer
+    search_tags: List[str] = Field(default_factory=list)  # From Gold layer
     
     # Date fields - DuckDB returns date objects
     listing_date: Optional[date] = None
@@ -183,16 +188,15 @@ class NeighborhoodInput(BaseModel):
     name: str
     city: str
     state: str
-    population: int
-    median_income: float  # Gold layer casts to float
-    median_home_price: float  # Gold layer casts to float
+    population: Optional[int] = 0
     walkability_score: float = 0.0
-    school_score: float = 0.0
+    school_rating: float = 0.0
     overall_livability_score: float = 0.0
     center_latitude: float = 0.0
     center_longitude: float = 0.0
     description: str = ""
     amenities: List[str] = Field(default_factory=list)
+    lifestyle_tags: List[str] = Field(default_factory=list)
     demographics: Dict[str, Any] = Field(default_factory=dict)
     
     # Embedding fields from Gold layer (medallion architecture)
@@ -220,8 +224,8 @@ class WikipediaInput(BaseModel):
     # Categories is JSON string from DB
     categories: str = ""
     
-    # These fields can be None from DuckDB
-    key_topics: Optional[List[str]] = None
+    # key_topics is always a list (empty if no topics)
+    key_topics: List[str] = Field(default_factory=list)
     relevance_score: float = 0.0
     article_quality_score: float = 0.0
     article_quality: str = ""
@@ -252,8 +256,14 @@ class WikipediaInput(BaseModel):
 class PropertyTransformer:
     """Transform property records to documents."""
     
-    @staticmethod
-    def transform(record: Dict[str, Any]) -> PropertyDocument:
+    def __init__(self, settings: PipelineSettings):
+        """Initialize with settings."""
+        self.settings = settings
+        self.embedding_model = settings.get_model_name()
+        if not self.embedding_model or self.embedding_model == "unknown":
+            raise ValueError(f"Invalid embedding configuration: provider={settings.embedding.provider}")
+    
+    def transform(self, record: Dict[str, Any]) -> PropertyDocument:
         """Transform a property record to document."""
         # Parse input with proper type handling
         input_data = PropertyInput(**record)
@@ -308,13 +318,16 @@ class PropertyTransformer:
             parking=parking,
             description=input_data.description,
             features=input_data.features,  # Already list from Gold layer
+            amenities=input_data.amenities,  # From Gold layer
+            status=input_data.status,  # From Gold layer
+            search_tags=input_data.search_tags,  # From Gold layer
             listing_date=listing_date_str,  # date -> string for ES
             days_on_market=input_data.days_on_market,
             virtual_tour_url=input_data.virtual_tour_url,
             images=input_data.images,
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model="voyage-3",  # Fixed model from medallion architecture
-            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedding_model=self.embedding_model,
+            embedding_dimension=len(embedding_list) if embedding_list else 0,
             embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
@@ -322,8 +335,14 @@ class PropertyTransformer:
 class NeighborhoodTransformer:
     """Transform neighborhood records to documents."""
     
-    @staticmethod
-    def transform(record: Dict[str, Any]) -> NeighborhoodDocument:
+    def __init__(self, settings: PipelineSettings):
+        """Initialize with settings."""
+        self.settings = settings
+        self.embedding_model = settings.get_model_name()
+        if not self.embedding_model or self.embedding_model == "unknown":
+            raise ValueError(f"Invalid embedding configuration: provider={settings.embedding.provider}")
+    
+    def transform(self, record: Dict[str, Any]) -> NeighborhoodDocument:
         """Transform a neighborhood record to document."""
         # Parse input with proper type handling
         input_data = NeighborhoodInput(**record)
@@ -343,19 +362,18 @@ class NeighborhoodTransformer:
             name=input_data.name,
             city=input_data.city,
             state=input_data.state,
-            population=input_data.population,
-            median_income=input_data.median_income,  # Already float from Gold layer
-            median_home_price=input_data.median_home_price,  # Already float from Gold layer
+            population=input_data.population or 0,
             walkability_score=input_data.walkability_score,
-            school_score=input_data.school_score,
+            school_rating=input_data.school_rating,
             overall_livability_score=input_data.overall_livability_score,
             location=location,
             description=input_data.description,
             amenities=input_data.amenities,  # Already list from Gold layer
+            lifestyle_tags=input_data.lifestyle_tags,  # Already list from Gold layer
             demographics=input_data.demographics,
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model="voyage-3",  # Fixed model from medallion architecture
-            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedding_model=self.embedding_model,
+            embedding_dimension=len(embedding_list) if embedding_list else 0,
             embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
@@ -363,8 +381,14 @@ class NeighborhoodTransformer:
 class WikipediaTransformer:
     """Transform Wikipedia records to documents."""
     
-    @staticmethod
-    def transform(record: Dict[str, Any]) -> WikipediaDocument:
+    def __init__(self, settings: PipelineSettings):
+        """Initialize with settings."""
+        self.settings = settings
+        self.embedding_model = settings.get_model_name()
+        if not self.embedding_model or self.embedding_model == "unknown":
+            raise ValueError(f"Invalid embedding configuration: provider={settings.embedding.provider}")
+    
+    def transform(self, record: Dict[str, Any]) -> WikipediaDocument:
         """Transform a Wikipedia record to document."""
         # Parse input with proper type handling
         input_data = WikipediaInput(**record)
@@ -385,16 +409,16 @@ class WikipediaTransformer:
             content_loaded=input_data.content_loaded,
             content_loaded_at=input_data.content_loaded_at or datetime.now(),
             categories=input_data.parse_categories(),
-            key_topics=input_data.key_topics or [],  # None -> empty list
+            key_topics=input_data.key_topics,  # Always a list now
             relevance_score=input_data.relevance_score,  # already float
             article_quality_score=input_data.article_quality_score,  # already float
             article_quality=input_data.article_quality,
-            city=input_data.city or "",  # None -> empty string
-            state=input_data.state or "",  # None -> empty string
+            city=input_data.city if input_data.city else "",  # Keep value if exists
+            state=input_data.state if input_data.state else "",  # Keep value if exists
             last_updated=input_data.last_updated or datetime.now(),
             embedding=embedding_list,  # tuple -> list for ES
-            embedding_model="voyage-3",  # Fixed model from medallion architecture
-            embedding_dimension=1024,  # Fixed dimension from medallion architecture
+            embedding_model=self.embedding_model,
+            embedding_dimension=len(embedding_list) if embedding_list else 0,
             embedded_at=input_data.embedding_generated_at or datetime.now()
         )
 
@@ -409,18 +433,29 @@ class ElasticsearchWriter:
     def __init__(
         self,
         connection_manager: ConnectionManager,
-        elasticsearch_config: ElasticsearchConfig
+        settings: PipelineSettings
     ):
-        """Initialize Elasticsearch writer."""
+        """Initialize Elasticsearch writer.
+        
+        Args:
+            connection_manager: DuckDB connection manager
+            settings: Complete pipeline settings
+        """
         self.connection_manager = connection_manager
-        self.config = elasticsearch_config
+        self.settings = settings
+        self.config = settings.output.elasticsearch
         self.documents_indexed = 0
         self.es_client = self._create_client()
         
-        # Initialize transformers
-        self.property_transformer = PropertyTransformer()
-        self.neighborhood_transformer = NeighborhoodTransformer()
-        self.wikipedia_transformer = WikipediaTransformer()
+        # Get embedding model name from settings
+        self.embedding_model = settings.get_model_name()
+        if not self.embedding_model or self.embedding_model == "unknown":
+            raise ValueError(f"Invalid embedding configuration: provider={settings.embedding.provider}, model={self.embedding_model}")
+        
+        # Initialize transformers with settings
+        self.property_transformer = PropertyTransformer(settings)
+        self.neighborhood_transformer = NeighborhoodTransformer(settings)
+        self.wikipedia_transformer = WikipediaTransformer(settings)
         
         # Verify connection
         if not self.es_client.ping():
@@ -460,7 +495,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index properties to Elasticsearch."""
         # Embeddings are now stored directly in Gold tables (medallion architecture)
-        query = f"SELECT * FROM {table_name}"
+        conn = self.connection_manager.get_connection()
+        query = f"SELECT * FROM {DuckDBConnectionManager.safe_identifier(table_name)}"
         
         return self._index_documents(
             query=query,
@@ -479,7 +515,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index neighborhoods to Elasticsearch."""
         # Embeddings are now stored directly in Gold tables (medallion architecture)
-        query = f"SELECT * FROM {table_name}"
+        conn = self.connection_manager.get_connection()
+        query = f"SELECT * FROM {DuckDBConnectionManager.safe_identifier(table_name)}"
         
         return self._index_documents(
             query=query,
@@ -498,7 +535,8 @@ class ElasticsearchWriter:
     ) -> Dict[str, Any]:
         """Index Wikipedia articles to Elasticsearch."""
         # Embeddings are now stored directly in Gold tables (medallion architecture)
-        query = f"SELECT * FROM {table_name}"
+        conn = self.connection_manager.get_connection()
+        query = f"SELECT * FROM {DuckDBConnectionManager.safe_identifier(table_name)}"
         
         return self._index_documents(
             query=query,
@@ -519,7 +557,7 @@ class ElasticsearchWriter:
         """Index documents with type-safe transformation."""
         from elasticsearch.helpers import bulk
         
-        # Get total count
+        # Get total count safely
         count_query = f"SELECT COUNT(*) FROM ({query}) t"
         total_records = self.connection_manager.execute(count_query).fetchone()[0]
         
@@ -533,7 +571,7 @@ class ElasticsearchWriter:
         start_time = datetime.now()
         
         while offset < total_records:
-            # Fetch batch from DuckDB
+            # Fetch batch from DuckDB using parameterized query
             batch_query = f"{query} LIMIT {batch_size} OFFSET {offset}"
             results = self.connection_manager.execute(batch_query)
             

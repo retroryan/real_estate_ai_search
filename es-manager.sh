@@ -154,7 +154,13 @@ run_sample_query() {
 
 # Function to run the full pipeline
 run_full_pipeline() {
-    print_status "Starting full pipeline execution..."
+    local sample_size="$1"
+    
+    if [ -n "$sample_size" ]; then
+        print_status "Starting pipeline execution with sample size: $sample_size"
+    else
+        print_status "Starting full pipeline execution (loading all data)..."
+    fi
     
     # Check Elasticsearch first
     if ! check_elasticsearch; then
@@ -172,11 +178,21 @@ run_full_pipeline() {
     
     # Step 2: Run main pipeline
     print_status "Step 2/4: Running Squack Pipeline v2..."
-    if python -m squack_pipeline_v2; then
-        print_success "Pipeline execution completed"
+    if [ -n "$sample_size" ]; then
+        print_status "Using sample size: $sample_size"
+        if python -m squack_pipeline_v2 --sample-size "$sample_size"; then
+            print_success "Pipeline execution completed"
+        else
+            print_error "Pipeline execution failed"
+            exit 1
+        fi
     else
-        print_error "Pipeline execution failed"
-        exit 1
+        if python -m squack_pipeline_v2; then
+            print_success "Pipeline execution completed"
+        else
+            print_error "Pipeline execution failed"
+            exit 1
+        fi
     fi
     
     # Step 3: Enrich Wikipedia data
@@ -212,26 +228,48 @@ run_full_pipeline() {
 
 # Function to show usage
 show_usage() {
+    echo "Elasticsearch Manager Script - Manages the complete Elasticsearch pipeline for real estate search"
+    echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --run          Run the complete pipeline flow"
-    echo "  --stats        Display Elasticsearch statistics"
-    echo "  --check        Check if Elasticsearch is running"
-    echo "  --sample       Run a sample query"
+    echo "  --run [SIZE]   Run complete pipeline: setup indices → run Squack Pipeline v2 → enrich Wikipedia → build relationships"
+    echo "                 SIZE: optional sample size (e.g., 10, 100). If omitted, loads all data."
+    echo "  --stats        Display Elasticsearch cluster health, index statistics, document counts, and total size"
+    echo "  --check        Check if Elasticsearch is accessible at localhost:9200"
+    echo "  --sample       Run sample query for San Francisco properties ($500K-$2M range)"
     echo "  --help         Show this help message"
     echo ""
+    echo "Pipeline Steps (--run):"
+    echo "  1. Setup Elasticsearch indices (clear existing data)"
+    echo "  2. Run Squack Pipeline v2 (process properties, neighborhoods, Wikipedia)"
+    echo "  3. Enrich Wikipedia data with embeddings"
+    echo "  4. Build index relationships"
+    echo "  5. Display final statistics and run sample query"
+    echo ""
     echo "Examples:"
-    echo "  $0 --run       # Run full pipeline and show results"
-    echo "  $0 --stats     # Show current index statistics"
-    echo "  $0 --check     # Check Elasticsearch connection"
-    echo "  $0 --sample    # Run a sample query"
+    echo "  $0 --run       # Execute full pipeline, load all data"
+    echo "  $0 --run 10    # Execute pipeline with sample size of 10"
+    echo "  $0 --run 100   # Execute pipeline with sample size of 100"
+    echo "  $0 --stats     # Show current index stats (documents, size, health)"
+    echo "  $0 --check     # Verify Elasticsearch connection"
+    echo "  $0 --sample    # Test query: SF properties with price/bedroom filters"
+    echo ""
+    echo "Requirements:"
+    echo "  - Elasticsearch running on localhost:9200"
+    echo "  - .env file with API keys (VOYAGE_API_KEY, etc.)"
+    echo "  - Python environment with real_estate_search and squack_pipeline_v2 modules"
 }
 
 # Main script logic
 case "$1" in
     --run)
-        run_full_pipeline
+        # Check if second argument is a number (sample size)
+        if [[ "$2" =~ ^[0-9]+$ ]]; then
+            run_full_pipeline "$2"
+        else
+            run_full_pipeline
+        fi
         ;;
     --stats)
         if check_elasticsearch; then

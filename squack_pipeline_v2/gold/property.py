@@ -1,11 +1,12 @@
-"""Property Gold layer enrichment using DuckDB Relation API."""
+"""Property Gold layer enrichment using DuckDB views."""
 
 from squack_pipeline_v2.gold.base import GoldEnricher
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
 
 
 class PropertyGoldEnricher(GoldEnricher):
-    """Enricher for property data into Gold layer using Relation API.
+    """Enricher for property data into Gold layer using views.
     
     Gold layer principles (Medallion Architecture):
     - Business-ready data with computed metrics
@@ -18,9 +19,9 @@ class PropertyGoldEnricher(GoldEnricher):
         """Return entity type."""
         return "property"
     
-    @log_stage("Gold: Property Enrichment")
-    def _apply_enrichments(self, input_table: str, output_table: str) -> None:
-        """Apply Gold enrichments using DuckDB Relation API.
+    @log_stage("Gold: Property View Creation")
+    def _create_enriched_view(self, input_table: str, output_table: str) -> None:
+        """Create Gold view with enrichments.
         
         Gold layer enrichments:
         - Business metrics (price per bedroom, value ratings)
@@ -30,161 +31,115 @@ class PropertyGoldEnricher(GoldEnricher):
         
         Args:
             input_table: Silver properties table
-            output_table: Gold properties table
+            output_table: Gold properties view name
         """
-        # Get connection for Relation API
+        # Get connection
         conn = self.connection_manager.get_connection()
         
-        # Apply Gold enrichments using SQL within relation
-        gold_relation = conn.sql(f"""
+        # Create Gold view with business-ready enrichments
+        safe_input = DuckDBConnectionManager.safe_identifier(input_table)
+        safe_output = DuckDBConnectionManager.safe_identifier(output_table)
+        
+        query = f"""
+        CREATE OR REPLACE VIEW {safe_output} AS
             SELECT 
                 -- Core identifiers (unchanged)
-                listing_id,
-                neighborhood_id,
+                s.listing_id,
+                s.neighborhood_id,
                 
                 -- Basic property details (from Silver)
-                bedrooms,
-                bathrooms,
-                square_feet,
-                property_type,
-                year_built,
-                lot_size,
+                s.bedrooms,
+                s.bathrooms,
+                s.square_feet,
+                s.property_type,
+                s.year_built,
+                s.lot_size,
                 
-                -- Price fields with business calculations
-                CAST(price AS FLOAT) AS price,
-                CAST(price_per_sqft AS FLOAT) AS price_per_sqft,
-                
-                -- GOLD ENRICHMENT: Price metrics and ratios
-                CASE 
-                    WHEN bedrooms > 0 
-                    THEN CAST(price / bedrooms AS FLOAT)
-                    ELSE CAST(price AS FLOAT)
-                END AS price_per_bedroom,
-                
-                CASE 
-                    WHEN bathrooms > 0 
-                    THEN CAST(price / bathrooms AS FLOAT)
-                    ELSE CAST(price AS FLOAT)
-                END AS price_per_bathroom,
-                
-                -- GOLD ENRICHMENT: Market positioning categories
-                CASE 
-                    WHEN price < 300000 THEN 'affordable'
-                    WHEN price < 800000 THEN 'mid_market'
-                    WHEN price < 2000000 THEN 'upscale'
-                    ELSE 'luxury'
-                END AS market_segment,
-                
-                -- GOLD ENRICHMENT: Property age categories
-                CASE 
-                    WHEN year_built >= 2020 THEN 'new_construction'
-                    WHEN year_built >= 2010 THEN 'recent'
-                    WHEN year_built >= 1990 THEN 'modern'
-                    WHEN year_built >= 1950 THEN 'established'
-                    ELSE 'historic'
-                END AS age_category,
-                
-                -- GOLD ENRICHMENT: Size categories
-                CASE 
-                    WHEN square_feet < 800 THEN 'compact'
-                    WHEN square_feet < 1500 THEN 'medium'
-                    WHEN square_feet < 2500 THEN 'large'
-                    ELSE 'spacious'
-                END AS size_category,
-                
-                -- GOLD ENRICHMENT: Investment metrics
-                CASE 
-                    WHEN price_per_sqft > 0 AND square_feet > 0
-                    THEN CAST((price_per_sqft - 500) / 500 * 100 AS FLOAT)
-                    ELSE 0.0
-                END AS price_premium_pct,
+                -- Price fields (keep price_per_sqft as it's used in ES queries)
+                CAST(s.price AS FLOAT) AS price,
+                CAST(s.price_per_sqft AS FLOAT) AS price_per_sqft,
                 
                 -- Address and location (from Silver)
-                address,
+                s.address,
                 
                 -- GOLD ENRICHMENT: Structured parking object
                 struct_pack(
-                    spaces := COALESCE(garage_spaces, 0),
+                    spaces := COALESCE(s.garage_spaces, 0),
                     type := CASE 
-                        WHEN garage_spaces > 2 THEN 'multi_car_garage'
-                        WHEN garage_spaces > 0 THEN 'single_garage' 
+                        WHEN s.garage_spaces > 2 THEN 'multi_car_garage'
+                        WHEN s.garage_spaces > 0 THEN 'single_garage' 
                         ELSE 'street_parking' 
                     END
                 ) as parking,
                 
                 -- Text and media
-                description,
-                COALESCE(features, LIST_VALUE()) AS features,
-                virtual_tour_url,
-                images,
+                s.description,
+                
+                -- GOLD ENRICHMENT: Enriched description combining property and neighborhood Wikipedia context
+                s.description || 
+                COALESCE(
+                    ' Located in ' || n.name || '. ' || 
+                    (SELECT w.extract 
+                     FROM silver_wikipedia w
+                     WHERE w.page_id = TRY_CAST(n.wikipedia_correlations['primary_wiki_article']['page_id'] AS BIGINT)
+                     LIMIT 1),
+                    ''
+                ) AS enriched_description,
+                
+                s.features,
+                s.virtual_tour_url,
+                s.images,
                 
                 -- Dates and metadata
-                listing_date,
-                days_on_market,
+                s.listing_date,
+                s.days_on_market,
                 
-                -- GOLD ENRICHMENT: Market urgency indicators
-                CASE 
-                    WHEN days_on_market <= 7 THEN 'hot'
-                    WHEN days_on_market <= 30 THEN 'active'
-                    WHEN days_on_market <= 90 THEN 'stale'
-                    ELSE 'cold'
-                END AS market_status,
+                -- Status field (required by ES queries) - all properties are active
+                'active' AS status,
                 
-                -- Complex nested data (preserved for advanced analytics)
-                price_history,
-                market_trends,
-                buyer_persona,
-                viewing_statistics,
-                buyer_demographics,
-                nearby_amenities,
-                future_enhancements,
+                -- Amenities field (required by ES queries) - use features as amenities
+                s.features AS amenities,
                 
-                -- GOLD ENRICHMENT: Business-ready embedding text
-                COALESCE(CAST(description AS VARCHAR), '') || ' | ' ||
-                COALESCE(CAST(property_type AS VARCHAR), '') || ' | ' ||
-                COALESCE(CAST(features AS VARCHAR), '') || ' | ' ||
-                COALESCE(CAST(bedrooms AS VARCHAR), '') || ' bedrooms | ' ||
-                COALESCE(CAST(bathrooms AS VARCHAR), '') || ' bathrooms | ' ||
-                COALESCE(CAST(square_feet AS VARCHAR), '') || ' sqft' as embedding_text,
+                -- Search tags (required by ES queries) - generate from property attributes
+                LIST_VALUE(
+                    s.property_type,
+                    CASE WHEN s.bedrooms = 1 THEN 'studio' 
+                         WHEN s.bedrooms = 2 THEN 'two-bedroom'
+                         WHEN s.bedrooms = 3 THEN 'three-bedroom'
+                         WHEN s.bedrooms >= 4 THEN 'family-home'
+                         ELSE 'property' END,
+                    CASE WHEN s.price < 500000 THEN 'affordable'
+                         WHEN s.price < 1000000 THEN 'mid-range'
+                         ELSE 'luxury' END
+                ) AS search_tags,
                 
-                -- GOLD ENRICHMENT: Search facets for business use
-                ARRAY[property_type, market_segment, age_category, size_category] AS search_facets,
+                -- Embedding text and vectors from Silver
+                s.embedding_text,
                 
                 -- GOLD ENRICHMENT: Business metadata
                 CURRENT_TIMESTAMP as gold_processed_at,
                 'property_gold_v3_business_ready' as processing_version,
                 
-                -- GOLD ENRICHMENT: Quality score for ranking
-                CASE 
-                    WHEN description IS NOT NULL AND LENGTH(description) > 50 AND images IS NOT NULL
-                    THEN 1.0
-                    WHEN description IS NOT NULL AND LENGTH(description) > 20
-                    THEN 0.7
-                    ELSE 0.3
-                END AS listing_quality_score,
+                -- Embeddings from Silver table (medallion architecture)
+                s.embedding_vector,
+                s.embedding_generated_at
                 
-                -- GOLD ENRICHMENT: Embedding infrastructure (medallion architecture)
-                CAST(NULL AS DOUBLE[1024]) AS embedding_vector,
-                CAST(NULL AS TIMESTAMP) AS embedding_generated_at
-                
-            FROM {input_table}
-            WHERE listing_id IS NOT NULL
-            AND price > 0
-            AND square_feet > 0
-        """)
+            FROM {safe_input} s
+            LEFT JOIN silver_neighborhoods n ON s.neighborhood_id = n.neighborhood_id
+            WHERE s.listing_id IS NOT NULL
+            AND s.price > 0
+            AND s.square_feet > 0
+        """
         
-        # Create the Gold table
-        gold_relation.create(output_table)
+        # Execute the CREATE VIEW statement
+        conn.execute(query)
         
         # Track enrichments applied
         self.enrichments_applied.extend([
-            "price_metrics",
-            "market_positioning", 
-            "investment_analysis",
-            "property_categorization",
-            "business_embedding_text",
-            "search_facets",
-            "quality_scoring"
+            "status_field",
+            "amenities_field",
+            "search_tags_field",
+            "enriched_description"
         ])
         
-        self.logger.info(f"Applied {len(self.enrichments_applied)} Gold enrichments to {output_table}")
+        self.logger.info(f"Created Gold view {output_table} with {len(self.enrichments_applied)} enrichments")

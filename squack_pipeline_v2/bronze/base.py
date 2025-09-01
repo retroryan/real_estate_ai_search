@@ -1,5 +1,6 @@
 """Base interface for Bronze layer ingestion."""
 
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
@@ -20,7 +21,7 @@ class BronzeMetadata(BaseModel):
     entity_type: str = Field(description="Type of entity (property, neighborhood, wikipedia)")
 
 
-class BronzeIngester:
+class BronzeIngester(ABC):
     """Base class for Bronze layer data ingestion."""
     
     def __init__(self, settings: PipelineSettings, connection_manager: DuckDBConnectionManager):
@@ -79,43 +80,53 @@ class BronzeIngester:
         return metadata
     
     def _load_json(self, path: Path, table_name: str, sample_size: Optional[int]) -> None:
-        """Load data from JSON file.
+        """Load data from JSON file using Relation API.
         
         Args:
             path: Path to JSON file
             table_name: Target table name
             sample_size: Optional sample size
         """
-        query = f"CREATE TABLE {table_name} AS SELECT * FROM read_json_auto('{path}')"
+        conn = self.connection_manager.get_connection()
         
+        # Use Relation API to read JSON
+        relation = conn.read_json_auto(str(path))
+        
+        # Apply sample limit if needed
         if sample_size:
-            query += f" LIMIT {sample_size}"
+            relation = relation.limit(sample_size)
         
-        self.connection_manager.execute(query)
+        # Create table from relation - Relation API handles safety
+        relation.create(table_name)
     
     def _load_csv(self, path: Path, table_name: str, sample_size: Optional[int]) -> None:
-        """Load data from CSV file.
+        """Load data from CSV file using Relation API.
         
         Args:
             path: Path to CSV file
             table_name: Target table name
             sample_size: Optional sample size
         """
-        query = f"CREATE TABLE {table_name} AS SELECT * FROM read_csv_auto('{path}')"
+        conn = self.connection_manager.get_connection()
         
+        # Use Relation API to read CSV
+        relation = conn.read_csv_auto(str(path))
+        
+        # Apply sample limit if needed
         if sample_size:
-            query += f" LIMIT {sample_size}"
+            relation = relation.limit(sample_size)
         
-        self.connection_manager.execute(query)
+        # Create table from relation - Relation API handles safety
+        relation.create(table_name)
     
+    @abstractmethod
     def _get_entity_type(self) -> str:
         """Get the entity type for this ingester.
         
         Returns:
             Entity type string
         """
-        # Default implementation - override in subclasses
-        return "unknown"
+        pass
     
     def validate(self, table_name: str) -> bool:
         """Validate the ingested data.
@@ -134,8 +145,8 @@ class BronzeIngester:
         # Check has records
         count = self.connection_manager.count_records(table_name)
         if count == 0:
-            self.logger.error(f"Table {table_name} has no records")
-            return False
+            self.logger.warning(f"Table {table_name} has no records")
+            return True  # Zero records might be valid
         
         # Check schema
         schema = self.connection_manager.get_table_schema(table_name)

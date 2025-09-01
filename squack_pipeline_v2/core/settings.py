@@ -65,12 +65,25 @@ class ElasticsearchConfig(BaseModel):
     timeout: int = Field(default=30)
 
 
+class Neo4jConfig(BaseModel):
+    """Neo4j configuration."""
+    enabled: bool = Field(default=False)
+    uri: str = Field(default="bolt://localhost:7687")
+    username: str = Field(default="neo4j")
+    database: str = Field(default="neo4j")
+    
+    def get_password(self) -> Optional[str]:
+        """Get Neo4j password from environment."""
+        return os.getenv("NEO4J_PASSWORD")
+
+
 class OutputConfig(BaseModel):
     """Output configuration."""
     parquet_enabled: bool = Field(default=True)
     parquet_dir: str = Field(default="output/parquet")
     elasticsearch_enabled: bool = Field(default=False)
     elasticsearch: ElasticsearchConfig = Field(default_factory=ElasticsearchConfig)
+    neo4j: Neo4jConfig = Field(default_factory=Neo4jConfig)
 
 
 class LoggingConfig(BaseModel):

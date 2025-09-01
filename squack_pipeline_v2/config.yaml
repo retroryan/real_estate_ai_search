@@ -55,7 +55,7 @@ processing:
 output:
   # Parquet export
   parquet_enabled: true
-  parquet_dir: output/parquet
+  parquet_dir: squack_pipeline_v2/output/parquet
   
   # Elasticsearch export
   elasticsearch_enabled: true

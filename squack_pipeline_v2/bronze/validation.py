@@ -226,18 +226,22 @@ class BronzeValidator:
     
     def _count_nulls(self, table_name: str, field: str) -> int:
         """Count NULL values in a field."""
-        query = f"SELECT COUNT(*) FROM {table_name} WHERE {field} IS NULL"
+        safe_table = DuckDBConnectionManager.safe_identifier(table_name)
+        safe_field = DuckDBConnectionManager.safe_identifier(field)
+        query = f"SELECT COUNT(*) FROM {safe_table} WHERE {safe_field} IS NULL"
         result = self.connection_manager.execute(query).fetchone()
         return result[0] if result else 0
     
     def _count_duplicates(self, table_name: str, field: str) -> int:
         """Count duplicate values in a field."""
+        safe_table = DuckDBConnectionManager.safe_identifier(table_name)
+        safe_field = DuckDBConnectionManager.safe_identifier(field)
         query = f"""
         SELECT COUNT(*) 
         FROM (
-            SELECT {field}, COUNT(*) as cnt
-            FROM {table_name}
-            GROUP BY {field}
+            SELECT {safe_field}, COUNT(*) as cnt
+            FROM {safe_table}
+            GROUP BY {safe_field}
             HAVING COUNT(*) > 1
         ) t
         """
@@ -246,7 +250,9 @@ class BronzeValidator:
     
     def _get_min_field_length(self, table_name: str, field: str) -> int:
         """Get minimum length of a text field."""
-        query = f"SELECT MIN(LENGTH({field})) FROM {table_name}"
+        safe_table = DuckDBConnectionManager.safe_identifier(table_name)
+        safe_field = DuckDBConnectionManager.safe_identifier(field)
+        query = f"SELECT MIN(LENGTH({safe_field})) FROM {safe_table}"
         result = self.connection_manager.execute(query).fetchone()
         return result[0] if result and result[0] else 0
     
@@ -254,10 +260,11 @@ class BronzeValidator:
         """Validate property data types and ranges."""
         try:
             # Check numeric ranges
+            safe_table = DuckDBConnectionManager.safe_identifier(table_name)
             range_query = f"""
             SELECT 
                 COUNT(*) as invalid_count
-            FROM {table_name}
+            FROM {safe_table}
             WHERE listing_price <= 0
                 OR bedrooms < 0
                 OR bathrooms < 0
@@ -285,15 +292,14 @@ class BronzeValidator:
             conditions = []
             if "population" in schema:
                 conditions.append("population < 0")
-            if "median_income" in schema:
-                conditions.append("median_income < 0")
             if "walkability_score" in schema:
                 conditions.append("walkability_score NOT BETWEEN 0 AND 100")
             
             if conditions:
+                safe_table = DuckDBConnectionManager.safe_identifier(table_name)
                 range_query = f"""
                 SELECT COUNT(*) as invalid_count
-                FROM {table_name}
+                FROM {safe_table}
                 WHERE {' OR '.join(conditions)}
                 """
                 result = self.connection_manager.execute(range_query).fetchone()

@@ -14,7 +14,7 @@ SILVER_PROPERTIES = "silver_properties"
 SILVER_NEIGHBORHOODS = "silver_neighborhoods"
 SILVER_WIKIPEDIA = "silver_wikipedia"
 
-# Gold layer tables (contain business data AND embeddings)
+# Gold layer views (business-ready views with enrichments)
 GOLD_PROPERTIES = "gold_properties"
 GOLD_NEIGHBORHOODS = "gold_neighborhoods"
 GOLD_WIKIPEDIA = "gold_wikipedia"

@@ -280,7 +280,6 @@ class Demographics(BaseModel):
     population: Optional[int] = Field(None, ge=0, description="Total population")
     households: Optional[int] = Field(None, ge=0, description="Number of households")
     median_age: Optional[float] = Field(None, ge=0, le=120, description="Median age")
-    median_income: Optional[float] = Field(None, ge=0, description="Median household income")
     median_home_value: Optional[float] = Field(None, ge=0, description="Median home value")
     
     model_config = ConfigDict(extra="ignore")

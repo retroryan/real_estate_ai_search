@@ -5,10 +5,10 @@ from typing import Optional
 from squack_pipeline_v2.core.settings import PipelineSettings
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage, PipelineLogger
-from squack_pipeline_v2.bronze.metadata import BronzeMetadata
+from squack_pipeline_v2.bronze.base import BronzeIngester, BronzeMetadata
 
 
-class NeighborhoodBronzeIngester:
+class NeighborhoodBronzeIngester(BronzeIngester):
     """Ingester for raw neighborhood data into Bronze layer.
     
     Bronze layer principle: Load data AS-IS from source with NO transformations.
@@ -56,38 +56,37 @@ class NeighborhoodBronzeIngester:
         # Drop existing table if it exists
         self.connection_manager.drop_table(table_name)
         
-        # Load JSON directly into DuckDB - let DuckDB handle all structure
-        if sample_size:
-            query = f"""
-            CREATE TABLE {table_name} AS
-            SELECT * FROM read_json_auto(
-                '{file_path.absolute()}',
-                maximum_object_size=20000000
-            )
-            LIMIT {sample_size}
-            """
-        else:
-            query = f"""
-            CREATE TABLE {table_name} AS
-            SELECT * FROM read_json_auto(
-                '{file_path.absolute()}',
-                maximum_object_size=20000000
-            )
-            """
+        # Use Relation API to safely load JSON
+        conn = self.connection_manager.get_connection()
+        relation = conn.read_json(
+            str(file_path.absolute()),
+            maximum_object_size=20000000,
+            format='auto'
+        )
         
-        self.connection_manager.execute(query)
+        # Apply sample limit if needed
+        if sample_size:
+            relation = relation.limit(sample_size)
+        
+        # Create table from relation
+        relation.create(table_name)
         
         # Get record count for metrics
-        count_result = self.connection_manager.execute(
-            f"SELECT COUNT(*) FROM {table_name}"
-        ).fetchone()
-        self.records_ingested = count_result[0] if count_result else 0
+        self.records_ingested = self.connection_manager.count_records(table_name)
         
         self.logger.info(f"Loaded {self.records_ingested} raw neighborhood records into {table_name}")
         
         return BronzeMetadata(
             table_name=table_name,
-            source_path=str(file_path.absolute()),
-            records_loaded=self.records_ingested,
-            sample_size=sample_size if sample_size else 0
+            source_path=file_path.absolute(),
+            record_count=self.records_ingested,
+            entity_type=self._get_entity_type()
         )
+    
+    def _get_entity_type(self) -> str:
+        """Get the entity type for this ingester.
+        
+        Returns:
+            Entity type string
+        """
+        return "neighborhood"

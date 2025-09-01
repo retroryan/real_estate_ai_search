@@ -164,7 +164,7 @@ Properties undergo the most significant transformation because their source data
 The address transformation is particularly important - we restructure the address object to include the geo-point location array inside it, matching exactly how Elasticsearch expects to handle property addresses for location-based searches.
 
 **Neighborhood Silver Transformations**
-Neighborhoods require flattening of demographic and characteristic data to support faceted search. Users want to filter by population, median income, walkability scores, and school ratings. We promote these metrics to top-level fields while maintaining the rich nested structures that contain detailed breakdowns and correlations.
+Neighborhoods require flattening of demographic and characteristic data to support faceted search. Users want to filter by population, walkability scores, and school ratings. We promote these metrics to top-level fields while maintaining the rich nested structures that contain detailed breakdowns and correlations.
 
 **Wikipedia Silver Transformations**
 Wikipedia articles require minimal transformation since they're already relatively flat. The primary change is creating proper geo-point arrays for articles that have geographic references, enabling location-based discovery of relevant content.

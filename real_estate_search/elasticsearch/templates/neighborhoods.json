@@ -25,9 +25,6 @@
     "population": {
       "type": "integer"
     },
-    "median_income": {
-      "type": "integer"
-    },
     "walkability_score": {
       "type": "byte"
     },
@@ -39,6 +36,10 @@
       "analyzer": "property_analyzer"
     },
     "amenities": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "lifestyle_tags": {
       "type": "keyword",
       "normalizer": "lowercase_normalizer"
     },

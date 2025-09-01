@@ -1,11 +1,12 @@
-"""Wikipedia Gold layer enrichment using DuckDB Relation API."""
+"""Wikipedia Gold layer enrichment using DuckDB views."""
 
 from squack_pipeline_v2.gold.base import GoldEnricher
+from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
 
 
 class WikipediaGoldEnricher(GoldEnricher):
-    """Enricher for Wikipedia data into Gold layer using Relation API.
+    """Enricher for Wikipedia data into Gold layer using views.
     
     Gold layer principles (Medallion Architecture):
     - Business-ready article analytics
@@ -18,9 +19,9 @@ class WikipediaGoldEnricher(GoldEnricher):
         """Return entity type."""
         return "wikipedia"
     
-    @log_stage("Gold: Wikipedia Enrichment")
-    def _apply_enrichments(self, input_table: str, output_table: str) -> None:
-        """Apply Gold enrichments using DuckDB Relation API.
+    @log_stage("Gold: Wikipedia View Creation")
+    def _create_enriched_view(self, input_table: str, output_table: str) -> None:
+        """Create Gold view with enrichments.
         
         Gold layer enrichments:
         - Article quality and authority scoring
@@ -30,13 +31,17 @@ class WikipediaGoldEnricher(GoldEnricher):
         
         Args:
             input_table: Silver Wikipedia table
-            output_table: Gold Wikipedia table
+            output_table: Gold Wikipedia view name
         """
-        # Get connection for Relation API
+        # Get connection
         conn = self.connection_manager.get_connection()
         
-        # Apply Gold enrichments using SQL within relation
-        gold_relation = conn.sql(f"""
+        # Create Gold view with business-ready enrichments
+        safe_input = DuckDBConnectionManager.safe_identifier(input_table)
+        safe_output = DuckDBConnectionManager.safe_identifier(output_table)
+        
+        query = f"""
+        CREATE OR REPLACE VIEW {safe_output} AS
             SELECT 
                 -- Core identifiers (unchanged)
                 page_id,
@@ -91,21 +96,24 @@ class WikipediaGoldEnricher(GoldEnricher):
                 -- GOLD ENRICHMENT: Content categories for business use
                 categories,
                 
-                -- GOLD ENRICHMENT: Extract key topics from categories
+                -- GOLD ENRICHMENT: Extract key topics from categories (filtered for non-nulls)
                 CASE 
                     WHEN categories IS NOT NULL AND LENGTH(categories) > 0
-                    THEN ARRAY[
-                        CASE WHEN categories LIKE '%geography%' OR categories LIKE '%location%' THEN 'geography' END,
-                        CASE WHEN categories LIKE '%history%' OR categories LIKE '%historic%' THEN 'history' END,
-                        CASE WHEN categories LIKE '%business%' OR categories LIKE '%company%' THEN 'business' END,
-                        CASE WHEN categories LIKE '%culture%' OR categories LIKE '%art%' THEN 'culture' END,
-                        CASE WHEN categories LIKE '%transport%' OR categories LIKE '%infrastructure%' THEN 'infrastructure' END
-                    ]
-                    ELSE CAST(NULL AS VARCHAR[])
+                    THEN list_filter(
+                        ARRAY[
+                            CASE WHEN categories LIKE '%geography%' OR categories LIKE '%location%' THEN 'geography' END,
+                            CASE WHEN categories LIKE '%history%' OR categories LIKE '%historic%' THEN 'history' END,
+                            CASE WHEN categories LIKE '%business%' OR categories LIKE '%company%' THEN 'business' END,
+                            CASE WHEN categories LIKE '%culture%' OR categories LIKE '%art%' THEN 'culture' END,
+                            CASE WHEN categories LIKE '%transport%' OR categories LIKE '%infrastructure%' THEN 'infrastructure' END
+                        ],
+                        x -> x IS NOT NULL
+                    )
+                    ELSE CAST([] AS VARCHAR[])
                 END as key_topics,
                 
                 -- Quality and relevance scoring (enhanced)
-                COALESCE(relevance_score, 0.0) as relevance_score,
+                relevance_score,
                 
                 -- GOLD ENRICHMENT: Multi-factor article quality score
                 CAST((
@@ -139,13 +147,15 @@ class WikipediaGoldEnricher(GoldEnricher):
                     ELSE 0.0
                 END AS geographic_relevance_score,
                 
+                -- Location fields from Silver
+                city,
+                state,
+                
                 -- Metadata
                 crawled_at as last_updated,
                 
-                -- GOLD ENRICHMENT: Business-ready embedding text
-                COALESCE(title, '') || ' | ' ||
-                COALESCE(extract, '') || ' | ' ||
-                COALESCE(CAST(key_topics AS VARCHAR), '') as embedding_text,
+                -- Embedding text from Silver
+                embedding_text,
                 
                 -- GOLD ENRICHMENT: Business search facets
                 ARRAY[
@@ -166,18 +176,18 @@ class WikipediaGoldEnricher(GoldEnricher):
                     CASE WHEN LENGTH(title) BETWEEN 10 AND 100 THEN 0.2 ELSE 0.1 END
                 ) AS FLOAT) as search_ranking_score,
                 
-                -- GOLD ENRICHMENT: Embedding infrastructure (medallion architecture)
-                CAST(NULL AS DOUBLE[1024]) AS embedding_vector,
-                CAST(NULL AS TIMESTAMP) AS embedding_generated_at
+                -- Embeddings from Silver
+                embedding_vector,
+                embedding_generated_at
                 
-            FROM {input_table}
+            FROM {safe_input}
             WHERE page_id IS NOT NULL
             AND title IS NOT NULL
             AND LENGTH(title) > 0
-        """)
+        """
         
-        # Create the Gold table
-        gold_relation.create(output_table)
+        # Execute the CREATE VIEW statement
+        conn.execute(query)
         
         # Track enrichments applied
         self.enrichments_applied.extend([
@@ -187,8 +197,7 @@ class WikipediaGoldEnricher(GoldEnricher):
             "geographic_relevance",
             "business_categorization",
             "search_optimization",
-            "ranking_algorithms",
-            "business_embedding_text"
+            "ranking_algorithms"
         ])
         
-        self.logger.info(f"Applied {len(self.enrichments_applied)} Gold enrichments to {output_table}")
+        self.logger.info(f"Created Gold view {output_table} with {len(self.enrichments_applied)} enrichments")

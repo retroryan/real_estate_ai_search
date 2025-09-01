@@ -1,5 +1,31 @@
 # DuckDB Best Practices for Production Data Pipelines (2024)
 
+## 🤖 Quick Reference for LLMs
+
+**ALWAYS follow these DuckDB patterns when working on squack_pipeline_v2:**
+
+### ✅ DO:
+1. **Use simple string table names** - Validate once at entry, then use strings
+2. **Include ALL columns in CREATE TABLE** - Never ALTER/UPDATE after CREATE
+3. **Use parameterized queries** - `conn.execute("SELECT * FROM t WHERE id = ?", [id])` or named params `$param`
+4. **Use Relation API for transforms** - `conn.table("t").filter("price > 100000").df()`
+5. **Use native DuckDB features** - `read_parquet()`, `read_json_auto()`, Appender
+6. **Reuse connections** - Single connection for entire pipeline
+7. **Use Parquet not CSV** - Up to 600× performance difference (2024 benchmarks)
+
+### ❌ DON'T:
+1. **Use simple string table names** - Keep it simple with validated strings
+2. **Don't ALTER TABLE after CREATE** - Include everything in initial CREATE
+3. **Don't concatenate SQL strings** - Use parameterized queries
+4. **Don't load data to pandas first** - Use DuckDB's direct file readers
+5. **Don't create intermediate tables** - Use CTEs or views
+6. **Don't use Python loops for transforms** - Use SQL set operations
+7. **Don't use DECIMAL > 18 digits** - Performance degrades with INT128
+8. **Don't mix pandas with DuckDB** - Major anti-pattern, breaks columnar design
+
+### 🔥 Best Practice:
+**The pipeline uses simple string table names with validation at boundaries. This follows DuckDB best practices for clean, maintainable code.**
+
 ## Executive Summary
 
 This document consolidates DuckDB best practices for production data pipelines, based on official documentation, performance benchmarks, and real-world implementations. Updated for DuckDB 1.0+ (stable release) with the latest optimizations from 2024.
@@ -41,12 +67,13 @@ for query in queries:
     conn.close()
 ```
 
-**Best Practice**: Reuse the same database connection many times. Disconnecting and reconnecting incurs overhead and loses cached data and metadata.
+**Best Practice**: Reuse the same database connection many times. Disconnecting and reconnecting incurs overhead and loses cached data and metadata. DuckDB caches functions, database catalog, and other items in memory for faster subsequent queries.
 
 ### File Format Optimization
-- **Parquet > CSV**: DuckDB can be up to 600× slower reading CSV vs Parquet
-- **Always convert CSV to Parquet** for production workloads
+- **Parquet > CSV**: DuckDB can be up to 600× slower reading CSV vs Parquet (2024 benchmarks)
+- **Always convert CSV to Parquet** for production workloads despite improved CSV performance
 - **Direct file operations**: Use `read_parquet()` without intermediate loading
+- **Storage efficiency**: Parquet files are ~7× smaller than CSV for same data
 
 ```sql
 -- ✅ GOOD: Direct Parquet reading
@@ -94,39 +121,99 @@ for id in ids:
 
 ## Security Best Practices
 
-### SQL Injection Prevention
+### DuckDB Best Practices Approach
+The pipeline follows DuckDB best practices with simple string table names and proper validation.
 
-#### Table Name Validation
+**Key principles we follow**:
+1. Use parameterized queries for SQL safety instead of string concatenation
+2. Use DuckDB's Relation API which provides type safety naturally
+3. Keep table names simple and validate them at boundaries
+
+### The Solution: Follow DuckDB Native Patterns
+
+#### What a DuckDB Engineer Would Do
+
+##### 1. Use Simple String Table Names with Validation at Boundaries
+- Table names should be simple strings
+- Validate them once at entry points using regex: `^[a-zA-Z][a-zA-Z0-9_]{0,63}$`
+- Keep it simple and maintainable
+
 ```python
-from pydantic import BaseModel, Field, validator
+# ✅ GOOD: Simple validation at boundaries
 import re
 
-class TableIdentifier(BaseModel):
-    """SQL-safe table identifier"""
-    name: str = Field(..., regex=r'^[a-zA-Z][a-zA-Z0-9_]{0,63}$')
-    schema: str = Field(default='main')
-    
-    @property
-    def qualified_name(self) -> str:
-        return f'"{self.schema}"."{self.name}"'
+def validate_table_name(name: str) -> str:
+    """Validate table name once at entry point"""
+    if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]{0,63}$', name):
+        raise ValueError(f"Invalid table name: {name}")
+    return name
 
-# ✅ SAFE: Validated table names
-table = TableIdentifier(name="properties_bronze")
-conn.execute(f"CREATE TABLE {table.qualified_name} AS ...")
-
-# ❌ UNSAFE: Direct concatenation
-table_name = user_input
-conn.execute(f"CREATE TABLE {table_name} AS ...")  # SQL injection risk!
+# Use simple strings internally
+table_name = validate_table_name("properties_bronze")
+conn.execute(f"CREATE TABLE {table_name} AS ...")
 ```
 
-#### Parameterized Queries
+##### 2. Use Parameterized Queries for SQL Injection Prevention
+DuckDB supports three parameter syntaxes: auto-incremented (`?`), positional (`$1`, `$2`), and named (`$param`). Use `execute(query, parameters)` for safe SQL execution. Never concatenate user input into SQL strings.
+
 ```python
-# ✅ SAFE: Parameterized for user data
-conn.execute("SELECT * FROM t WHERE price > ?", [user_price])
+# ✅ SAFE: Auto-incremented parameters
+conn.execute("SELECT * FROM t WHERE price > ? AND beds >= ?", [user_price, user_beds])
+
+# ✅ SAFE: Positional parameters
+conn.execute("SELECT * FROM t WHERE price > $1 AND beds >= $2", [user_price, user_beds])
+
+# ✅ SAFE: Named parameters (recommended for readability)
+conn.execute("SELECT * FROM t WHERE price > $min_price AND beds >= $min_beds", 
+             {"min_price": user_price, "min_beds": user_beds})
 
 # ❌ UNSAFE: String concatenation
 conn.execute(f"SELECT * FROM t WHERE price > {user_price}")
 ```
+
+##### 3. Use DuckDB's Relation API for Data Transformations
+The Relation API provides type-safe, lazy-evaluated operations:
+
+```python
+# ✅ GOOD: Relation API for complex transformations
+relation = conn.table("properties")
+filtered = relation.filter("price > 100000")
+result = filtered.project("id, price, state").df()
+
+# Chain operations - lazy evaluation
+result = (conn.table("properties")
+    .filter("price > 100000")
+    .project("id, price, state")
+    .aggregate("state, COUNT(*) as cnt, AVG(price) as avg_price")
+    .order("avg_price DESC")
+    .limit(10)
+    .df())
+```
+
+##### 4. Use Native DuckDB Features
+- **For Parquet**: Use native `COPY TO` command
+- **For JSON/CSV**: Use `read_json_auto()` and `read_csv_auto()`
+- **For Views**: Create views for complex reusable queries
+- **For Bulk Inserts**: Use Appender, not prepared statements
+
+```python
+# ✅ GOOD: Native DuckDB Appender for bulk inserts
+appender = conn.appender("properties")
+for row in data:
+    appender.append_row(row)
+appender.close()
+
+# ✅ GOOD: Native file operations
+conn.execute("COPY properties TO 'output.parquet' (FORMAT PARQUET)")
+```
+
+### Key Best Practices from DuckDB Documentation
+
+1. **Lazy Evaluation**: Relations are symbolic - nothing executes until triggered
+2. **Query Optimization**: DuckDB optimizes the entire chain before execution
+3. **Memory Efficiency**: Relations don't hold data until execution
+4. **SQL Injection Safety**: Always use parameterized queries for user input
+5. **Performance**: Use native features instead of custom implementations
 
 ### Connection Security
 ```python
@@ -156,26 +243,27 @@ class DuckDBConnectionConfig(BaseModel):
 **Purpose**: Immutable raw data storage with minimal transformation
 
 ```sql
--- Bronze: Preserve raw data exactly
+-- Bronze: Preserve raw data exactly - ALL columns in single pass
 CREATE TABLE bronze_properties AS
 SELECT 
     *,
     current_timestamp AS ingested_at,
     'properties.json' AS source_file,
+    gen_random_uuid() AS load_id,  -- Add lineage ID in initial CREATE
     md5(to_json(*)::VARCHAR) AS row_hash  -- For change detection
 FROM read_json_auto('data/properties/*.json');
 
--- Add metadata for lineage
-ALTER TABLE bronze_properties 
-ADD COLUMN load_id UUID DEFAULT gen_random_uuid();
+-- ❌ AVOID: ALTER TABLE after CREATE (anti-pattern - requires extra scan)
+-- ALTER TABLE bronze_properties ADD COLUMN load_id UUID DEFAULT gen_random_uuid();
 ```
 
 **Best Practices**:
 - Keep data immutable
-- Add ingestion metadata
+- Add ALL metadata in initial CREATE (avoid ALTER/UPDATE)
 - Preserve original data types
 - Use `read_json_auto()` for schema inference
 - Store row hashes for change detection
+- Single-pass processing for performance
 
 #### Silver Layer (Standardization)
 **Purpose**: Clean, standardize, and validate data
@@ -244,11 +332,9 @@ WITH enriched AS (
         h3_latlng_to_cell(p.latitude, p.longitude, 9) AS h3_cell,
         
         -- Neighborhood enrichment
-        n.median_income AS neighborhood_median_income,
-        n.school_score AS neighborhood_school_score,
+        n.school_rating AS neighborhood_school_rating,
         
         -- Market analysis
-        p.price / NULLIF(n.median_home_price, 1) AS price_ratio,
         PERCENT_RANK() OVER (
             PARTITION BY p.state_code 
             ORDER BY p.price
@@ -534,6 +620,39 @@ SELECT * FROM property_hierarchy;
 
 ## Anti-Patterns to Avoid
 
+### ❌ DON'T: UPDATE or ALTER After CREATE TABLE
+```sql
+-- BAD: Create then modify - requires two table scans
+CREATE TABLE bronze_properties AS
+SELECT * FROM read_json_auto('data/properties/*.json');
+
+ALTER TABLE bronze_properties 
+ADD COLUMN ingested_at TIMESTAMP DEFAULT current_timestamp;
+
+ALTER TABLE bronze_properties 
+ADD COLUMN load_id UUID DEFAULT gen_random_uuid();
+
+UPDATE bronze_properties 
+SET source_file = 'properties.json';
+
+-- GOOD: Include all columns in initial CREATE - single scan
+CREATE TABLE bronze_properties AS
+SELECT 
+    *,
+    current_timestamp AS ingested_at,
+    'properties.json' AS source_file,
+    gen_random_uuid() AS load_id,
+    md5(to_json(*)::VARCHAR) AS row_hash
+FROM read_json_auto('data/properties/*.json');
+```
+
+**Why this is bad:**
+- Each ALTER/UPDATE requires a full table scan
+- Multiple operations = multiple scans = slow performance  
+- DuckDB is optimized for immutable, columnar operations
+- CREATE AS SELECT can compute everything in a single pass
+- ALTER TABLE has limited capabilities compared to other databases
+
 ### ❌ DON'T: Use isinstance/hasattr for Type Checking
 ```python
 # BAD: Runtime type checking
@@ -577,6 +696,34 @@ conn.execute("""
     ADD COLUMN price_per_sqft AS (price / NULLIF(sqft, 0))
 """)
 ```
+
+### ❌ DON'T: Mix Pandas with DuckDB Transformations
+```python
+# BAD: Mixed pandas/DuckDB approach - major anti-pattern
+df = conn.table('properties').project("id, price, sqft").df()
+df['price_per_sqft'] = df['price'] / df['sqft']  # pandas operation
+df['description'] = df['description'].fillna('')  # pandas operation
+conn.register('temp_df', df)
+conn.table('temp_df').create('final_table')
+
+# GOOD: Pure DuckDB Relation API
+result = (conn.table('properties')
+    .project("""
+        id,
+        price,
+        sqft,
+        price / NULLIF(sqft, 0) as price_per_sqft,
+        COALESCE(description, '') as description
+    """))
+result.create('final_table')
+```
+
+**Why mixing pandas is bad:**
+- **Performance**: Forces data conversion between DuckDB and pandas
+- **Memory overhead**: Duplicates data in memory
+- **Type conversion issues**: Decimal/float precision loss
+- **Breaks lazy evaluation**: Forces immediate execution
+- **Anti-pattern**: Goes against DuckDB's columnar design
 
 ### ❌ DON'T: Over-Normalize for Analytics
 ```sql

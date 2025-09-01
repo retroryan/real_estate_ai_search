@@ -1,12 +1,15 @@
 """Base interface for Silver layer transformation using DuckDB Relation API."""
 
+from abc import ABC, abstractmethod
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 import duckdb
+from datetime import datetime
 
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import PipelineLogger, log_execution_time
 from squack_pipeline_v2.core.settings import PipelineSettings
+from squack_pipeline_v2.embeddings.providers import EmbeddingProvider
 
 
 class SilverMetadata(BaseModel):
@@ -22,18 +25,20 @@ class SilverMetadata(BaseModel):
     entity_type: str = Field(description="Type of entity")
 
 
-class SilverTransformer:
+class SilverTransformer(ABC):
     """Base class for Silver layer data transformation."""
     
-    def __init__(self, settings: PipelineSettings, connection_manager: DuckDBConnectionManager):
+    def __init__(self, settings: PipelineSettings, connection_manager: DuckDBConnectionManager, embedding_provider: Optional[EmbeddingProvider] = None):
         """Initialize the Silver transformer.
         
         Args:
             settings: Pipeline configuration settings
             connection_manager: DuckDB connection manager
+            embedding_provider: Optional embedding provider for generating vectors
         """
         self.settings = settings
         self.connection_manager = connection_manager
+        self.embedding_provider = embedding_provider
         self.logger = PipelineLogger.get_logger(self.__class__.__name__)
     
     @log_execution_time
@@ -47,7 +52,11 @@ class SilverTransformer:
         Returns:
             Metadata about the transformation
         """
-        # Validate input
+        # Validate table names at boundary (DuckDB best practice)
+        input_table = self._validate_table_name(input_table)
+        output_table = self._validate_table_name(output_table)
+        
+        # Validate input exists
         if not self.connection_manager.table_exists(input_table):
             raise ValueError(f"Input table {input_table} does not exist")
         
@@ -56,12 +65,13 @@ class SilverTransformer:
         # Drop output table if exists
         self.connection_manager.drop_table(output_table)
         
-        # Apply transformations
+        # Apply transformations with embeddings in single operation
         self._apply_transformations(input_table, output_table)
         
         # Get output count
         output_count = self.connection_manager.count_records(output_table)
-        dropped_count = input_count - output_count
+        # Handle case where Silver layer might add records (through joins)
+        dropped_count = max(0, input_count - output_count)
         
         # Create metadata
         metadata = SilverMetadata(
@@ -80,6 +90,24 @@ class SilverTransformer:
         
         return metadata
     
+    def _validate_table_name(self, name: str) -> str:
+        """Validate table name at boundary (DuckDB best practice).
+        
+        Args:
+            name: Table name to validate
+            
+        Returns:
+            Validated table name
+            
+        Raises:
+            ValueError: If table name is invalid
+        """
+        import re
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]{0,63}$', name):
+            raise ValueError(f"Invalid table name: {name}")
+        return name
+    
+    @abstractmethod
     def _apply_transformations(self, input_table: str, output_table: str) -> None:
         """Apply standardization transformations using DuckDB Relation API.
         
@@ -87,20 +115,16 @@ class SilverTransformer:
             input_table: Name of input table
             output_table: Name of output table
         """
-        # Default implementation using Relation API - override in subclasses
-        # This is a simple passthrough
-        conn = self.connection_manager.get_connection()
-        relation = conn.table(input_table)
-        relation.create(output_table)
+        pass
     
+    @abstractmethod
     def _get_entity_type(self) -> str:
         """Get the entity type for this transformer.
         
         Returns:
             Entity type string
         """
-        # Default implementation - override in subclasses
-        return "unknown"
+        pass
     
     def standardize_nulls(self, table_name: str, columns: list[str]) -> None:
         """Standardize null values in specified columns.
@@ -109,17 +133,24 @@ class SilverTransformer:
             table_name: Table to update
             columns: Columns to standardize
         """
-        # Note: UPDATE operations still use SQL as Relation API is for SELECT/transformations
+        # UPDATE operations require SQL - Relation API is for SELECT/transformations
+        conn = self.connection_manager.get_connection()
+        
         for column in columns:
-            query = f"""
-            UPDATE {table_name}
-            SET {column} = NULL
-            WHERE {column} = '' OR {column} = 'null' OR {column} = 'NULL'
+            # Use proper identifier quoting
+            safe_table = DuckDBConnectionManager.safe_identifier(table_name)
+            safe_column = DuckDBConnectionManager.safe_identifier(column)
+            
+            # Build UPDATE with properly quoted identifiers
+            update_sql = f"""
+            UPDATE {safe_table}
+            SET {safe_column} = NULL
+            WHERE {safe_column} IN ('', 'null', 'NULL')
             """
-            self.connection_manager.execute(query)
+            conn.execute(update_sql)
     
     def remove_duplicates(self, input_table: str, output_table: str, key_columns: list[str]) -> None:
-        """Remove duplicate records based on key columns using Relation API.
+        """Remove duplicate records based on key columns.
         
         Args:
             input_table: Input table name
@@ -127,14 +158,23 @@ class SilverTransformer:
             key_columns: Columns that define uniqueness
         """
         conn = self.connection_manager.get_connection()
-        relation = conn.table(input_table)
         
-        # Use distinct() for deduplication
-        # Note: DuckDB's relation API doesn't have DISTINCT ON, so we use regular distinct
-        deduped = relation.distinct()
+        # Quote all identifiers properly
+        safe_input = DuckDBConnectionManager.safe_identifier(input_table)
+        safe_columns = [DuckDBConnectionManager.safe_identifier(col) for col in key_columns]
+        partition_by = ", ".join(safe_columns)
         
-        # Create the output table
-        deduped.create(output_table)
+        # Build deduplication query with properly quoted identifiers
+        dedup_sql = f"""
+        SELECT * EXCLUDE (_rn) FROM (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY {partition_by} ORDER BY rowid) as _rn
+            FROM {safe_input}
+        ) WHERE _rn = 1
+        """
+        
+        # Use Relation API to execute and create table
+        result = conn.sql(dedup_sql)
+        result.create(output_table)
     
     def validate(self, table_name: str) -> bool:
         """Validate the transformed data.

@@ -205,8 +205,8 @@ class SimplifiedRelationshipDemo:
             "query": {
                 "bool": {
                     "filter": [
-                        {"term": {"address.city.keyword": city}},
-                        {"term": {"address.state.keyword": state}}
+                        {"term": {"address.city": city.lower()}},
+                        {"term": {"address.state": state}}
                     ]
                 }
             },
@@ -385,8 +385,8 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
   "query": {{
     "bool": {{
       "filter": [
-        {{"term": {{"address.city.keyword": "Oakland"}}}},
-        {{"term": {{"address.state.keyword": "CA"}}}}
+        {{"term": {{"address.city": "oakland"}}}},
+        {{"term": {{"address.state": "CA"}}}}
       ]
     }}
   }},
