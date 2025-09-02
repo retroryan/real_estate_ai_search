@@ -136,3 +136,71 @@ class PropertySearchResult(BaseModel):
     score: float = Field(..., description="Relevance score")
     highlights: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted matches")
     explanation: Optional[str] = Field(None, description="Score explanation")
+
+
+class WikipediaArticle(BaseModel):
+    """Wikipedia article embedded in property data."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    page_id: str = Field(..., description="Wikipedia page ID")
+    title: str = Field(..., description="Article title")
+    url: str = Field(..., description="Wikipedia URL")
+    summary: str = Field(..., description="Article summary")
+    city: Optional[str] = Field(None, description="Related city")
+    state: Optional[str] = Field(None, description="Related state")
+    relationship_type: str = Field(..., description="Relationship type (primary, geographical, park, etc.)")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    relevance_score: float = Field(..., ge=0, description="Relevance score")
+
+
+class EnrichedNeighborhood(BaseModel):
+    """Enriched neighborhood information with demographics."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    neighborhood_id: str = Field(..., description="Neighborhood ID")
+    name: str = Field(..., description="Neighborhood name")
+    city: str = Field(..., description="City name")
+    state: str = Field(..., description="State code")
+    population: Optional[int] = Field(None, ge=0, description="Population count")
+    walkability_score: Optional[int] = Field(None, ge=0, le=100, description="Walkability score")
+    school_rating: Optional[float] = Field(None, ge=0, le=10, description="School rating")
+    description: Optional[str] = Field(None, description="Neighborhood description")
+    amenities: List[str] = Field(default_factory=list, description="Local amenities")
+    demographics: Optional[Dict[str, Any]] = Field(None, description="Demographics data")
+
+
+class RichPropertyResponse(BaseModel):
+    """Rich property details response from property_relationships index."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    listing_id: str = Field(..., description="Unique listing ID")
+    property_type: str = Field(..., description="Property type")
+    price: float = Field(..., ge=0, description="Property price")
+    bedrooms: int = Field(..., ge=0, description="Number of bedrooms")
+    bathrooms: float = Field(..., ge=0, description="Number of bathrooms")
+    square_feet: int = Field(..., ge=0, description="Square footage")
+    year_built: Optional[int] = Field(None, description="Year built")
+    lot_size: Optional[int] = Field(None, ge=0, description="Lot size in square feet")
+    
+    address: Dict[str, Any] = Field(..., description="Property address with location")
+    description: str = Field(..., description="Property description")
+    features: List[str] = Field(default_factory=list, description="Property features")
+    amenities: List[str] = Field(default_factory=list, description="Property amenities")
+    
+    status: str = Field(default="active", description="Listing status")
+    listing_date: Optional[str] = Field(None, description="Listing date")
+    days_on_market: Optional[int] = Field(None, ge=0, description="Days on market")
+    price_per_sqft: Optional[float] = Field(None, ge=0, description="Price per square foot")
+    
+    parking: Optional[Dict[str, Any]] = Field(None, description="Parking information")
+    virtual_tour_url: Optional[str] = Field(None, description="Virtual tour URL")
+    images: List[str] = Field(default_factory=list, description="Image URLs")
+    
+    neighborhood: Optional[EnrichedNeighborhood] = Field(None, description="Neighborhood information")
+    wikipedia_articles: List[WikipediaArticle] = Field(default_factory=list, description="Related Wikipedia articles")
+    
+    combined_text: Optional[str] = Field(None, description="Combined text for search")
+    data_version: Optional[str] = Field(None, description="Data version")

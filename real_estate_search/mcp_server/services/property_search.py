@@ -425,3 +425,58 @@ class PropertySearchService:
         except Exception as e:
             logger.error(f"Property search failed: {e}")
             raise
+    
+    def get_rich_property_details(
+        self,
+        listing_id: str,
+        include_wikipedia: bool = True,
+        include_neighborhood: bool = True,
+        wikipedia_limit: int = 3
+    ) -> Optional[Dict[str, Any]]:
+        """Get rich property details from denormalized property_relationships index.
+        
+        Args:
+            listing_id: Unique property listing ID
+            include_wikipedia: Whether to include Wikipedia articles
+            include_neighborhood: Whether to include neighborhood data
+            wikipedia_limit: Maximum number of Wikipedia articles to return
+            
+        Returns:
+            Rich property details or None if not found
+        """
+        logger.info(f"Getting rich property details for: {listing_id}")
+        
+        try:
+            # Query the property_relationships index directly
+            response = self.es_client.search(
+                index="property_relationships",
+                body={
+                    "query": {
+                        "term": {"listing_id": listing_id}
+                    },
+                    "size": 1
+                }
+            )
+            
+            if not response["hits"]["hits"]:
+                logger.warning(f"Property not found in property_relationships: {listing_id}")
+                return None
+            
+            # Get the property data
+            property_data = response["hits"]["hits"][0]["_source"]
+            
+            # Filter Wikipedia articles if needed
+            if not include_wikipedia:
+                property_data.pop("wikipedia_articles", None)
+            elif "wikipedia_articles" in property_data and wikipedia_limit:
+                property_data["wikipedia_articles"] = property_data["wikipedia_articles"][:wikipedia_limit]
+            
+            # Remove neighborhood if not needed
+            if not include_neighborhood:
+                property_data.pop("neighborhood", None)
+            
+            return property_data
+            
+        except Exception as e:
+            logger.error(f"Failed to get rich property details: {e}")
+            raise

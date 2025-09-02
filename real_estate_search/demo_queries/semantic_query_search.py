@@ -429,7 +429,10 @@ def demo_semantic_vs_keyword_comparison(
                 "num_candidates": size * 10
             },
             "size": size,
-            "_source": ["listing_id", "property_type", "price", "address", "description"]
+            "_source": [
+                "listing_id", "property_type", "price", "bedrooms", "bathrooms",
+                "square_feet", "address", "description", "features", "amenities", "year_built"
+            ]
         }
         
         try:
@@ -464,7 +467,7 @@ def demo_semantic_vs_keyword_comparison(
         "size": size,
         "_source": [
             "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-            "square_feet", "address", "description", "features", "amenities"
+            "square_feet", "address", "description", "features", "amenities", "year_built"
         ]
     }
     
@@ -509,13 +512,37 @@ def demo_semantic_vs_keyword_comparison(
         }
     }
     
+    # Combine semantic and keyword results for display, prioritizing semantic results
+    combined_results = []
+    seen_ids = set()
+    
+    # Add semantic results first
+    for res in semantic_results:
+        if res.get('listing_id') not in seen_ids:
+            res['search_type'] = 'semantic'
+            # Prepend search type to description for visibility
+            original_desc = res.get('description', '')
+            res['description'] = f"[SEMANTIC] {original_desc}"
+            combined_results.append(res)
+            seen_ids.add(res.get('listing_id'))
+    
+    # Add keyword results that aren't already in the list
+    for res in keyword_results:
+        if res.get('listing_id') not in seen_ids:
+            res['search_type'] = 'keyword'
+            # Prepend search type to description for visibility
+            original_desc = res.get('description', '')
+            res['description'] = f"[KEYWORD] {original_desc}"
+            combined_results.append(res)
+            seen_ids.add(res.get('listing_id'))
+    
     result = DemoQueryResult(
-        query_name="Demo 14: Semantic vs Keyword Search Comparison",
+        query_name="Demo 13: Semantic vs Keyword Search Comparison (Combined Results)",
         query_description=f"Comparing semantic and keyword search for: '{query}'",
         execution_time_ms=int(semantic_time + keyword_time),
         total_hits=semantic_hits + keyword_hits,
-        returned_hits=len(semantic_results) + len(keyword_results),
-        results=[comparison_results],
+        returned_hits=len(combined_results),
+        results=combined_results,
         query_dsl={
             "semantic_query": {"knn": "..."},
             "keyword_query": keyword_query
@@ -534,7 +561,12 @@ def demo_semantic_vs_keyword_comparison(
             "COMPARISON:",
             f"  • Overlap in top {size}: {len(overlap)} properties",
             f"  • Unique to semantic: {len(semantic_ids - keyword_ids)}",
-            f"  • Unique to keyword: {len(keyword_ids - semantic_ids)}"
+            f"  • Unique to keyword: {len(keyword_ids - semantic_ids)}",
+            "",
+            "RESULTS TABLE BELOW:",
+            "  • Shows combined results from BOTH search methods",
+            "  • Results marked with [SEMANTIC] or [KEYWORD] prefix",
+            "  • Semantic results appear first, followed by keyword-only results"
         ],
         indexes_used=[
             "properties index - tested with both search methods",

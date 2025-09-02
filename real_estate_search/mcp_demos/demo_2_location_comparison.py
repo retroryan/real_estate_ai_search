@@ -68,14 +68,14 @@ class LocationComparisonDemo(BaseMCPDemo):
                 "expected_has_location": True
             },
             {
-                "name": "No Location Query",
-                "query": "updated kitchen and bathrooms",
-                "description": "Tests feature-only query - should find Has Location: False",
+                "name": "Luxury Waterfront Query",
+                "query": "Luxury waterfront condo in San Francisco",
+                "description": "Tests luxury feature extraction with city - should find City: San Francisco",
                 "size": 5,
                 "include_location": True,
-                "expected_city": None,
+                "expected_city": "San Francisco",
                 "expected_state": None,
-                "expected_has_location": False
+                "expected_has_location": True
             },
             {
                 "name": "Salinas Property Query",
@@ -84,6 +84,36 @@ class LocationComparisonDemo(BaseMCPDemo):
                 "size": 5,
                 "include_location": True,
                 "expected_city": "Salinas",
+                "expected_state": None,
+                "expected_has_location": True
+            },
+            {
+                "name": "Park City Luxury Homes Query",
+                "query": "Luxury homes in Park City Utah",
+                "description": "Tests Utah location extraction and state abbreviation conversion",
+                "size": 5,
+                "include_location": True,
+                "expected_city": "Park City",
+                "expected_state": "Utah",
+                "expected_has_location": True
+            },
+            {
+                "name": "Park City Mountain Properties Query",
+                "query": "Mountain view homes near Park City",
+                "description": "Tests Park City search with feature-based query for mountain properties",
+                "size": 5,
+                "include_location": True,
+                "expected_city": "Park City",
+                "expected_state": None,
+                "expected_has_location": True
+            },
+            {
+                "name": "Affordable Mountain Homes in Park City",
+                "query": "Affordable mountain homes in Park City area",
+                "description": "Tests Park City location with affordable property features",
+                "size": 5,
+                "include_location": True,
+                "expected_city": "Park City",
                 "expected_state": None,
                 "expected_has_location": True
             }

@@ -145,7 +145,7 @@ class LocationUnderstandingModule(dspy.Module):
             result = self.extract_location(query_text=query)
             
             # Debug logging
-            logger.info(f"DSPy raw result for query '{query}': city='{result.city}', state='{result.state}', has_location='{result.has_location}'")
+            logger.info(f"DSPy raw result for query '{query}': city='{result.city}', state='{result.state}', has_location='{result.has_location}', cleaned_query='{result.cleaned_query}'")
             
             # Process and clean the extracted values
             city = None if not result.city or result.city.lower() in ['unknown', 'none', ''] else result.city
@@ -171,7 +171,7 @@ class LocationUnderstandingModule(dspy.Module):
                 return rule_based_result
             
             # Create LocationIntent object
-            return LocationIntent(
+            location_intent = LocationIntent(
                 city=city,
                 state=state,
                 neighborhood=neighborhood,
@@ -180,6 +180,12 @@ class LocationUnderstandingModule(dspy.Module):
                 cleaned_query=cleaned_query,
                 confidence=confidence
             )
+            
+            logger.info(f"Final LocationIntent: city='{location_intent.city}', state='{location_intent.state}', "
+                       f"has_location={location_intent.has_location}, cleaned_query='{location_intent.cleaned_query}', "
+                       f"confidence={location_intent.confidence}")
+            
+            return location_intent
             
         except Exception as e:
             logger.error(f"DSPy extraction failed: {e}, falling back to rule-based")
@@ -243,23 +249,46 @@ class LocationFilterBuilder:
         
         filters = []
         
-        # City filter using address.city field (keyword with lowercase normalizer)
+        # City filter using address.city field - use match for case-insensitive
         if location_intent.city:
             filters.append({
-                "term": {
-                    "address.city": location_intent.city.lower()
+                "match": {
+                    "address.city": location_intent.city
                 }
             })
-            logger.debug(f"Added city filter: {location_intent.city}")
+            logger.info(f"Added city filter: {location_intent.city} (using match query for case-insensitive)")
         
         # State filter using address.state field
         if location_intent.state:
+            # Convert full state names to abbreviations for matching
+            state_abbreviations = {
+                "california": "CA",
+                "new york": "NY",
+                "texas": "TX",
+                "florida": "FL",
+                "washington": "WA",
+                "oregon": "OR",
+                "nevada": "NV",
+                "arizona": "AZ",
+                "utah": "UT",
+                "colorado": "CO",
+                "idaho": "ID",
+                "wyoming": "WY",
+                "montana": "MT"
+            }
+            
+            # Use abbreviation if available, otherwise use as-is
+            state_value = location_intent.state
+            if state_value.lower() in state_abbreviations:
+                state_value = state_abbreviations[state_value.lower()]
+                logger.info(f"Converted state '{location_intent.state}' to abbreviation '{state_value}'")
+            
             filters.append({
                 "term": {
-                    "address.state": location_intent.state
+                    "address.state": state_value
                 }
             })
-            logger.debug(f"Added state filter: {location_intent.state}")
+            logger.info(f"Added state filter: {state_value} (original: {location_intent.state})")
         
         # Neighborhood filter using neighborhood.name field
         if location_intent.neighborhood:

@@ -101,6 +101,8 @@ list_demos() {
     echo " 17     [Reserved for future demo]"
     echo " 18     Location-Aware Search - DSPy location extraction and geographic filtering"
     echo " 19     Advanced Scenarios - Edge cases, validation, and complex queries"
+    echo -e "${PURPLE} === Rich Property Details Tool Demo ===${NC}"
+    echo " 25     Rich Property Details - Comprehensive property with embedded neighborhood & Wikipedia"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -366,9 +368,18 @@ asyncio.run(demo_semantic_vs_keyword_comparison('stunning views from modern kitc
             echo
             python3 real_estate_search/mcp_demos/demo_5_advanced_scenarios.py
             ;;
+        25)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_rich_property_details.demo_rich_property_details('prop-oak-125')${NC}"
+            echo
+            python -c "
+import asyncio
+from real_estate_search.mcp_demos.demo_rich_property_details import demo_rich_property_details
+asyncio.run(demo_rich_property_details('prop-oak-125'))
+"
+            ;;
         *)
             echo -e "${RED}Error: Invalid demo number '$demo_num'${NC}"
-            echo "Valid demo numbers are 1-8, 12-16, 18-19"
+            echo "Valid demo numbers are 1-8, 12-16, 18-19, 25"
             exit 1
             ;;
     esac
@@ -476,7 +487,7 @@ main() {
                 VERBOSE="true"
                 shift
                 ;;
-            [1-8]|1[2-6]|18|19)
+            [1-8]|1[2-6]|18|19|25)
                 demo_number=$1
                 shift
                 ;;

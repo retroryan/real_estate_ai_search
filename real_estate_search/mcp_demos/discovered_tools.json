@@ -78,6 +78,37 @@
       }
     },
     {
+      "name": "get_rich_property_details_tool",
+      "description": "Get comprehensive property listing with embedded neighborhood and Wikipedia data.\n            \n            Retrieves complete property information from the denormalized property_relationships\n            index in a single high-performance query. Returns all property details along with\n            embedded neighborhood demographics and relevant Wikipedia articles.\n            \n            Args:\n                listing_id: The unique property listing ID\n                include_wikipedia: Include Wikipedia articles about the area (default True)\n                include_neighborhood: Include detailed neighborhood information (default True)\n                wikipedia_limit: Maximum Wikipedia articles to return (1-10, default 3)\n                \n            Returns:\n                Rich property listing with embedded neighborhood and Wikipedia context\n            ",
+      "parameters": {
+        "properties": {
+          "listing_id": {
+            "title": "Listing Id",
+            "type": "string"
+          },
+          "include_wikipedia": {
+            "default": true,
+            "title": "Include Wikipedia",
+            "type": "boolean"
+          },
+          "include_neighborhood": {
+            "default": true,
+            "title": "Include Neighborhood",
+            "type": "boolean"
+          },
+          "wikipedia_limit": {
+            "default": 3,
+            "title": "Wikipedia Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "listing_id"
+        ],
+        "type": "object"
+      }
+    },
+    {
       "name": "search_wikipedia_tool",
       "description": "Search Wikipedia for location and topic information.\n            \n            Find information about neighborhoods, landmarks, history, and local context\n            to better understand areas and locations.\n            \n            Args:\n                query: What you're looking for (e.g., \"Mission District culture\", \"Golden Gate Bridge\")\n                search_in: \"full\" (complete articles), \"summaries\" (shorter), or \"chunks\" (sections)\n                city: Filter by city name\n                state: Filter by state (2-letter code)\n                categories: List of Wikipedia categories to filter by\n                size: Number of results (1-50, default 10)\n                search_type: \"hybrid\" (best), \"semantic\" (AI), or \"text\" (keyword)\n                \n            Returns:\n                Wikipedia articles with summaries, topics, and location information\n            ",
       "parameters": {
@@ -216,7 +247,7 @@
       }
     }
   ],
-  "total_count": 7,
+  "total_count": 8,
   "server_name": "MCP Server",
-  "discovery_time_ms": 48.71225357055664
+  "discovery_time_ms": 45.54319381713867
 }

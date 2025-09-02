@@ -60,17 +60,33 @@ class HybridSearchEngine:
         if params.location_intent and params.location_intent.has_location:
             query_for_search = params.location_intent.cleaned_query
             logger.info(f"Using cleaned query: '{query_for_search}' with location filters")
+            logger.info(f"Location intent - City: {params.location_intent.city}, State: {params.location_intent.state}")
         
         # Generate query embedding
         self.embedding_service.initialize()
         try:
             query_vector = self.embedding_service.embed_query(query_for_search)
-            logger.debug(f"Generated embedding vector of dimension {len(query_vector)}")
+            logger.info(f"Generated embedding vector of dimension {len(query_vector)}")
+            logger.debug(f"First 5 embedding values: {query_vector[:5]}")
+            logger.info(f"Query for embedding: '{query_for_search}' (was: '{params.query_text}')")
         finally:
             self.embedding_service.close()
         
         # Build RRF query using native Elasticsearch syntax
         query_body = self._build_rrf_query(params, query_vector, query_for_search)
+        
+        # Log the complete query being sent to Elasticsearch
+        import json
+        logger.info(f"Elasticsearch query body (truncated): {json.dumps(query_body, default=str)[:500]}...")
+        
+        # Log specific filter information
+        if 'retriever' in query_body and 'rrf' in query_body['retriever']:
+            retrievers = query_body['retriever']['rrf']['retrievers']
+            for i, retriever in enumerate(retrievers):
+                if 'standard' in retriever:
+                    logger.info(f"Text retriever {i} filters: {retriever.get('standard', {}).get('query', {}).get('bool', {}).get('filter', 'No filters')}")
+                elif 'knn' in retriever:
+                    logger.info(f"KNN retriever {i} filters: {retriever.get('knn', {}).get('filter', 'No filters')}")
         
         # Execute search
         try:
@@ -80,7 +96,15 @@ class HybridSearchEngine:
             )
             
             execution_time = int((time.time() - start_time) * 1000)
-            logger.info(f"Hybrid search completed in {execution_time}ms")
+            total_hits = response['hits']['total']['value']
+            logger.info(f"Hybrid search completed in {execution_time}ms - Found {total_hits} results")
+            
+            if total_hits == 0:
+                logger.warning(f"No results found for query '{params.query_text}' with cleaned query '{query_for_search}'")
+                logger.warning(f"Location filters applied - City: {params.location_intent.city if params.location_intent else 'None'}, "
+                             f"State: {params.location_intent.state if params.location_intent else 'None'}")
+            else:
+                logger.info(f"Top result score: {response['hits']['hits'][0]['_score'] if response['hits']['hits'] else 'N/A'}")
             
             # Process results
             return self._process_results(params.query_text, response, execution_time, params.location_intent)

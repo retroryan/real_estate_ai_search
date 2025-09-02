@@ -267,7 +267,7 @@ class DemoRunner:
             result = query_func(self.es_client)
             
             # Handle demos that return a list of results
-            if demo_number in [13, 27]:
+            if demo_number in [12, 27]:
                 # demo_natural_language_examples and demo_location_aware_search_showcase return List[DemoQueryResult]
                 if not result:  # Empty list means initialization failed
                     return DemoExecutionResult(

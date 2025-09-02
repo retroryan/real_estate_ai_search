@@ -19,7 +19,7 @@ if __name__ == "__main__" and __package__ is None:
     from real_estate_search.mcp_server.services.natural_language_search import NaturalLanguageSearchService
     from real_estate_search.mcp_server.services.health_check import HealthCheckService
     from real_estate_search.mcp_server.utils.logging import setup_logging, get_logger
-    from real_estate_search.mcp_server.tools.property_tools import search_properties, get_property_details
+    from real_estate_search.mcp_server.tools.property_tools import search_properties, get_property_details, get_rich_property_details
     from real_estate_search.mcp_server.tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
     from real_estate_search.mcp_server.tools.hybrid_search_tool import search_properties_hybrid
     from real_estate_search.hybrid import HybridSearchEngine
@@ -33,7 +33,7 @@ else:
     from .services.natural_language_search import NaturalLanguageSearchService
     from .services.health_check import HealthCheckService
     from .utils.logging import setup_logging, get_logger
-    from .tools.property_tools import search_properties, get_property_details
+    from .tools.property_tools import search_properties, get_property_details, get_rich_property_details
     from .tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
     from .tools.hybrid_search_tool import search_properties_hybrid
     from ..hybrid import HybridSearchEngine
@@ -199,6 +199,37 @@ class MCPServer:
             return await get_property_details(
                 self._create_context(),
                 listing_id=listing_id
+            )
+        
+        # Rich property details tool
+        @self.app.tool()
+        async def get_rich_property_details_tool(
+            listing_id: str,
+            include_wikipedia: bool = True,
+            include_neighborhood: bool = True,
+            wikipedia_limit: int = 3
+        ) -> Dict[str, Any]:
+            """Get comprehensive property listing with embedded neighborhood and Wikipedia data.
+            
+            Retrieves complete property information from the denormalized property_relationships
+            index in a single high-performance query. Returns all property details along with
+            embedded neighborhood demographics and relevant Wikipedia articles.
+            
+            Args:
+                listing_id: The unique property listing ID
+                include_wikipedia: Include Wikipedia articles about the area (default True)
+                include_neighborhood: Include detailed neighborhood information (default True)
+                wikipedia_limit: Maximum Wikipedia articles to return (1-10, default 3)
+                
+            Returns:
+                Rich property listing with embedded neighborhood and Wikipedia context
+            """
+            return await get_rich_property_details(
+                self._create_context(),
+                listing_id=listing_id,
+                include_wikipedia=include_wikipedia,
+                include_neighborhood=include_neighborhood,
+                wikipedia_limit=wikipedia_limit
             )
         
         # Wikipedia search tool
@@ -463,12 +494,14 @@ def print_available_tools():
     """Print information about available tools."""
     print("\n📦 Available MCP Tools:")
     print("  • search_properties_tool - Natural language property search")
-    print("  • get_property_details_tool - Get property details by ID") 
+    print("  • get_property_details_tool - Get property details by ID")
+    print("  • get_rich_property_details_tool - Get rich property listing with embedded data")
     print("  • search_wikipedia_tool - Search Wikipedia content")
     print("  • get_wikipedia_article_tool - Get Wikipedia article by ID")
     print("  • search_wikipedia_by_location_tool - Location-based Wikipedia search")
     print("  • natural_language_search_tool - Advanced AI semantic search with examples")
     print("  • health_check_tool - Check system health status")
+    print("  • search_properties_hybrid_tool - Hybrid property search with location extraction")
     print("-"*60)
 
 

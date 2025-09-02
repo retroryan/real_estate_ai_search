@@ -168,3 +168,64 @@ async def get_property_details(
             "error": str(e),
             "listing_id": listing_id
         }
+
+
+async def get_rich_property_details(
+    context: Context,
+    listing_id: str,
+    include_wikipedia: bool = True,
+    include_neighborhood: bool = True,
+    wikipedia_limit: int = 3
+) -> Dict[str, Any]:
+    """Get comprehensive property details from denormalized property_relationships index.
+    
+    Returns complete property information including embedded neighborhood data 
+    and Wikipedia articles in a single high-performance query.
+    
+    Args:
+        listing_id: Unique property listing ID
+        include_wikipedia: Include Wikipedia articles in response
+        include_neighborhood: Include neighborhood information in response
+        wikipedia_limit: Maximum number of Wikipedia articles to return (default 3)
+        
+    Returns:
+        Rich property details with all embedded data
+    """
+    # Get request ID safely without hasattr
+    request_id = getattr(context, 'request_id', "unknown")
+    logger = get_request_logger(request_id)
+    logger.info(f"Getting rich property details: {listing_id}")
+    
+    try:
+        # Get services from context
+        property_search_service: PropertySearchService = context.get("property_search_service")
+        if not property_search_service:
+            raise ValueError("Property search service not available")
+        
+        # Get rich property details
+        property_data = property_search_service.get_rich_property_details(
+            listing_id=listing_id,
+            include_wikipedia=include_wikipedia,
+            include_neighborhood=include_neighborhood,
+            wikipedia_limit=wikipedia_limit
+        )
+        
+        if not property_data:
+            return {
+                "error": f"Property not found: {listing_id}",
+                "listing_id": listing_id
+            }
+        
+        # Return the rich property data
+        return {
+            "listing_id": listing_id,
+            "property": property_data,
+            "source_index": "property_relationships"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get rich property details: {e}")
+        return {
+            "error": str(e),
+            "listing_id": listing_id
+        }
