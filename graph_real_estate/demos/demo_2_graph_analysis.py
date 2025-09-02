@@ -46,6 +46,17 @@ class GraphRelationshipAnalysisDemo:
     def __init__(self):
         """Initialize the demo with database connection"""
         print("Initializing Graph Relationship Analysis Demo...")
+        
+        print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+        print("   • Multi-Pattern Matching - Complex MATCH patterns for comprehensive analysis")
+        print("   • Advanced Aggregations - Statistical functions and percentiles")
+        print("   • Graph Algorithms - Path finding and centrality measures")
+        print("   • Conditional Logic - CASE statements for dynamic categorization")
+        print("   • Subqueries - WITH clauses for multi-stage processing")
+        print("   • Feature Correlation - Analyzing relationships between property features")
+        print("   • Market Segmentation - Graph-based market analysis")
+        print("   • Cross-Pattern Analysis - Combining multiple relationship types\n")
+        
         self.driver = get_neo4j_driver()
         
         # Verify database state
@@ -502,8 +513,8 @@ class GraphRelationshipAnalysisDemo:
             price_per_sqft = hub.get('price_per_sqft') or 0
             print(f"   ${listing_price:,.0f} (${price_per_sqft:.0f}/sqft)")
             print(f"   {hub['neighborhood']}, {hub['city']}")
-            print(f"   Network connectivity: {hub['connectivity']} similar properties")
-            print(f"   Avg similarity score: {hub['avg_sim_score']:.3f}")
+            print(f"   Network connectivity: {hub['connectivity']} connected properties")
+            print(f"   Avg shared features: {hub['avg_shared_features']:.1f}")
             print(f"   Feature profile: {hub['recreation_features']} recreation, {hub['view_features']} view features")
         
         # Market segment arbitrage opportunities
@@ -517,16 +528,18 @@ class GraphRelationshipAnalysisDemo:
         print("="*82)
         print("Advanced graph patterns requiring multiple relationship traversals")
         
-        # Multi-hop similarity chains
-        print("\nSIMILARITY CHAIN ANALYSIS:")
-        print("   Properties connected through chains of high similarity")
+        # Multi-hop feature chains
+        print("\nFEATURE CONNECTION CHAINS:")
+        print("   Properties connected through shared feature paths")
         
         query = """
-        MATCH path = (start:Property)-[:SIMILAR_TO*2..3]-(end:Property)
+        // Find properties connected through feature chains
+        MATCH path = (start:Property)-[:HAS_FEATURE*2..6]-(end:Property)
         WHERE start.listing_id < end.listing_id
-        AND ALL(rel in relationships(path) WHERE rel.score > 0.8)
+        AND start <> end
         WITH start, end, length(path) as chain_length,
-             [rel in relationships(path) | rel.score] as scores
+             [n IN nodes(path) WHERE n:Feature | n.name] as features
+        WHERE size(features) >= 2
         MATCH (start)-[:LOCATED_IN]->(n1:Neighborhood)
         MATCH (end)-[:LOCATED_IN]->(n2:Neighborhood)
         RETURN start.listing_id as start_property,
@@ -536,19 +549,19 @@ class GraphRelationshipAnalysisDemo:
                n1.name as start_neighborhood,
                n2.name as end_neighborhood,
                chain_length,
-               scores
-        ORDER BY chain_length DESC
+               features[0..3] as connecting_features
+        ORDER BY chain_length ASC
         LIMIT 3
         """
         
         chains = run_query(self.driver, query)
         for chain in chains:
-            print(f"\nSimilarity Chain (length {chain['chain_length']}):")
+            print(f"\nFeature Chain (length {chain['chain_length']}):")
             start_price = chain.get('start_price') or 0
             end_price = chain.get('end_price') or 0
             print(f"   Start: {chain['start_property']} (${start_price:,.0f}) in {chain['start_neighborhood']}")
             print(f"   End: {chain['end_property']} (${end_price:,.0f}) in {chain['end_neighborhood']}")
-            print(f"   Similarity scores: {[f'{score:.3f}' for score in chain['scores']]}")
+            print(f"   Connecting features: {', '.join(chain['connecting_features'])}")
         
         # Feature influence propagation
         print("\n\nFEATURE INFLUENCE PROPAGATION:")
@@ -557,8 +570,10 @@ class GraphRelationshipAnalysisDemo:
         query = """
         MATCH (premium:Property)-[:HAS_FEATURE]->(luxury:Feature)
         WHERE luxury.name IN ['Wine cellar', 'Home theater', 'Elevator', 'Pool/spa']
-        MATCH (premium)-[:SIMILAR_TO]->(influenced:Property)
+        // Find properties in same neighborhood without luxury features
+        MATCH (premium)-[:LOCATED_IN]->(n:Neighborhood)<-[:LOCATED_IN]-(influenced:Property)
         WHERE NOT (influenced)-[:HAS_FEATURE]->(luxury)
+          AND premium <> influenced
         MATCH (influenced)-[:LOCATED_IN]->(n:Neighborhood)
         WITH luxury.name as luxury_feature,
              count(DISTINCT influenced) as influenced_count,
@@ -585,19 +600,21 @@ class GraphRelationshipAnalysisDemo:
         self._analyze_feature_category_bridges()
     
     def _analyze_similarity_network(self, property_id: str) -> str:
-        """Analyze the similarity network for a specific property"""
+        """Analyze the feature network for a specific property"""
         query = """
-        MATCH (p:Property {listing_id: $property_id})-[s:SIMILAR_TO]->(similar:Property)
-        RETURN avg(s.score) as avg_score, 
-               min(s.score) as min_score,
-               max(s.score) as max_score,
-               count(similar) as total_similar
+        MATCH (p:Property {listing_id: $property_id})-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(similar:Property)
+        WHERE p <> similar
+        WITH p, similar, COUNT(DISTINCT f) as shared_features
+        RETURN avg(shared_features) as avg_shared, 
+               min(shared_features) as min_shared,
+               max(shared_features) as max_shared,
+               count(DISTINCT similar) as connected_properties
         """
         result = run_query(self.driver, query, {"property_id": property_id})
         if result:
             r = result[0]
-            return f"avg similarity: {r['avg_score']:.3f}, range: {r['min_score']:.3f}-{r['max_score']:.3f}"
-        return "no similarity data"
+            return f"avg shared features: {r['avg_shared']:.1f}, range: {r['min_shared']}-{r['max_shared']}"
+        return "no feature connections"
     
     def _analyze_similarity_factors(self, prop1: str, prop2: str) -> str:
         """Analyze factors contributing to high similarity between two properties"""
@@ -616,28 +633,29 @@ class GraphRelationshipAnalysisDemo:
         return "analysis unavailable"
     
     def _analyze_similarity_distribution(self):
-        """Analyze the distribution of similarity scores"""
+        """Analyze the distribution of feature connections"""
         query = """
-        MATCH ()-[s:SIMILAR_TO]->()
-        WITH s.score as score
+        MATCH (p1:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(p2:Property)
+        WHERE p1 <> p2 AND p1.listing_id < p2.listing_id
+        WITH p1, p2, COUNT(DISTINCT f) as shared_features
         RETURN 
             count(*) as total,
-            avg(score) as avg_score,
-            percentileCont(score, 0.25) as q1,
-            percentileCont(score, 0.5) as median,
-            percentileCont(score, 0.75) as q3,
-            min(score) as min_score,
-            max(score) as max_score
+            avg(shared_features) as avg_shared,
+            percentileCont(shared_features, 0.25) as q1,
+            percentileCont(shared_features, 0.5) as median,
+            percentileCont(shared_features, 0.75) as q3,
+            min(shared_features) as min_shared,
+            max(shared_features) as max_shared
         """
         result = run_query(self.driver, query)
         if result:
             r = result[0]
-            print(f"   {r['total']:,} total similarity relationships")
-            if r['total'] > 0 and r['min_score'] is not None:
-                print(f"   Score distribution: min={r['min_score']:.3f}, Q1={r['q1']:.3f}, median={r['median']:.3f}, Q3={r['q3']:.3f}, max={r['max_score']:.3f}")
-                print(f"   Average similarity: {r['avg_score']:.3f}")
+            print(f"   {r['total']:,} total property pairs with shared features")
+            if r['total'] > 0 and r['min_shared'] is not None:
+                print(f"   Shared features distribution: min={r['min_shared']:.0f}, Q1={r['q1']:.0f}, median={r['median']:.0f}, Q3={r['q3']:.0f}, max={r['max_shared']:.0f}")
+                print(f"   Average shared features: {r['avg_shared']:.1f}")
             else:
-                print("   No similarity relationships found in the database")
+                print("   No feature connections found in the database")
     
     def _analyze_feature_value_influence(self):
         """Analyze how features influence property values"""

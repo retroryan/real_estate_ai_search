@@ -670,39 +670,42 @@ class MarketIntelligenceAnalyzer:
             "Understanding competitive dynamics through property similarity networks and positioning"
         )
         
-        # Competitive clustering analysis
+        # Competitive clustering analysis based on shared features
         self.print_subsection("Competitive Property Clusters")
         query = """
-        MATCH (p:Property)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.similarity_score > 0.8  // High similarity threshold
+        // Find properties with many shared features (competitive indicator)
+        MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(similar:Property)
+        WHERE p <> similar
         
-        // Find properties with many high-similarity connections
-        WITH p, count(similar) as SimilarityConnections,
-             avg(sim.similarity_score) as AvgSimilarityScore,
-             collect(similar.listing_id)[0..5] as SimilarProperties
-        WHERE SimilarityConnections >= 3
+        WITH p, similar, count(DISTINCT f) as SharedFeatures
+        WHERE SharedFeatures >= 5  // Properties sharing 5+ features are competitive
+        
+        WITH p, count(DISTINCT similar) as CompetitorCount,
+             avg(SharedFeatures) as AvgSharedFeatures,
+             collect(DISTINCT similar.listing_id)[0..5] as CompetingProperties
+        WHERE CompetitorCount >= 3
         
         MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
                n.city + ", " + n.name as Location,
-               SimilarityConnections, AvgSimilarityScore,
-               SimilarProperties, collect(DISTINCT f.name)[0..5] as TopFeatures
-        ORDER BY SimilarityConnections DESC, AvgSimilarityScore DESC
+               CompetitorCount, AvgSharedFeatures,
+               CompetingProperties, collect(DISTINCT f.name)[0..5] as TopFeatures
+        ORDER BY CompetitorCount DESC, AvgSharedFeatures DESC
         LIMIT 10
         """
         results = run_query(self.driver, query)
         
         print("Highly Competitive Property Clusters:")
         for r in results:
-            cluster_icon = "" if r['SimilarityConnections'] > 5 else "" if r['SimilarityConnections'] > 3 else ""
+            cluster_icon = "" if r['CompetitorCount'] > 5 else "" if r['CompetitorCount'] > 3 else ""
             price = r.get('Price') or 0
             print(f"{cluster_icon} Property {r['PropertyID']} - ${price:,.0f}")
             print(f"   Location: {r['Location']}")
-            print(f"   Competitive Network: {r['SimilarityConnections']} similar properties")
-            print(f"   Average Similarity: {r['AvgSimilarityScore']:.3f}")
-            print(f"   Direct Competitors: {', '.join(r['SimilarProperties'])}")
+            print(f"   Competitive Network: {r['CompetitorCount']} competing properties")
+            print(f"   Avg Shared Features: {r['AvgSharedFeatures']:.1f}")
+            print(f"   Direct Competitors: {', '.join(r['CompetingProperties'])}")
             print(f"   Key Features: {', '.join(r['TopFeatures'])}")
 
         # Market positioning analysis
@@ -737,15 +740,17 @@ class MarketIntelligenceAnalyzer:
         WITH p, n, FeatureCategories, FeatureCount, PriceBand,
              count(comp) as DirectCompetitors
         
-        // Analyze feature differentiation
-        OPTIONAL MATCH (p)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.similarity_score > 0.7
+        // Analyze feature differentiation through shared features
+        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f2:Feature)<-[:HAS_FEATURE]-(similar:Property)
+        WHERE similar <> p
+        
+        WITH p, n, FeatureCategories, FeatureCount, PriceBand, DirectCompetitors,
+             count(DISTINCT similar) as PropertiesWithSharedFeatures
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
                n.city as City, n.name as Neighborhood, PriceBand,
                FeatureCount, FeatureCategories, DirectCompetitors,
-               count(DISTINCT similar) as SimilarProperties,
-               avg(sim.similarity_score) as AvgSimilarity
+               PropertiesWithSharedFeatures
         ORDER BY DirectCompetitors DESC, FeatureCount DESC
         LIMIT 15
         """
@@ -759,8 +764,8 @@ class MarketIntelligenceAnalyzer:
             print(f"   Location: {r['Neighborhood']}, {r['City']}")
             print(f"   Competitive Density: {r['DirectCompetitors']} direct competitors")
             print(f"   Feature Differentiation: {r['FeatureCount']} features across {len(r['FeatureCategories'])} categories")
-            if r['SimilarProperties']:
-                print(f"   Similarity Network: {r['SimilarProperties']} similar (avg: {r['AvgSimilarity']:.3f})")
+            if r.get('PropertiesWithSharedFeatures'):
+                print(f"   Properties with Shared Features: {r['PropertiesWithSharedFeatures']}")
 
         # Competitive gap analysis
         self.print_subsection("Market Gap Analysis")
@@ -817,6 +822,16 @@ def run_complete_market_intelligence_demo():
     print("database relationships combined with vector embeddings for comprehensive")
     print("market intelligence that rivals professional real estate analytics platforms.")
     print("="*80)
+    
+    print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+    print("   • Complex Graph Patterns - Multi-hop traversals for market analysis")
+    print("   • Conditional Aggregations - CASE statements for market segmentation")
+    print("   • Statistical Functions - percentileCont, stDev for market metrics")
+    print("   • Subquery Processing - WITH clauses for multi-stage analysis")
+    print("   • Cartesian Products - Cross-neighborhood comparisons")
+    print("   • Path Analysis - Finding arbitrage opportunities through relationships")
+    print("   • Feature Correlation - Graph-based feature impact analysis")
+    print("   • Market Segmentation - Dynamic categorization using graph properties")
     
     driver = None
     try:

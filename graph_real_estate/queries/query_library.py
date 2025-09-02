@@ -258,37 +258,34 @@ class QueryLibrary:
     
     @staticmethod
     def get_similarity_queries() -> List[Query]:
-        """Property similarity queries"""
+        """Property similarity queries using embeddings"""
         return [
             Query(
-                name="similar_properties",
-                description="Most similar property pairs",
+                name="properties_with_embeddings",
+                description="Properties that have embeddings for similarity search",
                 category="similarity",
                 cypher="""
-                MATCH (p1:Property)-[r:SIMILAR_TO]->(p2:Property)
-                WHERE r.score > 0.7
-                RETURN p1.address as property1,
-                       p1.listing_price as price1,
-                       p2.address as property2,
-                       p2.listing_price as price2,
-                       r.score as similarity_score
-                ORDER BY r.score DESC
-                LIMIT 10
+                MATCH (p:Property)
+                WHERE p.embedding IS NOT NULL
+                RETURN count(p) as properties_with_embeddings
                 """
             ),
             Query(
-                name="perfect_matches",
-                description="Properties with perfect similarity scores",
+                name="random_property_for_similarity",
+                description="Get a random property with embedding for similarity testing",
                 category="similarity",
                 cypher="""
-                MATCH (p1:Property)-[r:SIMILAR_TO]->(p2:Property)
-                WHERE r.score >= 1.0
-                RETURN p1.address as property1,
-                       p2.address as property2,
-                       p1.listing_price as price,
-                       p1.bedrooms as bedrooms,
-                       p1.square_feet as sqft
-                ORDER BY p1.listing_price DESC
+                MATCH (p:Property)
+                WHERE p.embedding IS NOT NULL
+                WITH p, rand() as r
+                ORDER BY r
+                LIMIT 1
+                RETURN p.listing_id as property_id,
+                       p.street_address as address,
+                       p.listing_price as price,
+                       p.bedrooms as bedrooms,
+                       p.square_feet as sqft,
+                       p.embedding as embedding
                 """
             )
         ]

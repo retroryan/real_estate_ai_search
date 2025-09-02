@@ -261,8 +261,39 @@ if [ $# -gt 0 ]; then
             check_neo4j
             if [ -z "$2" ]; then
                 echo
-                echo "Available demos:"
-                echo "  1-7) Various graph demos available in the module"
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
+                echo -e "${CYAN}                    Available Graph Demos                           ${NC}"
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
+                echo
+                echo -e "${YELLOW}1) Basic Graph Queries Demo${NC}"
+                echo "   Fundamental Neo4j queries showing property counts, relationships,"
+                echo "   geographic hierarchy, and feature statistics."
+                echo
+                echo -e "${YELLOW}2) Embedding Similarity Demo${NC}"
+                echo "   Real-time similarity search using property embeddings with"
+                echo "   on-demand cosine similarity calculations."
+                echo
+                echo -e "${YELLOW}3) Market Intelligence Demo${NC}"
+                echo "   Advanced market analytics including competitive clustering,"
+                echo "   positioning analysis, and market gap identification."
+                echo
+                echo -e "${YELLOW}4) Wikipedia Integration Demo${NC}"
+                echo "   Shows neighborhoods linked to Wikipedia articles using"
+                echo "   the wikipedia_page_id field for knowledge enrichment."
+                echo
+                echo -e "${YELLOW}5) Pure Vector Search Demo${NC}"
+                echo "   Semantic search using 1024-dimensional property embeddings"
+                echo "   without graph boosting to show pure embedding capabilities."
+                echo
+                echo -e "${YELLOW}6) Advanced Path Search Demo${NC}"
+                echo "   Feature-based path finding and property clustering through"
+                echo "   shared features and neighborhood connections."
+                echo
+                echo -e "${YELLOW}7) Complete Showcase Demo${NC}"
+                echo "   Comprehensive demonstration of all graph capabilities"
+                echo "   running each demo module in sequence."
+                echo
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
                 echo
                 echo "Usage: $0 demo [1-7]"
                 echo "Running default demo 1..."
@@ -336,8 +367,39 @@ else
                 ;;
             8)
                 echo
-                echo "Available demos:"
-                echo "  1-7) Various graph demos available in the module"
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
+                echo -e "${CYAN}                    Available Graph Demos                           ${NC}"
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
+                echo
+                echo -e "${YELLOW}1) Basic Graph Queries Demo${NC}"
+                echo "   Fundamental Neo4j queries showing property counts, relationships,"
+                echo "   geographic hierarchy, and feature statistics."
+                echo
+                echo -e "${YELLOW}2) Embedding Similarity Demo${NC}"
+                echo "   Real-time similarity search using property embeddings with"
+                echo "   on-demand cosine similarity calculations."
+                echo
+                echo -e "${YELLOW}3) Market Intelligence Demo${NC}"
+                echo "   Advanced market analytics including competitive clustering,"
+                echo "   positioning analysis, and market gap identification."
+                echo
+                echo -e "${YELLOW}4) Wikipedia Integration Demo${NC}"
+                echo "   Shows neighborhoods linked to Wikipedia articles using"
+                echo "   the wikipedia_page_id field for knowledge enrichment."
+                echo
+                echo -e "${YELLOW}5) Pure Vector Search Demo${NC}"
+                echo "   Semantic search using 1024-dimensional property embeddings"
+                echo "   without graph boosting to show pure embedding capabilities."
+                echo
+                echo -e "${YELLOW}6) Advanced Path Search Demo${NC}"
+                echo "   Feature-based path finding and property clustering through"
+                echo "   shared features and neighborhood connections."
+                echo
+                echo -e "${YELLOW}7) Complete Showcase Demo${NC}"
+                echo "   Comprehensive demonstration of all graph capabilities"
+                echo "   running each demo module in sequence."
+                echo
+                echo -e "${CYAN}════════════════════════════════════════════════════════════════════${NC}"
                 echo
                 read -p "Enter demo number (1-7, default: 1): " demo
                 run_demo "${demo:-1}"

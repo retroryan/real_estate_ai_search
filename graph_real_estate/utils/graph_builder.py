@@ -174,7 +174,7 @@ class GraphDatabaseInitializer:
         # Get relationship counts by type
         rel_types = ['LOCATED_IN', 'IN_CITY', 'IN_COUNTY', 'IN_STATE',
                     'DESCRIBES', 'HAS_FEATURE', 'IN_PRICE_RANGE', 'TYPE_OF',
-                    'SIMILAR_TO', 'NEAR']
+                    'NEAR']
         
         for rel_type in rel_types:
             query = f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count"
@@ -211,7 +211,7 @@ class GraphDatabaseInitializer:
         print("\n🔗 RELATIONSHIP COUNTS:")
         rel_types = ['LOCATED_IN', 'IN_CITY', 'IN_COUNTY', 'IN_STATE',
                     'DESCRIBES', 'HAS_FEATURE', 'IN_PRICE_RANGE', 'TYPE_OF',
-                    'SIMILAR_TO', 'NEAR']
+                    'NEAR']
         for rel_type in rel_types:
             count = stats.get(f'relationships_{rel_type}', 0)
             if count > 0:
@@ -352,7 +352,7 @@ class GraphDatabaseInitializer:
         print("\n🔗 Relationship Statistics:")
         rel_types = [
             'LOCATED_IN', 'HAS_FEATURE', 'IN_CITY', 'IN_STATE',
-            'IN_ZIP_CODE', 'TYPE_OF', 'IN_PRICE_RANGE', 'SIMILAR_TO',
+            'IN_ZIP_CODE', 'TYPE_OF', 'IN_PRICE_RANGE',
             'NEAR', 'DESCRIBES'
         ]
         

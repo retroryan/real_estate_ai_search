@@ -267,7 +267,7 @@ class QueryExecutor:
         # Relationship counts
         rel_types = [
             "IN_NEIGHBORHOOD", "IN_CITY", "IN_COUNTY", "IN_STATE",
-            "HAS_FEATURE", "OF_TYPE", "IN_PRICE_RANGE", "SIMILAR_TO",
+            "HAS_FEATURE", "OF_TYPE", "IN_PRICE_RANGE",
             "NEAR", "NEAR_BY", "DESCRIBES", "RELEVANT_TO"
         ]
         

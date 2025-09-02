@@ -317,7 +317,7 @@ class GoldGraphBuilder:
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
             county_id,
-            county as county_name,
+            county as name,
             state,
             'County' as node_label,
             'county:' || county_id as graph_node_id
@@ -347,11 +347,18 @@ class GoldGraphBuilder:
         # Extract unique features from properties
         query = f"""
         CREATE TABLE {table_name} AS
-        SELECT DISTINCT
-            LOWER(REPLACE(TRIM(unnest(features)), ' ', '_')) as feature_id,
-            LOWER(TRIM(unnest(features))) as feature_name,
+        WITH unnested_features AS (
+            SELECT DISTINCT TRIM(unnest(features)) as feature_name
+            FROM gold_properties
+            WHERE features IS NOT NULL AND array_length(features) > 0
+        )
+        SELECT 
+            LOWER(REPLACE(feature_name, ' ', '_')) as feature_id,
+            feature_name as name,
+            'general' as category,  -- Simple default, can be enriched later
             'Feature' as node_label,
-            'feature:' || LOWER(REPLACE(TRIM(unnest(features)), ' ', '_')) as graph_node_id
+            'feature:' || LOWER(REPLACE(feature_name, ' ', '_')) as graph_node_id
+        FROM unnested_features
         FROM gold_properties
         WHERE features IS NOT NULL AND array_length(features) > 0
         """
@@ -379,7 +386,7 @@ class GoldGraphBuilder:
         CREATE TABLE {table_name} AS
         SELECT DISTINCT
             city_id,
-            city as city_name,
+            city as name,
             state,
             county,
             'City' as node_label,

@@ -149,6 +149,15 @@ class SimpleDemoRunner:
         print(f"{'='*60}\n")
         print("Running basic Neo4j graph queries without external dependencies\n")
         
+        print("🚀 NEO4J FEATURES DEMONSTRATED:")
+        print("   • Node Labels & Properties - Property, Neighborhood, City, Feature nodes")
+        print("   • Relationship Types - LOCATED_IN, IN_CITY, HAS_FEATURE relationships")
+        print("   • Pattern Matching - MATCH patterns for traversing the graph")
+        print("   • Aggregation Functions - COUNT, AVG, MIN, MAX for analytics")
+        print("   • OPTIONAL MATCH - Handling missing relationships gracefully")
+        print("   • Property Filtering - WHERE clauses on node properties")
+        print("   • Graph Traversal - Multi-hop relationship navigation\n")
+        
         # Run all 5 basic demos
         self._demo_1_basic_search(run_query)
         print("\n" + "-"*50 + "\n")
@@ -227,7 +236,7 @@ class SimpleDemoRunner:
         
         # Count each relationship type
         print("Relationship Types:")
-        rel_types = ['LOCATED_IN', 'IN_CITY', 'IN_COUNTY', 'HAS_FEATURE', 'SIMILAR_TO', 'NEAR', 'DESCRIBES']
+        rel_types = ['LOCATED_IN', 'IN_CITY', 'IN_COUNTY', 'HAS_FEATURE', 'NEAR', 'DESCRIBES']
         relationship_counts = []
         for rel_type in rel_types:
             query = f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count"
@@ -376,23 +385,22 @@ class SimpleDemoRunner:
         """Section 5: Advanced analysis"""
         print("📊 SECTION 5: ADVANCED ANALYSIS\n")
         
-        print("Property Similarity Network:")
+        print("Property Embedding Status:")
         query = """
-        MATCH (p:Property)-[s:SIMILAR_TO]-(other:Property)
-        WHERE s.score > 0.8
-        RETURN count(DISTINCT p) as similar_properties,
-               count(s)/2 as similarity_relationships
+        MATCH (p:Property)
+        RETURN count(p) as total_properties,
+               count(CASE WHEN p.embedding IS NOT NULL THEN 1 END) as properties_with_embeddings
         """
         result = run_query(self.driver, query)
-        if result and result[0]['similar_properties']:
-            similarity = SimilarityNetwork(
-                similar_properties=result[0]['similar_properties'],
-                similarity_relationships=int(result[0]['similarity_relationships'])
-            )
-            print(f"  Properties with high similarity: {similarity.similar_properties}")
-            print(f"  Similarity pairs (score > 0.8): {similarity.similarity_relationships}")
+        if result:
+            total = result[0]['total_properties']
+            with_embeddings = result[0]['properties_with_embeddings']
+            print(f"  Total properties: {total}")
+            print(f"  Properties with embeddings: {with_embeddings}")
+            if with_embeddings > 0:
+                print(f"  Coverage: {(with_embeddings/total)*100:.1f}%")
         else:
-            print("  No similarity relationships found")
+            print("  No properties found")
         
         print("\nProperties with Most Features:")
         query = """

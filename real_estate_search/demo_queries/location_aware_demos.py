@@ -80,47 +80,83 @@ class LocationAwareDisplayFormatter:
     
     @staticmethod
     def create_location_results_table(results: List[Dict[str, Any]], query: str) -> Table:
-        """Create rich table for location-aware search results."""
+        """Create rich table for location-aware search results - showing top 5."""
         table = Table(
-            title=f"Location-Aware Hybrid Search Results: '{query}'",
-            box=box.ROUNDED,
-            title_style="bold cyan"
+            title=f"🏠 Top 5 Properties - Location-Aware Hybrid Search: '{query}'",
+            box=box.DOUBLE_EDGE,
+            title_style="bold cyan",
+            show_header=True,
+            header_style="bold magenta",
+            expand=True,
+            padding=(0, 1)
         )
         
-        # Define columns
-        table.add_column("Property", style="white", width=40)
-        table.add_column("Location", style="blue", width=25)
-        table.add_column("Price", style="green", justify="right")
-        table.add_column("Hybrid Score", style="yellow", width=25)
+        # Define columns with better widths
+        table.add_column("#", style="dim", width=3, justify="center")
+        table.add_column("Property Details", style="white", width=45)
+        table.add_column("Location", style="blue", width=30)
+        table.add_column("Price", style="green bold", justify="right", width=15)
+        table.add_column("Description", style="yellow", width=50)
+        table.add_column("Score", style="cyan bold", width=12, justify="center")
         
-        # Add rows
-        for result in results[:10]:  # Limit to top 10 for readability
-            # Property info
+        # Add rows - only top 5
+        for idx, result in enumerate(results[:5], 1):
+            # Property info with better formatting
             property_type = PropertyDisplayFormatter.format_property_type(result.get('property_type', ''))
             bedrooms = result.get('bedrooms', 0)
             bathrooms = result.get('bathrooms', 0)
             sqft = result.get('square_feet', 0)
+            year_built = result.get('year_built', 'N/A')
             
-            property_info = f"{property_type}"
-            if bedrooms or bathrooms:
-                property_info += f"\n{bedrooms}bd/{bathrooms}ba"
-            if sqft:
-                property_info += f"\n{sqft:,} sqft"
+            property_info = Text()
+            property_info.append(f"{property_type}\n", style="bold white")
+            property_info.append(f"🛏️  {bedrooms} bed | 🚿 {bathrooms} bath\n", style="cyan")
+            property_info.append(f"📐 {sqft:,} sqft | 🏗️  Built {year_built}", style="dim")
             
-            # Location info
-            location_text = LocationAwareDisplayFormatter.format_location_info(result)
+            # Enhanced location info
+            address = result.get('address', {})
+            location_parts = []
+            if address.get('street'):
+                location_parts.append(f"📍 {address['street']}")
+            if address.get('city'):
+                location_parts.append(f"🏙️  {address['city']}")
+            if address.get('state'):
+                location_parts.append(f"{address['state']}")
+            if address.get('zip'):
+                location_parts.append(f"📮 {address['zip']}")
             
-            # Price
+            neighborhood = result.get('neighborhood', {})
+            if neighborhood.get('name'):
+                location_parts.append(f"\n🏘️  {neighborhood['name']}")
+                
+            location_text = Text("\n".join(location_parts), style="blue")
+            
+            # Price with better formatting
             price = result.get('price', 0)
-            price_formatted = PropertyDisplayFormatter.format_price(price)
+            price_formatted = Text()
+            price_formatted.append("💰 ", style="green")
+            price_formatted.append(PropertyDisplayFormatter.format_price(price), style="bold green")
             
-            # Hybrid score
-            score_text = LocationAwareDisplayFormatter.format_hybrid_score(result)
+            # Property description (truncated if too long)
+            description = result.get('description', 'No description available')
+            if len(description) > 150:
+                description = description[:147] + "..."
+            description_text = Text(description, style="italic")
+            
+            # Hybrid score with visual
+            score = result.get('_hybrid_score', 0)
+            score_bar_length = int(score * 5) if score <= 1.0 else 5
+            score_text = Text()
+            score_text.append(f"{score:.3f}\n", style="bold cyan")
+            score_text.append("⭐" * score_bar_length, style="yellow")
+            score_text.append("☆" * (5 - score_bar_length), style="dim")
             
             table.add_row(
+                str(idx),
                 property_info,
                 location_text,
                 price_formatted,
+                description_text,
                 score_text
             )
         

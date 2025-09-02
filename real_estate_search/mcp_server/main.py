@@ -21,6 +21,8 @@ if __name__ == "__main__" and __package__ is None:
     from real_estate_search.mcp_server.utils.logging import setup_logging, get_logger
     from real_estate_search.mcp_server.tools.property_tools import search_properties, get_property_details
     from real_estate_search.mcp_server.tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
+    from real_estate_search.mcp_server.tools.hybrid_search_tool import search_properties_hybrid
+    from real_estate_search.hybrid import HybridSearchEngine
 else:
     # Running as module
     from .settings import MCPServerConfig
@@ -33,6 +35,8 @@ else:
     from .utils.logging import setup_logging, get_logger
     from .tools.property_tools import search_properties, get_property_details
     from .tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
+    from .tools.hybrid_search_tool import search_properties_hybrid
+    from ..hybrid import HybridSearchEngine
 
 
 logger = get_logger(__name__)
@@ -64,6 +68,7 @@ class MCPServer:
         self.wikipedia_search_service: Optional[WikipediaSearchService] = None
         self.natural_language_search_service: Optional[NaturalLanguageSearchService] = None
         self.health_check_service: Optional[HealthCheckService] = None
+        self.hybrid_search_engine: Optional[HybridSearchEngine] = None
         
         # Initialize FastMCP app
         self.app = FastMCP(self.config.server_name)
@@ -114,6 +119,13 @@ class MCPServer:
                 self.es_client
             )
             logger.info("Health check service initialized")
+            
+            # Hybrid search engine
+            self.hybrid_search_engine = HybridSearchEngine(
+                es_client=self.es_client.client,
+                config=None  # Uses default AppConfig
+            )
+            logger.info("Hybrid search engine initialized")
             
             logger.info("All services initialized successfully")
             
@@ -325,6 +337,34 @@ class MCPServer:
                 logger.error(f"Health check failed: {e}")
                 return {"error": str(e)}
         
+        # Hybrid search tool
+        @self.app.tool()
+        async def search_properties_hybrid_tool(
+            query: str,
+            size: int = 10,
+            include_location_extraction: bool = False
+        ) -> Dict[str, Any]:
+            """Search properties using hybrid search with location understanding.
+            
+            Advanced property search that combines semantic vector search, traditional text matching,
+            and intelligent location extraction from natural language queries. Uses Elasticsearch's
+            RRF (Reciprocal Rank Fusion) for optimal result ranking.
+            
+            Args:
+                query: Natural language property search query (e.g., "luxury waterfront condo in San Francisco")
+                size: Number of results to return (1-50, default 10)
+                include_location_extraction: Include location extraction details in response (default false)
+                
+            Returns:
+                Structured property results with hybrid relevance scores and execution metadata
+            """
+            return await search_properties_hybrid(
+                self._create_context(),
+                query=query,
+                size=size,
+                include_location_extraction=include_location_extraction
+            )
+        
         logger.info("MCP tools registered successfully")
     
     def _create_context(self) -> Context:
@@ -348,7 +388,8 @@ class MCPServer:
             "property_search_service": self.property_search_service,
             "wikipedia_search_service": self.wikipedia_search_service,
             "natural_language_search_service": self.natural_language_search_service,
-            "health_check_service": self.health_check_service
+            "health_check_service": self.health_check_service,
+            "hybrid_search_engine": self.hybrid_search_engine
         })
     
     def start(self, transport: str = None, host: str = None, port: int = None):

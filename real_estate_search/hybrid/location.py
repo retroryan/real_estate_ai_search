@@ -34,19 +34,38 @@ def ensure_dspy_initialized():
 
 class LocationExtractionSignature(dspy.Signature):
     """
-    Extract location information from natural language real estate queries.
+    Extract location information from real estate search queries.
     
-    Analyze the provided query to identify location references including city, state,
-    neighborhood, or ZIP code. Extract these elements and provide a cleaned version
-    of the query with location terms removed for better property feature matching.
+    Your job is to find cities, states, neighborhoods, and ZIP codes in the text, then create a cleaned query with locations removed.
     
-    Focus on identifying:
-    1. City names (e.g., "in San Francisco", "Park City homes")
-    2. State names (e.g., "California properties", "Utah real estate")
-    3. Neighborhood names (e.g., "Mission District", "Castro area")
-    4. ZIP codes (e.g., "94102", "84060")
+    LOCATION EXTRACTION:
+    - Look for city names (e.g., San Francisco, San Jose, Salinas, Oakland)
+    - Look for state names or abbreviations (e.g., California, CA, Utah, UT)
+    - Look for neighborhood names
+    - Look for ZIP codes (5-digit numbers)
+    - If ANY location is found, set has_location = true
+    - Convert "CA" to "California" for consistency
     
-    Provide high confidence only when location is clearly mentioned.
+    QUERY CLEANING:
+    - Remove all location terms from the original query
+    - Keep the property features and descriptions
+    - Preserve the natural language structure
+    
+    EXAMPLES:
+    Input: "Modern kitchen in San Francisco"
+    → city: "San Francisco", state: "unknown", has_location: true, cleaned_query: "Modern kitchen"
+    
+    Input: "Family home in Salinas California" 
+    → city: "Salinas", state: "California", has_location: true, cleaned_query: "Family home"
+    
+    Input: "Condo in San Jose CA"
+    → city: "San Jose", state: "California", has_location: true, cleaned_query: "Condo"
+    
+    Input: "Property in Salinas"
+    → city: "Salinas", state: "unknown", has_location: true, cleaned_query: "Property"
+    
+    Input: "Updated kitchen and bathrooms"
+    → city: "unknown", state: "unknown", has_location: false, cleaned_query: "Updated kitchen and bathrooms"
     """
     
     # Input field
@@ -104,9 +123,9 @@ class LocationUnderstandingModule(dspy.Module):
         super().__init__()
         ensure_dspy_initialized()
         
-        # Use ChainOfThought for better reasoning about location extraction
-        self.extract_location = dspy.ChainOfThought(LocationExtractionSignature)
-        logger.info("Initialized LocationUnderstandingModule with ChainOfThought")
+        # Try Predict instead of ChainOfThought for more direct extraction
+        self.extract_location = dspy.Predict(LocationExtractionSignature)
+        logger.info("Initialized LocationUnderstandingModule with Predict")
     
     def forward(self, query: str) -> LocationIntent:
         """
@@ -118,15 +137,21 @@ class LocationUnderstandingModule(dspy.Module):
         Returns:
             LocationIntent with extracted location information
         """
+        # Try rule-based extraction first as backup
+        rule_based_result = self._rule_based_extraction(query)
+        
         try:
             # Execute DSPy prediction
             result = self.extract_location(query_text=query)
             
+            # Debug logging
+            logger.info(f"DSPy raw result for query '{query}': city='{result.city}', state='{result.state}', has_location='{result.has_location}'")
+            
             # Process and clean the extracted values
-            city = None if result.city.lower() in ['unknown', 'none', ''] else result.city
-            state = None if result.state.lower() in ['unknown', 'none', ''] else result.state
-            neighborhood = None if result.neighborhood.lower() in ['unknown', 'none', ''] else result.neighborhood
-            zip_code = None if result.zip_code.lower() in ['unknown', 'none', ''] else result.zip_code
+            city = None if not result.city or result.city.lower() in ['unknown', 'none', ''] else result.city
+            state = None if not result.state or result.state.lower() in ['unknown', 'none', ''] else result.state
+            neighborhood = None if not result.neighborhood or result.neighborhood.lower() in ['unknown', 'none', ''] else result.neighborhood
+            zip_code = None if not result.zip_code or result.zip_code.lower() in ['unknown', 'none', ''] else result.zip_code
             
             # Determine if location was found
             has_location = any([city, state, neighborhood, zip_code])
@@ -137,6 +162,14 @@ class LocationUnderstandingModule(dspy.Module):
             except (ValueError, TypeError):
                 confidence = 1.0 if has_location else 0.0
             
+            # Ensure cleaned_query is never None - fallback to original query
+            cleaned_query = result.cleaned_query if result.cleaned_query else query
+            
+            # If DSPy failed but rule-based found location, use rule-based result
+            if not has_location and rule_based_result.has_location:
+                logger.info(f"DSPy failed, using rule-based extraction for: {query}")
+                return rule_based_result
+            
             # Create LocationIntent object
             return LocationIntent(
                 city=city,
@@ -144,22 +177,35 @@ class LocationUnderstandingModule(dspy.Module):
                 neighborhood=neighborhood,
                 zip_code=zip_code,
                 has_location=has_location,
-                cleaned_query=result.cleaned_query,
+                cleaned_query=cleaned_query,
                 confidence=confidence
             )
             
         except Exception as e:
-            logger.error(f"Location extraction failed: {e}")
-            # Return query as-is if extraction fails
-            return LocationIntent(
-                city=None,
-                state=None,
-                neighborhood=None,
-                zip_code=None,
-                has_location=False,
-                cleaned_query=query,
-                confidence=0.0
-            )
+            logger.error(f"DSPy extraction failed: {e}, falling back to rule-based")
+            return rule_based_result
+    
+    def _rule_based_extraction(self, query: str) -> LocationIntent:
+        """
+        Minimal rule-based backup - only as last resort, no hardcoded locations.
+        
+        Args:
+            query: Natural language search query
+            
+        Returns:
+            LocationIntent with minimal extraction
+        """
+        # Very minimal rule-based fallback - just return no location found
+        # Let DSPy handle all location extraction
+        return LocationIntent(
+            city=None,
+            state=None,
+            neighborhood=None,
+            zip_code=None,
+            has_location=False,
+            cleaned_query=query,
+            confidence=0.0
+        )
     
     def __call__(self, query: str) -> LocationIntent:
         """

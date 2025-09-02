@@ -51,6 +51,16 @@ class AdvancedHybridSearchDemo:
         """Initialize the demo with database connection and search pipeline"""
         print("Initializing Advanced Hybrid Search Demo...")
         
+        print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+        print("   • Advanced Hybrid Search - Full integration of vectors and graph")
+        print("   • Semantic Understanding - Natural language query processing")
+        print("   • Multi-Criteria Filtering - Complex property constraints")
+        print("   • Graph Intelligence - Relationship-based relevance boosting")
+        print("   • Feature Correlations - Cross-feature relationship analysis")
+        print("   • Geographic Intelligence - Location-based scoring")
+        print("   • Dynamic Scoring - Real-time score combination")
+        print("   • Production-Ready Search - Scalable hybrid architecture\n")
+        
         # Connect to database
         self.driver = get_neo4j_driver()
         
@@ -89,7 +99,7 @@ class AdvancedHybridSearchDemo:
     def _show_relationship_stats(self):
         """Display current relationship statistics"""
         queries = {
-            'Property Similarities': "MATCH ()-[r:SIMILAR_TO]->() RETURN count(r) as count",
+            'Properties with Embeddings': "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as count",
             'Geographic Proximities': "MATCH ()-[r:NEAR_BY]->() RETURN count(r) as count", 
             'Neighborhood Connections': "MATCH ()-[r:NEAR]->() RETURN count(r) as count",
             'Feature Relationships': "MATCH ()-[r:HAS_FEATURE]->() RETURN count(r) as count"
@@ -141,9 +151,7 @@ class AdvancedHybridSearchDemo:
             if len(result.features) > 5:
                 output.append(f"      ... and {len(result.features) - 5} more features")
         
-        # Similar properties (graph intelligence)
-        if result.similar_properties:
-            output.append(f"   Similar Properties: {', '.join(result.similar_properties[:3])}")
+        # Note: Similar properties can be found using embedding similarity
         
         return '\n'.join(output)
     
@@ -231,8 +239,7 @@ class AdvancedHybridSearchDemo:
                     print(f"      Vector Only: {v_result.listing_id} (score: {v_result.vector_score:.3f})")
                     print(f"      Hybrid: {h_result.listing_id} (vector: {h_result.vector_score:.3f}, graph: {h_result.graph_score:.3f}, combined: {h_result.combined_score:.3f})")
                     
-                    if h_result.similar_properties:
-                        print(f"      Graph boost from {len(h_result.similar_properties)} similar properties")
+                    # Graph boost from features and location relationships
             
             print("\n" + "-" * 60)
     
@@ -352,8 +359,7 @@ class AdvancedHybridSearchDemo:
                     print(f"      Graph Score: {result.graph_score:.3f} (includes proximity relationships)")
                     print(f"      Combined Score: {result.combined_score:.3f}")
                     
-                    if result.similar_properties:
-                        print(f"      Connected to {len(result.similar_properties)} similar properties")
+                    # Embeddings enable similarity search on demand
             
             print("\n" + "-" * 60)
     

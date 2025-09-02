@@ -110,43 +110,121 @@ class DemoQueryResult(BaseModel):
     indexes_used: Optional[List[str]] = Field(None, description="Indexes queried")
     
     def display(self, verbose: bool = False) -> str:
-        """Format results for display."""
+        """Format results for display with top 5 results in a table."""
         import json
+        from rich.console import Console
+        from rich.table import Table
+        from rich.text import Text
+        from rich import box
+        from io import StringIO
         
-        output = []
-        output.append(f"\n{'='*80}")
-        output.append(f"🔍 Demo Query: {self.query_name}")
-        output.append(f"{'='*80}")
+        # Create a string buffer to capture rich output
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=True, width=150)
+        
+        # Header
+        console.print(f"\n{'='*80}", style="cyan")
+        console.print(f"🔍 Demo Query: {self.query_name}", style="bold cyan")
+        console.print(f"{'='*80}", style="cyan")
         
         # Add search description if provided
         if self.query_description:
-            output.append(f"\n📝 SEARCH DESCRIPTION:")
-            output.append(f"   {self.query_description}")
+            console.print(f"\n📝 SEARCH DESCRIPTION:", style="bold yellow")
+            console.print(f"   {self.query_description}", style="yellow")
         
         # Add Elasticsearch features if provided
         if self.es_features:
-            output.append(f"\n📊 ELASTICSEARCH FEATURES:")
+            console.print(f"\n📊 ELASTICSEARCH FEATURES:", style="bold green")
             for feature in self.es_features:
-                output.append(f"   • {feature}")
+                console.print(f"   • {feature}", style="green")
         
         # Add indexes used if provided
         if self.indexes_used:
-            output.append(f"\n📁 INDEXES & DOCUMENTS:")
+            console.print(f"\n📁 INDEXES & DOCUMENTS:", style="bold blue")
             for index_info in self.indexes_used:
-                output.append(f"   • {index_info}")
+                console.print(f"   • {index_info}", style="blue")
         
-        output.append(f"\n{'─'*80}")
-        output.append(f"⏱️  Execution Time: {self.execution_time_ms}ms")
-        output.append(f"📊 Total Hits: {self.total_hits}")
-        output.append(f"📄 Returned: {self.returned_hits}")
+        console.print(f"\n{'─'*80}", style="dim")
+        console.print(f"⏱️  Execution Time: {self.execution_time_ms}ms | 📊 Total Hits: {self.total_hits} | 📄 Returned: {self.returned_hits}", style="cyan")
         
-        # Remove raw results and aggregations display - rich formatting is handled by demo modules
+        # Display top 5 results in a nice table if we have results
+        if self.results and len(self.results) > 0:
+            console.print(f"\n🏠 TOP 5 SEARCH RESULTS:", style="bold magenta")
+            
+            table = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold magenta",
+                title_style="bold cyan",
+                expand=False,
+                padding=(0, 1)
+            )
+            
+            # Add columns
+            table.add_column("#", style="dim", width=3, justify="center")
+            table.add_column("Property Details", style="white", width=35)
+            table.add_column("Location", style="blue", width=25)
+            table.add_column("Price", style="green bold", justify="right", width=12)
+            table.add_column("Description", style="yellow", width=45)
+            if any('_hybrid_score' in r for r in self.results[:5]):
+                table.add_column("Score", style="cyan bold", width=10, justify="center")
+            
+            # Add top 5 results
+            for idx, result in enumerate(self.results[:5], 1):
+                # Property details
+                prop_type = result.get('property_type', 'Unknown')
+                bedrooms = result.get('bedrooms', 0)
+                bathrooms = result.get('bathrooms', 0)
+                sqft = result.get('square_feet', 0)
+                year_built = result.get('year_built', 'N/A')
+                
+                property_text = Text()
+                property_text.append(f"{prop_type}\n", style="bold")
+                property_text.append(f"{bedrooms}bd/{bathrooms}ba • {sqft:,} sqft\n", style="cyan")
+                property_text.append(f"Built {year_built}", style="dim")
+                
+                # Location
+                address = result.get('address', {})
+                location_parts = []
+                if address.get('street'):
+                    location_parts.append(address['street'])
+                if address.get('city'):
+                    location_parts.append(address['city'])
+                if address.get('state'):
+                    location_parts.append(address['state'])
+                location = '\n'.join(location_parts) if location_parts else 'N/A'
+                
+                # Price
+                price = result.get('price', 0)
+                price_text = f"${price:,.0f}" if price > 0 else "N/A"
+                
+                # Description (truncated)
+                description = result.get('description', 'No description')
+                if len(description) > 100:
+                    description = description[:97] + "..."
+                
+                # Build row
+                row_data = [str(idx), property_text, location, price_text, description]
+                
+                # Add score if it exists
+                if '_hybrid_score' in result:
+                    score = result.get('_hybrid_score', 0)
+                    score_text = f"{score:.3f}"
+                    row_data.append(score_text)
+                
+                table.add_row(*row_data)
+            
+            console.print(table)
         
         if verbose:
-            output.append(f"\n{'-'*40}")
-            output.append("Query DSL:")
-            output.append(f"{'-'*40}")
+            console.print(f"\n{'-'*40}", style="dim")
+            console.print("Query DSL:", style="bold cyan")
+            console.print(f"{'-'*40}", style="dim")
             # Show full query DSL without truncation
-            output.append(json.dumps(self.query_dsl, indent=2))
+            console.print(json.dumps(self.query_dsl, indent=2), style="green")
         
-        return '\n'.join(output)
+        # Get the string output
+        output = string_buffer.getvalue()
+        string_buffer.close()
+        
+        return output

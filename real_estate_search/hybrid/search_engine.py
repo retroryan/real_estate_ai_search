@@ -83,7 +83,7 @@ class HybridSearchEngine:
             logger.info(f"Hybrid search completed in {execution_time}ms")
             
             # Process results
-            return self._process_results(params.query_text, response, execution_time)
+            return self._process_results(params.query_text, response, execution_time, params.location_intent)
             
         except Exception as e:
             logger.error(f"Hybrid search failed: {e}")
@@ -211,7 +211,8 @@ class HybridSearchEngine:
         self, 
         query: str, 
         response: Dict[str, Any], 
-        execution_time: int
+        execution_time: int,
+        location_intent: Optional[LocationIntent] = None
     ) -> HybridSearchResult:
         """
         Process Elasticsearch response into structured results.
@@ -220,6 +221,7 @@ class HybridSearchEngine:
             query: Original query text
             response: Elasticsearch response
             execution_time: Query execution time in ms
+            location_intent: Extracted location information used for filtering
             
         Returns:
             Processed hybrid search results
@@ -248,5 +250,6 @@ class HybridSearchEngine:
             total_hits=response['hits']['total']['value'],
             execution_time_ms=execution_time,
             results=results,
-            search_metadata=search_metadata
+            search_metadata=search_metadata,
+            location_intent=location_intent
         )

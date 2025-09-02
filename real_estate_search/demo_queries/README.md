@@ -2,6 +2,45 @@
 
 This directory contains demonstration queries showcasing various Elasticsearch search patterns and features. Each query demonstrates specific search concepts, from basic full-text search to complex aggregations and geo-spatial queries.
 
+## 📊 Quick Reference: Demo Queries Overview
+
+| Demo Query | Description | ES Concepts Demonstrated | Code Location |
+|------------|-------------|--------------------------|---------------|
+| **Basic Property Search** | Multi-field text search with fuzzy matching | `multi_match`, field boosting, fuzzy matching, tokenization | `property_queries.py:demo_basic_property_search()` |
+| **Filtered Property Search** | Combined filters for type, price, amenities | `bool` query, `term` filters, `range` queries, filter context | `property_queries.py:demo_filtered_property_search()` |
+| **Geo Distance Search** | Find properties within radius of location | `geo_distance`, spatial indexing, distance calculations | `property_queries.py:demo_geo_distance_search()` |
+| **Price Range with Stats** | Price filtering with market analytics | `range` query, `stats` aggregation, `histogram` buckets | `property_queries.py:demo_price_range_search()` |
+| **Semantic Search (KNN)** | Find similar properties using vectors | `knn` query, dense vectors, cosine similarity, HNSW | `advanced_queries.py:demo_semantic_search()` |
+| **Multi-Entity Search** | Unified search across multiple indexes | Multi-index search, unified scoring, index discrimination | `advanced_queries.py:demo_multi_entity_search()` |
+| **Wikipedia Complex Query** | Geographic filtering with topic matching | Nested `bool`, `exists` query, multi-level boosting | `advanced_queries.py:demo_wikipedia_search()` |
+| **Neighborhood Statistics** | Market analysis by neighborhood | `terms` aggregation, sub-aggregations, stats per bucket | `aggregation_queries.py:demo_neighborhood_stats()` |
+| **Price Distribution** | Histogram of property prices | `histogram` aggregation, extended bounds, bucketing | `aggregation_queries.py:demo_price_distribution()` |
+| **Historical Events** | Full-text search on Wikipedia | `match` query, English analyzer, stemming, TF-IDF | `wikipedia_fulltext.py` (Historical Events) |
+| **Transportation Search** | OR logic with multiple terms | `bool` with `should` clauses, optional matching | `wikipedia_fulltext.py` (Transportation) |
+| **Parks & Recreation** | Required + optional terms | `must` + `should` combination, mandatory matching | `wikipedia_fulltext.py` (Parks) |
+| **Cultural Venues** | Multi-field matching | `multi_match`, cross-field matching, field weights | `wikipedia_fulltext.py` (Cultural) |
+| **Denormalized Search** | Single-index relationship queries | `nested` objects, denormalization patterns, performance optimization | `demo_single_query_relationships.py` |
+| **Hybrid Search (RRF)** ⭐ | Modern text + vector fusion with RRF | `retriever.rrf`, parallel retrievers, rank fusion, native ES 8.15+ | `hybrid_search.py:demo_hybrid_search()` |
+| **Location-Aware Hybrid** ⭐ | Hybrid search with location extraction | DSPy location extraction, geographic filters, query cleaning | `location_aware_demos.py:HybridSearchEngine.search_with_location()` |
+| **Waterfront Luxury** | Location + lifestyle search | City extraction, luxury filtering, semantic understanding | `location_aware_demos.py:demo_location_aware_waterfront_luxury()` |
+| **Family Home Schools** | Family-oriented with location | City + state extraction, lifestyle features, school proximity | `location_aware_demos.py:demo_location_aware_family_schools()` |
+| **Urban Modern** | Architectural style in city | Urban area understanding, modern architecture filtering | `location_aware_demos.py:demo_location_aware_urban_modern()` |
+| **Investment Property** | Market-specific investment search | Investment criteria, market analysis, location targeting | `location_aware_demos.py:demo_location_aware_recreation_mountain()` |
+| **Historic Home** | Historic architecture search | Historic features, character properties, city normalization | `location_aware_demos.py:demo_location_aware_historic_urban()` |
+| **Affordable Housing** | Budget-constrained search | Price filtering, affordability analysis, location constraints | `location_aware_demos.py:demo_location_aware_beach_proximity()` |
+| **Condo Amenities** | Amenity-focused search | Amenity matching, condo features, Silicon Valley context | `location_aware_demos.py:demo_location_aware_investment_market()` |
+| **Bay Area Regional** | Regional property search | Region recognition, Bay Area filtering, property type | `location_aware_demos.py:demo_location_aware_luxury_urban_views()` |
+| **Townhouse Budget** | Type + price constraints | Property type filter, price range, Oakland market | `location_aware_demos.py:demo_location_aware_suburban_architecture()` |
+| **Modern Condo Parking** | Specific amenity requirements | Parking amenity, modern architecture, full location spec | `location_aware_demos.py:demo_location_aware_neighborhood_character()` |
+
+### Key for ES Concepts:
+- **Query Types**: `match`, `multi_match`, `term`, `range`, `bool`, `knn`, `geo_distance`, `nested`, `exists`
+- **Aggregations**: `terms`, `stats`, `histogram`, `date_histogram`, sub-aggregations
+- **Modern Features**: `retriever.rrf` (ES 8.15+), dense vectors, HNSW indexing
+- **Analysis**: Tokenization, stemming, fuzzy matching, English analyzer
+- **Scoring**: BM25, field boosting, `should` clauses, filter context
+- **Performance**: Denormalization, filter caching, doc values
+
 ## 📚 Query Types and Concepts
 
 ### Core Query Types Explained

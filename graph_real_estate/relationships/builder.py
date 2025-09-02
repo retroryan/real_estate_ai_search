@@ -14,7 +14,6 @@ from graph_real_estate.utils.database import run_query
 from graph_real_estate.relationships.config import RelationshipConfig
 from graph_real_estate.relationships.geographic import GeographicRelationshipBuilder
 from graph_real_estate.relationships.classification import ClassificationRelationshipBuilder
-from graph_real_estate.relationships.similarity import SimilarityRelationshipBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,6 @@ class RelationshipStats(BaseModel):
     
     # Graph module relationships
     near: int = Field(default=0, description="Neighborhoods <-> Neighborhoods")
-    similar_to: int = Field(default=0, description="Properties/Neighborhoods similarity")
     describes: int = Field(default=0, description="Wikipedia -> Neighborhoods")
     
     @property
@@ -75,7 +73,6 @@ class RelationshipOrchestrator:
         # Initialize builders for complex relationships
         self.geographic_builder = GeographicRelationshipBuilder(driver, config)
         self.classification_builder = ClassificationRelationshipBuilder(driver, config)
-        self.similarity_builder = SimilarityRelationshipBuilder(driver, config)
         
         self.stats = RelationshipStats()
     
@@ -102,26 +99,8 @@ class RelationshipOrchestrator:
             logger.warning(f"NEAR relationships failed: {e}")
             self.stats.near = 0
         
-        # Optionally build similarity relationships
-        if self.config.enable_similarity:
-            logger.info("\n🔗 Building similarity relationships...")
-            try:
-                property_sim = self.similarity_builder.create_property_similarities()
-                neighborhood_sim = self.similarity_builder.create_neighborhood_similarities()
-                self.stats.similar_to = property_sim + neighborhood_sim
-                logger.info(f"✓ Created {self.stats.similar_to:,} SIMILAR_TO relationships")
-            except Exception as e:
-                logger.warning(f"Similarity relationships failed: {e}")
-                self.stats.similar_to = 0
-        
-        # Build Wikipedia relationships if available
-        logger.info("\n📚 Building Wikipedia relationships...")
-        try:
-            self.stats.describes = self.similarity_builder.create_describes()
-            logger.info(f"✓ Created {self.stats.describes:,} DESCRIBES relationships")
-        except Exception as e:
-            logger.warning(f"Wikipedia relationships failed: {e}")
-            self.stats.describes = 0
+        # Note: Similarity relationships removed - use embedding-based similarity instead
+        # Note: DESCRIBES relationships removed - use neighborhood.wikipedia_page_id instead
         
         # Print summary
         self._print_summary()
@@ -170,8 +149,6 @@ class RelationshipOrchestrator:
         
         logger.info("\n🔗 Graph module relationships:")
         logger.info(f"  NEAR:           {self.stats.near:10,}")
-        logger.info(f"  SIMILAR_TO:     {self.stats.similar_to:10,}")
-        logger.info(f"  DESCRIBES:      {self.stats.describes:10,}")
         
         logger.info("-"*60)
         logger.info(f"  TOTAL:          {self.stats.total:10,}")
@@ -190,7 +167,7 @@ class RelationshipOrchestrator:
         self._count_existing_relationships()
         
         # Count graph module relationships
-        for field, rel_type in [('near', 'NEAR'), ('similar_to', 'SIMILAR_TO'), ('describes', 'DESCRIBES')]:
+        for field, rel_type in [('near', 'NEAR')]:
             try:
                 query = f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count"
                 result = run_query(self.driver, query)

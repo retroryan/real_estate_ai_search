@@ -123,12 +123,10 @@ class HybridPropertySearch:
         """Calculate graph-based importance metrics for a property"""
         query = """
         MATCH (p:Property {listing_id: $listing_id})
-        OPTIONAL MATCH (p)-[:SIMILAR_TO]-(similar:Property)
         OPTIONAL MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)<-[:IN_NEIGHBORHOOD]-(neighbor:Property)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(featured:Property)
         OPTIONAL MATCH (p)-[:NEAR_BY]-(nearby:Property)
         RETURN 
-            COUNT(DISTINCT similar) as similarity_connections,
             COUNT(DISTINCT neighbor) as neighborhood_connections,
             COUNT(DISTINCT featured) as feature_connections,
             COUNT(DISTINCT f) as feature_count,
@@ -140,7 +138,6 @@ class HybridPropertySearch:
         if not result or len(result) == 0:
             return {
                 'centrality_score': 0.0,
-                'similarity_connections': 0,
                 'neighborhood_connections': 0,
                 'feature_connections': 0,
                 'feature_count': 0,
@@ -150,24 +147,21 @@ class HybridPropertySearch:
         data = result[0]
         
         # Calculate centrality score based on connections
-        similarity_score = min(data['similarity_connections'] / 10, 1.0)
         neighborhood_score = min(data['neighborhood_connections'] / 50, 1.0)
         feature_conn_score = min(data['feature_connections'] / 20, 1.0)
         feature_count_score = min(data['feature_count'] / 15, 1.0)
         proximity_score = min(data['proximity_connections'] / 30, 1.0)
         
-        # Weighted combination
+        # Weighted combination (redistributed weights after removing similarity)
         centrality = (
-            similarity_score * 0.3 +
-            neighborhood_score * 0.15 +
-            feature_conn_score * 0.15 +
-            feature_count_score * 0.2 +
-            proximity_score * 0.2
+            neighborhood_score * 0.25 +
+            feature_conn_score * 0.25 +
+            feature_count_score * 0.25 +
+            proximity_score * 0.25
         )
         
         return {
             'centrality_score': min(centrality, 1.0),
-            'similarity_connections': data['similarity_connections'],
             'neighborhood_connections': data['neighborhood_connections'],
             'feature_connections': data['feature_connections'],
             'feature_count': data['feature_count'],
@@ -195,26 +189,37 @@ class HybridPropertySearch:
         if graph_metrics['neighborhood_connections'] > 30:
             combined *= 1.1  # 10% boost
         
-        # Apply similarity boost for properties with many similar ones
-        if graph_metrics['similarity_connections'] > 5:
+        # Apply proximity boost for well-connected properties
+        if graph_metrics['proximity_connections'] > 10:
             combined *= 1.05  # 5% boost
         
         return min(combined, 1.0)  # Cap at 1.0
     
     def _get_similar_properties(self, listing_id: str, limit: int = 5) -> List[str]:
-        """Get IDs of similar properties based on graph relationships"""
+        """Get IDs of similar properties based on embeddings"""
+        # Get source property embedding
         query = """
-        MATCH (p:Property {listing_id: $listing_id})-[:SIMILAR_TO]-(similar:Property)
-        RETURN similar.listing_id as listing_id
-        LIMIT $limit
+        MATCH (p:Property {listing_id: $listing_id})
+        WHERE p.embedding IS NOT NULL
+        RETURN p.embedding as embedding
         """
         
-        results = self.query_executor.execute_read(query, {
-            'listing_id': listing_id,
-            'limit': limit
-        })
+        result = self.query_executor.execute_read(query, {'listing_id': listing_id})
+        if not result or not result[0].get('embedding'):
+            return []
         
-        return [r['listing_id'] for r in results if r.get('listing_id')]
+        source_embedding = result[0]['embedding']
+        
+        # Find similar properties using vector similarity
+        similar_results = self.vector_manager.vector_search(
+            source_embedding,
+            top_k=limit + 1,  # +1 because source will be included
+            min_score=0.7
+        )
+        
+        # Filter out the source property and return IDs
+        return [r['listing_id'] for r in similar_results 
+                if r.get('listing_id') and r['listing_id'] != listing_id][:limit]
     
     def _get_property_features(self, listing_id: str) -> List[str]:
         """Get features of a property"""

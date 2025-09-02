@@ -32,11 +32,15 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
         DemoQueryResult with location extraction examples
     """
     # Example queries using actual cities in our data
+    # Includes various location formats: city only, city+state, abbreviated states
+    # Additional queries demonstrate different property types with full location specification
     test_queries = [
         "Find a great family home in San Francisco",
         "Luxury condo in Oakland California", 
         "Properties near downtown San Jose",
-        "Affordable homes in Salinas CA"
+        "Affordable homes in Salinas CA",
+        "Condo in San Francisco California",
+        "Townhome in Oakland California"
     ]
     
     logger.info(f"Running location understanding demo with {len(test_queries)} example queries")

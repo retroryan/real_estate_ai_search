@@ -2,6 +2,41 @@
 
 This directory contains comprehensive demonstrations of Neo4j graph database queries showcasing the power of graph relationships for real estate intelligence. Each demo illustrates specific graph patterns, traversal algorithms, and relationship analysis techniques that leverage Neo4j's unique capabilities beyond traditional relational or vector databases.
 
+## 📋 Demo Query Summary
+
+| Demo | Description | Key Neo4j Concepts | Query Types | Code Location |
+|------|-------------|-------------------|------------|---------------|
+| **Demo 1: Hybrid Search** | Advanced semantic + graph search combining vector embeddings with relationship intelligence | • Vector indexes (HNSW)<br>• Graph-boosted scoring<br>• Multi-stage pipelines<br>• Hybrid ranking algorithms | • `db.index.vector.queryNodes()`<br>• Similarity relationships<br>• Feature correlation<br>• Score combination | `demo_1_hybrid_search.py`<br>`demo_1_hybrid_search_simple.py` |
+| **Demo 2: Graph Analysis** | Deep relationship analysis and pattern discovery in property networks | • Graph traversals<br>• Pattern matching<br>• Clustering analysis<br>• Centrality metrics | • Location hierarchies<br>• Feature co-occurrence<br>• Similarity networks<br>• Property clusters | `demo_2_graph_analysis.py`<br>`demo_2_graph_analysis_simple.py` |
+| **Demo 3: Market Intelligence** | Advanced market analytics using graph algorithms and aggregations | • Multi-level aggregation<br>• Statistical analysis<br>• Graph algorithms<br>• Market segmentation | • Geographic market analysis<br>• Feature impact valuation<br>• Investment discovery<br>• Lifestyle segmentation | `demo_3_market_intelligence.py` |
+| **Demo 4: Wikipedia Enhanced** | Knowledge graph integration enriching properties with Wikipedia data | • External data integration<br>• Knowledge graphs<br>• Relationship mapping<br>• Context enrichment | • Geographic knowledge<br>• Cultural context<br>• Historical data<br>• Area intelligence | `demo_4_wikipedia_enhanced.py` |
+| **Demo 5: Pure Vector Search** | Native Neo4j vector search capabilities for semantic property discovery | • Vector embeddings (1024-dim)<br>• Cosine similarity<br>• Semantic search<br>• HNSW indexing | • Semantic property search<br>• Cross-domain similarity<br>• Threshold analysis<br>• Vector vs hybrid comparison | `demo_5_pure_vector_search.py` |
+| **Demo 6: Advanced Path Search** | Complex path finding and graph traversal algorithms | • Shortest path algorithms<br>• Variable-length paths<br>• Path scoring<br>• Influence propagation | • Multi-hop similarity paths<br>• Connection discovery<br>• Market influence analysis<br>• Path optimization | `demo_6_advanced_path_search.py` |
+
+### Query Complexity & Performance
+
+| Demo | Query Complexity | Typical Performance | Best For |
+|------|-----------------|-------------------|----------|
+| **Demo 1** | High (Vector + Graph) | O(log n) + O(m) | Production search with relationship context |
+| **Demo 2** | Medium | O(n*m) | Relationship analysis and pattern discovery |
+| **Demo 3** | High (Aggregations) | O(n log n) | Market analytics and intelligence |
+| **Demo 4** | Medium | O(n*m) | Knowledge enrichment and context |
+| **Demo 5** | Low-Medium | O(log n) | Pure semantic similarity search |
+| **Demo 6** | High (Algorithms) | O(b^d) | Path analysis and network effects |
+
+### Core Neo4j Features Demonstrated
+
+| Feature | Demos Using It | Example Query Pattern |
+|---------|---------------|----------------------|
+| **Vector Indexes** | 1, 5 | `CALL db.index.vector.queryNodes('propertyEmbeddings', 10, $vector)` |
+| **Graph Traversals** | 1, 2, 3, 6 | `(p:Property)-[:LOCATED_IN]->(n:Neighborhood)` |
+| **Variable Paths** | 2, 6 | `(p1)-[:SIMILAR_TO*1..3]-(p2)` |
+| **Aggregations** | 2, 3 | `WITH n, count(p) as count, avg(p.price) as avg_price` |
+| **Path Algorithms** | 6 | `shortestPath((p1)-[*]-(p2))` |
+| **Pattern Matching** | 2, 3 | Complex MATCH patterns for structure detection |
+| **APOC Procedures** | 6 | `apoc.path.expandConfig()` for advanced traversals |
+| **Knowledge Graphs** | 4 | `(p:Property)<-[:DESCRIBES]-(w:WikipediaArticle)` |
+
 ## 📚 Cypher Query Types and Concepts
 
 ### Core Query Patterns Explained

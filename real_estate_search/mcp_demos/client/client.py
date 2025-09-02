@@ -159,6 +159,59 @@ class RealEstateSearchClient(BaseModel):
         # Parse and validate response with Pydantic
         return HealthCheckResponse(**response.data)
     
+    async def search_properties_hybrid(
+        self,
+        query: str,
+        size: int = 10,
+        include_location_extraction: bool = False
+    ) -> Dict[str, Any]:
+        """Search for properties using hybrid search with location understanding.
+        
+        Args:
+            query: Natural language property search query
+            size: Number of results to return (1-50, default 10)
+            include_location_extraction: Include location extraction details
+            
+        Returns:
+            Dictionary with hybrid search results and metadata
+            
+        Raises:
+            Exception: If the MCP call fails
+        """
+        params = {
+            "query": query,
+            "size": size,
+            "include_location_extraction": include_location_extraction
+        }
+        
+        # Call the MCP tool
+        response = await self.mcp_client.call_tool("search_properties_hybrid_tool", params)
+        
+        if not response.success:
+            raise Exception(f"Hybrid search failed: {response.error}")
+        
+        return response.data
+    
+    async def call_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Generic tool calling method for flexibility.
+        
+        Args:
+            tool_name: Name of the MCP tool to call
+            params: Parameters to pass to the tool
+            
+        Returns:
+            Tool response data
+            
+        Raises:
+            Exception: If the MCP call fails
+        """
+        response = await self.mcp_client.call_tool(tool_name, params)
+        
+        if not response.success:
+            raise Exception(f"Tool {tool_name} failed: {response.error}")
+        
+        return response.data
+    
     async def list_tools(self) -> list[str]:
         """List all available MCP tools.
         

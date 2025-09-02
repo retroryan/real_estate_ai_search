@@ -488,22 +488,21 @@ class PureVectorSearchDemo:
         print("\n\nGlobal Embedding Space Statistics:")
         
         stats_query = """
-        MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
-        WHERE s.similarity_score > 0.7
-        RETURN count(s) as high_similarity_pairs,
-               avg(s.similarity_score) as avg_high_similarity,
-               max(s.similarity_score) as max_similarity
+        MATCH (p:Property)
+        WHERE p.embedding IS NOT NULL
+        RETURN count(p) as properties_with_embeddings,
+               avg(size(p.embedding)) as avg_embedding_dimension
         """
         
         stats = run_query(self.driver, stats_query)
         if stats:
             stat = stats[0]
-            print(f"   High similarity pairs (>0.7): {stat['high_similarity_pairs']}")
+            print(f"   Properties with embeddings: {stat['properties_with_embeddings']}")
             # Handle None values by providing defaults
-            avg_sim = stat['avg_high_similarity'] or 0.0
-            max_sim = stat['max_similarity'] or 0.0
-            print(f"   Average high similarity: {avg_sim:.3f}")
-            print(f"   Maximum similarity: {max_sim:.3f}")
+            avg_dim = stat.get('avg_embedding_dimension') or 0
+            if avg_dim > 0:
+                print(f"   Average embedding dimension: {avg_dim:.0f}")
+            print(f"   Note: Similarity is computed on-demand using cosine similarity")
 
 
 def run_pure_vector_search_demo():
@@ -513,6 +512,15 @@ def run_pure_vector_search_demo():
     print("Demonstrating the power of semantic embeddings for property search")
     print("without graph boosting, showing what pure vector similarity can achieve.")
     print("="*80)
+    
+    print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+    print("   • Native Vector Storage - 1024-dimensional embeddings on Property nodes")
+    print("   • Vector Similarity Search - Finding semantically similar properties")
+    print("   • Embedding Properties - Storing and retrieving high-dimensional vectors")
+    print("   • Semantic Understanding - Natural language query processing")
+    print("   • Vector Operations - Distance calculations in embedding space")
+    print("   • Pure Vector Search - Demonstrating vector capabilities without graph boost")
+    print("   • Scalable Vector Storage - Efficient storage of embeddings in graph")
     
     driver = None
     try:

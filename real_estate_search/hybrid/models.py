@@ -44,3 +44,4 @@ class HybridSearchResult(BaseModel):
     execution_time_ms: int = Field(..., description="Query execution time")
     results: List[SearchResult] = Field(..., description="Search results")
     search_metadata: Dict[str, Any] = Field(..., description="Search execution metadata")
+    location_intent: Optional[LocationIntent] = Field(None, description="Extracted location information used for filtering")

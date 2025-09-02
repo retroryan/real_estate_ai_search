@@ -57,7 +57,7 @@ show_help() {
     echo "  --config FILE  Use custom config file"
     echo
     echo -e "${GREEN}Commands:${NC}"
-    echo "  1-8,12-14      Run specific demo number"
+    echo "  1-8,12-19      Run specific demo number"
     echo "  --all          Run all demos"
     echo "  --list, -l     List all available demos"
     echo "  --list-tools   Discover and list all MCP server tools with metadata"
@@ -95,6 +95,12 @@ list_demos() {
     echo " 12     Natural Language Semantic Search - AI-powered natural language"
     echo " 13     Natural Language Examples - Multiple diverse AI search examples"
     echo " 14     Semantic vs Keyword Comparison - Compare AI vs traditional search"
+    echo -e "${PURPLE} === Hybrid Search MCP Tool Demos ===${NC}"
+    echo " 15     Hybrid Search Basics - Core hybrid search functionality with RRF"
+    echo " 16     Location Understanding Comparison - Compare DSPy extraction with management demo"
+    echo " 17     [Reserved for future demo]"
+    echo " 18     Location-Aware Search - DSPy location extraction and geographic filtering"
+    echo " 19     Advanced Scenarios - Edge cases, validation, and complex queries"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -335,9 +341,34 @@ from real_estate_search.mcp_demos.demos.natural_language_demo import demo_semant
 asyncio.run(demo_semantic_vs_keyword_comparison('stunning views from modern kitchen'))
 "
             ;;
+        15)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_1_basic_hybrid${NC}"
+            echo
+            python3 real_estate_search/mcp_demos/demo_1_basic_hybrid.py
+            ;;
+        16)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_2_location_comparison${NC}"
+            echo
+            python3 real_estate_search/mcp_demos/demo_2_location_comparison.py
+            ;;
+        17)
+            echo -e "${YELLOW}Reserved for future demo${NC}"
+            echo -e "${RED}Demo 17 is not implemented yet${NC}"
+            exit 1
+            ;;
+        18)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_4_location_aware${NC}"
+            echo
+            python3 real_estate_search/mcp_demos/demo_4_location_aware.py
+            ;;
+        19)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_5_advanced_scenarios${NC}"
+            echo
+            python3 real_estate_search/mcp_demos/demo_5_advanced_scenarios.py
+            ;;
         *)
             echo -e "${RED}Error: Invalid demo number '$demo_num'${NC}"
-            echo "Valid demo numbers are 1-8, 12-14"
+            echo "Valid demo numbers are 1-8, 12-16, 18-19"
             exit 1
             ;;
     esac
@@ -445,7 +476,7 @@ main() {
                 VERBOSE="true"
                 shift
                 ;;
-            [1-8]|1[2-4])
+            [1-8]|1[2-6]|18|19)
                 demo_number=$1
                 shift
                 ;;

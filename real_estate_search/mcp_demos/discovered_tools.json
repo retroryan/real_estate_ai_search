@@ -188,9 +188,35 @@
         "properties": {},
         "type": "object"
       }
+    },
+    {
+      "name": "search_properties_hybrid_tool",
+      "description": "Search properties using hybrid search with location understanding.\n            \n            Advanced property search that combines semantic vector search, traditional text matching,\n            and intelligent location extraction from natural language queries. Uses Elasticsearch's\n            RRF (Reciprocal Rank Fusion) for optimal result ranking.\n            \n            Args:\n                query: Natural language property search query (e.g., \"luxury waterfront condo in San Francisco\")\n                size: Number of results to return (1-50, default 10)\n                include_location_extraction: Include location extraction details in response (default false)\n                \n            Returns:\n                Structured property results with hybrid relevance scores and execution metadata\n            ",
+      "parameters": {
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "size": {
+            "default": 10,
+            "title": "Size",
+            "type": "integer"
+          },
+          "include_location_extraction": {
+            "default": false,
+            "title": "Include Location Extraction",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
     }
   ],
-  "total_count": 6,
+  "total_count": 7,
   "server_name": "MCP Server",
-  "discovery_time_ms": 44.32415962219238
+  "discovery_time_ms": 48.71225357055664
 }

@@ -49,6 +49,17 @@ class AdvancedPathSearchDemo:
     def __init__(self):
         """Initialize the demo with database connection"""
         print("Initializing Advanced Path-Based Search Demo...")
+        
+        print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+        print("   • Shortest Path Algorithms - shortestPath() for finding connections")
+        print("   • Variable-Length Patterns - [:HAS_FEATURE*..10] for flexible traversal")
+        print("   • Path Functions - nodes(), relationships() for path analysis")
+        print("   • Community Detection - Finding clusters through shared features")
+        print("   • Constraint-Based Search - Complex WHERE clauses for filtering")
+        print("   • Exclusion Patterns - NOT EXISTS for avoiding unwanted features")
+        print("   • Cross-Neighborhood Analysis - Finding properties across boundaries")
+        print("   • Feature-Based Paths - Traversing through shared feature nodes\n")
+        
         self.driver = get_neo4j_driver()
         
     def print_section_header(self, title: str, description: str = ""):
@@ -61,6 +72,8 @@ class AdvancedPathSearchDemo:
     
     def format_price(self, price: float) -> str:
         """Format price with currency symbol"""
+        if price is None:
+            return "$0"
         if price >= 1_000_000:
             return f"${price/1_000_000:.2f}M"
         elif price >= 1_000:
@@ -463,20 +476,23 @@ class AdvancedPathSearchDemo:
         print("   Identifying tightly connected property clusters...")
         
         query = """
-        MATCH (p:Property)-[s:SIMILAR_TO]-(other:Property)
-        WHERE s.overall_score > 0.85
+        // Find property clusters through shared features
+        MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(other:Property)
+        WHERE p <> other
+        WITH p, other, COUNT(DISTINCT f) as shared_features
+        WHERE shared_features >= 4  // Strong feature overlap
         WITH p, COUNT(DISTINCT other) as connections, 
              COLLECT(DISTINCT other.listing_id)[0..3] as connected_to,
-             AVG(s.overall_score) as avg_similarity
+             AVG(shared_features) as avg_shared_features
         WHERE connections >= 3
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
             n.name as neighborhood,
             connections,
-            ROUND(avg_similarity * 100) / 100 as avg_sim,
+            ROUND(avg_shared_features * 10) / 10 as avg_shared,
             connected_to
-        ORDER BY connections DESC, avg_similarity DESC
+        ORDER BY connections DESC, avg_shared_features DESC
         LIMIT 5
         """
         
@@ -486,7 +502,7 @@ class AdvancedPathSearchDemo:
             for r in results:
                 print(f"   • {r['id']}: Hub with {r['connections']} connections")
                 print(f"     Location: {r['neighborhood']}")
-                print(f"     Avg similarity: {r['avg_sim']:.2f}")
+                print(f"     Avg shared features: {r['avg_shared']:.1f}")
                 print(f"     Connected to: {', '.join(r['connected_to'])}...")
         
         print("\n2. FEATURE-BASED COMMUNITIES")
@@ -595,7 +611,7 @@ class AdvancedPathSearchDemo:
     
     def close(self):
         """Clean up database connection"""
-        close_neo4j_driver(self.driver)
+        close_neo4j_driver()
 
 
 def main():
