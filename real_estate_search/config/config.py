@@ -4,6 +4,8 @@ Single source of truth with clean constructor injection patterns.
 Supports both environment variables and YAML configuration.
 """
 
+from __future__ import annotations
+
 from typing import Optional, Dict, Any, Literal
 from pathlib import Path
 from pydantic import BaseModel, Field, computed_field, ConfigDict
@@ -14,6 +16,7 @@ import yaml
 import logging
 from enum import Enum
 from real_estate_search.embeddings.models import EmbeddingConfig
+import dspy
 
 # Load environment variables from .env file
 # Try parent directory first (where main .env typically lives)
@@ -115,26 +118,6 @@ class ElasticsearchConfig(BaseSettings):
         ge=0,
         le=10,
         description="Maximum number of retries"
-    )
-    
-    # Index names
-    property_index: str = Field(
-        default="properties",
-        min_length=1,
-        max_length=255,
-        description="Property index name"
-    )
-    wiki_chunks_index_prefix: str = Field(
-        default="wiki_chunks",
-        min_length=1,
-        max_length=255,
-        description="Wikipedia chunks index prefix"
-    )
-    wiki_summaries_index_prefix: str = Field(
-        default="wiki_summaries",
-        min_length=1,
-        max_length=255,
-        description="Wikipedia summaries index prefix"
     )
     
     @computed_field
@@ -393,6 +376,141 @@ class LoggingConfig(BaseModel):
         return levels[self.level]
 
 
+class DSPyConfig(BaseModel):
+    """
+    DSPy configuration for language model integration.
+    Supports OpenRouter, OpenAI, Anthropic, and local models.
+    """
+    
+    model_config = ConfigDict(
+        validate_default=True,
+        validate_assignment=True,
+        str_strip_whitespace=True
+    )
+    
+    # Model configuration
+    model: str = Field(
+        default="openrouter/openai/gpt-4o-mini",
+        description="LLM model identifier (e.g., 'openrouter/openai/gpt-4o-mini')"
+    )
+    temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature for generation"
+    )
+    max_tokens: int = Field(
+        default=2000,
+        ge=100,
+        le=50000,
+        description="Maximum output tokens"
+    )
+    
+    # API configuration
+    openrouter_api_key: Optional[str] = Field(
+        default=None,
+        description="OpenRouter API key"
+    )
+    openai_api_key: Optional[str] = Field(
+        default=None,
+        description="OpenAI API key"
+    )
+    anthropic_api_key: Optional[str] = Field(
+        default=None,
+        description="Anthropic API key"
+    )
+    
+    # Caching and performance
+    cache_enabled: bool = Field(
+        default=True,
+        description="Enable LLM response caching"
+    )
+    
+    # DSPy adapter selection
+    use_json_adapter: bool = Field(
+        default=True,
+        description="Use JSONAdapter for better structured output support"
+    )
+    
+    def initialize_dspy(self) -> dspy.LM:
+        """
+        Initialize DSPy with the configured LLM.
+        
+        Returns:
+            Configured DSPy LM instance
+            
+        Raises:
+            ValueError: If required API key is missing
+        """
+        logger.info(f"Initializing DSPy with model: {self.model}")
+        
+        # Configure LLM kwargs
+        llm_kwargs = {
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "cache": self.cache_enabled,
+        }
+        
+        # Add API key based on model provider
+        if self.model.startswith("openrouter/"):
+            if not self.openrouter_api_key:
+                raise ValueError("OpenRouter API key required for OpenRouter models")
+            # DSPy will use OPENROUTER_API_KEY from environment
+            os.environ["OPENROUTER_API_KEY"] = self.openrouter_api_key
+        elif self.model.startswith("openai/") or self.model.startswith("gpt"):
+            if not self.openai_api_key:
+                raise ValueError("OpenAI API key required for OpenAI models")
+            os.environ["OPENAI_API_KEY"] = self.openai_api_key
+        elif self.model.startswith("anthropic/") or self.model.startswith("claude"):
+            if not self.anthropic_api_key:
+                raise ValueError("Anthropic API key required for Anthropic models")
+            os.environ["ANTHROPIC_API_KEY"] = self.anthropic_api_key
+        
+        try:
+            # Create LM instance
+            llm = dspy.LM(model=self.model, **llm_kwargs)
+            
+            # Configure DSPy with adapter
+            if self.use_json_adapter:
+                try:
+                    from dspy.adapters import JSONAdapter
+                    adapter = JSONAdapter()
+                    dspy.configure(lm=llm, adapter=adapter)
+                    logger.info(f"DSPy configured with JSONAdapter for model: {self.model}")
+                except ImportError:
+                    # Fallback to default adapter
+                    dspy.configure(lm=llm)
+                    logger.info(f"DSPy configured with default adapter for model: {self.model}")
+            else:
+                dspy.configure(lm=llm)
+                logger.info(f"DSPy configured with default adapter for model: {self.model}")
+            
+            return llm
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize DSPy: {e}")
+            raise
+    
+    @classmethod
+    def from_env(cls) -> DSPyConfig:
+        """
+        Create DSPyConfig from environment variables.
+        
+        Returns:
+            DSPyConfig instance populated from environment
+        """
+        return cls(
+            model=os.getenv("LLM_MODEL", "openrouter/openai/gpt-4o-mini"),
+            temperature=float(os.getenv("LLM_TEMPERATURE", "0.3")),
+            max_tokens=int(os.getenv("LLM_MAX_TOKENS", "2000")),
+            openrouter_api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+            cache_enabled=os.getenv("CACHE_ENABLED", "true").lower() == "true",
+            use_json_adapter=os.getenv("USE_JSON_ADAPTER", "true").lower() == "true"
+        )
+
+
 class DataConfig(BaseModel):
     """
     Data paths configuration with validation.
@@ -514,6 +632,12 @@ class AppConfig(BaseSettings):
         description="Embedding configuration for query processing"
     )
     
+    # DSPy configuration for LLM integration
+    dspy_config: DSPyConfig = Field(
+        default_factory=DSPyConfig.from_env,
+        description="DSPy configuration for language model integration"
+    )
+    
     @computed_field
     @property
     def is_development(self) -> bool:
@@ -539,7 +663,7 @@ class AppConfig(BaseSettings):
         return self.environment == Environment.DEMO or self.demo_mode
     
     @classmethod
-    def load(cls) -> "AppConfig":
+    def load(cls) -> AppConfig:
         """
         Load configuration from environment variables and .env file.
         
@@ -549,7 +673,7 @@ class AppConfig(BaseSettings):
         return cls()
     
     @classmethod
-    def from_yaml(cls, path: Path = Path("config.yaml")) -> "AppConfig":
+    def from_yaml(cls, path: Path = Path("config.yaml")) -> AppConfig:
         """
         Load configuration from YAML file with environment variable override.
         

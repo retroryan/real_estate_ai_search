@@ -562,13 +562,9 @@ class ElasticsearchIndexManager:
             # Then create indices
             self.logger.info("Creating indices...")
             results[IndexName.PROPERTIES] = self.create_property_index(IndexName.PROPERTIES)
-            results[IndexName.TEST_PROPERTIES] = self.create_property_index(IndexName.TEST_PROPERTIES)
             results[IndexName.NEIGHBORHOODS] = self.create_neighborhood_index(IndexName.NEIGHBORHOODS)
-            results[IndexName.TEST_NEIGHBORHOODS] = self.create_neighborhood_index(IndexName.TEST_NEIGHBORHOODS)
             results[IndexName.WIKIPEDIA] = self.create_wikipedia_index(IndexName.WIKIPEDIA)
-            results[IndexName.TEST_WIKIPEDIA] = self.create_wikipedia_index(IndexName.TEST_WIKIPEDIA)
             results[IndexName.PROPERTY_RELATIONSHIPS] = self.create_property_relationships_index(IndexName.PROPERTY_RELATIONSHIPS)
-            results[IndexName.TEST_PROPERTY_RELATIONSHIPS] = self.create_property_relationships_index(IndexName.TEST_PROPERTY_RELATIONSHIPS)
             
             success_count = sum(1 for success in results.values() if success)
             total_count = len(results)

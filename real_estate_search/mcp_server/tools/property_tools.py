@@ -1,357 +1,231 @@
-"""
-Property-related MCP tools.
-"""
+"""MCP tools for property search."""
 
-from typing import List, Optional, Dict, Any
-from models import (
-    Property, PropertySearchParams, SearchMode, SearchFilters,
-    PropertyType, GeoSearchParams, GeoLocation, GeoDistanceUnit
-)
-from services import SearchEngine, PropertyIndexer
-import structlog
+from typing import Dict, Any, Optional
+from fastmcp import Context
 
-logger = structlog.get_logger()
+from ..models.search import PropertySearchRequest, PropertyFilter
+from ..services.property_search import PropertySearchService
+from ..utils.logging import get_request_logger
+from ...indexer.enums import IndexName
 
 
-async def search_properties_tool(
-    query: Optional[str] = None,
-    location: Optional[str] = None,
+async def search_properties(
+    context: Context,
+    query: str,
     property_type: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     min_bedrooms: Optional[int] = None,
     max_bedrooms: Optional[int] = None,
-    min_bathrooms: Optional[float] = None,
-    max_bathrooms: Optional[float] = None,
-    min_square_feet: Optional[int] = None,
-    max_square_feet: Optional[int] = None,
-    amenities: Optional[List[str]] = None,
-    max_results: int = 20,
-    search_mode: str = "semantic"
+    city: Optional[str] = None,
+    state: Optional[str] = None,
+    size: int = 20,
+    search_type: str = "hybrid"
 ) -> Dict[str, Any]:
-    """
-    Search for properties matching specified criteria.
+    """Search for properties using natural language queries.
+    
+    This tool enables semantic search across property listings, combining natural language
+    understanding with structured filters to find relevant properties.
     
     Args:
-        query: Natural language search query
-        location: Location (city, state, or zip)
-        property_type: Type of property (single_family, condo, townhouse, multi_family)
-        min_price: Minimum price
-        max_price: Maximum price
+        query: Natural language description of desired property (e.g., "modern home with pool")
+        property_type: Filter by property type (House, Condo, Townhouse, etc.)
+        min_price: Minimum price filter
+        max_price: Maximum price filter
         min_bedrooms: Minimum number of bedrooms
         max_bedrooms: Maximum number of bedrooms
-        min_bathrooms: Minimum number of bathrooms
-        max_bathrooms: Maximum number of bathrooms
-        min_square_feet: Minimum square footage
-        max_square_feet: Maximum square footage
-        amenities: List of required amenities
-        max_results: Maximum number of results to return
-        search_mode: Search mode (semantic, keyword, hybrid)
-    
+        city: Filter by city name
+        state: Filter by state (2-letter code)
+        size: Number of results to return (1-100, default 20)
+        search_type: Search mode - "hybrid" (default), "semantic", or "text"
+        
     Returns:
-        Search results with matching properties
+        Search results with property details and metadata
     """
-    from main import resources
-    
-    if not resources.search_engine:
-        return {"error": "Search engine not initialized"}
+    # Get request ID safely without hasattr
+    request_id = getattr(context, 'request_id', "unknown")
+    logger = get_request_logger(request_id)
+    logger.info(f"Property search: {query}")
     
     try:
-        # Build filters
+        # Get services from context
+        property_search_service: PropertySearchService = context.get("property_search_service")
+        if not property_search_service:
+            raise ValueError("Property search service not available")
+        
+        # Build filters if provided
         filters = None
-        if any([property_type, min_price, max_price, min_bedrooms, max_bedrooms,
-                min_bathrooms, max_bathrooms, min_square_feet, max_square_feet, amenities]):
-            filters = SearchFilters(
-                property_type=PropertyType(property_type) if property_type else None,
+        if any([property_type, min_price, max_price, min_bedrooms, max_bedrooms, city, state]):
+            filters = PropertyFilter(
+                property_type=property_type,
                 min_price=min_price,
                 max_price=max_price,
                 min_bedrooms=min_bedrooms,
                 max_bedrooms=max_bedrooms,
-                min_bathrooms=min_bathrooms,
-                max_bathrooms=max_bathrooms,
-                min_square_feet=min_square_feet,
-                max_square_feet=max_square_feet,
-                amenities=amenities
+                city=city,
+                state=state
             )
         
-        # Create search params
-        params = PropertySearchParams(
+        # Create search request
+        request = PropertySearchRequest(
             query=query,
-            location=location,
             filters=filters,
-            max_results=max_results,
-            search_mode=SearchMode(search_mode)
+            size=min(size, 100),  # Cap at 100
+            search_type=search_type,
+            include_highlights=True,
+            include_aggregations=False
         )
         
         # Execute search
-        results = await resources.search_engine.search(params)
+        response = property_search_service.search(request)
         
+        # Format response for MCP
         return {
-            "success": True,
-            "total": results.total,
-            "returned": len(results.properties),
+            "query": query,
+            "search_type": search_type,
+            "total_results": response.metadata.total_hits,
+            "returned_results": response.metadata.returned_hits,
+            "execution_time_ms": response.metadata.execution_time_ms,
             "properties": [
                 {
-                    "id": hit.property.id,
-                    "listing_id": hit.property.listing_id,
-                    "property_type": hit.property.property_type.value,
-                    "price": hit.property.price,
-                    "bedrooms": hit.property.bedrooms,
-                    "bathrooms": hit.property.bathrooms,
-                    "square_feet": hit.property.square_feet,
+                    "listing_id": prop.get("listing_id"),
+                    "property_type": prop.get("property_type"),
+                    "price": prop.get("price"),
+                    "bedrooms": prop.get("bedrooms"),
+                    "bathrooms": prop.get("bathrooms"),
+                    "square_feet": prop.get("square_feet"),
+                    "description": prop.get("description", "")[:500],  # Truncate long descriptions
                     "address": {
-                        "street": hit.property.address.street,
-                        "city": hit.property.address.city,
-                        "state": hit.property.address.state,
-                        "zip_code": hit.property.address.zip_code
+                        "street": prop.get("address", {}).get("street"),
+                        "city": prop.get("address", {}).get("city"),
+                        "state": prop.get("address", {}).get("state"),
+                        "zip_code": prop.get("address", {}).get("zip_code")
                     },
-                    "summary": hit.property.get_summary(),
-                    "score": hit.score
+                    "neighborhood": prop.get("neighborhood", {}).get("name") if prop.get("neighborhood") else None,
+                    "features": prop.get("features", []),
+                    "amenities": prop.get("amenities", []),
+                    "score": prop.get("_score"),
+                    "highlights": prop.get("_highlights", {})
                 }
-                for hit in results.hits
-            ],
-            "search_time_ms": results.search_time_ms
+                for prop in response.results
+            ]
         }
         
     except Exception as e:
-        logger.error("search_properties_failed", error=str(e))
-        return {"error": f"Search failed: {str(e)}"}
-
-
-async def get_property_details_tool(property_id: str) -> Dict[str, Any]:
-    """
-    Get detailed information about a specific property.
-    
-    Args:
-        property_id: The property ID to retrieve
-    
-    Returns:
-        Detailed property information
-    """
-    from main import resources
-    
-    if not resources.search_engine:
-        return {"error": "Search engine not initialized"}
-    
-    try:
-        property = await resources.search_engine.get_property(property_id)
-        
-        if not property:
-            return {"error": f"Property {property_id} not found"}
-        
+        logger.error(f"Property search failed: {e}")
         return {
-            "success": True,
-            "property": {
-                "id": property.id,
-                "listing_id": property.listing_id,
-                "property_type": property.property_type.value,
-                "price": property.price,
-                "bedrooms": property.bedrooms,
-                "bathrooms": property.bathrooms,
-                "square_feet": property.square_feet,
-                "year_built": property.year_built,
-                "lot_size": property.lot_size,
-                "address": {
-                    "street": property.address.street,
-                    "city": property.address.city,
-                    "state": property.address.state,
-                    "zip_code": property.address.zip_code,
-                    "location": {
-                        "lat": property.address.location.lat,
-                        "lon": property.address.location.lon
-                    } if property.address.location else None
-                },
-                "description": property.description,
-                "features": property.features,
-                "amenities": property.amenities,
-                "images": property.images,
-                "virtual_tour_url": property.virtual_tour_url,
-                "listing_date": property.listing_date.isoformat() if property.listing_date else None,
-                "last_updated": property.last_updated.isoformat() if property.last_updated else None
-            }
+            "error": str(e),
+            "query": query,
+            "search_type": search_type
         }
-        
-    except Exception as e:
-        logger.error("get_property_details_failed", property_id=property_id, error=str(e))
-        return {"error": f"Failed to get property details: {str(e)}"}
 
 
-async def analyze_property_tool(property_id: str) -> Dict[str, Any]:
-    """
-    Perform comprehensive analysis of a property including enrichment and market position.
-    
-    Args:
-        property_id: The property ID to analyze
-    
-    Returns:
-        Comprehensive property analysis
-    """
-    from main import resources
-    
-    if not resources.search_engine or not resources.enrichment_service or not resources.market_service:
-        return {"error": "Required services not initialized"}
-    
-    try:
-        # Get property
-        property = await resources.search_engine.get_property(property_id)
-        if not property:
-            return {"error": f"Property {property_id} not found"}
-        
-        # Get enrichment
-        enrichment = await resources.enrichment_service.enrich_property(property)
-        
-        # Get market analysis
-        market_position = await resources.market_service.analyze_market_position(property)
-        investment_metrics = await resources.market_service.calculate_investment_metrics(property)
-        
-        return {
-            "success": True,
-            "property_id": property_id,
-            "basic_info": {
-                "price": property.price,
-                "price_per_sqft": property.price_per_sqft,
-                "bedrooms": property.bedrooms,
-                "bathrooms": property.bathrooms,
-                "square_feet": property.square_feet
-            },
-            "enrichment": {
-                "has_wikipedia": enrichment.wikipedia_context is not None,
-                "neighborhood_description": enrichment.neighborhood_context.description if enrichment.neighborhood_context else None,
-                "walkability_score": enrichment.neighborhood_context.walkability_score if enrichment.neighborhood_context else None,
-                "nearby_poi_count": len(enrichment.nearby_pois),
-                "top_nearby_pois": [
-                    {
-                        "name": poi.name,
-                        "category": poi.category.value,
-                        "distance_miles": poi.distance_miles
-                    }
-                    for poi in enrichment.nearby_pois[:5]
-                ]
-            },
-            "market_analysis": {
-                "price_percentile": market_position.price_percentile,
-                "pricing_recommendation": market_position.pricing_recommendation,
-                "competitive_properties": market_position.competitive_properties,
-                "days_on_market_estimate": market_position.days_on_market_estimate,
-                "market_strength": market_position.market_strength.value
-            },
-            "investment_metrics": {
-                "estimated_rent": investment_metrics.estimated_rent,
-                "gross_yield": round(investment_metrics.gross_yield, 2),
-                "cap_rate": round(investment_metrics.cap_rate, 2),
-                "cash_on_cash_return": round(investment_metrics.cash_on_cash_return, 2),
-                "investment_score": investment_metrics.investment_score,
-                "investment_grade": investment_metrics.investment_grade.value
-            }
-        }
-        
-    except Exception as e:
-        logger.error("analyze_property_failed", property_id=property_id, error=str(e))
-        return {"error": f"Failed to analyze property: {str(e)}"}
-
-
-async def find_similar_properties_tool(
-    property_id: str,
-    max_results: int = 10,
-    max_price_diff_percent: float = 20.0,
-    max_distance_miles: float = 5.0
+async def get_property_details(
+    context: Context,
+    listing_id: str
 ) -> Dict[str, Any]:
-    """
-    Find properties similar to a given property.
+    """Get detailed information for a specific property.
     
     Args:
-        property_id: The reference property ID
-        max_results: Maximum number of similar properties to return
-        max_price_diff_percent: Maximum price difference percentage
-        max_distance_miles: Maximum distance in miles
-    
+        listing_id: Unique property listing ID
+        
     Returns:
-        List of similar properties
+        Complete property details
     """
-    from main import resources
-    
-    if not resources.search_engine:
-        return {"error": "Search engine not initialized"}
+    # Get request ID safely without hasattr
+    request_id = getattr(context, 'request_id', "unknown")
+    logger = get_request_logger(request_id)
+    logger.info(f"Getting property details: {listing_id}")
     
     try:
-        # Get reference property
-        property = await resources.search_engine.get_property(property_id)
-        if not property:
-            return {"error": f"Property {property_id} not found"}
+        # Get services from context
+        es_client = context.get("es_client")
+        config = context.get("config")
         
-        # Calculate price range
-        price_diff = property.price * (max_price_diff_percent / 100)
-        min_price = property.price - price_diff
-        max_price = property.price + price_diff
+        if not es_client or not config:
+            raise ValueError("Required services not available")
         
-        # Build search filters
-        filters = SearchFilters(
-            property_type=property.property_type,
-            min_price=min_price,
-            max_price=max_price,
-            min_bedrooms=max(1, property.bedrooms - 1) if property.bedrooms else None,
-            max_bedrooms=property.bedrooms + 1 if property.bedrooms else None,
-            min_bathrooms=max(1, property.bathrooms - 0.5) if property.bathrooms else None,
-            max_bathrooms=property.bathrooms + 0.5 if property.bathrooms else None,
-            min_square_feet=int(property.square_feet * 0.8) if property.square_feet else None,
-            max_square_feet=int(property.square_feet * 1.2) if property.square_feet else None
+        # Get property document
+        property_doc = es_client.get_document(
+            index=IndexName.PROPERTIES,
+            doc_id=listing_id
         )
         
-        # If property has location, use geo search
-        if property.address.location:
-            geo_params = GeoSearchParams(
-                center=property.address.location,
-                radius=max_distance_miles,
-                unit=GeoDistanceUnit.miles,
-                filters=filters,
-                max_results=max_results + 1  # +1 to account for self
-            )
-            results = await resources.search_engine.geo_search(geo_params)
-        else:
-            # Fallback to location-based search
-            params = PropertySearchParams(
-                location=f"{property.address.city}, {property.address.state}",
-                filters=filters,
-                max_results=max_results + 1
-            )
-            results = await resources.search_engine.search(params)
-        
-        # Filter out the reference property
-        similar_properties = [
-            hit for hit in results.hits
-            if hit.property.id != property_id
-        ][:max_results]
+        if not property_doc:
+            return {
+                "error": f"Property not found: {listing_id}",
+                "listing_id": listing_id
+            }
         
         return {
-            "success": True,
-            "reference_property": {
-                "id": property.id,
-                "price": property.price,
-                "bedrooms": property.bedrooms,
-                "bathrooms": property.bathrooms,
-                "square_feet": property.square_feet
-            },
-            "similar_properties": [
-                {
-                    "id": hit.property.id,
-                    "listing_id": hit.property.listing_id,
-                    "price": hit.property.price,
-                    "price_difference": hit.property.price - property.price,
-                    "price_diff_percent": round(((hit.property.price - property.price) / property.price) * 100, 1),
-                    "bedrooms": hit.property.bedrooms,
-                    "bathrooms": hit.property.bathrooms,
-                    "square_feet": hit.property.square_feet,
-                    "address": {
-                        "city": hit.property.address.city,
-                        "state": hit.property.address.state
-                    },
-                    "similarity_score": round(hit.score, 3) if hit.score else 0.0
-                }
-                for hit in similar_properties
-            ],
-            "total_found": len(similar_properties)
+            "listing_id": listing_id,
+            "property": property_doc
         }
         
     except Exception as e:
-        logger.error("find_similar_properties_failed", property_id=property_id, error=str(e))
-        return {"error": f"Failed to find similar properties: {str(e)}"}
+        logger.error(f"Failed to get property details: {e}")
+        return {
+            "error": str(e),
+            "listing_id": listing_id
+        }
+
+
+async def get_rich_property_details(
+    context: Context,
+    listing_id: str,
+    include_wikipedia: bool = True,
+    include_neighborhood: bool = True,
+    wikipedia_limit: int = 3
+) -> Dict[str, Any]:
+    """Get comprehensive property details from denormalized property_relationships index.
+    
+    Returns complete property information including embedded neighborhood data 
+    and Wikipedia articles in a single high-performance query.
+    
+    Args:
+        listing_id: Unique property listing ID
+        include_wikipedia: Include Wikipedia articles in response
+        include_neighborhood: Include neighborhood information in response
+        wikipedia_limit: Maximum number of Wikipedia articles to return (default 3)
+        
+    Returns:
+        Rich property details with all embedded data
+    """
+    # Get request ID safely without hasattr
+    request_id = getattr(context, 'request_id', "unknown")
+    logger = get_request_logger(request_id)
+    logger.info(f"Getting rich property details: {listing_id}")
+    
+    try:
+        # Get services from context
+        property_search_service: PropertySearchService = context.get("property_search_service")
+        if not property_search_service:
+            raise ValueError("Property search service not available")
+        
+        # Get rich property details
+        property_data = property_search_service.get_rich_property_details(
+            listing_id=listing_id,
+            include_wikipedia=include_wikipedia,
+            include_neighborhood=include_neighborhood,
+            wikipedia_limit=wikipedia_limit
+        )
+        
+        if not property_data:
+            return {
+                "error": f"Property not found: {listing_id}",
+                "listing_id": listing_id
+            }
+        
+        # Return the rich property data
+        return {
+            "listing_id": listing_id,
+            "property": property_data,
+            "source_index": "property_relationships"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get rich property details: {e}")
+        return {
+            "error": str(e),
+            "listing_id": listing_id
+        }

@@ -1,0 +1,81 @@
+# SQUACK Pipeline V2 Configuration - Neo4j Only Output
+# Clean medallion architecture pipeline using DuckDB best practices
+# Use environment variables for: VOYAGE_API_KEY, NEO4J_PASSWORD
+
+name: squack_pipeline_v2
+version: 2.0.0
+
+# Data Sources Configuration
+data_sources:
+  properties_files:
+    - real_estate_data/properties_sf.json
+    - real_estate_data/properties_pc.json
+  neighborhoods_files:
+    - real_estate_data/neighborhoods_sf.json
+    - real_estate_data/neighborhoods_pc.json
+  wikipedia_db_path: data/wikipedia/wikipedia.db
+
+# Data Processing Configuration  
+data:
+  input_path: real_estate_data
+  output_path: ./squack_pipeline_v2/output
+  sample_size: null  # null means process all records
+
+# DuckDB Configuration
+duckdb:
+  memory_limit: 8GB
+  threads: 4
+  database_file: squack_pipeline_v2/output/pipeline_v2.duckdb
+
+# Embedding Configuration
+embedding:
+  provider: voyage  # Options: voyage, openai, ollama, gemini
+  
+  # Voyage AI settings (API key loaded from .env)
+  voyage_model: voyage-3  # 1024 dimensions
+  
+  # OpenAI settings (if provider=openai)
+  openai_model: text-embedding-3-small
+  
+  # Ollama settings (if provider=ollama)
+  ollama_base_url: http://localhost:11434
+  ollama_model: nomic-embed-text
+  
+  # Gemini settings (if provider=gemini)
+  gemini_model: models/embedding-001
+
+# Processing Configuration
+processing:
+  batch_size: 50
+  max_workers: 2
+  show_progress: true
+  rate_limit_delay: 0.1
+
+# Output Configuration
+output:
+  # Parquet export - disabled for Neo4j only
+  parquet_enabled: false
+  parquet_dir: output/parquet
+  
+  # Elasticsearch export - disabled for Neo4j only
+  elasticsearch_enabled: false
+  elasticsearch:
+    host: localhost
+    port: 9200
+    bulk_size: 500
+    timeout: 30
+  
+  # Neo4j export - enabled
+  neo4j:
+    enabled: true
+    uri: bolt://localhost:7687
+    username: neo4j
+    # password loaded from NEO4J_PASSWORD env var
+    database: neo4j
+
+# Logging Configuration
+logging:
+  level: INFO
+
+# Environment Configuration
+environment: development

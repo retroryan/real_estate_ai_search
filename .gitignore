@@ -151,7 +151,7 @@ common_embeddings/evaluate_results/
 common_embeddings/eval_configs/
 
 # SQUACK Pipeline output
-squack_pipeline_output/
+squack_pipeline/squack_pipeline_output/
 output/
 .pipeline_state/
 

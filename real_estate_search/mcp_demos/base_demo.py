@@ -1,0 +1,218 @@
+"""Base demo class following MCP client best practices and Pydantic patterns."""
+
+import asyncio
+import time
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Optional, Type
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from pydantic import ValidationError
+
+from .client.client import get_mcp_client
+from .models.hybrid_search import (
+    HybridSearchRequest,
+    HybridSearchResponse,
+    DemoExecutionResult,
+    PerformanceMetrics
+)
+
+
+class BaseMCPDemo(ABC):
+    """
+    Abstract base class for MCP hybrid search demos.
+    
+    Follows FastMCP client best practices:
+    - Type-safe Pydantic models for all data
+    - Robust error handling with structured responses
+    - Performance monitoring and metrics collection
+    - Clean separation of concerns
+    - Rich output formatting
+    """
+    
+    def __init__(self, demo_name: str, demo_number: int):
+        """Initialize the demo with name and number."""
+        self.demo_name = demo_name
+        self.demo_number = demo_number
+        self.console = Console()
+        self.client = get_mcp_client()
+        self.performance_metrics: List[PerformanceMetrics] = []
+        
+    async def execute_hybrid_search(self, request: HybridSearchRequest) -> HybridSearchResponse:
+        """
+        Execute a hybrid search with full validation and error handling.
+        
+        Args:
+            request: Validated Pydantic request model
+            
+        Returns:
+            Validated Pydantic response model
+            
+        Raises:
+            ValidationError: If request validation fails
+            Exception: If MCP call fails
+        """
+        start_time = time.time()
+        
+        try:
+            # Execute the MCP tool call
+            response_data = await self.client.call_tool(
+                "search_properties_hybrid_tool",
+                request.model_dump(exclude_none=True)
+            )
+            
+            end_time = time.time()
+            execution_time = (end_time - start_time) * 1000
+            
+            # Validate and parse response using Pydantic
+            response = HybridSearchResponse(**response_data)
+            
+            # Collect performance metrics
+            server_time = response.metadata.execution_time_ms
+            metrics = PerformanceMetrics(
+                query_length=len(request.query),
+                execution_time_ms=execution_time,
+                server_time_ms=server_time,
+                total_hits=response.metadata.total_hits,
+                returned_hits=response.metadata.returned_hits,
+                network_overhead_ms=max(0, execution_time - server_time)
+            )
+            self.performance_metrics.append(metrics)
+            
+            return response
+            
+        except ValidationError as e:
+            self.console.print(f"[red]❌ Response validation failed: {e}[/red]")
+            raise
+        except Exception as e:
+            end_time = time.time()
+            execution_time = (end_time - start_time) * 1000
+            self.console.print(f"[red]❌ MCP call failed ({execution_time:.1f}ms): {e}[/red]")
+            raise
+    
+    def display_demo_header(self, subtitle: str = "") -> None:
+        """Display a formatted demo header."""
+        title = f"🏠 DEMO {self.demo_number}: {self.demo_name}"
+        content = title
+        if subtitle:
+            content += f"\n[dim]{subtitle}[/dim]"
+            
+        self.console.print(Panel.fit(
+            f"[bold cyan]{content}[/bold cyan]",
+            border_style="cyan"
+        ))
+    
+    def display_performance_summary(self) -> None:
+        """Display performance metrics summary."""
+        if not self.performance_metrics:
+            return
+            
+        avg_time = sum(m.execution_time_ms for m in self.performance_metrics) / len(self.performance_metrics)
+        avg_server_time = sum(m.server_time_ms for m in self.performance_metrics) / len(self.performance_metrics)
+        avg_network = sum(m.network_overhead_ms for m in self.performance_metrics) / len(self.performance_metrics)
+        avg_efficiency = sum(m.efficiency_ratio for m in self.performance_metrics) / len(self.performance_metrics)
+        
+        self.console.print(Panel.fit(
+            f"[bold yellow]📈 Performance Summary[/bold yellow]\n\n"
+            f"[dim]Average Total Time:[/dim] {avg_time:.1f}ms\n"
+            f"[dim]Average Server Time:[/dim] {avg_server_time:.1f}ms\n"
+            f"[dim]Average Network Overhead:[/dim] {avg_network:.1f}ms\n"
+            f"[dim]Server Efficiency Ratio:[/dim] {avg_efficiency:.2f}\n"
+            f"[dim]Queries Executed:[/dim] {len(self.performance_metrics)}",
+            border_style="yellow",
+            title="Performance Metrics"
+        ))
+    
+    def display_completion_summary(self, success: bool, queries_executed: int, 
+                                 queries_successful: int, error_message: Optional[str] = None) -> None:
+        """Display demo completion summary."""
+        success_rate = (queries_successful / queries_executed * 100) if queries_executed > 0 else 0
+        
+        status = "✅ Complete" if success else "❌ Failed"
+        border_color = "green" if success else "red"
+        
+        summary_content = f"[bold {border_color}]{status}: {self.demo_name}[/bold {border_color}]\n\n"
+        summary_content += f"[dim]Queries Executed:[/dim] {queries_executed}\n"
+        summary_content += f"[dim]Queries Successful:[/dim] {queries_successful}\n"
+        summary_content += f"[dim]Success Rate:[/dim] {success_rate:.1f}%"
+        
+        if error_message:
+            summary_content += f"\n[dim]Error:[/dim] {error_message}"
+            
+        self.console.print(Panel.fit(
+            summary_content,
+            border_style=border_color,
+            title="Demo Summary"
+        ))
+    
+    @abstractmethod
+    async def run_demo_queries(self) -> DemoExecutionResult:
+        """
+        Run the specific demo queries.
+        
+        Returns:
+            DemoExecutionResult with execution details and metrics
+        """
+        pass
+    
+    async def execute(self) -> DemoExecutionResult:
+        """
+        Execute the complete demo with error handling and metrics collection.
+        
+        Returns:
+            DemoExecutionResult with execution details
+        """
+        start_time = time.time()
+        
+        try:
+            # Run the demo-specific queries
+            result = await self.run_demo_queries()
+            
+            # Display performance summary
+            self.display_performance_summary()
+            
+            # Display completion summary
+            self.display_completion_summary(
+                success=result.success,
+                queries_executed=result.queries_executed,
+                queries_successful=result.queries_successful,
+                error_message=result.error_message
+            )
+            
+            return result
+            
+        except Exception as e:
+            end_time = time.time()
+            execution_time = (end_time - start_time) * 1000
+            
+            error_result = DemoExecutionResult(
+                demo_name=self.demo_name,
+                demo_number=self.demo_number,
+                success=False,
+                queries_executed=len(self.performance_metrics),
+                queries_successful=0,
+                total_execution_time_ms=execution_time,
+                error_message=str(e)
+            )
+            
+            self.display_completion_summary(
+                success=False,
+                queries_executed=len(self.performance_metrics),
+                queries_successful=0,
+                error_message=str(e)
+            )
+            
+            return error_result
+
+
+class ProgressTrackingMixin:
+    """Mixin for demos that need progress tracking."""
+    
+    def create_progress_tracker(self, total_queries: int) -> Progress:
+        """Create a progress tracker for query execution."""
+        return Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TimeElapsedColumn(),
+            console=self.console
+        )

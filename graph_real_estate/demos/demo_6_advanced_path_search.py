@@ -49,6 +49,17 @@ class AdvancedPathSearchDemo:
     def __init__(self):
         """Initialize the demo with database connection"""
         print("Initializing Advanced Path-Based Search Demo...")
+        
+        print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+        print("   • Shortest Path Algorithms - shortestPath() for finding connections")
+        print("   • Variable-Length Patterns - [:HAS_FEATURE*..10] for flexible traversal")
+        print("   • Path Functions - nodes(), relationships() for path analysis")
+        print("   • Community Detection - Finding clusters through shared features")
+        print("   • Constraint-Based Search - Complex WHERE clauses for filtering")
+        print("   • Exclusion Patterns - NOT EXISTS for avoiding unwanted features")
+        print("   • Cross-Neighborhood Analysis - Finding properties across boundaries")
+        print("   • Feature-Based Paths - Traversing through shared feature nodes\n")
+        
         self.driver = get_neo4j_driver()
         
     def print_section_header(self, title: str, description: str = ""):
@@ -61,6 +72,8 @@ class AdvancedPathSearchDemo:
     
     def format_price(self, price: float) -> str:
         """Format price with currency symbol"""
+        if price is None:
+            return "$0"
         if price >= 1_000_000:
             return f"${price/1_000_000:.2f}M"
         elif price >= 1_000:
@@ -115,13 +128,13 @@ class AdvancedPathSearchDemo:
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds,
             p.bathrooms as baths,
             all_features[0..5] as top_features,
             SIZE(all_features) as total_features
-        ORDER BY p.price DESC
+        ORDER BY p.listing_price DESC
         LIMIT 5
         """
         
@@ -153,12 +166,12 @@ class AdvancedPathSearchDemo:
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             must_have_count,
             nice_to_have_count,
             score
-        ORDER BY score DESC, p.price ASC
+        ORDER BY score DESC, p.listing_price ASC
         LIMIT 5
         """
         
@@ -193,11 +206,11 @@ class AdvancedPathSearchDemo:
         WITH p, n, COLLECT(DISTINCT feat.name) as features
         RETURN 
             p.listing_id as id,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds,
             features[0..5] as sample_features
-        ORDER BY p.bedrooms DESC, p.price ASC
+        ORDER BY p.bedrooms DESC, p.listing_price ASC
         LIMIT 5
         """
         
@@ -215,7 +228,7 @@ class AdvancedPathSearchDemo:
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE NOT n.name IN ['Sf-PacificHeights', 'Sf-Presidio', 'Sf-NobHill']
-        WITH n, AVG(p.price) as avg_price, COUNT(p) as count
+        WITH n, AVG(p.listing_price) as avg_price, COUNT(p) as count
         WHERE count >= 5
         RETURN 
             n.name as neighborhood,
@@ -319,10 +332,10 @@ class AdvancedPathSearchDemo:
         RETURN 
             p.listing_id as id,
             p.property_type as type,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             views
-        ORDER BY p.price DESC
+        ORDER BY p.listing_price DESC
         LIMIT 5
         """
         
@@ -341,14 +354,14 @@ class AdvancedPathSearchDemo:
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE (
             // Luxury Downtown option
-            (p.price > 2000000 AND n.city = 'San Francisco' 
+            (p.listing_price > 2000000 AND n.city = 'San Francisco' 
              AND EXISTS {
                 MATCH (p)-[:HAS_FEATURE]->(f:Feature)
                 WHERE f.category = 'Luxury'
              })
         ) OR (
             // Affordable Family option
-            (p.price < 1000000 AND p.bedrooms >= 3
+            (p.listing_price < 1000000 AND p.bedrooms >= 3
              AND EXISTS {
                 MATCH (p)-[:HAS_FEATURE]->(f:Feature)
                 WHERE f.name IN ['Garden', 'Backyard', 'Family Room']
@@ -356,16 +369,16 @@ class AdvancedPathSearchDemo:
         )
         WITH p, n,
              CASE 
-                WHEN p.price > 2000000 THEN 'Luxury Downtown'
+                WHEN p.listing_price > 2000000 THEN 'Luxury Downtown'
                 ELSE 'Affordable Family'
              END as category
         RETURN 
             p.listing_id as id,
             category,
-            p.price as price,
+            p.listing_price as price,
             n.name as neighborhood,
             p.bedrooms as beds
-        ORDER BY category, p.price DESC
+        ORDER BY category, p.listing_price DESC
         LIMIT 6
         """
         
@@ -463,20 +476,23 @@ class AdvancedPathSearchDemo:
         print("   Identifying tightly connected property clusters...")
         
         query = """
-        MATCH (p:Property)-[s:SIMILAR_TO]-(other:Property)
-        WHERE s.overall_score > 0.85
+        // Find property clusters through shared features
+        MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(other:Property)
+        WHERE p <> other
+        WITH p, other, COUNT(DISTINCT f) as shared_features
+        WHERE shared_features >= 4  // Strong feature overlap
         WITH p, COUNT(DISTINCT other) as connections, 
              COLLECT(DISTINCT other.listing_id)[0..3] as connected_to,
-             AVG(s.overall_score) as avg_similarity
+             AVG(shared_features) as avg_shared_features
         WHERE connections >= 3
         OPTIONAL MATCH (p)-[:LOCATED_IN]->(n:Neighborhood)
         RETURN 
             p.listing_id as id,
             n.name as neighborhood,
             connections,
-            ROUND(avg_similarity * 100) / 100 as avg_sim,
+            ROUND(avg_shared_features * 10) / 10 as avg_shared,
             connected_to
-        ORDER BY connections DESC, avg_similarity DESC
+        ORDER BY connections DESC, avg_shared_features DESC
         LIMIT 5
         """
         
@@ -486,7 +502,7 @@ class AdvancedPathSearchDemo:
             for r in results:
                 print(f"   • {r['id']}: Hub with {r['connections']} connections")
                 print(f"     Location: {r['neighborhood']}")
-                print(f"     Avg similarity: {r['avg_sim']:.2f}")
+                print(f"     Avg shared features: {r['avg_shared']:.1f}")
                 print(f"     Connected to: {', '.join(r['connected_to'])}...")
         
         print("\n2. FEATURE-BASED COMMUNITIES")
@@ -500,7 +516,7 @@ class AdvancedPathSearchDemo:
         WITH f.name as feature, 
              SIZE(properties) as property_count,
              [p IN properties | p.listing_id][0..5] as sample_properties,
-             AVG([p IN properties | p.price]) as avg_price
+             AVG([p IN properties | p.listing_price]) as avg_price
         RETURN 
             feature,
             property_count,
@@ -595,7 +611,7 @@ class AdvancedPathSearchDemo:
     
     def close(self):
         """Clean up database connection"""
-        close_neo4j_driver(self.driver)
+        close_neo4j_driver()
 
 
 def main():

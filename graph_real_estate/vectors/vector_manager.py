@@ -77,7 +77,7 @@ class PropertyVectorManager:
         {filter_clause}
         RETURN p.listing_id as listing_id,
                p.embedding as embedding,
-               p.street as address,
+               p.street_address as address,
                p.city as city,
                p.neighborhood_id as neighborhood,
                p.listing_price as listing_price,

@@ -22,7 +22,6 @@ from rich.progress import track
 from rich import print as rprint
 
 from real_estate_search.indexer.enums import PropertyType, PropertyStatus, SortOrder
-from real_estate_search.search.enums import QueryType, GeoDistanceUnit
 
 
 console = Console()

@@ -1,18 +1,17 @@
 """Pydantic models for demo query inputs and outputs."""
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 
 
 class PropertySearchParams(BaseModel):
     """Parameters for property search queries."""
+    model_config = ConfigDict(populate_by_name=True)
+    
     query_text: str = Field(..., description="Search query text")
     size: int = Field(10, description="Number of results to return")
     from_: int = Field(0, description="Offset for pagination", alias="from")
-    
-    class Config:
-        populate_by_name = True
 
 
 class PropertyFilterParams(BaseModel):
@@ -62,6 +61,41 @@ class MultiEntitySearchParams(BaseModel):
     size_per_index: int = Field(5, description="Results per index")
 
 
+class PropertyFeatures(BaseModel):
+    """Model for property features to ensure consistent structure."""
+    bedrooms: Optional[int] = Field(0, description="Number of bedrooms")
+    bathrooms: Optional[float] = Field(0, description="Number of bathrooms")
+    square_feet: Optional[int] = Field(0, description="Square footage")
+    
+    @classmethod
+    def from_result(cls, result: Dict[str, Any]) -> 'PropertyFeatures':
+        """Create PropertyFeatures from a result dict."""
+        features = result.get('features', {})
+        
+        # Try to extract from features dict or fall back to top-level
+        try:
+            # Try to use features as a dict
+            if features:
+                bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
+                bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
+                square_feet = features.get('square_feet', result.get('square_feet', 0))
+                return cls(
+                    bedrooms=bedrooms,
+                    bathrooms=bathrooms,
+                    square_feet=square_feet
+                )
+        except (AttributeError, TypeError):
+            # features is not dict-like, fall through to top-level
+            pass
+        
+        # Fall back to top-level fields
+        return cls(
+            bedrooms=result.get('bedrooms', 0),
+            bathrooms=result.get('bathrooms', 0),
+            square_feet=result.get('square_feet', 0)
+        )
+
+
 class DemoQueryResult(BaseModel):
     """Standard result format for demo queries."""
     query_name: str = Field(..., description="Name of the demo query")
@@ -76,157 +110,121 @@ class DemoQueryResult(BaseModel):
     indexes_used: Optional[List[str]] = Field(None, description="Indexes queried")
     
     def display(self, verbose: bool = False) -> str:
-        """Format results for display."""
+        """Format results for display with top 5 results in a table."""
         import json
+        from rich.console import Console
+        from rich.table import Table
+        from rich.text import Text
+        from rich import box
+        from io import StringIO
         
-        output = []
-        output.append(f"\n{'='*80}")
-        output.append(f"🔍 Demo Query: {self.query_name}")
-        output.append(f"{'='*80}")
+        # Create a string buffer to capture rich output
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=True, width=150)
+        
+        # Header
+        console.print(f"\n{'='*80}", style="cyan")
+        console.print(f"🔍 Demo Query: {self.query_name}", style="bold cyan")
+        console.print(f"{'='*80}", style="cyan")
         
         # Add search description if provided
         if self.query_description:
-            output.append(f"\n📝 SEARCH DESCRIPTION:")
-            output.append(f"   {self.query_description}")
+            console.print(f"\n📝 SEARCH DESCRIPTION:", style="bold yellow")
+            console.print(f"   {self.query_description}", style="yellow")
         
         # Add Elasticsearch features if provided
         if self.es_features:
-            output.append(f"\n📊 ELASTICSEARCH FEATURES:")
+            console.print(f"\n📊 ELASTICSEARCH FEATURES:", style="bold green")
             for feature in self.es_features:
-                output.append(f"   • {feature}")
+                console.print(f"   • {feature}", style="green")
         
         # Add indexes used if provided
         if self.indexes_used:
-            output.append(f"\n📁 INDEXES & DOCUMENTS:")
+            console.print(f"\n📁 INDEXES & DOCUMENTS:", style="bold blue")
             for index_info in self.indexes_used:
-                output.append(f"   • {index_info}")
+                console.print(f"   • {index_info}", style="blue")
         
-        output.append(f"\n{'─'*80}")
-        output.append(f"⏱️  Execution Time: {self.execution_time_ms}ms")
-        output.append(f"📊 Total Hits: {self.total_hits}")
-        output.append(f"📄 Returned: {self.returned_hits}")
+        console.print(f"\n{'─'*80}", style="dim")
+        console.print(f"⏱️  Execution Time: {self.execution_time_ms}ms | 📊 Total Hits: {self.total_hits} | 📄 Returned: {self.returned_hits}", style="cyan")
         
-        if self.results:
-            output.append(f"\n{'-'*40}")
-            output.append("Results:")
-            output.append(f"{'-'*40}")
+        # Display top 5 results in a nice table if we have results
+        if self.results and len(self.results) > 0:
+            console.print(f"\n🏠 TOP 5 SEARCH RESULTS:", style="bold magenta")
             
-            # Show all results for aggregation queries, limited results for others
-            is_aggregation = 'aggregation' in str(self.query_name).lower() or 'statistics' in str(self.query_name).lower() or 'distribution' in str(self.query_name).lower()
-            results_to_show = self.results if is_aggregation else self.results[:10]
+            table = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold magenta",
+                title_style="bold cyan",
+                expand=False,
+                padding=(0, 1)
+            )
             
-            for i, result in enumerate(results_to_show, 1):
-                # Check if this is an aggregation result (has specific aggregation fields)
-                if 'property_count' in result and 'neighborhood_id' in result:
-                    # Neighborhood aggregation result
-                    output.append(
-                        f"{i}. Neighborhood: {result.get('neighborhood_id', 'N/A')}"
-                    )
-                    output.append(f"   Properties: {result.get('property_count', 0)}")
-                    output.append(f"   Avg Price: ${result.get('avg_price', 0):,.0f}")
-                    output.append(f"   Price Range: ${result.get('min_price', 0):,.0f} - ${result.get('max_price', 0):,.0f}")
-                    output.append(f"   Avg Bedrooms: {result.get('avg_bedrooms', 0):.1f}")
-                    output.append(f"   Avg Sq Ft: {result.get('avg_square_feet', 0):,.0f}")
-                    output.append(f"   Price/SqFt: ${result.get('price_per_sqft', 0):,.0f}")
-                    if 'property_types' in result and result['property_types']:
-                        types_str = ", ".join([f"{t['type']} ({t['count']})" for t in result['property_types']])
-                        output.append(f"   Types: {types_str}")
-                    output.append("")  # Blank line between neighborhoods
-                elif 'price_range' in result:
-                    # Price distribution result
-                    output.append(f"{i}. {result.get('price_range', 'N/A')}: {result.get('count', 0)} properties")
-                    if result.get('property_types'):
-                        for prop_type, count in result['property_types'].items():
-                            output.append(f"   - {prop_type}: {count}")
-                    if result.get('avg_price'):
-                        output.append(f"   Avg: ${result.get('avg_price', 0):,.0f}")
-                elif 'property_type' in result:
-                    # Property result
-                    output.append(
-                        f"{i}. {result.get('address', {}).get('street', 'N/A')}, "
-                        f"{result.get('address', {}).get('city', 'N/A')}, "
-                        f"{result.get('address', {}).get('state', 'N/A')}"
-                    )
-                    # Check if features is a dict with property details
-                    features = result.get('features', {})
-                    if isinstance(features, dict):
-                        bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
-                        bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
-                        square_feet = features.get('square_feet', result.get('square_feet', 0))
-                    else:
-                        bedrooms = result.get('bedrooms', 0)
-                        bathrooms = result.get('bathrooms', 0)
-                        square_feet = result.get('square_feet', 0)
-                    
-                    output.append(
-                        f"   ${result.get('price', 0):,.0f} | "
-                        f"{bedrooms}bd/{bathrooms}ba | "
-                        f"{square_feet:,} sqft | "
-                        f"{result.get('property_type', 'N/A')}"
-                    )
-                    if '_score' in result:
-                        output.append(f"   Score: {result['_score']:.3f}")
-                    if '_entity_type' in result:
-                        output.append(f"   Source: {result['_entity_type']}")
-                    output.append("")  # Add spacing
-                elif 'neighborhood_id' in result and 'name' not in result:
-                    # Basic neighborhood result
-                    output.append(
-                        f"{i}. Neighborhood: {result.get('neighborhood_id', 'N/A')}"
-                    )
-                    if 'description' in result:
-                        output.append(f"   {result['description'][:200]}...")
-                    if '_entity_type' in result:
-                        output.append(f"   Source: {result['_entity_type']}")
-                    output.append("")  # Add spacing
-                elif 'name' in result and 'neighborhood_id' in result:
-                    # Full neighborhood result
-                    output.append(
-                        f"{i}. {result.get('name', 'N/A')} ({result.get('neighborhood_id', 'N/A')})"
-                    )
-                    output.append(
-                        f"   Location: {result.get('city', 'N/A')}, {result.get('state', 'N/A')}"
-                    )
-                    if 'description' in result:
-                        output.append(f"   {result['description'][:200]}...")
-                    if '_score' in result:
-                        output.append(f"   Score: {result['_score']:.3f}")
-                    if '_entity_type' in result:
-                        output.append(f"   Source: {result['_entity_type']}")
-                    output.append("")  # Add spacing
-                elif 'page_id' in result:
-                    # Wikipedia result
-                    output.append(
-                        f"{i}. {result.get('title', 'N/A')}"
-                    )
-                    if result.get('city') or result.get('state'):
-                        output.append(
-                            f"   Location: {result.get('city', '')}{', ' if result.get('city') and result.get('state') else ''}{result.get('state', '')}"
-                        )
-                    output.append(
-                        f"   {result.get('summary', 'N/A')[:300]}..."
-                    )
-                    if '_score' in result:
-                        output.append(f"   Score: {result['_score']:.3f}")
-                    if '_entity_type' in result:
-                        output.append(f"   Source: {result['_entity_type']}")
-                    output.append("")  # Add spacing
-                else:
-                    # Generic result - show full content
-                    output.append(f"{i}. {json.dumps(result, indent=2)}")
-        
-        if self.aggregations:
-            output.append(f"\n{'-'*40}")
-            output.append("Aggregations:")
-            output.append(f"{'-'*40}")
-            # Format aggregations as pretty JSON without truncation
-            output.append(json.dumps(self.aggregations, indent=2))
+            # Add columns
+            table.add_column("#", style="dim", width=3, justify="center")
+            table.add_column("Property Details", style="white", width=35)
+            table.add_column("Location", style="blue", width=25)
+            table.add_column("Price", style="green bold", justify="right", width=12)
+            table.add_column("Description", style="yellow", width=45)
+            if any('_hybrid_score' in r for r in self.results[:5]):
+                table.add_column("Score", style="cyan bold", width=10, justify="center")
+            
+            # Add top 5 results
+            for idx, result in enumerate(self.results[:5], 1):
+                # Property details
+                prop_type = result.get('property_type', 'Unknown')
+                bedrooms = result.get('bedrooms', 0)
+                bathrooms = result.get('bathrooms', 0)
+                sqft = result.get('square_feet', 0)
+                year_built = result.get('year_built', 'N/A')
+                
+                property_text = Text()
+                property_text.append(f"{prop_type}\n", style="bold")
+                property_text.append(f"{bedrooms}bd/{bathrooms}ba • {sqft:,} sqft\n", style="cyan")
+                property_text.append(f"Built {year_built}", style="dim")
+                
+                # Location
+                address = result.get('address', {})
+                location_parts = []
+                if address.get('street'):
+                    location_parts.append(address['street'])
+                if address.get('city'):
+                    location_parts.append(address['city'])
+                if address.get('state'):
+                    location_parts.append(address['state'])
+                location = '\n'.join(location_parts) if location_parts else 'N/A'
+                
+                # Price
+                price = result.get('price', 0)
+                price_text = f"${price:,.0f}" if price > 0 else "N/A"
+                
+                # Description (truncated)
+                description = result.get('description', 'No description')
+                if len(description) > 100:
+                    description = description[:97] + "..."
+                
+                # Build row
+                row_data = [str(idx), property_text, location, price_text, description]
+                
+                # Add score if it exists
+                if '_hybrid_score' in result:
+                    score = result.get('_hybrid_score', 0)
+                    score_text = f"{score:.3f}"
+                    row_data.append(score_text)
+                
+                table.add_row(*row_data)
+            
+            console.print(table)
         
         if verbose:
-            output.append(f"\n{'-'*40}")
-            output.append("Query DSL:")
-            output.append(f"{'-'*40}")
+            console.print(f"\n{'-'*40}", style="dim")
+            console.print("Query DSL:", style="bold cyan")
+            console.print(f"{'-'*40}", style="dim")
             # Show full query DSL without truncation
-            output.append(json.dumps(self.query_dsl, indent=2))
+            console.print(json.dumps(self.query_dsl, indent=2), style="green")
         
-        return '\n'.join(output)
+        # Get the string output
+        output = string_buffer.getvalue()
+        string_buffer.close()
+        
+        return output

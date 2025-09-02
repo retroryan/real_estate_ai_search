@@ -15,7 +15,9 @@ DESIGN PRINCIPLES:
 4. Single responsibility (each model has one clear purpose)
 """
 
-from typing import Dict, Any, Optional, List, Union, Literal, TypeVar, Generic
+from __future__ import annotations
+
+from typing import Dict, Any, Optional, List, Literal, TypeVar, Generic
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -151,26 +153,10 @@ class Address(BaseModel):
     zip_code: Optional[str] = Field(None, pattern=r"^\d{5}(-\d{4})?$", description="ZIP code")
     county: Optional[str] = Field(None, description="County name")
     country: str = Field("US", description="Country code")
-    location: Optional[Union[GeoPoint, List[float], Dict[str, float]]] = Field(None, description="Geographic coordinates")
+    location: Optional[Dict[str, float]] = Field(None, description="Geographic coordinates in ES geo_point format")
     
     model_config = ConfigDict(extra="ignore")
     
-    @field_validator('location', mode='before')
-    def convert_location(cls, v):
-        """Convert various location formats to GeoPoint."""
-        if v is None:
-            return None
-        if isinstance(v, GeoPoint):
-            return v
-        if isinstance(v, list) and len(v) == 2:
-            # Elasticsearch returns [lon, lat]
-            return GeoPoint(lon=v[0], lat=v[1])
-        if isinstance(v, dict):
-            if 'lat' in v and 'lon' in v:
-                return GeoPoint(lat=v['lat'], lon=v['lon'])
-            elif 'latitude' in v and 'longitude' in v:
-                return GeoPoint(lat=v['latitude'], lon=v['longitude'])
-        return v
     
     @computed_field  # type: ignore
     @property
@@ -283,11 +269,7 @@ class PropertyListing(BaseModel):
             if self.features.square_feet:
                 parts.append(f"{self.features.square_feet:,} sqft")
         if self.property_type:
-            # Handle both enum and string
-            if isinstance(self.property_type, PropertyType):
-                parts.append(self.property_type.value)
-            else:
-                parts.append(str(self.property_type))
+            parts.append(str(self.property_type))
         return " | ".join(parts) if parts else "Property details not available"
 
 
@@ -300,7 +282,6 @@ class Demographics(BaseModel):
     population: Optional[int] = Field(None, ge=0, description="Total population")
     households: Optional[int] = Field(None, ge=0, description="Number of households")
     median_age: Optional[float] = Field(None, ge=0, le=120, description="Median age")
-    median_income: Optional[float] = Field(None, ge=0, description="Median household income")
     median_home_value: Optional[float] = Field(None, ge=0, description="Median home value")
     
     model_config = ConfigDict(extra="ignore")
@@ -388,8 +369,6 @@ class WikipediaArticle(BaseModel):
     # Location relevance
     city: Optional[str] = Field(None, description="Associated city")
     state: Optional[str] = Field(None, description="Associated state")
-    best_city: Optional[str] = Field(None, description="Best matched city")
-    best_state: Optional[str] = Field(None, description="Best matched state")
     relevance_score: Optional[float] = Field(None, ge=0, le=100, description="Location relevance")
     
     # Classification
@@ -408,11 +387,9 @@ class WikipediaArticle(BaseModel):
     @property
     def location_string(self) -> str:
         """Get location as string."""
-        city = self.best_city or self.city
-        state = self.best_state or self.state
-        if city and state:
-            return f"{city}, {state}"
-        return city or state or "Location unknown"
+        if self.city and self.state:
+            return f"{self.city}, {self.state}"
+        return self.city or self.state or "Location unknown"
 
 
 # ============================================================================
@@ -421,9 +398,16 @@ class WikipediaArticle(BaseModel):
 
 class BucketAggregation(BaseModel):
     """Single bucket in an aggregation result."""
-    key: Union[str, int, float] = Field(..., description="Bucket key")
+    key: str = Field(..., description="Bucket key (converted to string)")
+    key_as_string: Optional[str] = Field(None, description="String representation of key")
     doc_count: int = Field(..., ge=0, description="Document count")
     sub_aggregations: Optional[Dict[str, Any]] = Field(None, description="Nested aggregations")
+    
+    @field_validator('key', mode='before')
+    @classmethod
+    def convert_key_to_string(cls, v):
+        """Convert any key type to string."""
+        return str(v) if v is not None else "unknown"
     
     model_config = ConfigDict(extra="ignore")
 
@@ -453,7 +437,15 @@ class AggregationResult(BaseModel):
     type: AggregationType = Field(..., description="Type of aggregation")
     buckets: Optional[List[BucketAggregation]] = Field(None, description="Bucket results")
     stats: Optional[StatsAggregation] = Field(None, description="Statistical results")
-    value: Optional[Union[float, int]] = Field(None, description="Single value result")
+    value: Optional[float] = Field(None, description="Single value result")
+    
+    @field_validator('value', mode='before')
+    @classmethod
+    def convert_value_to_float(cls, v):
+        """Convert int to float if needed."""
+        if v is not None:
+            return float(v)
+        return v
     
     model_config = ConfigDict(extra="ignore", use_enum_values=True)
 
@@ -471,79 +463,34 @@ class SearchHit(BaseModel):
     highlight: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted fields")
     
     model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+
+class SourceFilter(BaseModel):
+    """Source filtering configuration."""
+    includes: Optional[List[str]] = Field(None, description="Fields to include")
+    excludes: Optional[List[str]] = Field(None, description="Fields to exclude")
     
-    def to_entity(self) -> Optional[Union[PropertyListing, Neighborhood, WikipediaArticle]]:
-        """Convert to appropriate entity type based on index."""
-        try:
-            source = self.source.copy()
-            if self.score is not None:
-                source['_score'] = self.score
-            
-            if self.index == IndexName.PROPERTIES.value:
-                # Fix property type mapping
-                if 'property_type' in source:
-                    pt = source['property_type']
-                    if isinstance(pt, str):
-                        # Map common variations
-                        pt_lower = pt.lower()
-                        if pt_lower == 'single-family' or pt_lower == 'single family':
-                            source['property_type'] = 'Single Family'
-                        elif pt_lower == 'condo':
-                            source['property_type'] = 'Condo'
-                        elif pt_lower == 'townhouse':
-                            source['property_type'] = 'Townhouse'
-                        elif pt_lower == 'multi-family':
-                            source['property_type'] = 'Multi-Family'
-                        else:
-                            source['property_type'] = 'Other'
-                
-                # Handle nested address structure
-                if 'address' in source and isinstance(source['address'], dict):
-                    source['address'] = Address(**source['address'])
-                    
-                # Handle features field (list of amenities in Elasticsearch)
-                if 'features' in source and isinstance(source['features'], list):
-                    # Move features list to amenities
-                    if not source.get('amenities'):
-                        source['amenities'] = source['features']
-                    source.pop('features', None)
-                
-                # Create PropertyFeatures from top-level fields
-                source['features'] = PropertyFeatures(
-                    bedrooms=source.get('bedrooms'),
-                    bathrooms=source.get('bathrooms'),
-                    square_feet=source.get('square_feet'),
-                    year_built=source.get('year_built')
-                )
-                
-                return PropertyListing(**source)
-            
-            elif self.index == IndexName.NEIGHBORHOODS.value:
-                if 'demographics' in source and isinstance(source['demographics'], dict):
-                    source['demographics'] = Demographics(**source['demographics'])
-                if 'school_ratings' in source and isinstance(source['school_ratings'], dict):
-                    source['school_ratings'] = SchoolRatings(**source['school_ratings'])
-                return Neighborhood(**source)
-            
-            elif self.index == IndexName.WIKIPEDIA.value:
-                return WikipediaArticle(**source)
-            
-        except Exception as e:
-            logger.error(f"Failed to convert hit to entity: {e}")
-        
-        return None
+    def to_dict(self) -> Dict[str, List[str]]:
+        """Convert to ES source filter format."""
+        result = {}
+        if self.includes:
+            result["includes"] = self.includes
+        if self.excludes:
+            result["excludes"] = self.excludes
+        return result if result else True
 
 
 class SearchRequest(BaseModel):
     """Search request configuration."""
-    index: Union[str, List[str]] = Field(..., description="Index(es) to search")
+    index: List[str] = Field(..., description="Index(es) to search")
     query: Dict[str, Any] = Field(..., description="Query DSL")
     size: int = Field(10, ge=0, le=10000, description="Number of results")
     from_: int = Field(0, ge=0, alias="from", description="Starting offset")
     sort: Optional[List[Dict[str, Any]]] = Field(None, description="Sort criteria")
     aggs: Optional[Dict[str, Any]] = Field(None, description="Aggregations")
     highlight: Optional[Dict[str, Any]] = Field(None, description="Highlight configuration")
-    source: Optional[Union[bool, List[str], Dict[str, Any]]] = Field(True, alias="_source", description="Source filtering")
+    source: Optional[SourceFilter] = Field(None, alias="_source", description="Source filtering")
+    source_enabled: bool = Field(True, description="Whether to return source at all")
     
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     
@@ -561,8 +508,10 @@ class SearchRequest(BaseModel):
             query_dict["aggs"] = self.aggs
         if self.highlight:
             query_dict["highlight"] = self.highlight
-        if self.source is not None:
-            query_dict["_source"] = self.source
+        if not self.source_enabled:
+            query_dict["_source"] = False
+        elif self.source:
+            query_dict["_source"] = self.source.to_dict()
             
         return query_dict
 
@@ -579,7 +528,7 @@ class SearchResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     @classmethod
-    def from_elasticsearch(cls, response: Dict[str, Any]) -> "SearchResponse":
+    def from_elasticsearch(cls, response: Dict[str, Any]) -> SearchResponse:
         """Create from raw Elasticsearch response."""
         return cls(
             took=response.get("took", 0),
@@ -589,15 +538,6 @@ class SearchResponse(BaseModel):
             hits=[SearchHit(**hit) for hit in response.get("hits", {}).get("hits", [])],
             aggregations=response.get("aggregations")
         )
-    
-    def to_entities(self) -> List[Union[PropertyListing, Neighborhood, WikipediaArticle]]:
-        """Convert all hits to entity objects."""
-        entities = []
-        for hit in self.hits:
-            entity = hit.to_entity()
-            if entity:
-                entities.append(entity)
-        return entities
 
 
 # ============================================================================
@@ -657,7 +597,7 @@ class BoolQuery(BaseModel):
 # DEMO RESULT MODELS
 # ============================================================================
 
-T = TypeVar('T', PropertyListing, Neighborhood, WikipediaArticle)
+T = TypeVar('T')
 
 
 class TypedDemoResult(BaseModel, Generic[T]):

@@ -158,7 +158,7 @@ class ElasticsearchConfig(BaseModel):
         # Add authentication if configured
         if self.username:
             conf["es.net.http.auth.user"] = self.username
-            password = os.environ.get("ELASTICSEARCH_PASSWORD")
+            password = os.environ.get("ES_PASSWORD")
             if password:
                 conf["es.net.http.auth.pass"] = password
         
@@ -219,11 +219,11 @@ class SearchPipelineConfig(BaseModel):
         """Check environment when search is enabled."""
         if v:
             # Check for Elasticsearch password if authentication is expected
-            if not os.environ.get("ELASTICSEARCH_PASSWORD"):
+            if not os.environ.get("ES_PASSWORD"):
                 # Just log a warning, don't fail
                 import logging
                 logging.getLogger(__name__).warning(
-                    "ELASTICSEARCH_PASSWORD not set. Elasticsearch authentication may fail."
+                    "ES_PASSWORD not set. Elasticsearch authentication may fail."
                 )
         return v
     

@@ -330,7 +330,7 @@ class EnrichWikipediaCommand(BaseCommand):
             batch_size=args.batch_size or 50,
             max_documents=args.max_documents,
             dry_run=args.dry_run,
-            data_dir="../data",
+            data_dir="data",
             pipeline_name="wikipedia_ingest_pipeline"
         )
         self.result = WikipediaEnrichmentResult()
@@ -390,7 +390,7 @@ class EnrichWikipediaCommand(BaseCommand):
         if filename.startswith('data/'):
             file_path = Path(filename)
         else:
-            file_path = Path(self.enrichment_config.data_dir) / filename
+            file_path = Path(self.enrichment_config.data_dir) / "wikipedia" / "pages" / filename
         
         if not file_path.exists():
             self.result.files_not_found += 1
@@ -615,3 +615,187 @@ class EnrichWikipediaCommand(BaseCommand):
             self.output.success("\n✓ Enrichment completed successfully")
         else:
             self.output.error("\n✗ Enrichment completed with errors")
+
+
+class HealthCheckCommand(BaseCommand):
+    """Command to check Elasticsearch health."""
+    
+    def execute(self) -> OperationStatus:
+        """Execute health check."""
+        try:
+            factory = ElasticsearchClientFactory(self.config.elasticsearch)
+            es_client = factory.create_client()
+            
+            # Get cluster health
+            health = es_client.cluster.health()
+            
+            print("\n📊 Cluster Health:")
+            print(f"  Cluster Name: {health['cluster_name']}")
+            print(f"  Status: {health['status']}")
+            print(f"  Number of Nodes: {health['number_of_nodes']}")
+            print(f"  Active Primary Shards: {health['active_primary_shards']}")
+            print(f"  Active Shards: {health['active_shards']}")
+            
+            # Check if healthy
+            if health['status'] in ['green', 'yellow']:
+                print("\n✅ Elasticsearch is healthy and accessible")
+                return OperationStatus(
+                    operation="health-check",
+                    success=True,
+                    message=f"Elasticsearch cluster '{health['cluster_name']}' is healthy (status: {health['status']})"
+                )
+            else:
+                print(f"\n⚠️ Elasticsearch cluster status is {health['status']}")
+                return OperationStatus(
+                    operation="health-check",
+                    success=False,
+                    message=f"Elasticsearch cluster status is {health['status']}"
+                )
+                
+        except Exception as e:
+            print(f"\n❌ Failed to connect to Elasticsearch: {str(e)}")
+            return OperationStatus(
+                operation="health-check",
+                success=False,
+                message=f"Failed to connect to Elasticsearch: {str(e)}"
+            )
+
+
+class StatsCommand(BaseCommand):
+    """Command to show Elasticsearch statistics."""
+    
+    def execute(self) -> OperationStatus:
+        """Execute stats command."""
+        try:
+            factory = ElasticsearchClientFactory(self.config.elasticsearch)
+            es_client = factory.create_client()
+            
+            # Get cluster health
+            health = es_client.cluster.health()
+            
+            print("\n📊 Cluster Health:")
+            print(f"  Cluster Name: {health['cluster_name']}")
+            print(f"  Status: {health['status']}")
+            print(f"  Number of Nodes: {health['number_of_nodes']}")
+            print(f"  Active Primary Shards: {health['active_primary_shards']}")
+            
+            # Get index stats
+            indices = es_client.cat.indices(format='json')
+            
+            print("\n📈 Index Statistics:")
+            print("  " + "━" * 56)
+            print(f"  {'Index Name':<30} {'Documents':>10} {'Size':>12}")
+            print("  " + "━" * 56)
+            
+            total_docs = 0
+            for index in indices:
+                if not index['index'].startswith('.'):  # Skip system indices
+                    doc_count = int(index.get('docs.count', 0))
+                    total_docs += doc_count
+                    size = index.get('store.size', 'N/A')
+                    print(f"  {index['index']:<30} {doc_count:>10,} {size:>12}")
+            
+            print("  " + "━" * 56)
+            print(f"  {'TOTAL':<30} {total_docs:>10,}")
+            
+            # Health status
+            print("\n✅ Health Status:")
+            if total_docs > 0:
+                print("  Database:     HEALTHY")
+                print("  Connectivity: OK")
+                print(f"  Data Present: YES ({total_docs:,} documents)")
+            else:
+                print("  Database:     EMPTY")
+                print("  Connectivity: OK")
+                print("  Data Present: NO")
+            
+            return OperationStatus(
+                operation="stats",
+                success=True,
+                message=f"Stats retrieved successfully ({total_docs} total documents)",
+                details={"total_documents": total_docs}
+            )
+            
+        except Exception as e:
+            print(f"\n❌ Failed to get stats: {str(e)}")
+            return OperationStatus(
+                operation="stats",
+                success=False,
+                message=f"Failed to get stats: {str(e)}"
+            )
+
+
+class SampleQueryCommand(BaseCommand):
+    """Command to run a sample query."""
+    
+    def execute(self) -> OperationStatus:
+        """Execute sample query."""
+        try:
+            factory = ElasticsearchClientFactory(self.config.elasticsearch)
+            es_client = factory.create_client()
+            
+            print("\n🔍 Running sample query...")
+            print("Searching for properties in San Francisco ($500K-$2M)...")
+            
+            # Build the query
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"match": {"address.city": "San Francisco"}}
+                        ],
+                        "filter": [
+                            {"range": {"price": {"gte": 500000, "lte": 2000000}}}
+                        ]
+                    }
+                },
+                "size": 3,
+                "_source": ["listing_id", "address", "price", "bedrooms", "bathrooms", "square_feet"]
+            }
+            
+            # Execute the query
+            response = es_client.search(index="properties", body=query)
+            
+            total_hits = response['hits']['total']['value']
+            
+            if total_hits > 0:
+                print(f"\nFound {total_hits} properties. Showing first 3:")
+                print("-" * 60)
+                
+                for hit in response['hits']['hits']:
+                    source = hit['_source']
+                    print(f"Property ID: {source.get('listing_id', 'N/A')}")
+                    
+                    address = source.get('address', {})
+                    print(f"  Address: {address.get('street', 'N/A')}, {address.get('city', 'N/A')}")
+                    
+                    price = source.get('price', 0)
+                    print(f"  Price: ${price:,.0f}")
+                    
+                    print(f"  Bedrooms: {source.get('bedrooms', 'N/A')} | "
+                          f"Bathrooms: {source.get('bathrooms', 'N/A')} | "
+                          f"Sq Ft: {source.get('square_feet', 'N/A')}")
+                    print()
+                
+                return OperationStatus(
+                    operation="sample-query",
+                    success=True,
+                    message=f"Sample query completed successfully ({total_hits} results)",
+                    details={"total_hits": total_hits}
+                )
+            else:
+                print("\n⚠️ No properties found in the sample query")
+                return OperationStatus(
+                    operation="sample-query",
+                    success=True,
+                    message="Sample query completed (no results found)",
+                    details={"total_hits": 0}
+                )
+                
+        except Exception as e:
+            print(f"\n❌ Failed to run sample query: {str(e)}")
+            return OperationStatus(
+                operation="sample-query",
+                success=False,
+                message=f"Failed to run sample query: {str(e)}"
+            )

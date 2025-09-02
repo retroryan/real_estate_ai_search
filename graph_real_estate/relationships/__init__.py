@@ -12,7 +12,7 @@ Features:
 - Type-safe result objects
 """
 
-from .builder import RelationshipOrchestrator, RelationshipStats, BuildProcessStats
+from .builder import RelationshipOrchestrator, RelationshipStats
 from .config import RelationshipConfig, RelationshipResult, RelationshipBatchConfig
 from .geographic import GeographicRelationshipBuilder
 from .classification import ClassificationRelationshipBuilder
@@ -22,7 +22,6 @@ __all__ = [
     # Main orchestration
     "RelationshipOrchestrator",
     "RelationshipStats",
-    "BuildProcessStats",
     
     # Configuration models
     "RelationshipConfig",

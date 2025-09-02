@@ -69,8 +69,11 @@ class PureVectorSearchDemo:
                 print("No embeddings found! Please run 'python create_embeddings.py' first.")
             else:
                 print(f"Found {embeddings_count} properties with embeddings")
+                # EmbeddingConfig is an object, not a dict
+                model_name = getattr(embedding_config, 'model_name', 'unknown')
+                dimensions = getattr(embedding_config, 'dimension', 384)
                 print(f"Using {model_name} model")
-                print(f"Embedding dimensions: 384")
+                print(f"Embedding dimensions: {dimensions}")
                 
         except Exception as e:
             print(f"Could not initialize embedding pipeline: {e}")
@@ -143,9 +146,13 @@ class PureVectorSearchDemo:
                 for i, result in enumerate(results, 1):
                     print(f"{i}. Property {result['listing_id']} - Score: {result['score']:.4f}")
                     print(f"   {result['neighborhood']}, {result['city']}")
-                    print(f"   ${result['listing_price']:,.0f}")
+                    listing_price = result.get('listing_price', 0) or 0
+                    print(f"   ${listing_price:,.0f}")
                     if result.get('bedrooms'):
-                        print(f"   {result['bedrooms']} bed, {result['bathrooms']} bath, {result['square_feet']:,} sqft")
+                        bedrooms = result.get('bedrooms', 0) or 0
+                    bathrooms = result.get('bathrooms', 0) or 0
+                    square_feet = result.get('square_feet', 0) or 0
+                    print(f"   {bedrooms} bed, {bathrooms} bath, {square_feet:,} sqft")
                     if result.get('description'):
                         desc = result['description'][:150].replace('\n', ' ')
                         print(f"   {desc}...")
@@ -259,7 +266,8 @@ class PureVectorSearchDemo:
                 print("Properties that match the concept:\n")
                 for i, result in enumerate(results, 1):
                     print(f"{i}. Property {result['listing_id']} (Score: {result['score']:.3f})")
-                    print(f"   ${result['listing_price']:,.0f} in {result['neighborhood']}")
+                    listing_price = result.get('listing_price', 0) or 0
+                    print(f"   ${listing_price:,.0f} in {result['neighborhood']}")
                     
                     # Try to identify why it matched
                     desc_lower = result.get('description', '').lower()
@@ -314,7 +322,9 @@ class PureVectorSearchDemo:
                 scores = [r['score'] for r in results]
                 prices = [r['listing_price'] for r in results]
                 avg_score = np.mean(scores)
-                price_range = f"${min(prices):,.0f} - ${max(prices):,.0f}"
+                min_price = min(prices) if prices else 0
+                max_price = max(prices) if prices else 0
+                price_range = f"${min_price:,.0f} - ${max_price:,.0f}"
             else:
                 avg_score = 0
                 price_range = "N/A"
@@ -387,13 +397,15 @@ class PureVectorSearchDemo:
                 print(f"   Time: {vector_time*1000:.1f}ms")
                 if vector_results:
                     for i, r in enumerate(vector_results[:3], 1):
-                        print(f"   {i}. {r['listing_id']} (Score: {r['score']:.3f}) - ${r['listing_price']:,.0f}")
+                        listing_price = r.get('listing_price', 0) or 0
+                        print(f"   {i}. {r['listing_id']} (Score: {r['score']:.3f}) - ${listing_price:,.0f}")
                 
                 print("\nHYBRID SEARCH (Vector + Graph):")
                 print(f"   Time: {hybrid_time*1000:.1f}ms")
                 if hybrid_results:
                     for i, r in enumerate(hybrid_results[:3], 1):
-                        print(f"   {i}. {r.listing_id} (Combined: {r.combined_score:.3f}) - ${r.listing_price:,.0f}")
+                        listing_price = r.listing_price or 0
+                        print(f"   {i}. {r.listing_id} (Combined: {r.combined_score:.3f}) - ${listing_price:,.0f}")
                         print(f"      Vector: {r.vector_score:.3f} | Graph: {r.graph_score:.3f}")
                 
                 # Analyze differences
@@ -441,7 +453,8 @@ class PureVectorSearchDemo:
         sample_properties = run_query(self.driver, sample_query)
         
         for prop in sample_properties[:3]:
-            print(f"\nAnchor Property: {prop['listing_id']} (${prop['listing_price']:,.0f})")
+            listing_price = prop.get('listing_price', 0) or 0
+            print(f"\nAnchor Property: {prop['listing_id']} (${listing_price:,.0f})")
             
             # Use property description as query to find similar properties
             if prop.get('description'):
@@ -454,7 +467,8 @@ class PureVectorSearchDemo:
                     print("   Nearest neighbors in embedding space:")
                     for i, sim in enumerate(similar[:3], 1):
                         print(f"      {i}. {sim['listing_id']} (Similarity: {sim['score']:.3f})")
-                        print(f"         ${sim['listing_price']:,.0f} in {sim['neighborhood']}")
+                        listing_price = sim.get('listing_price', 0) or 0
+                        print(f"         ${listing_price:,.0f} in {sim['neighborhood']}")
                     
                     # Analyze what makes them similar
                     price_variance = np.std([s['listing_price'] for s in similar] + [prop['listing_price']])
@@ -462,7 +476,8 @@ class PureVectorSearchDemo:
                     
                     print(f"\n   Cluster Analysis:")
                     print(f"      Average similarity: {avg_similarity:.3f}")
-                    print(f"      Price variance: ${price_variance:,.0f}")
+                    price_var_display = price_variance if price_variance is not None else 0
+                    print(f"      Price variance: ${price_var_display:,.0f}")
                     
                     if price_variance < 500000:
                         print("      -> Tight price clustering")
@@ -473,22 +488,21 @@ class PureVectorSearchDemo:
         print("\n\nGlobal Embedding Space Statistics:")
         
         stats_query = """
-        MATCH (p1:Property)-[s:SIMILAR_TO]->(p2:Property)
-        WHERE s.similarity_score > 0.7
-        RETURN count(s) as high_similarity_pairs,
-               avg(s.similarity_score) as avg_high_similarity,
-               max(s.similarity_score) as max_similarity
+        MATCH (p:Property)
+        WHERE p.embedding IS NOT NULL
+        RETURN count(p) as properties_with_embeddings,
+               avg(size(p.embedding)) as avg_embedding_dimension
         """
         
         stats = run_query(self.driver, stats_query)
         if stats:
             stat = stats[0]
-            print(f"   High similarity pairs (>0.7): {stat['high_similarity_pairs']}")
+            print(f"   Properties with embeddings: {stat['properties_with_embeddings']}")
             # Handle None values by providing defaults
-            avg_sim = stat['avg_high_similarity'] or 0.0
-            max_sim = stat['max_similarity'] or 0.0
-            print(f"   Average high similarity: {avg_sim:.3f}")
-            print(f"   Maximum similarity: {max_sim:.3f}")
+            avg_dim = stat.get('avg_embedding_dimension') or 0
+            if avg_dim > 0:
+                print(f"   Average embedding dimension: {avg_dim:.0f}")
+            print(f"   Note: Similarity is computed on-demand using cosine similarity")
 
 
 def run_pure_vector_search_demo():
@@ -498,6 +512,15 @@ def run_pure_vector_search_demo():
     print("Demonstrating the power of semantic embeddings for property search")
     print("without graph boosting, showing what pure vector similarity can achieve.")
     print("="*80)
+    
+    print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+    print("   • Native Vector Storage - 1024-dimensional embeddings on Property nodes")
+    print("   • Vector Similarity Search - Finding semantically similar properties")
+    print("   • Embedding Properties - Storing and retrieving high-dimensional vectors")
+    print("   • Semantic Understanding - Natural language query processing")
+    print("   • Vector Operations - Distance calculations in embedding space")
+    print("   • Pure Vector Search - Demonstrating vector capabilities without graph boost")
+    print("   • Scalable Vector Storage - Efficient storage of embeddings in graph")
     
     driver = None
     try:

@@ -15,14 +15,26 @@ from ..demo_queries import (
     demo_semantic_search,
     demo_multi_entity_search,
     demo_wikipedia_search,
-    demo_relationship_search,
     demo_wikipedia_fulltext,
+    demo_simplified_relationships,
     demo_natural_language_search,
     demo_natural_language_examples,
     demo_semantic_vs_keyword_comparison,
-    demo_rich_property_listing
+    demo_rich_property_listing,
+    demo_hybrid_search,
+    demo_location_understanding,
+    demo_location_aware_waterfront_luxury,
+    demo_location_aware_family_schools,
+    demo_location_aware_urban_modern,
+    demo_location_aware_recreation_mountain,
+    demo_location_aware_historic_urban,
+    demo_location_aware_beach_proximity,
+    demo_location_aware_investment_market,
+    demo_location_aware_luxury_urban_views,
+    demo_location_aware_suburban_architecture,
+    demo_location_aware_neighborhood_character,
+    demo_location_aware_search_showcase
 )
-from ..demo_queries.demo_single_query_relationships import demo_simplified_relationships
 from .models import DemoQuery, DemoExecutionResult
 
 
@@ -98,45 +110,117 @@ class DemoRunner:
             ),
             9: DemoQuery(
                 number=9,
-                name="Property-Neighborhood-Wikipedia Relationships",
-                description="Demonstrates entity linking across indices",
-                query_function="demo_relationship_search"
-            ),
-            10: DemoQuery(
-                number=10,
                 name="Wikipedia Full-Text Search",
                 description="Full-text search across Wikipedia articles",
                 query_function="demo_wikipedia_fulltext"
             ),
-            11: DemoQuery(
-                number=11,
-                name="Simplified Single-Query Relationships",
-                description="Denormalized index for single-query retrieval",
+            10: DemoQuery(
+                number=10,
+                name="Property Relationships via Denormalized Index",
+                description="Demonstrates single-query retrieval using denormalized index",
                 query_function="demo_simplified_relationships"
             ),
-            12: DemoQuery(
-                number=12,
+            11: DemoQuery(
+                number=11,
                 name="Natural Language Semantic Search",
                 description="Convert natural language queries to embeddings for semantic search",
                 query_function="demo_natural_language_search"
             ),
-            13: DemoQuery(
-                number=13,
+            12: DemoQuery(
+                number=12,
                 name="Natural Language Examples",
                 description="Multiple examples of natural language property search",
                 query_function="demo_natural_language_examples"
             ),
-            14: DemoQuery(
-                number=14,
+            13: DemoQuery(
+                number=13,
                 name="Semantic vs Keyword Comparison",
                 description="Compare semantic embedding search with traditional keyword search",
                 query_function="demo_semantic_vs_keyword_comparison"
             ),
-            15: DemoQuery(
-                number=15,
+            14: DemoQuery(
+                number=14,
                 name="Rich Real Estate Listing",
                 description="Complete property listing with neighborhood and Wikipedia data from single query",
                 query_function="demo_rich_property_listing"
+            ),
+            15: DemoQuery(
+                number=15,
+                name="Hybrid Search with RRF",
+                description="Combines semantic vector search with text search using native Elasticsearch RRF",
+                query_function="demo_hybrid_search"
+            ),
+            16: DemoQuery(
+                number=16,
+                name="Location Understanding",
+                description="Extract location information from natural language queries using DSPy",
+                query_function="demo_location_understanding"
+            ),
+            17: DemoQuery(
+                number=17,
+                name="Location-Aware: Waterfront Luxury",
+                description="Luxury waterfront property search with city-specific filtering",
+                query_function="demo_location_aware_waterfront_luxury"
+            ),
+            18: DemoQuery(
+                number=18,
+                name="Location-Aware: Family Schools",
+                description="Family-oriented search with school proximity and location extraction",
+                query_function="demo_location_aware_family_schools"
+            ),
+            19: DemoQuery(
+                number=19,
+                name="Location-Aware: Urban Modern",
+                description="Modern urban property search with neighborhood understanding",
+                query_function="demo_location_aware_urban_modern"
+            ),
+            20: DemoQuery(
+                number=20,
+                name="Location-Aware: Recreation Mountain",
+                description="Recreation-focused property search in mountain areas",
+                query_function="demo_location_aware_recreation_mountain"
+            ),
+            21: DemoQuery(
+                number=21,
+                name="Location-Aware: Historic Urban",
+                description="Historic property search in urban neighborhoods",
+                query_function="demo_location_aware_historic_urban"
+            ),
+            22: DemoQuery(
+                number=22,
+                name="Location-Aware: Beach Proximity",
+                description="Beach property search with proximity-based location understanding",
+                query_function="demo_location_aware_beach_proximity"
+            ),
+            23: DemoQuery(
+                number=23,
+                name="Location-Aware: Investment Market",
+                description="Investment property search with market-specific targeting",
+                query_function="demo_location_aware_investment_market"
+            ),
+            24: DemoQuery(
+                number=24,
+                name="Location-Aware: Luxury Urban Views",
+                description="Luxury urban property search emphasizing premium views",
+                query_function="demo_location_aware_luxury_urban_views"
+            ),
+            25: DemoQuery(
+                number=25,
+                name="Location-Aware: Suburban Architecture",
+                description="Architectural style search in suburban markets",
+                query_function="demo_location_aware_suburban_architecture"
+            ),
+            26: DemoQuery(
+                number=26,
+                name="Location-Aware: Neighborhood Character",
+                description="Neighborhood character search with architectural details",
+                query_function="demo_location_aware_neighborhood_character"
+            ),
+            27: DemoQuery(
+                number=27,
+                name="Location-Aware Search Showcase",
+                description="Run multiple location-aware demos to showcase full capabilities",
+                query_function="demo_location_aware_search_showcase"
             )
         }
         return demos
@@ -182,6 +266,37 @@ class DemoRunner:
             # Execute the demo query
             result = query_func(self.es_client)
             
+            # Handle demos that return a list of results
+            if demo_number in [12, 27]:
+                # demo_natural_language_examples and demo_location_aware_search_showcase return List[DemoQueryResult]
+                if not result:  # Empty list means initialization failed
+                    return DemoExecutionResult(
+                        demo_number=demo_number,
+                        demo_name=demo.name,
+                        success=False,
+                        error="Failed to initialize service or no results"
+                    )
+                
+                # Aggregate statistics from all example results
+                total_time = sum(r.execution_time_ms for r in result)
+                total_hits = sum(r.total_hits for r in result)
+                total_returned = sum(r.returned_hits for r in result)
+                
+                # Create execution result with aggregated stats
+                execution_result = DemoExecutionResult(
+                    demo_number=demo_number,
+                    demo_name=demo.name,
+                    success=True,
+                    execution_time_ms=total_time,
+                    total_hits=total_hits,
+                    returned_hits=total_returned,
+                    query_dsl={"examples_count": len(result)} if verbose else None
+                )
+                
+                self.logger.info(f"Successfully executed {len(result)} examples for demo {demo_number}")
+                return execution_result
+            
+            # Standard handling for demos that return single DemoQueryResult
             # Extract query DSL if verbose
             query_dsl = None
             if verbose and hasattr(result, 'query'):
@@ -229,13 +344,25 @@ class DemoRunner:
             6: demo_semantic_search,
             7: demo_multi_entity_search,
             8: demo_wikipedia_search,
-            9: demo_relationship_search,
-            10: demo_wikipedia_fulltext,
-            11: demo_simplified_relationships,
-            12: demo_natural_language_search,
-            13: demo_natural_language_examples,
-            14: demo_semantic_vs_keyword_comparison,
-            15: demo_rich_property_listing
+            9: demo_wikipedia_fulltext,
+            10: demo_simplified_relationships,
+            11: demo_natural_language_search,
+            12: demo_natural_language_examples,
+            13: demo_semantic_vs_keyword_comparison,
+            14: demo_rich_property_listing,
+            15: demo_hybrid_search,
+            16: demo_location_understanding,
+            17: demo_location_aware_waterfront_luxury,
+            18: demo_location_aware_family_schools,
+            19: demo_location_aware_urban_modern,
+            20: demo_location_aware_recreation_mountain,
+            21: demo_location_aware_historic_urban,
+            22: demo_location_aware_beach_proximity,
+            23: demo_location_aware_investment_market,
+            24: demo_location_aware_luxury_urban_views,
+            25: demo_location_aware_suburban_architecture,
+            26: demo_location_aware_neighborhood_character,
+            27: demo_location_aware_search_showcase
         }
         
         return demo_functions[demo_number]
@@ -248,42 +375,30 @@ class DemoRunner:
             Dictionary of demo number to special description
         """
         descriptions = {
-            9: """📊 Query Architecture Overview:
-This demo performs three types of relationship queries:
-
-1️⃣  Property → Neighborhood → Wikipedia
-   Starting from a property, finds its neighborhood and related articles
-   Shows: Property details, neighborhood context, location Wikipedia
-
-2️⃣  Neighborhood → Properties + Wikipedia
-   Shows all properties in a neighborhood plus Wikipedia context
-   Example: Pacific Heights with all its properties and articles
-
-3️⃣  Location → Properties + Wikipedia
-   City-level search combining real estate and encyclopedia data
-   Example: All San Francisco properties with city Wikipedia articles
-
-🔗 Relationships established through:
-   • neighborhood_id field linking properties to neighborhoods
-   • Location matching between Wikipedia and property/neighborhood data
-   • Confidence scoring (primary=95%, neighborhood=85%, park=90%, etc.)""",
-            
-            10: """🔍 Full-Text Search Overview:
+            9: """🔍 Full-Text Search Overview:
 This demo showcases Wikipedia full-text search after HTML enrichment:
 
 • Searches across complete Wikipedia article content
 • Demonstrates various query patterns and operators
 • Shows highlighted relevant content from articles""",
             
-            12: """🤖 Natural Language Semantic Search:
+            10: """📊 Denormalized Index Architecture:
+This demo shows property relationships using a denormalized index:
+
+• Single query retrieves property, neighborhood, and Wikipedia data
+• All related data pre-joined at index time for optimal performance
+• Demonstrates production-ready pattern for read-heavy applications
+• Trades storage space for dramatic query performance gains""",
+            
+            11: """🤖 Natural Language Semantic Search:
 This demo uses AI embeddings to understand natural language queries:
 
 • Converts text queries to 1024-dimensional vectors using Voyage-3
 • Performs KNN search against pre-computed property embeddings
 • Understands semantic meaning beyond simple keyword matching
-• Example: "cozy family home near good schools" finds relevant properties""",
+• Example: "modern home with mountain views and open floor plan" finds relevant properties""",
             
-            13: """🔍 Natural Language Search Examples:
+            12: """🔍 Natural Language Search Examples:
 Demonstrates various natural language queries:
 
 • Family-oriented: "cozy family home near good schools and parks"
@@ -292,7 +407,7 @@ Demonstrates various natural language queries:
 • Eco-friendly: "eco-friendly house with solar panels"
 • And more examples showing semantic understanding""",
             
-            14: """⚖️ Semantic vs Keyword Search Comparison:
+            13: """⚖️ Semantic vs Keyword Search Comparison:
 Compares AI-powered semantic search with traditional keyword search:
 
 • Runs the same query using both approaches
@@ -300,7 +415,7 @@ Compares AI-powered semantic search with traditional keyword search:
 • Demonstrates differences in result relevance
 • Highlights unique strengths of each approach""",
             
-            15: """🏡 Rich Real Estate Listing (Single Query):
+            14: """🏡 Rich Real Estate Listing (Single Query):
 Demonstrates the power of denormalized property_relationships index:
 
 ✨ Complete Property Information:

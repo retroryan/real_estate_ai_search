@@ -1,0 +1,53 @@
+# MCP Server Configuration
+# Consolidated configuration for Real Estate Search MCP Server
+
+# Server settings
+server_name: real-estate-search-mcp
+server_version: 0.1.0
+debug: true
+
+# Transport configuration
+transport:
+  mode: http  # stdio, http, or streamable-http (default: http)
+  host: localhost
+  port: 8000
+
+# Elasticsearch configuration
+elasticsearch:
+  host: localhost
+  port: 9200
+  request_timeout: 30
+  verify_certs: false
+  max_retries: 3
+  retry_on_timeout: true
+  # Authentication loaded from environment variables:
+  # ES_USERNAME, ES_PASSWORD
+
+# Embedding configuration
+embedding:
+  provider: voyage  # voyage, openai, gemini, ollama
+  model_name: voyage-3
+  dimension: 1024
+  batch_size: 10
+  timeout_seconds: 30.0
+  max_retries: 3
+  # API key loaded from environment variables:
+  # VOYAGE_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY
+
+# Search configuration
+search:
+  default_size: 20
+  max_size: 100
+  default_sort: relevance
+  highlight_enabled: true
+  aggregations_enabled: true
+  enable_fuzzy: true
+  vector_weight: 0.5
+  text_weight: 0.5
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  structured: false
+  # file_path: logs/mcp_server.log  # Optional log file

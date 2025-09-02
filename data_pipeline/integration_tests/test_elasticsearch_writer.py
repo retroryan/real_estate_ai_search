@@ -31,8 +31,8 @@ def _check_elasticsearch_available() -> bool:
         import os
         
         # Get authentication from environment
-        username = os.environ.get("ELASTICSEARCH_USERNAME", "elastic")
-        password = os.environ.get("ELASTICSEARCH_PASSWORD", "")
+        username = os.environ.get("ES_USERNAME", "elastic")
+        password = os.environ.get("ES_PASSWORD", "")
         
         if password:
             auth = (username, password)

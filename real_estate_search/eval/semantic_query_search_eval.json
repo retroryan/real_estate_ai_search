@@ -1,0 +1,429 @@
+{
+  "query_type": "semantic_query_search",
+  "description": "Evaluation dataset for natural language semantic search queries",
+  "generated_at": "2025-08-30T14:57:59.954867",
+  "test_cases": [
+    {
+      "test_id": "semantic_search_1",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "I need a home with good schools nearby for my kids",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "family",
+        "education",
+        "schools"
+      ]
+    },
+    {
+      "test_id": "semantic_search_2",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for a quiet place to retire with a garden",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "peaceful",
+        "garden",
+        "outdoor",
+        "quiet",
+        "yard"
+      ]
+    },
+    {
+      "test_id": "semantic_search_3",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want something modern and close to tech companies",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "modern",
+        "commute",
+        "silicon valley",
+        "contemporary",
+        "updated"
+      ]
+    },
+    {
+      "test_id": "semantic_search_4",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need a starter home that's affordable but nice",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "value",
+        "budget",
+        "affordable"
+      ]
+    },
+    {
+      "test_id": "semantic_search_5",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for an investment property with rental potential",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "rental",
+        "income",
+        "investment"
+      ]
+    },
+    {
+      "test_id": "semantic_search_6",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want a luxury condo with city views",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "high-end",
+        "premium",
+        "luxury"
+      ]
+    },
+    {
+      "test_id": "semantic_search_7",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need a family-friendly neighborhood with parks",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "family",
+        "children",
+        "schools"
+      ]
+    },
+    {
+      "test_id": "semantic_search_8",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for a historic home with character",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "character",
+        "vintage",
+        "historic"
+      ]
+    },
+    {
+      "test_id": "semantic_search_9",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want a place near public transportation",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "transit",
+        "commute",
+        "transportation"
+      ]
+    },
+    {
+      "test_id": "semantic_search_10",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need a home office space for remote work",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "remote work",
+        "workspace",
+        "home office"
+      ]
+    },
+    {
+      "test_id": "semantic_search_11",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for a property with outdoor entertainment area",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "hosting",
+        "entertainment",
+        "social"
+      ]
+    },
+    {
+      "test_id": "semantic_search_12",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want a walkable neighborhood with cafes and shops",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "walkable",
+        "pedestrian",
+        "urban"
+      ]
+    },
+    {
+      "test_id": "semantic_search_13",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need a pet-friendly building with amenities",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "pet",
+        "dog",
+        "animal"
+      ]
+    },
+    {
+      "test_id": "semantic_search_14",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for energy-efficient modern construction",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "efficient",
+        "modern",
+        "contemporary",
+        "green",
+        "updated"
+      ]
+    },
+    {
+      "test_id": "semantic_search_15",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want a fixer-upper with potential",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "potential",
+        "renovation",
+        "fixer"
+      ]
+    },
+    {
+      "test_id": "semantic_search_16",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need wheelchair accessible single-story home",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "disability",
+        "accessible",
+        "ADA"
+      ]
+    },
+    {
+      "test_id": "semantic_search_17",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for waterfront or water views",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "waterfront",
+        "view",
+        "water"
+      ]
+    },
+    {
+      "test_id": "semantic_search_18",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Want a property in a gated community",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "secure",
+        "private",
+        "gated"
+      ]
+    },
+    {
+      "test_id": "semantic_search_19",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Need multi-generational living space",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": [
+        "family",
+        "multi-generational",
+        "in-law"
+      ]
+    },
+    {
+      "test_id": "semantic_search_20",
+      "query_type": "natural_language_search",
+      "parameters": {
+        "query": "Looking for a sustainable eco-friendly home",
+        "use_embeddings": true,
+        "size": 10,
+        "min_score": 0.7
+      },
+      "expected_behavior": "Should return semantically relevant properties based on the natural language query",
+      "validation_criteria": {
+        "uses_vector_search": true,
+        "relevance_score_threshold": 0.7,
+        "context_understanding": true
+      },
+      "semantic_concepts": []
+    }
+  ]
+}

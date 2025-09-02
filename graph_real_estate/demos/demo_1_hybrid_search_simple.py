@@ -21,6 +21,15 @@ def test_hybrid_search():
     print("🚀 Testing Enhanced Hybrid Search")
     print("=" * 50)
     
+    print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+    print("   • Hybrid Search - Combining vector embeddings with graph relationships")
+    print("   • Graph Boosting - Using graph metrics to enhance vector scores")
+    print("   • Feature-Based Scoring - Leveraging HAS_FEATURE relationships")
+    print("   • Proximity Intelligence - Using NEAR_BY for location awareness")
+    print("   • Combined Scoring - Merging vector and graph scores")
+    print("   • Real-time Similarity - On-demand embedding comparisons")
+    print("   • Graph Centrality - Measuring node importance in the network\n")
+    
     try:
         # Connect to database
         driver = get_neo4j_driver()
@@ -28,7 +37,7 @@ def test_hybrid_search():
         # Show relationship stats
         print("\nRelationship Statistics:")
         stats_queries = {
-            'Property Similarities': "MATCH ()-[r:SIMILAR_TO]->() RETURN count(r) as count",
+            'Properties with Embeddings': "MATCH (p:Property) WHERE p.embedding IS NOT NULL RETURN count(p) as count",
             'Geographic Proximities': "MATCH ()-[r:NEAR_BY]->() RETURN count(r) as count",
             'Feature Relationships': "MATCH ()-[r:HAS_FEATURE]->() RETURN count(r) as count"
         }
@@ -79,14 +88,16 @@ def test_hybrid_search():
             print("  📊 Pure Vector Search:")
             vector_results = search.search(query, top_k=3, use_graph_boost=False)
             for i, result in enumerate(vector_results[:2], 1):
-                print(f"    {i}. {result.listing_id} - ${result.listing_price:,}")
+                price = result.listing_price or 0
+                print(f"    {i}. {result.listing_id} - ${price:,}")
                 print(f"       Vector: {result.vector_score:.3f}")
             
             # Enhanced hybrid search  
             print("  🧠 Graph-Enhanced Search:")
             hybrid_results = search.search(query, top_k=3, use_graph_boost=True)
             for i, result in enumerate(hybrid_results[:2], 1):
-                print(f"    {i}. {result.listing_id} - ${result.listing_price:,}")
+                price = result.listing_price or 0
+                print(f"    {i}. {result.listing_id} - ${price:,}")
                 print(f"       Vector: {result.vector_score:.3f} | Graph: {result.graph_score:.3f} | Combined: {result.combined_score:.3f}")
                 if result.similar_properties:
                     print(f"       Connected to {len(result.similar_properties)} similar properties")

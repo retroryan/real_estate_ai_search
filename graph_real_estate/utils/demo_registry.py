@@ -20,6 +20,10 @@ class DemoEntryPoint(str, Enum):
     RUN_COMPLETE_MARKET_INTELLIGENCE_DEMO = "run_complete_market_intelligence_demo"
     RUN_WIKIPEDIA_DEMO = "run_wikipedia_demo"
     RUN_VECTOR_SEARCH_DEMO = "run_vector_search_demo"
+    RUN_PURE_VECTOR_SEARCH_DEMO = "run_pure_vector_search_demo"
+    RUN_WIKIPEDIA_ENHANCED_DEMO = "run_wikipedia_enhanced_demo"
+    RUN_ADVANCED_PATH_SEARCH_DEMO = "run_advanced_path_search_demo"
+    RUN_COMPLETE_SHOWCASE = "run_complete_showcase"
 
 
 class DemoProtocol(Protocol):
@@ -82,63 +86,63 @@ def create_demo_registry() -> DemoRegistry:
         demo_type=DemoType.SIMPLE
     ))
     
-    # Demo 2: Hybrid Search Simple
+    # Demo 2: Embedding Similarity
     registry.register(DemoDefinition(
         demo_number=2,
-        title="Hybrid Search Simple",
-        description="Simple hybrid search combining graph and vector embeddings",
+        title="Embedding Similarity",
+        description="Real-time similarity search using property embeddings",
         demo_type=DemoType.MODULE,
-        file_name="demo_1_hybrid_search_simple.py",
+        file_name="demo_2_graph_analysis_simple.py",
         entry_point=DemoEntryPoint.MAIN
     ))
     
-    # Demo 3: Hybrid Search Advanced
+    # Demo 3: Market Intelligence
     registry.register(DemoDefinition(
         demo_number=3,
-        title="Hybrid Search Advanced",
-        description="Advanced hybrid search with complex graph relationships",
-        demo_type=DemoType.MODULE,
-        file_name="demo_1_hybrid_search.py",
-        entry_point=DemoEntryPoint.MAIN
-    ))
-    
-    # Demo 4: Graph Analysis
-    registry.register(DemoDefinition(
-        demo_number=4,
-        title="Graph Analysis",
-        description="Deep graph analysis and network insights",
-        demo_type=DemoType.MODULE,
-        file_name="demo_2_graph_analysis.py",
-        entry_point=DemoEntryPoint.MAIN
-    ))
-    
-    # Demo 5: Market Intelligence
-    registry.register(DemoDefinition(
-        demo_number=5,
         title="Market Intelligence",
-        description="Advanced market intelligence using graph relationships and vector embeddings",
+        description="Advanced market analytics and investment opportunities",
         demo_type=DemoType.MODULE,
         file_name="demo_3_market_intelligence.py",
         entry_point=DemoEntryPoint.RUN_COMPLETE_MARKET_INTELLIGENCE_DEMO
     ))
     
-    # Demo 6: Wikipedia Enhanced
+    # Demo 4: Wikipedia Enhanced
     registry.register(DemoDefinition(
-        demo_number=6,
+        demo_number=4,
         title="Wikipedia Enhanced",
-        description="Wikipedia-enhanced property search and analysis",
+        description="Wikipedia-enhanced property listings with neighborhood context",
         demo_type=DemoType.MODULE,
         file_name="demo_4_wikipedia_enhanced.py",
+        entry_point=DemoEntryPoint.RUN_WIKIPEDIA_ENHANCED_DEMO
+    ))
+    
+    # Demo 5: Pure Vector Search
+    registry.register(DemoDefinition(
+        demo_number=5,
+        title="Pure Vector Search",
+        description="Native Neo4j vector search with embeddings",
+        demo_type=DemoType.MODULE,
+        file_name="demo_5_pure_vector_search.py",
+        entry_point=DemoEntryPoint.RUN_PURE_VECTOR_SEARCH_DEMO
+    ))
+    
+    # Demo 6: Advanced Path Search
+    registry.register(DemoDefinition(
+        demo_number=6,
+        title="Advanced Path Search",
+        description="Complex path finding algorithms",
+        demo_type=DemoType.MODULE,
+        file_name="demo_6_advanced_path_search.py",
         entry_point=DemoEntryPoint.MAIN
     ))
     
-    # Demo 7: Pure Vector Search
+    # Demo 7: Complete Showcase
     registry.register(DemoDefinition(
         demo_number=7,
-        title="Pure Vector Search",
-        description="Pure vector similarity search without graph relationships",
+        title="Complete Showcase",
+        description="Comprehensive demonstration of all graph capabilities",
         demo_type=DemoType.MODULE,
-        file_name="demo_5_pure_vector_search.py",
+        file_name="demo_2_graph_analysis.py",
         entry_point=DemoEntryPoint.MAIN
     ))
     

@@ -47,7 +47,7 @@ class OllamaModelConfig(BaseModel):
     
     model: str = Field(default="nomic-embed-text", description="Ollama model name")
     base_url: str = Field(default="http://localhost:11434", description="Ollama base URL")
-    dimension: int = Field(default=768, gt=0, description="Embedding dimension")
+    dimension: int = Field(default=1024, gt=0, description="Embedding dimension")
 
 
 class OpenAIModelConfig(BaseModel):
@@ -65,7 +65,7 @@ class GeminiModelConfig(BaseModel):
     
     model: str = Field(default="models/embedding-001", description="Gemini model name")
     api_key: Optional[str] = Field(default=None, description="Gemini API key")
-    dimension: int = Field(default=768, gt=0, description="Embedding dimension")
+    dimension: int = Field(default=1024, gt=0, description="Embedding dimension")
 
 
 class EmbeddingConfig(BaseModel):

@@ -39,7 +39,7 @@ class EmbeddingConfig(BaseModel):
     )
     
     api_key: Optional[str] = Field(
-        default=None,
+        default_factory=lambda: os.getenv('VOYAGE_API_KEY'),
         description="Voyage API key"
     )
     
@@ -58,14 +58,6 @@ class EmbeddingConfig(BaseModel):
         description="Maximum retries for failed requests"
     )
     
-    @field_validator('api_key', mode='before')
-    @classmethod
-    def load_api_key(cls, v: Optional[str]) -> Optional[str]:
-        """Load Voyage API key from environment if not provided."""
-        if v is None:
-            v = os.getenv('VOYAGE_API_KEY')
-            # Note: We don't raise an error here because the service will validate when initialized.
-        return v
     
     def get_model_identifier(self) -> str:
         """Get a unique identifier for the model configuration."""

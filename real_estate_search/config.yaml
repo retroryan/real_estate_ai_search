@@ -8,14 +8,11 @@ demo_mode: true
 elasticsearch:
   host: localhost
   port: 9200
-  # Authentication - uncomment and fill in if needed
+  # Authentication - loaded from environment variables
   # username: elastic
   # password: your-password
   # api_key: your-api-key-here
   # cloud_id: your-cloud-id-here
-  property_index: properties
-  wiki_chunks_index_prefix: wiki_chunks
-  wiki_summaries_index_prefix: wiki_summaries
   request_timeout: 30
   verify_certs: false
 

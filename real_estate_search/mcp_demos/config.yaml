@@ -1,0 +1,15 @@
+# MCP Demo Configuration
+# Simple configuration - HTTP by default, set transport: stdio to use STDIO
+
+# Transport: http (default) or stdio
+transport: http
+
+# HTTP settings (used when transport: http)
+base_url: http://localhost:8000/mcp
+timeout: 30
+
+# STDIO settings (used when transport: stdio) 
+server_module: real_estate_search.mcp_server.main
+
+# Demo display settings
+rich_output: true

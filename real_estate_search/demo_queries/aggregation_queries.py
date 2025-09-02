@@ -8,33 +8,38 @@ ELASTICSEARCH AGGREGATIONS OVERVIEW:
 - Can be nested for complex multi-dimensional analysis
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from elasticsearch import Elasticsearch
 import logging
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
+from rich.columns import Columns
+from rich.progress import Progress, BarColumn, TextColumn
+from rich.layout import Layout
 
 from .models import DemoQueryResult
 
 logger = logging.getLogger(__name__)
 
 
-def demo_neighborhood_stats(
-    es_client: Elasticsearch,
-    size: int = 20
-) -> DemoQueryResult:
+# ============================================================================
+# ELASTICSEARCH AGGREGATION QUERIES - Core aggregation logic at the top
+# ============================================================================
+
+
+def build_neighborhood_stats_query(size: int = 20) -> Dict[str, Any]:
     """
-    Demo 4: Neighborhood statistics aggregation.
+    Build neighborhood statistics aggregation query.
     
-    Aggregates property data by neighborhood to show average prices,
-    property counts, and other statistics per neighborhood.
-    
-    Args:
-        es_client: Elasticsearch client
-        size: Number of neighborhoods to include
-        
-    Returns:
-        DemoQueryResult with aggregated statistics
+    ELASTICSEARCH AGGREGATION STRUCTURE:
+    - terms aggregation: Groups by neighborhood_id (like SQL GROUP BY)
+    - sub-aggregations: Calculates metrics per bucket
+    - global aggregations: Overall statistics across all documents
     """
-    query = {
+    return {
         # SIZE: 0 means don't return documents, only aggregations
         # This improves performance when you only need statistics
         "size": 0,
@@ -46,7 +51,7 @@ def demo_neighborhood_stats(
                 # TERMS AGGREGATION: Creates a bucket for each unique value
                 # Similar to SQL's GROUP BY
                 "terms": {
-                    "field": "neighborhood_id.keyword",  # Must use keyword field for exact matching
+                    "field": "neighborhood_id",  # Must use keyword field for exact matching
                     "size": size,  # Maximum number of buckets to return
                     
                     # ORDER: Sort buckets by a metric (can reference sub-aggregations)
@@ -89,7 +94,7 @@ def demo_neighborhood_stats(
                     # NESTED BUCKET AGGREGATION: Create sub-buckets within each neighborhood
                     "property_types": {
                         "terms": {
-                            "field": "property_type.keyword",
+                            "field": "property_type",
                             "size": 10  # Top 10 property types per neighborhood
                         }
                     }
@@ -105,28 +110,33 @@ def demo_neighborhood_stats(
             }
         }
     }
+
+
+def demo_neighborhood_stats(
+    es_client: Elasticsearch,
+    size: int = 20
+) -> DemoQueryResult:
+    """
+    Demo 4: Neighborhood statistics aggregation.
     
+    DEMONSTRATES:
+    - Terms aggregation for grouping
+    - Metric sub-aggregations (avg, min, max)
+    - Nested aggregations for property type breakdown
+    - Global aggregations for overall statistics
+    """
+    # BUILD ELASTICSEARCH QUERY
+    query = build_neighborhood_stats_query(size)
+    
+    # EXECUTE QUERY
     try:
         response = es_client.search(index="properties", body=query)
         
-        # Format aggregation results
-        results = []
-        if 'aggregations' in response and 'by_neighborhood' in response['aggregations']:
-            for bucket in response['aggregations']['by_neighborhood']['buckets']:
-                results.append({
-                    'neighborhood_id': bucket['key'],
-                    'property_count': bucket['property_count']['value'],
-                    'avg_price': round(bucket['avg_price']['value'], 2) if bucket['avg_price']['value'] else 0,
-                    'min_price': bucket['min_price']['value'],
-                    'max_price': bucket['max_price']['value'],
-                    'avg_bedrooms': round(bucket['avg_bedrooms']['value'], 1) if bucket['avg_bedrooms']['value'] else 0,
-                    'avg_square_feet': round(bucket['avg_square_feet']['value'], 0) if bucket['avg_square_feet']['value'] else 0,
-                    'price_per_sqft': round(bucket['price_per_sqft']['value'], 2) if bucket['price_per_sqft']['value'] else 0,
-                    'property_types': [
-                        {'type': t['key'], 'count': t['doc_count']} 
-                        for t in bucket['property_types']['buckets']
-                    ]
-                })
+        # PROCESS RESULTS
+        results = process_neighborhood_aggregations(response)
+        
+        # DISPLAY RESULTS (separated from query logic)
+        display_neighborhood_stats(response, results, size)
         
         return DemoQueryResult(
             query_name="Demo 4: Neighborhood Statistics Aggregation",
@@ -162,28 +172,21 @@ def demo_neighborhood_stats(
         )
 
 
-def demo_price_distribution(
-    es_client: Elasticsearch,
+def build_price_distribution_query(
     interval: int = 100000,
     min_price: float = 0,
     max_price: float = 2000000
-) -> DemoQueryResult:
+) -> Dict[str, Any]:
     """
-    Demo 5: Price distribution analysis.
+    Build price distribution histogram query.
     
-    Creates a histogram of property prices with breakdown by property type,
-    useful for understanding market price distributions.
-    
-    Args:
-        es_client: Elasticsearch client
-        interval: Price bucket interval (default: $100,000)
-        min_price: Minimum price for histogram
-        max_price: Maximum price for histogram
-        
-    Returns:
-        DemoQueryResult with price distribution data
+    ELASTICSEARCH AGGREGATION STRUCTURE:
+    - histogram: Fixed-size interval buckets for price ranges
+    - percentiles: Statistical distribution analysis
+    - nested terms: Property type breakdown per bucket
+    - stats: Multiple metrics in one aggregation
     """
-    query = {
+    return {
         "size": 0,  # Only aggregations, no documents
         
         # QUERY WITH AGGREGATIONS: Filter documents before aggregating
@@ -226,7 +229,7 @@ def demo_price_distribution(
                     # Break down each price range by property type
                     "by_property_type": {
                         "terms": {
-                            "field": "property_type.keyword",
+                            "field": "property_type",
                             "size": 10
                         }
                     },
@@ -253,7 +256,7 @@ def demo_price_distribution(
             # COMPLEX NESTED AGGREGATION: Stats per property type
             "by_property_type_stats": {
                 "terms": {
-                    "field": "property_type.keyword",
+                    "field": "property_type",
                     "size": 10
                 },
                 "aggs": {
@@ -271,32 +274,36 @@ def demo_price_distribution(
             }
         }
     }
+
+
+def demo_price_distribution(
+    es_client: Elasticsearch,
+    interval: int = 100000,
+    min_price: float = 0,
+    max_price: float = 2000000
+) -> DemoQueryResult:
+    """
+    Demo 5: Price distribution analysis.
     
+    DEMONSTRATES:
+    - Histogram aggregation for price ranges
+    - Percentiles aggregation for distribution
+    - Nested aggregations for property type breakdown
+    - Stats aggregation for multiple metrics
+    """
+    # BUILD ELASTICSEARCH QUERY
+    query = build_price_distribution_query(interval, min_price, max_price)
+    
+    # EXECUTE QUERY
     try:
         response = es_client.search(index="properties", body=query)
         
-        # Format histogram results
-        results = []
-        if 'aggregations' in response and 'price_histogram' in response['aggregations']:
-            for bucket in response['aggregations']['price_histogram']['buckets']:
-                range_start = bucket['key']
-                range_end = range_start + interval
-                
-                property_type_breakdown = {}
-                for type_bucket in bucket['by_property_type']['buckets']:
-                    property_type_breakdown[type_bucket['key']] = type_bucket['doc_count']
-                
-                results.append({
-                    'price_range': f"${range_start:,.0f} - ${range_end:,.0f}",
-                    'range_start': range_start,
-                    'range_end': range_end,
-                    'count': bucket['doc_count'],
-                    'property_types': property_type_breakdown,
-                    'avg_price': bucket['stats']['avg'] if 'stats' in bucket else None
-                })
-        
-        # Add percentiles to aggregations
+        # PROCESS RESULTS
+        results = process_price_distribution(response, interval)
         aggregations = response.get('aggregations', {})
+        
+        # DISPLAY RESULTS (separated from query logic)
+        display_price_distribution(response, results, interval, min_price, max_price)
         
         return DemoQueryResult(
             query_name=f"Demo 5: Price Distribution Analysis",
@@ -331,3 +338,192 @@ def demo_price_distribution(
             results=[],
             query_dsl=query
         )
+
+
+# ============================================================================
+# RESULT PROCESSING FUNCTIONS - Data transformation logic
+# ============================================================================
+
+def process_neighborhood_aggregations(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Process neighborhood aggregation results."""
+    results = []
+    if 'aggregations' in response and 'by_neighborhood' in response['aggregations']:
+        for bucket in response['aggregations']['by_neighborhood']['buckets']:
+            results.append({
+                'neighborhood_id': bucket['key'],
+                'property_count': bucket['property_count']['value'],
+                'avg_price': round(bucket['avg_price']['value'], 2) if bucket['avg_price']['value'] else 0,
+                'min_price': bucket['min_price']['value'],
+                'max_price': bucket['max_price']['value'],
+                'avg_bedrooms': round(bucket['avg_bedrooms']['value'], 1) if bucket['avg_bedrooms']['value'] else 0,
+                'avg_square_feet': round(bucket['avg_square_feet']['value'], 0) if bucket['avg_square_feet']['value'] else 0,
+                'price_per_sqft': round(bucket['price_per_sqft']['value'], 2) if bucket['price_per_sqft']['value'] else 0,
+                'property_types': [
+                    {'type': t['key'], 'count': t['doc_count']} 
+                    for t in bucket['property_types']['buckets']
+                ]
+            })
+    return results
+
+
+def process_price_distribution(response: Dict[str, Any], interval: int) -> List[Dict[str, Any]]:
+    """Process price distribution histogram results."""
+    results = []
+    if 'aggregations' in response and 'price_histogram' in response['aggregations']:
+        for bucket in response['aggregations']['price_histogram']['buckets']:
+            range_start = bucket['key']
+            range_end = range_start + interval
+            
+            property_type_breakdown = {}
+            for type_bucket in bucket['by_property_type']['buckets']:
+                property_type_breakdown[type_bucket['key']] = type_bucket['doc_count']
+            
+            results.append({
+                'price_range': f"${range_start:,.0f} - ${range_end:,.0f}",
+                'range_start': range_start,
+                'range_end': range_end,
+                'count': bucket['doc_count'],
+                'property_types': property_type_breakdown,
+                'avg_price': bucket['stats']['avg'] if 'stats' in bucket else None
+            })
+    return results
+
+
+# ============================================================================
+# DISPLAY FUNCTIONS - All UI/formatting logic at the bottom
+# ============================================================================
+
+def display_neighborhood_stats(response: Dict[str, Any], results: List[Dict[str, Any]], size: int):
+    """Display neighborhood statistics with rich formatting."""
+    console = Console()
+    
+    # Header
+    console.print(Panel(
+        f"[bold cyan]📊 Neighborhood Statistics Analysis[/bold cyan]\n"
+        f"[yellow]Analyzing top {size} neighborhoods by property count[/yellow]",
+        border_style="cyan"
+    ))
+    
+    if not results:
+        console.print("[red]No aggregation results found[/red]")
+        return
+    
+    # Create neighborhood stats table
+    table = Table(
+        title=f"[bold green]Neighborhood Property Statistics[/bold green]",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan"
+    )
+    table.add_column("Neighborhood", style="cyan", width=20)
+    table.add_column("Properties", style="yellow", justify="right")
+    table.add_column("Avg Price", style="green", justify="right")
+    table.add_column("Price Range", style="blue", justify="right")
+    table.add_column("Avg Beds", style="magenta", justify="right")
+    table.add_column("Avg SqFt", style="yellow", justify="right")
+    table.add_column("$/SqFt", style="green", justify="right")
+    
+    for neighborhood_data in results:
+        price_range = f"${neighborhood_data['min_price']:,.0f}-${neighborhood_data['max_price']:,.0f}"
+        table.add_row(
+            neighborhood_data['neighborhood_id'],
+            str(neighborhood_data['property_count']),
+            f"${neighborhood_data['avg_price']:,.0f}",
+            price_range,
+            f"{neighborhood_data['avg_bedrooms']:.1f}",
+            f"{neighborhood_data['avg_square_feet']:,.0f}",
+            f"${neighborhood_data['price_per_sqft']:.2f}"
+        )
+    
+    console.print(table)
+    
+    # Show global statistics
+    if 'aggregations' in response and 'total_properties' in response['aggregations']:
+        stats_panel = Panel(
+            f"[green]✓[/green] Total Properties: [bold]{response['aggregations']['total_properties']['value']:.0f}[/bold]\n"
+            f"[green]✓[/green] Overall Average Price: [bold]${response['aggregations']['overall_avg_price']['value']:,.0f}[/bold]\n"
+            f"[green]✓[/green] Neighborhoods Analyzed: [bold]{len(results)}[/bold]\n"
+            f"[green]✓[/green] Query Time: [bold]{response.get('took', 0)}ms[/bold]",
+            title="[bold]📈 Overall Market Statistics[/bold]",
+            border_style="green"
+        )
+        console.print(stats_panel)
+
+
+def display_price_distribution(
+    response: Dict[str, Any], 
+    results: List[Dict[str, Any]], 
+    interval: int,
+    min_price: float,
+    max_price: float
+):
+    """Display price distribution with rich formatting."""
+    console = Console()
+    
+    # Header
+    console.print(Panel(
+        f"[bold cyan]📊 Price Distribution Analysis[/bold cyan]\n"
+        f"[yellow]Range: ${min_price:,.0f} - ${max_price:,.0f}[/yellow]\n"
+        f"[yellow]Bucket Size: ${interval:,.0f}[/yellow]",
+        border_style="cyan"
+    ))
+    
+    if not results:
+        console.print("[red]No distribution results found[/red]")
+        return
+    
+    # Draw histogram
+    console.print("\n[bold]Price Distribution Histogram:[/bold]")
+    max_count = max(r['count'] for r in results) if results else 1
+    
+    for result in results:
+        bar_width = int((result['count'] / max_count) * 50)
+        bar = "█" * bar_width
+        price_label = f"${result['range_start']/1000:.0f}k-${result['range_end']/1000:.0f}k"
+        console.print(f"  {price_label:>15} │ [green]{bar}[/green] {result['count']}")
+    
+    # Show percentiles
+    if 'aggregations' in response and 'price_percentiles' in response['aggregations']:
+        percentiles = response['aggregations']['price_percentiles']['values']
+        
+        percentile_table = Table(
+            title="\n[bold]Price Percentiles[/bold]",
+            box=box.SIMPLE,
+            show_header=False
+        )
+        percentile_table.add_column("Percentile", style="yellow")
+        percentile_table.add_column("Price", style="green", justify="right")
+        
+        for p, value in percentiles.items():
+            percentile_table.add_row(
+                f"{p}th percentile",
+                f"${value:,.0f}" if value else "N/A"
+            )
+        
+        console.print(percentile_table)
+    
+    # Show property type statistics
+    if 'aggregations' in response and 'by_property_type_stats' in response['aggregations']:
+        type_table = Table(
+            title="\n[bold]Statistics by Property Type[/bold]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        type_table.add_column("Type", style="cyan")
+        type_table.add_column("Count", style="yellow", justify="right")
+        type_table.add_column("Avg Price", style="green", justify="right")
+        type_table.add_column("Min Price", style="blue", justify="right")
+        type_table.add_column("Max Price", style="red", justify="right")
+        
+        for type_bucket in response['aggregations']['by_property_type_stats']['buckets']:
+            stats = type_bucket['price_stats']
+            type_table.add_row(
+                type_bucket['key'].title(),
+                str(type_bucket['doc_count']),
+                f"${stats['avg']:,.0f}" if stats['avg'] else "N/A",
+                f"${stats['min']:,.0f}" if stats['min'] else "N/A",
+                f"${stats['max']:,.0f}" if stats['max'] else "N/A"
+            )
+        
+        console.print(type_table)

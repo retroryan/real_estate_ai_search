@@ -36,7 +36,7 @@ VOYAGE_API_KEY=your-voyage-api-key
 OPENAI_API_KEY=your-openai-key
 GEMINI_API_KEY=your-gemini-key
 NEO4J_PASSWORD=your-neo4j-password
-ELASTICSEARCH_PASSWORD=your-elastic-password
+ES_PASSWORD=your-elastic-password
 ```
 
 ### 2. Run the pipeline
@@ -111,7 +111,7 @@ output:
       - localhost:9200
     username: elastic
     bulk_size: 1000
-    # Password from ELASTICSEARCH_PASSWORD environment variable
+    # Password from ES_PASSWORD environment variable
 ```
 
 ### Embedding Configuration
@@ -209,12 +209,12 @@ curl -O https://repo1.maven.org/maven2/org/elasticsearch/elasticsearch-spark-30_
 Elasticsearch requires authentication. Set your credentials:
 
 ```bash
-export ELASTICSEARCH_PASSWORD=your-elastic-password
+export ES_PASSWORD=your-elastic-password
 ```
 
 Or add to your `.env` file:
 ```
-ELASTICSEARCH_PASSWORD=your-elastic-password
+ES_PASSWORD=your-elastic-password
 ```
 
 ### Verification
@@ -345,7 +345,7 @@ The pipeline **automatically determines processing complexity** based on your en
 
 ### Connection Issues  
 - **Neo4j**: Check service is running on port 7687, verify NEO4J_PASSWORD
-- **Elasticsearch**: Check service is running on port 9200, verify ELASTICSEARCH_PASSWORD
+- **Elasticsearch**: Check service is running on port 9200, verify ES_PASSWORD
 - **API Keys**: Verify VOYAGE_API_KEY/OPENAI_API_KEY environment variables
 
 ### Configuration Issues

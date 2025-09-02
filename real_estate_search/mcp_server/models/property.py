@@ -1,123 +1,206 @@
-"""
-Property data models using Pydantic.
-Clean, type-safe models with no Marshmallow dependencies.
-"""
+"""Property data models using Pydantic."""
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from enum import Enum
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-
-
-class PropertyType(str, Enum):
-    """Property type enumeration."""
-    single_family = "single_family"
-    condo = "condo"
-    townhouse = "townhouse"
-    multi_family = "multi_family"
-    land = "land"
-    other = "other"
-
-
-class GeoLocation(BaseModel):
-    """Geographic coordinates."""
-    
-    lat: float = Field(..., ge=-90, le=90, description="Latitude")
-    lon: float = Field(..., ge=-180, le=180, description="Longitude")
-    
-    model_config = ConfigDict(frozen=True)
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class Address(BaseModel):
-    """Property address information."""
+    """Property address model."""
     
-    street: str = Field(..., min_length=1, description="Street address")
-    city: str = Field(..., min_length=1, description="City name")
-    state: str = Field(..., min_length=2, max_length=2, description="State code")
-    zip_code: str = Field(..., pattern=r"^\d{5}(-\d{4})?$", description="ZIP code")
-    location: Optional[GeoLocation] = Field(None, description="Geographic coordinates")
+    model_config = ConfigDict(extra='forbid')
     
-    @field_validator("state")
+    street: str = Field(..., description="Street address")
+    city: str = Field(..., description="City name")
+    state: str = Field(..., description="State code")
+    zip_code: str = Field(..., description="ZIP code")
+    latitude: Optional[float] = Field(None, description="Latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Longitude coordinate")
+    
+    @field_validator('state')
     @classmethod
     def validate_state(cls, v: str) -> str:
-        """Validate and uppercase state code."""
+        if len(v) != 2:
+            raise ValueError(f"State must be 2-letter code, got {v}")
         return v.upper()
+    
+    @field_validator('latitude')
+    @classmethod
+    def validate_latitude(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and not -90 <= v <= 90:
+            raise ValueError(f"Latitude must be between -90 and 90, got {v}")
+        return v
+    
+    @field_validator('longitude')
+    @classmethod
+    def validate_longitude(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and not -180 <= v <= 180:
+            raise ValueError(f"Longitude must be between -180 and 180, got {v}")
+        return v
+
+
+class Neighborhood(BaseModel):
+    """Neighborhood information model."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    id: str = Field(..., description="Neighborhood ID")
+    name: str = Field(..., description="Neighborhood name")
+    walkability_score: Optional[int] = Field(None, ge=0, le=100, description="Walkability score")
+    school_rating: Optional[float] = Field(None, ge=0, le=10, description="School rating")
+
+
+class Parking(BaseModel):
+    """Parking information model."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    spaces: int = Field(default=0, ge=0, description="Number of parking spaces")
+    type: Optional[str] = Field(None, description="Parking type (garage, carport, street)")
 
 
 class Property(BaseModel):
-    """Complete property information."""
+    """Complete property model."""
     
-    id: str = Field(..., description="Unique property ID")
-    listing_id: str = Field(..., description="MLS listing ID")
-    property_type: PropertyType = Field(..., description="Type of property")
-    price: float = Field(..., gt=0, description="Listing price")
+    model_config = ConfigDict(extra='forbid')
+    
+    # Core fields
+    listing_id: str = Field(..., description="Unique listing ID")
+    property_type: str = Field(..., description="Property type (House, Condo, etc.)")
+    price: float = Field(..., ge=0, description="Property price")
     bedrooms: int = Field(..., ge=0, description="Number of bedrooms")
     bathrooms: float = Field(..., ge=0, description="Number of bathrooms")
-    square_feet: Optional[int] = Field(None, gt=0, description="Living area square footage")
-    lot_size: Optional[float] = Field(None, gt=0, description="Lot size in acres")
-    year_built: Optional[int] = Field(None, ge=1800, le=2100, description="Year built")
+    square_feet: int = Field(..., ge=0, description="Square footage")
+    year_built: Optional[int] = Field(None, description="Year built")
+    lot_size: Optional[int] = Field(None, ge=0, description="Lot size in square feet")
+    
+    # Complex fields
     address: Address = Field(..., description="Property address")
-    description: Optional[str] = Field(None, max_length=5000, description="Property description")
+    neighborhood: Optional[Neighborhood] = Field(None, description="Neighborhood info")
+    
+    # Description and features
+    description: str = Field(..., description="Property description")
     features: List[str] = Field(default_factory=list, description="Property features")
     amenities: List[str] = Field(default_factory=list, description="Property amenities")
+    
+    # Status and dates
+    status: str = Field(default="active", description="Listing status")
+    listing_date: Optional[datetime] = Field(None, description="Listing date")
+    last_updated: Optional[datetime] = Field(None, description="Last update date")
+    days_on_market: Optional[int] = Field(None, ge=0, description="Days on market")
+    
+    # Financial
+    price_per_sqft: Optional[float] = Field(None, ge=0, description="Price per square foot")
+    hoa_fee: Optional[float] = Field(None, ge=0, description="HOA fee")
+    tax_assessed_value: Optional[int] = Field(None, ge=0, description="Tax assessed value")
+    annual_tax: Optional[float] = Field(None, ge=0, description="Annual tax")
+    
+    # Additional fields
+    parking: Optional[Parking] = Field(None, description="Parking information")
+    virtual_tour_url: Optional[str] = Field(None, description="Virtual tour URL")
     images: List[str] = Field(default_factory=list, description="Image URLs")
-    listing_date: Optional[datetime] = Field(None, description="Date listed")
-    last_updated: datetime = Field(default_factory=datetime.now, description="Last update timestamp")
+    mls_number: Optional[str] = Field(None, description="MLS number")
     
     # Enrichment fields
-    location_quality_score: Optional[float] = Field(None, ge=0, le=100, description="Location quality score")
-    neighborhood_desirability: Optional[float] = Field(None, ge=0, le=10, description="Neighborhood score")
+    search_tags: List[str] = Field(default_factory=list, description="Search tags")
     
-    @field_validator("features", "amenities")
+    # Embedding fields
+    embedding: Optional[List[float]] = Field(None, description="Vector embedding")
+    embedding_model: Optional[str] = Field(None, description="Embedding model used")
+    embedding_dimension: Optional[int] = Field(None, description="Embedding dimension")
+    embedded_at: Optional[datetime] = Field(None, description="Embedding timestamp")
+    
+    @field_validator('property_type')
     @classmethod
-    def clean_list_items(cls, v: List[str]) -> List[str]:
-        """Clean and deduplicate list items."""
-        return list(set(item.strip() for item in v if item.strip()))
+    def validate_property_type(cls, v: str) -> str:
+        valid_types = ["House", "Condo", "Townhouse", "Multi-Family", "Land", "Other"]
+        if v not in valid_types:
+            raise ValueError(f"Invalid property type: {v}. Must be one of {valid_types}")
+        return v
     
-    @field_validator("images")
+    @field_validator('bathrooms')
     @classmethod
-    def validate_image_urls(cls, v: List[str]) -> List[str]:
-        """Validate image URLs are properly formatted."""
-        cleaned = []
-        for url in v:
-            url = url.strip()
-            if url and (url.startswith("http://") or url.startswith("https://")):
-                cleaned.append(url)
-        return cleaned
-    
-    def get_display_address(self) -> str:
-        """Get formatted display address."""
-        return f"{self.address.street}, {self.address.city}, {self.address.state} {self.address.zip_code}"
-    
-    @property
-    def price_per_sqft(self) -> Optional[float]:
-        """Calculate price per square foot."""
-        if self.square_feet and self.square_feet > 0:
-            return self.price / self.square_feet
-        return None
-    
-    def get_summary(self) -> str:
-        """Get property summary for display."""
-        return (
-            f"{self.bedrooms} bed, {self.bathrooms} bath {self.property_type.value.replace('_', ' ')} "
-            f"in {self.address.city}, {self.address.state} - ${self.price:,.0f}"
-        )
+    def validate_bathrooms(cls, v: float) -> float:
+        # Allow half bathrooms
+        if v % 0.5 != 0:
+            raise ValueError(f"Bathrooms must be in increments of 0.5, got {v}")
+        return v
 
 
-class PropertyHit(BaseModel):
-    """Search result hit for a property."""
+class PropertySearchResult(BaseModel):
+    """Property search result with metadata."""
+    
+    model_config = ConfigDict(extra='forbid')
     
     property: Property = Field(..., description="Property data")
-    score: Optional[float] = Field(None, description="Search relevance score")
-    distance: Optional[float] = Field(None, description="Distance from search center")
-    highlights: Dict[str, List[str]] = Field(default_factory=dict, description="Search highlights")
+    score: float = Field(..., description="Relevance score")
+    highlights: Optional[Dict[str, List[str]]] = Field(None, description="Highlighted matches")
+    explanation: Optional[str] = Field(None, description="Score explanation")
+
+
+class WikipediaArticle(BaseModel):
+    """Wikipedia article embedded in property data."""
     
-    def get_sort_key(self, sort_by: str = "score") -> float:
-        """Get sort key for ordering results."""
-        if sort_by == "price":
-            return self.property.price
-        elif sort_by == "distance" and self.distance is not None:
-            return self.distance
-        elif sort_by == "score" and self.score is not None:
-            return -self.score  # Negative for descending order
-        return 0
+    model_config = ConfigDict(extra='forbid')
+    
+    page_id: str = Field(..., description="Wikipedia page ID")
+    title: str = Field(..., description="Article title")
+    url: str = Field(..., description="Wikipedia URL")
+    summary: str = Field(..., description="Article summary")
+    city: Optional[str] = Field(None, description="Related city")
+    state: Optional[str] = Field(None, description="Related state")
+    relationship_type: str = Field(..., description="Relationship type (primary, geographical, park, etc.)")
+    confidence: float = Field(..., ge=0, le=1, description="Confidence score")
+    relevance_score: float = Field(..., ge=0, description="Relevance score")
+
+
+class EnrichedNeighborhood(BaseModel):
+    """Enriched neighborhood information with demographics."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    neighborhood_id: str = Field(..., description="Neighborhood ID")
+    name: str = Field(..., description="Neighborhood name")
+    city: str = Field(..., description="City name")
+    state: str = Field(..., description="State code")
+    population: Optional[int] = Field(None, ge=0, description="Population count")
+    walkability_score: Optional[int] = Field(None, ge=0, le=100, description="Walkability score")
+    school_rating: Optional[float] = Field(None, ge=0, le=10, description="School rating")
+    description: Optional[str] = Field(None, description="Neighborhood description")
+    amenities: List[str] = Field(default_factory=list, description="Local amenities")
+    demographics: Optional[Dict[str, Any]] = Field(None, description="Demographics data")
+
+
+class RichPropertyResponse(BaseModel):
+    """Rich property details response from property_relationships index."""
+    
+    model_config = ConfigDict(extra='forbid')
+    
+    listing_id: str = Field(..., description="Unique listing ID")
+    property_type: str = Field(..., description="Property type")
+    price: float = Field(..., ge=0, description="Property price")
+    bedrooms: int = Field(..., ge=0, description="Number of bedrooms")
+    bathrooms: float = Field(..., ge=0, description="Number of bathrooms")
+    square_feet: int = Field(..., ge=0, description="Square footage")
+    year_built: Optional[int] = Field(None, description="Year built")
+    lot_size: Optional[int] = Field(None, ge=0, description="Lot size in square feet")
+    
+    address: Dict[str, Any] = Field(..., description="Property address with location")
+    description: str = Field(..., description="Property description")
+    features: List[str] = Field(default_factory=list, description="Property features")
+    amenities: List[str] = Field(default_factory=list, description="Property amenities")
+    
+    status: str = Field(default="active", description="Listing status")
+    listing_date: Optional[str] = Field(None, description="Listing date")
+    days_on_market: Optional[int] = Field(None, ge=0, description="Days on market")
+    price_per_sqft: Optional[float] = Field(None, ge=0, description="Price per square foot")
+    
+    parking: Optional[Dict[str, Any]] = Field(None, description="Parking information")
+    virtual_tour_url: Optional[str] = Field(None, description="Virtual tour URL")
+    images: List[str] = Field(default_factory=list, description="Image URLs")
+    
+    neighborhood: Optional[EnrichedNeighborhood] = Field(None, description="Neighborhood information")
+    wikipedia_articles: List[WikipediaArticle] = Field(default_factory=list, description="Related Wikipedia articles")
+    
+    combined_text: Optional[str] = Field(None, description="Combined text for search")
+    data_version: Optional[str] = Field(None, description="Data version")

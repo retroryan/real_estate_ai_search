@@ -1,0 +1,50 @@
+{
+  "title": "Real Estate Search Evaluation Datasets",
+  "description": "Comprehensive evaluation datasets for all demo query types in the real estate search system",
+  "generated_at": "2025-08-30T14:57:59.957344",
+  "total_test_cases": 169,
+  "datasets": [
+    {
+      "filename": "advanced_queries_eval.json",
+      "query_type": "advanced_queries",
+      "description": "Evaluation dataset for advanced search queries including multi-entity and complex filters",
+      "test_case_count": 20,
+      "path": "real_estate_search/eval/advanced_queries_eval.json"
+    },
+    {
+      "filename": "aggregation_queries_eval.json",
+      "query_type": "aggregation_queries",
+      "description": "Evaluation dataset for aggregation queries including neighborhood stats and price distributions",
+      "test_case_count": 20,
+      "path": "real_estate_search/eval/aggregation_queries_eval.json"
+    },
+    {
+      "filename": "wikipedia_fulltext_eval.json",
+      "query_type": "wikipedia_fulltext",
+      "description": "Evaluation dataset for Wikipedia fulltext search queries",
+      "test_case_count": 20,
+      "path": "real_estate_search/eval/wikipedia_fulltext_eval.json"
+    },
+    {
+      "filename": "rich_listing_demo_eval.json",
+      "query_type": "rich_listing_demo",
+      "description": "Evaluation dataset for rich property listing queries with detailed information",
+      "test_case_count": 20,
+      "path": "real_estate_search/eval/rich_listing_demo_eval.json"
+    },
+    {
+      "filename": "property_queries_eval.json",
+      "query_type": "property_queries",
+      "description": "Evaluation dataset for property search queries including basic search, filters, geo-distance, and price ranges",
+      "test_case_count": 69,
+      "path": "real_estate_search/eval/property_queries_eval.json"
+    },
+    {
+      "filename": "semantic_query_search_eval.json",
+      "query_type": "semantic_query_search",
+      "description": "Evaluation dataset for natural language semantic search queries",
+      "test_case_count": 20,
+      "path": "real_estate_search/eval/semantic_query_search_eval.json"
+    }
+  ]
+}

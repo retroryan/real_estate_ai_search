@@ -15,6 +15,9 @@ class CommandType(str, Enum):
     LIST_INDICES = "list-indices"
     DELETE_TEST_INDICES = "delete-test-indices"
     DEMO = "demo"
+    HEALTH_CHECK = "health-check"
+    STATS = "stats"
+    SAMPLE_QUERY = "sample-query"
     ENRICH_WIKIPEDIA = "enrich-wikipedia"
 
 
@@ -97,7 +100,7 @@ class WikipediaEnrichmentConfig(BaseModel):
     batch_size: int = Field(default=50, ge=1, le=500, description="Batch size for bulk updates")
     max_documents: Optional[int] = Field(default=None, ge=1, description="Maximum documents to process")
     dry_run: bool = Field(default=False, description="Perform dry run without updating")
-    data_dir: str = Field(default="../data", description="Data directory path")
+    data_dir: str = Field(default="data", description="Data directory path")
     pipeline_name: str = Field(default="wikipedia_ingest_pipeline", description="Ingest pipeline name")
 
 
@@ -115,7 +118,7 @@ class WikipediaEnrichmentResult(BaseModel):
 class CLIArguments(BaseModel):
     """Parsed CLI arguments."""
     command: CommandType
-    demo_number: Optional[int] = Field(default=None, ge=1, le=15)
+    demo_number: Optional[int] = Field(default=None, ge=1, le=27)
     clear: bool = False
     list: bool = False
     verbose: bool = False

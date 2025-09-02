@@ -42,20 +42,15 @@ The examples below annotate each query with concise intent & key mechanics.
 
 ## Index Overview
 
-- **real_estate_properties**: Main property listings with embeddings (420 documents)
-- **real_estate_neighborhoods**: Neighborhood data (21 documents)  
-- **real_estate_wikipedia**: Wikipedia articles related to locations (464 documents)
-
-Note: You can also use the shorter aliases:
-- **properties** → real_estate_properties
-- **neighborhoods** → real_estate_neighborhoods  
-- **wikipedia** → real_estate_wikipedia
+- **properties**: Main property listings with embeddings (220 documents)
+- **neighborhoods**: Neighborhood data (11 documents)  
+- **wikipedia**: Wikipedia articles related to locations (526 documents)
 
 ## 1. Basic Property Search
 
 ### Simple text search across multiple fields
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "multi_match": {
@@ -78,7 +73,7 @@ Note: Multi-field relevance search boosting description & features; fuzzy matchi
 
 ### Search properties in a specific city
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -105,7 +100,7 @@ Note: Combines text relevance (multi_match) with an exact keyword filter via mus
 
 ### Filter by property type and price range
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -123,7 +118,7 @@ Note: Pure filtering (no scoring influence) + ascending price sort for determini
 
 ### Complex filter with multiple criteria
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -144,7 +139,7 @@ Note: Text match (parking) affects score; structural filters narrow by type and 
 
 ### Find properties within radius of a point
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -163,7 +158,7 @@ Note: Geo-distance filter restricts candidates; geo sort orders by proximity for
 
 ### Geo bounding box search
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -188,7 +183,7 @@ Note: Bounding box more efficient than many arbitrary polygon filters; good for 
 
 ### Price distribution by property type
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "size": 0,
   "aggs": {
@@ -216,7 +211,7 @@ Note: Buckets by property_type then nested stats & manual price bands for UI dis
 
 ### Neighborhood statistics
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "size": 0,
   "aggs": {
@@ -244,7 +239,7 @@ Note: Derives price per sqft via pipeline (bucket_script) combining prior metric
 
 ### Step 1: Get a random property's embedding for similarity search
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "function_score": {
@@ -260,7 +255,7 @@ Note: Fetches a random property with its embedding. Copy the "embedding" array v
 
 ### Step 2: Find similar properties using the embedding from Step 1
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "knn": {
     "field": "embedding",
@@ -276,7 +271,7 @@ Note: Approximate vector similarity: num_candidates prefilter then selects top k
 
 ### Alternative: Find similar properties excluding the original (manual approach)
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "knn": {
     "field": "embedding", 
@@ -294,7 +289,7 @@ Note: Request k+1 results then manually skip the original property in your appli
 
 ### Search across properties, neighborhoods, and Wikipedia
 ```json
-GET real_estate_properties,real_estate_neighborhoods,real_estate_wikipedia/_search
+GET properties,neighborhoods,wikipedia/_search
 {
   "query": {
     "multi_match": {
@@ -320,7 +315,7 @@ Note: Federated search unifies semantically related docs from heterogeneous indi
 
 ### Find properties in a specific neighborhood
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": { "term": { "neighborhood_id.keyword": "sf-pacific-heights-001" } },
   "_source": ["listing_id", "city", "price", "property_type"]
@@ -330,14 +325,14 @@ Note: Direct lookup by neighborhood foreign-key style identifier.
 
 ### Get neighborhood details with property count
 ```json
-GET real_estate_neighborhoods/_search
+GET neighborhoods/_search
 {
   "query": { "match_all": {} },
   "size": 10
 }
 
 # Then get properties for a specific neighborhood
-GET real_estate_properties/_count
+GET properties/_count
 {
   "query": { "term": { "neighborhood_id.keyword": "sf-pacific-heights-001" } }
 }
@@ -348,7 +343,7 @@ Note: Two-step pattern: fetch neighborhood metadata then count associated listin
 
 ### Search Wikipedia articles
 ```json
-GET real_estate_wikipedia/_search
+GET wikipedia/_search
 {
   "query": { "match": { "content": "golden gate bridge history" } },
   "highlight": {
@@ -361,7 +356,7 @@ Note: Standard match query with highlighting for snippet preview; fragment sizin
 
 ### Wikipedia articles for a specific city
 ```json
-GET real_estate_wikipedia/_search
+GET wikipedia/_search
 {
   "query": {
     "bool": {
@@ -377,7 +372,7 @@ Note: Text relevance restricted to a city via keyword filter; supports local con
 
 ### Combined must, should, and filter
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "bool": {
@@ -398,7 +393,7 @@ Note: Forces baseline relevance on modern while requiring at least one of pool/v
 
 ### Get search results with facets for filtering
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": { "match_all": {} },
   "size": 0,
@@ -426,7 +421,7 @@ Note: Simultaneously returns sample hits plus facet buckets enabling UI-driven r
 
 ### Custom scoring with function score
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": {
     "function_score": {
@@ -448,7 +443,7 @@ Note: Base textual relevance blended with discrete boost, distance decay on pric
 
 ### Find properties with embeddings
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": { "exists": { "field": "embedding" } },
   "size": 0
@@ -458,7 +453,7 @@ Note: Quality / coverage check counting docs containing stored vector field.
 
 ### Find properties missing neighborhood assignment
 ```json
-GET real_estate_properties/_search
+GET properties/_search
 {
   "query": { "bool": { "must_not": [ { "exists": { "field": "neighborhood_id" } } ] } },
   "_source": ["listing_id", "city"]
@@ -487,20 +482,20 @@ If your Elasticsearch cluster requires authentication, configure it in Kibana:
 GET _cluster/health
 
 # Get index mapping
-GET real_estate_properties/_mapping
+GET properties/_mapping
 
 # Get index settings
-GET real_estate_properties/_settings
+GET properties/_settings
 
 # Analyze text
-GET real_estate_properties/_analyze
+GET properties/_analyze
 {
   "text": "modern luxury home",
   "analyzer": "standard"
 }
 
 # Explain score
-GET real_estate_properties/_explain/prop-sf-001
+GET properties/_explain/prop-sf-001
 {
   "query": {
     "match": { "description": "modern" }

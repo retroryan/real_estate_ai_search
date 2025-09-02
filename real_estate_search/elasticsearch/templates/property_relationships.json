@@ -138,9 +138,6 @@
         "population": {
           "type": "integer"
         },
-        "median_income": {
-          "type": "integer"
-        },
         "walkability_score": {
           "type": "byte"
         },
@@ -195,11 +192,11 @@
           "type": "text",
           "analyzer": "english"
         },
-        "best_city": {
+        "city": {
           "type": "keyword",
           "normalizer": "lowercase_normalizer"
         },
-        "best_state": {
+        "state": {
           "type": "keyword"
         },
         "relationship_type": {
@@ -212,10 +209,6 @@
           "type": "float"
         }
       }
-    },
-    "enriched_search_text": {
-      "type": "text",
-      "analyzer": "wikipedia_analyzer"
     },
     "embedding": {
       "type": "dense_vector",

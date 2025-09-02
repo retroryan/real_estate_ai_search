@@ -45,13 +45,22 @@ class MarketIntelligenceAnalyzer:
         
         # Initialize search capabilities
         try:
+            from core.query_executor import QueryExecutor
+            from vectors.vector_manager import PropertyVectorManager
+            
             embedding_config = get_embedding_config()
             vector_config = get_vector_index_config()
             search_config = get_search_config()
             
+            # Initialize dependencies
+            query_executor = QueryExecutor(driver)
+            
             # Clean initialization - embedding config handles model selection
             self.pipeline = PropertyEmbeddingPipeline(driver, embedding_config)
-            self.search = HybridPropertySearch(driver, self.pipeline, search_config)
+            vector_manager = PropertyVectorManager(driver, query_executor)
+            
+            # Initialize search with all required dependencies
+            self.search = HybridPropertySearch(query_executor, self.pipeline, vector_manager, search_config)
             
             # Check embeddings availability
             status = self.pipeline.vector_manager.check_embeddings_exist()
@@ -103,8 +112,11 @@ class MarketIntelligenceAnalyzer:
         for r in results:
             print(f"{r['City']}")
             print(f"   Properties: {r['Properties']} across {r['Neighborhoods']} neighborhoods")
-            print(f"   Price Range: ${r['MinPrice']:,.0f} - ${r['MaxPrice']:,.0f}")
-            print(f"   Average Price: ${r['AvgPrice']:,.0f}")
+            min_price = r.get('MinPrice') or 0
+            max_price = r.get('MaxPrice') or 0
+            avg_price = r.get('AvgPrice') or 0
+            print(f"   Price Range: ${min_price:,.0f} - ${max_price:,.0f}")
+            print(f"   Average Price: ${avg_price:,.0f}")
             print(f"   Property Types: {', '.join(r['PropertyTypes'])}")
         
         # Neighborhood market segmentation
@@ -135,8 +147,10 @@ class MarketIntelligenceAnalyzer:
         
         for r in results:
             print(f"{r['Neighborhood']}, {r['City']} [{r['MarketSegment']}]")
-            print(f"   Average: ${r['AvgPrice']:,.0f} | {r['PropertyCount']} properties | {r['AvgSqft']:.0f} sqft avg")
-            if r['LifestyleTags']:
+            avg_price = r.get('AvgPrice') or 0
+            avg_sqft = r.get('AvgSqft') or 0
+            print(f"   Average: ${avg_price:,.0f} | {r['PropertyCount']} properties | {avg_sqft:.0f} sqft avg")
+            if r.get('LifestyleTags'):
                 print(f"   Lifestyle: {', '.join(r['LifestyleTags'])}")
             print(f"   Types: {', '.join(r['PropertyTypes'])}")
 
@@ -163,9 +177,12 @@ class MarketIntelligenceAnalyzer:
         
         print("Top Geographic Arbitrage Opportunities:")
         for r in results:
-            direction = "" if r['ArbitragePercent'] > 0 else ""
+            arbitrage_percent = r.get('ArbitragePercent') or 0
+            direction = "" if arbitrage_percent > 0 else ""
             print(f"{direction} {r['City']}: {r['Neighborhood1']} vs {r['Neighborhood2']}")
-            print(f"   ${r['PricePerSqft1']:.0f}/sqft vs ${r['PricePerSqft2']:.0f}/sqft")
+            price1 = r.get('PricePerSqft1') or 0
+            price2 = r.get('PricePerSqft2') or 0
+            print(f"   ${price1:.0f}/sqft vs ${price2:.0f}/sqft")
             print(f"   Arbitrage Opportunity: {abs(r['ArbitragePercent']):.1f}% difference")
 
     # ===== SECTION 2: PRICE PREDICTION & TRENDS =====
@@ -206,10 +223,15 @@ class MarketIntelligenceAnalyzer:
         
         print("Top Value-Adding Features:")
         for r in results:
-            premium_indicator = "" if r['PremiumPercent'] > 50 else "" if r['PremiumPercent'] > 20 else ""
+            premium_percent = r.get('PremiumPercent') or 0
+            premium_indicator = "" if premium_percent > 50 else "" if premium_percent > 20 else ""
             print(f"{premium_indicator} {r['Feature']} [{r['Category']}]")
-            print(f"   Premium: ${r['PricePremium']:,.0f} (+{r['PremiumPercent']:.1f}%)")
-            print(f"   With feature: ${r['AvgPriceWithFeature']:,.0f} | Baseline: ${r['BaselinePrice']:,.0f}")
+            price_premium = r.get('PricePremium') or 0
+            premium_percent = r.get('PremiumPercent') or 0
+            avg_price_with_feature = r.get('AvgPriceWithFeature') or 0
+            baseline_price = r.get('BaselinePrice') or 0
+            print(f"   Premium: ${price_premium:,.0f} (+{premium_percent:.1f}%)")
+            print(f"   With feature: ${avg_price_with_feature:,.0f} | Baseline: ${baseline_price:,.0f}")
             print(f"   Market penetration: {r['PropertyCount']} properties")
 
         # Property type pricing intelligence
@@ -230,12 +252,16 @@ class MarketIntelligenceAnalyzer:
         
         current_type = None
         for r in results:
-            if r['PropertyType'] != current_type:
+            if r.get('PropertyType') != current_type:
                 current_type = r['PropertyType']
                 print(f"\n{current_type.upper()}")
             
-            print(f"   {r['City']}: ${r['AvgPrice']:,.0f} avg | ${r['PricePerSqft']:.0f}/sqft | {r['Count']} properties")
-            print(f"      Range: ${r['MinPrice']:,.0f} - ${r['MaxPrice']:,.0f}")
+            avg_price = r.get('AvgPrice') or 0
+            price_per_sqft = r.get('PricePerSqft') or 0
+            min_price = r.get('MinPrice') or 0
+            max_price = r.get('MaxPrice') or 0
+            print(f"   {r['City']}: ${avg_price:,.0f} avg | ${price_per_sqft:.0f}/sqft | {r['Count']} properties")
+            print(f"      Range: ${min_price:,.0f} - ${max_price:,.0f}")
 
         # Pricing anomaly detection
         self.print_subsection("Pricing Anomaly Detection")
@@ -268,7 +294,9 @@ class MarketIntelligenceAnalyzer:
         for r in results:
             anomaly_icon = "" if r['Anomaly'] == 'OVERPRICED' else ""
             print(f"{anomaly_icon} Property {r['PropertyID']} - {r['Anomaly']}")
-            print(f"   Price: ${r['Price']:,.0f} | Neighborhood Avg: ${r['NeighborhoodAvg']:,.0f}")
+            price = r.get('Price') or 0
+            neighborhood_avg = r.get('NeighborhoodAvg') or 0
+            print(f"   Price: ${price:,.0f} | Neighborhood Avg: ${neighborhood_avg:,.0f}")
             print(f"   Statistical Z-Score: {r['ZScore']:.2f} | Location: {r['Location']}")
             print(f"   Features: {', '.join(r['TopFeatures'])}")
 
@@ -316,9 +344,10 @@ class MarketIntelligenceAnalyzer:
         for r in results:
             value_score = r['FeatureRatio'] / r['PriceRatio']
             print(f"{r['Neighborhood']}, {r['City']}")
-            print(f"   Value Score: {value_score:.2f} | Avg Price: ${r['AvgPrice']:,.0f}")
+            avg_price = r.get('AvgPrice') or 0
+            print(f"   Value Score: {value_score:.2f} | Avg Price: ${avg_price:,.0f}")
             print(f"   Avg Features: {r['AvgFeaturesPerProperty']:.1f} | Price Ratio: {r['PriceRatio']:.2f}")
-            if r['LifestyleTags']:
+            if r.get('LifestyleTags'):
                 print(f"   Lifestyle: {', '.join(r['LifestyleTags'])}")
 
         # Emerging market indicators
@@ -351,7 +380,8 @@ class MarketIntelligenceAnalyzer:
         print("Emerging Markets (High Diversity & Growth Potential):")
         for r in results:
             print(f"{r['Neighborhood']}, {r['City']}")
-            print(f"   Diversity Score: {r['DiversityScore']} | Avg Price: ${r['AvgPrice']:,.0f}")
+            avg_price = r.get('AvgPrice') or 0
+            print(f"   Diversity Score: {r['DiversityScore']} | Avg Price: ${avg_price:,.0f}")
             print(f"   Property Types: {r['PropertyTypeDiversity']} | Feature Categories: {r['FeatureCategoryDiversity']}")
             print(f"   Types Available: {', '.join(r['PropertyTypes'])}")
 
@@ -376,7 +406,8 @@ class MarketIntelligenceAnalyzer:
                     
                     if results:
                         for i, result in enumerate(results, 1):
-                            print(f"   {i}. Property {result.listing_id} - ${result.listing_price:,.0f}")
+                            listing_price = result.listing_price or 0
+                            print(f"   {i}. Property {result.listing_id} - ${listing_price:,.0f}")
                             print(f"      {result.neighborhood}, {result.city}")
                             print(f"      Combined Score: {result.combined_score:.3f}")
                             if result.features:
@@ -422,7 +453,8 @@ class MarketIntelligenceAnalyzer:
                 current_lifestyle = r['LifestyleTag']
                 print(f"\n{current_lifestyle.upper()} LIFESTYLE")
             
-            print(f"   {r['City']}: ${r['AvgPrice']:,.0f} avg | {r['PropertyCount']} properties")
+            avg_price = r.get('AvgPrice') or 0
+            print(f"   {r['City']}: ${avg_price:,.0f} avg | {r['PropertyCount']} properties")
             print(f"      {r['NeighborhoodCount']} neighborhoods: {', '.join(r['SampleNeighborhoods'])}")
 
         # Lifestyle-feature correlation analysis
@@ -466,7 +498,8 @@ class MarketIntelligenceAnalyzer:
             
             print(f"{strength_icon} {r['LifestyleTag']} <-> {r['Feature']} [{r['Category']}]")
             print(f"   Lifestyle Adoption: {r['LifestyleAdoption']:.1%} | Feature Concentration: {r['FeatureConcentration']:.1%}")
-            print(f"   Average Price: ${r['AvgPrice']:,.0f}")
+            avg_price = r.get('AvgPrice') or 0
+            print(f"   Average Price: ${avg_price:,.0f}")
 
         # Demographic market sizing
         self.print_subsection("Market Size by Lifestyle Segment")
@@ -498,7 +531,8 @@ class MarketIntelligenceAnalyzer:
             market_size_icon = "" if r['MarketValueMillion'] > 1000 else "" if r['MarketValueMillion'] > 500 else ""
             print(f"{market_size_icon} {r['LifestyleSegment']} in {r['City']}")
             print(f"   Market Value: ${r['MarketValueMillion']:.0f}M | {r['TotalProperties']} properties")
-            print(f"   Average Price: ${r['MarketAvgPrice']:,.0f}")
+            market_avg_price = r.get('MarketAvgPrice') or 0
+            print(f"   Average Price: ${market_avg_price:,.0f}")
 
     # ===== SECTION 5: FEATURE IMPACT ANALYSIS =====
     
@@ -539,8 +573,12 @@ class MarketIntelligenceAnalyzer:
         for r in results:
             impact_icon = "" if r['PremiumPercent'] > 30 else "" if r['PremiumPercent'] > 15 else ""
             print(f"{impact_icon} {r['Category']} Category")
-            print(f"   Premium: ${r['CategoryPremium']:,.0f} (+{r['PremiumPercent']:.1f}%)")
-            print(f"   Market: ${r['AvgPrice']:,.0f} vs ${r['BaselinePrice']:,.0f} baseline")
+            category_premium = r.get('CategoryPremium') or 0
+            premium_percent = r.get('PremiumPercent') or 0
+            avg_price = r.get('AvgPrice') or 0
+            baseline_price = r.get('BaselinePrice') or 0
+            print(f"   Premium: ${category_premium:,.0f} (+{premium_percent:.1f}%)")
+            print(f"   Market: ${avg_price:,.0f} vs ${baseline_price:,.0f} baseline")
             print(f"   Adoption: {r['PropertyCount']} properties | Variety: {r['FeatureVariety']} features")
 
         # Feature co-occurrence network analysis
@@ -582,7 +620,8 @@ class MarketIntelligenceAnalyzer:
             print(f"{synergy_icon} {r['FeaturePair']}")
             print(f"   Categories: {r['CategoryPair']}")
             print(f"   Co-occurrence: {r['CoOccurrenceCount']} properties | Lift: {r['Lift']:.2f}")
-            print(f"   Average Price: ${r['AvgPriceWithBoth']:,.0f}")
+            avg_price_with_both = r.get('AvgPriceWithBoth') or 0
+            print(f"   Average Price: ${avg_price_with_both:,.0f}")
             print(f"   Sample Properties: {', '.join(r['SampleProperties'])}")
 
         # Feature rarity and exclusivity analysis
@@ -618,7 +657,9 @@ class MarketIntelligenceAnalyzer:
             rarity_icon = "" if r['RarityLevel'] == 'Ultra-Rare' else "" if r['RarityLevel'] == 'Rare' else ""
             print(f"{rarity_icon} {r['Feature']} [{r['Category']}] - {r['RarityLevel']}")
             print(f"   Exclusivity: {r['PropertyCount']} properties ({r['RarityScore']:.1%} of market)")
-            print(f"   Premium Market: ${r['AvgPrice']:,.0f} avg | ${r['MaxPrice']:,.0f} max")
+            avg_price = r.get('AvgPrice') or 0
+            max_price = r.get('MaxPrice') or 0
+            print(f"   Premium Market: ${avg_price:,.0f} avg | ${max_price:,.0f} max")
 
     # ===== SECTION 6: COMPETITIVE MARKET INTELLIGENCE =====
     
@@ -629,38 +670,42 @@ class MarketIntelligenceAnalyzer:
             "Understanding competitive dynamics through property similarity networks and positioning"
         )
         
-        # Competitive clustering analysis
+        # Competitive clustering analysis based on shared features
         self.print_subsection("Competitive Property Clusters")
         query = """
-        MATCH (p:Property)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.similarity_score > 0.8  // High similarity threshold
+        // Find properties with many shared features (competitive indicator)
+        MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(similar:Property)
+        WHERE p <> similar
         
-        // Find properties with many high-similarity connections
-        WITH p, count(similar) as SimilarityConnections,
-             avg(sim.similarity_score) as AvgSimilarityScore,
-             collect(similar.listing_id)[0..5] as SimilarProperties
-        WHERE SimilarityConnections >= 3
+        WITH p, similar, count(DISTINCT f) as SharedFeatures
+        WHERE SharedFeatures >= 5  // Properties sharing 5+ features are competitive
+        
+        WITH p, count(DISTINCT similar) as CompetitorCount,
+             avg(SharedFeatures) as AvgSharedFeatures,
+             collect(DISTINCT similar.listing_id)[0..5] as CompetingProperties
+        WHERE CompetitorCount >= 3
         
         MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f:Feature)
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
                n.city + ", " + n.name as Location,
-               SimilarityConnections, AvgSimilarityScore,
-               SimilarProperties, collect(DISTINCT f.name)[0..5] as TopFeatures
-        ORDER BY SimilarityConnections DESC, AvgSimilarityScore DESC
+               CompetitorCount, AvgSharedFeatures,
+               CompetingProperties, collect(DISTINCT f.name)[0..5] as TopFeatures
+        ORDER BY CompetitorCount DESC, AvgSharedFeatures DESC
         LIMIT 10
         """
         results = run_query(self.driver, query)
         
         print("Highly Competitive Property Clusters:")
         for r in results:
-            cluster_icon = "" if r['SimilarityConnections'] > 5 else "" if r['SimilarityConnections'] > 3 else ""
-            print(f"{cluster_icon} Property {r['PropertyID']} - ${r['Price']:,.0f}")
+            cluster_icon = "" if r['CompetitorCount'] > 5 else "" if r['CompetitorCount'] > 3 else ""
+            price = r.get('Price') or 0
+            print(f"{cluster_icon} Property {r['PropertyID']} - ${price:,.0f}")
             print(f"   Location: {r['Location']}")
-            print(f"   Competitive Network: {r['SimilarityConnections']} similar properties")
-            print(f"   Average Similarity: {r['AvgSimilarityScore']:.3f}")
-            print(f"   Direct Competitors: {', '.join(r['SimilarProperties'])}")
+            print(f"   Competitive Network: {r['CompetitorCount']} competing properties")
+            print(f"   Avg Shared Features: {r['AvgSharedFeatures']:.1f}")
+            print(f"   Direct Competitors: {', '.join(r['CompetingProperties'])}")
             print(f"   Key Features: {', '.join(r['TopFeatures'])}")
 
         # Market positioning analysis
@@ -695,15 +740,17 @@ class MarketIntelligenceAnalyzer:
         WITH p, n, FeatureCategories, FeatureCount, PriceBand,
              count(comp) as DirectCompetitors
         
-        // Analyze feature differentiation
-        OPTIONAL MATCH (p)-[sim:SIMILAR_TO]->(similar:Property)
-        WHERE sim.similarity_score > 0.7
+        // Analyze feature differentiation through shared features
+        OPTIONAL MATCH (p)-[:HAS_FEATURE]->(f2:Feature)<-[:HAS_FEATURE]-(similar:Property)
+        WHERE similar <> p
+        
+        WITH p, n, FeatureCategories, FeatureCount, PriceBand, DirectCompetitors,
+             count(DISTINCT similar) as PropertiesWithSharedFeatures
         
         RETURN p.listing_id as PropertyID, p.listing_price as Price,
                n.city as City, n.name as Neighborhood, PriceBand,
                FeatureCount, FeatureCategories, DirectCompetitors,
-               count(DISTINCT similar) as SimilarProperties,
-               avg(sim.similarity_score) as AvgSimilarity
+               PropertiesWithSharedFeatures
         ORDER BY DirectCompetitors DESC, FeatureCount DESC
         LIMIT 15
         """
@@ -712,12 +759,13 @@ class MarketIntelligenceAnalyzer:
         print("Market Positioning Intelligence:")
         for r in results:
             competition_level = "" if r['DirectCompetitors'] > 10 else "" if r['DirectCompetitors'] > 5 else ""
-            print(f"{competition_level} Property {r['PropertyID']} [{r['PriceBand']}] - ${r['Price']:,.0f}")
+            price = r.get('Price') or 0
+            print(f"{competition_level} Property {r['PropertyID']} [{r['PriceBand']}] - ${price:,.0f}")
             print(f"   Location: {r['Neighborhood']}, {r['City']}")
             print(f"   Competitive Density: {r['DirectCompetitors']} direct competitors")
             print(f"   Feature Differentiation: {r['FeatureCount']} features across {len(r['FeatureCategories'])} categories")
-            if r['SimilarProperties']:
-                print(f"   Similarity Network: {r['SimilarProperties']} similar (avg: {r['AvgSimilarity']:.3f})")
+            if r.get('PropertiesWithSharedFeatures'):
+                print(f"   Properties with Shared Features: {r['PropertiesWithSharedFeatures']}")
 
         # Competitive gap analysis
         self.print_subsection("Market Gap Analysis")
@@ -774,6 +822,16 @@ def run_complete_market_intelligence_demo():
     print("database relationships combined with vector embeddings for comprehensive")
     print("market intelligence that rivals professional real estate analytics platforms.")
     print("="*80)
+    
+    print("\n🚀 NEO4J FEATURES DEMONSTRATED:")
+    print("   • Complex Graph Patterns - Multi-hop traversals for market analysis")
+    print("   • Conditional Aggregations - CASE statements for market segmentation")
+    print("   • Statistical Functions - percentileCont, stDev for market metrics")
+    print("   • Subquery Processing - WITH clauses for multi-stage analysis")
+    print("   • Cartesian Products - Cross-neighborhood comparisons")
+    print("   • Path Analysis - Finding arbitrage opportunities through relationships")
+    print("   • Feature Correlation - Graph-based feature impact analysis")
+    print("   • Market Segmentation - Dynamic categorization using graph properties")
     
     driver = None
     try:
