@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_PATH="${PROJECT_DIR}/.venv"
+VENV_PATH="${PROJECT_DIR}/venv"
 NEO4J_URI="bolt://localhost:7687"
 NEO4J_USER="neo4j"
 

@@ -20,7 +20,7 @@ class LLMConfig(BaseModel):
 
 class DatabaseConfig(BaseModel):
     """Configuration for database connections."""
-    path: Path = Field(default=Path("../data/wikipedia/wikipedia.db"), description="Path to SQLite database")
+    path: Path = Field(default=Path("data/wikipedia/wikipedia.db"), description="Path to SQLite database")
     
     @field_validator('path')
     @classmethod

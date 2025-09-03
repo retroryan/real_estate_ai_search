@@ -13926,7 +13926,7 @@
       "zip": "84098"
     },
     "coordinates": {
-      "latitude": 40.7410,
+      "latitude": 40.741,
       "longitude": -111.5755
     },
     "property_details": {
@@ -14063,7 +14063,7 @@
     ]
   },
   {
-    "listing_id": "prop-coal-139",
+    "listing_id": "prop-coal-200",
     "neighborhood_id": "coal-downtown-007",
     "address": {
       "street": "142 Main Street",
@@ -14112,7 +14112,7 @@
     ]
   },
   {
-    "listing_id": "prop-coal-140",
+    "listing_id": "prop-coal-201",
     "neighborhood_id": "coal-downtown-007",
     "address": {
       "street": "287 Center Street",
@@ -14161,7 +14161,7 @@
     ]
   },
   {
-    "listing_id": "prop-coal-141",
+    "listing_id": "prop-coal-202",
     "neighborhood_id": "coal-downtown-007",
     "address": {
       "street": "456 Pioneer Avenue",
@@ -14210,7 +14210,7 @@
     ]
   },
   {
-    "listing_id": "prop-coal-142",
+    "listing_id": "prop-coal-203",
     "neighborhood_id": "coal-downtown-007",
     "address": {
       "street": "890 Summit View Road",
@@ -14220,7 +14220,7 @@
       "zip": "84060"
     },
     "coordinates": {
-      "latitude": 40.9190,
+      "latitude": 40.919,
       "longitude": -111.3975
     },
     "property_details": {
@@ -14259,7 +14259,7 @@
     ]
   },
   {
-    "listing_id": "prop-coal-143",
+    "listing_id": "prop-coal-204",
     "neighborhood_id": "coal-downtown-007",
     "address": {
       "street": "321 Historic Lane",
@@ -14270,7 +14270,7 @@
     },
     "coordinates": {
       "latitude": 40.9158,
-      "longitude": -111.4010
+      "longitude": -111.401
     },
     "property_details": {
       "square_feet": 1600,
@@ -14308,7 +14308,7 @@
     ]
   },
   {
-    "listing_id": "prop-oak-144",
+    "listing_id": "prop-coal-205",
     "neighborhood_id": "oak-oakley-008",
     "address": {
       "street": "1567 Weber River Road",
@@ -14357,7 +14357,7 @@
     ]
   },
   {
-    "listing_id": "prop-oak-145",
+    "listing_id": "prop-coal-206",
     "neighborhood_id": "oak-oakley-008",
     "address": {
       "street": "2890 Valley View Drive",
@@ -14406,7 +14406,7 @@
     ]
   },
   {
-    "listing_id": "prop-oak-146",
+    "listing_id": "prop-coal-207",
     "neighborhood_id": "oak-oakley-008",
     "address": {
       "street": "456 Oakley Canyon Road",
@@ -14455,7 +14455,7 @@
     ]
   },
   {
-    "listing_id": "prop-oak-147",
+    "listing_id": "prop-coal-208",
     "neighborhood_id": "oak-oakley-008",
     "address": {
       "street": "789 Country Lane",
@@ -14504,7 +14504,7 @@
     ]
   },
   {
-    "listing_id": "prop-oak-148",
+    "listing_id": "prop-coal-209",
     "neighborhood_id": "oak-oakley-008",
     "address": {
       "street": "234 Meadow View Court",
@@ -14662,7 +14662,7 @@
     },
     "coordinates": {
       "latitude": 40.6419,
-      "longitude": -111.2820
+      "longitude": -111.282
     },
     "property_details": {
       "square_feet": 1900,
@@ -14759,7 +14759,7 @@
       "zip": "84036"
     },
     "coordinates": {
-      "latitude": 40.6410,
+      "latitude": 40.641,
       "longitude": -111.2835
     },
     "property_details": {

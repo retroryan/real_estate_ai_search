@@ -25,7 +25,7 @@ classifiers = [
 
 dependencies = [
     # Shared packages (assumed to be installed separately)
-    "property_finder_models",
+    # "property_finder_models",  # Commented out - not available
     "api_client",
     
     # Core dependencies

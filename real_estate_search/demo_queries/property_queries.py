@@ -105,7 +105,6 @@ class PropertyQueryBuilder:
                     "amenities^1.5",      # Important features
                     "address.street",     # Location context
                     "address.city",       # City search
-                    "neighborhood_id"     # Neighborhood association
                 ],
                 "type": "best_fields",   # Use best matching field's score
                 "fuzziness": "AUTO",      # Adaptive fuzzy matching

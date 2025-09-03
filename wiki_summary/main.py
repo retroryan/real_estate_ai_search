@@ -208,7 +208,7 @@ class WikipediaSummarizationPipeline:
                 query = """
                     SELECT 
                         a.id, a.pageid, a.title, a.extract, a.html_file,
-                        l.location as city, l.state, l.county,
+                        COALESCE(l.location, '') as city, l.state, l.county,
                         l.country || '/' || l.state || '/' || l.county as path,
                         l.location_type, l.location_id
                     FROM articles a 
@@ -222,7 +222,7 @@ class WikipediaSummarizationPipeline:
                 base_query = """
                     SELECT 
                         a.id, a.pageid, a.title, a.extract, a.html_file,
-                        l.location as city, l.state, l.county,
+                        COALESCE(l.location, '') as city, l.state, l.county,
                         l.country || '/' || l.state || '/' || l.county as path,
                         l.location_type, l.location_id
                     FROM articles a 
@@ -242,7 +242,7 @@ class WikipediaSummarizationPipeline:
                 base_query = """
                     SELECT 
                         a.id, a.pageid, a.title, a.extract, a.html_file,
-                        l.location as city, l.state, l.county,
+                        COALESCE(l.location, '') as city, l.state, l.county,
                         l.country || '/' || l.state || '/' || l.county as path,
                         l.location_type, l.location_id
                     FROM articles a 
@@ -269,7 +269,7 @@ class WikipediaSummarizationPipeline:
                 # Load HTML content if available
                 html_content = ""
                 if html_file:
-                    html_path = Path("..") / "data" / "wikipedia" / "pages" / html_file
+                    html_path = Path("data") / "wikipedia" / "pages" / html_file
                     if html_path.exists():
                         try:
                             with open(html_path, 'r', encoding='utf-8') as f:

@@ -162,3 +162,6 @@ neo4j_auth.txt
 
 # HTML output directory
 real_estate_search/out_html/
+
+# Generated demo queries
+real_estate_search/demo_queries/demo_queries_json/
