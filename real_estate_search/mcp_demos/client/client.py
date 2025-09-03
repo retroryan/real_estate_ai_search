@@ -49,7 +49,7 @@ class RealEstateSearchClient(BaseModel):
         params = request.model_dump(exclude_none=True)
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_properties_tool", params)
+        response = await self.mcp_client.call_tool("search_properties", params)
         
         if not response.success:
             raise Exception(f"Property search failed: {response.error}")
@@ -73,7 +73,7 @@ class RealEstateSearchClient(BaseModel):
         params = request.model_dump(exclude_none=True)
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_wikipedia_tool", params)
+        response = await self.mcp_client.call_tool("search_wikipedia", params)
         
         if not response.success:
             raise Exception(f"Wikipedia search failed: {response.error}")
@@ -112,7 +112,7 @@ class RealEstateSearchClient(BaseModel):
             params["query"] = query
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_wikipedia_by_location_tool", params)
+        response = await self.mcp_client.call_tool("search_wikipedia_by_location", params)
         
         if not response.success:
             raise Exception(f"Location-based Wikipedia search failed: {response.error}")
@@ -134,7 +134,7 @@ class RealEstateSearchClient(BaseModel):
         params = {"listing_id": listing_id}
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("get_property_details_tool", params)
+        response = await self.mcp_client.call_tool("get_property_details", params)
         
         if not response.success:
             raise Exception(f"Failed to get property details: {response.error}")
@@ -151,7 +151,7 @@ class RealEstateSearchClient(BaseModel):
             Exception: If the health check fails
         """
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("health_check_tool", {})
+        response = await self.mcp_client.call_tool("health_check", {})
         
         if not response.success:
             raise Exception(f"Health check failed: {response.error}")
@@ -185,7 +185,7 @@ class RealEstateSearchClient(BaseModel):
         }
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_properties_hybrid_tool", params)
+        response = await self.mcp_client.call_tool("search_properties", params)
         
         if not response.success:
             raise Exception(f"Hybrid search failed: {response.error}")

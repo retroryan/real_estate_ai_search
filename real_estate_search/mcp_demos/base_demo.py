@@ -57,7 +57,7 @@ class BaseMCPDemo(ABC):
         try:
             # Execute the MCP tool call
             response_data = await self.client.call_tool(
-                "search_properties_hybrid_tool",
+                "search_properties",
                 request.model_dump(exclude_none=True)
             )
             

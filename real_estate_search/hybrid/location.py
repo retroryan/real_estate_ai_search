@@ -137,9 +137,6 @@ class LocationUnderstandingModule(dspy.Module):
         Returns:
             LocationIntent with extracted location information
         """
-        # Try rule-based extraction first as backup
-        rule_based_result = self._rule_based_extraction(query)
-        
         try:
             # Execute DSPy prediction
             result = self.extract_location(query_text=query)
@@ -165,11 +162,6 @@ class LocationUnderstandingModule(dspy.Module):
             # Ensure cleaned_query is never None - fallback to original query
             cleaned_query = result.cleaned_query if result.cleaned_query else query
             
-            # If DSPy failed but rule-based found location, use rule-based result
-            if not has_location and rule_based_result.has_location:
-                logger.info(f"DSPy failed, using rule-based extraction for: {query}")
-                return rule_based_result
-            
             # Create LocationIntent object
             location_intent = LocationIntent(
                 city=city,
@@ -188,8 +180,9 @@ class LocationUnderstandingModule(dspy.Module):
             return location_intent
             
         except Exception as e:
-            logger.error(f"DSPy extraction failed: {e}, falling back to rule-based")
-            return rule_based_result
+            logger.error(f"DSPy extraction failed: {e}")
+            # Re-raise to see the actual error
+            raise
     
     def _rule_based_extraction(self, query: str) -> LocationIntent:
         """
