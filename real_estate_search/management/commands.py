@@ -2,23 +2,24 @@
 Command classes for CLI operations.
 """
 
+import json
 import logging
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from elasticsearch import Elasticsearch, helpers
-from tqdm import tqdm
 
 from ..config import AppConfig
 from ..infrastructure.elasticsearch_client import ElasticsearchClientFactory, ElasticsearchClient
 from ..indexer.index_manager import ElasticsearchIndexManager
 from ..indexer.enums import IndexName
-from .models import (
-    CLIArguments, 
-    OperationStatus,
+from ..indexer import WikipediaIndexer
+from ..indexer.wikipedia_indexer import (
     WikipediaEnrichmentConfig,
     WikipediaEnrichmentResult
+)
+from .models import (
+    CLIArguments, 
+    OperationStatus
 )
 from .index_operations import IndexOperations
 from .validation import ValidationService
@@ -267,7 +268,15 @@ class DemoCommand(BaseCommand):
             query_func = self.demo_runner._get_demo_function(self.args.demo_number)
             
             try:
-                full_result = query_func(self.es_client.client)
+                # Wrap the ES client to capture queries
+                from ..demo_queries.query_capture import wrap_es_client_for_demo
+                wrapped_client = wrap_es_client_for_demo(self.es_client.client, self.args.demo_number)
+                
+                # Execute the demo with the wrapped client
+                full_result = query_func(wrapped_client)
+                
+                # Save the query summary
+                wrapped_client.save_summary()
                 
                 # Print the result display if it has one
                 if hasattr(full_result, 'display'):
@@ -296,275 +305,103 @@ class DemoCommand(BaseCommand):
             )
 
 
-class WikipediaDocument:
-    """Lightweight class for Wikipedia document data."""
-    
-    def __init__(self, page_id: int, title: str, article_filename: Optional[str] = None, 
-                 content_loaded: Optional[bool] = False, full_content: Optional[str] = None):
-        self.page_id = page_id
-        self.title = title
-        self.article_filename = article_filename
-        self.content_loaded = content_loaded if content_loaded is not None else False
-        self.full_content = full_content
-    
-    def needs_enrichment(self) -> bool:
-        """Check if document needs content enrichment."""
-        return self.article_filename is not None and not self.content_loaded
-
-
 class EnrichWikipediaCommand(BaseCommand):
     """
     Command to enrich Wikipedia articles with full HTML content.
     
-    This command:
-    1. Queries Elasticsearch for Wikipedia documents needing enrichment
-    2. Loads full HTML content from disk
-    3. Uses Elasticsearch ingest pipeline to process HTML
-    4. Bulk updates documents for efficient indexing
+    This command uses the WikipediaIndexer to:
+    1. Query Elasticsearch for Wikipedia documents needing enrichment
+    2. Load full HTML content from disk
+    3. Process documents through the wikipedia_ingest_pipeline
+    4. Bulk update documents with processed content
+    
+    The pipeline strips HTML, trims text, and sets metadata fields.
     """
     
     def __init__(self, config: AppConfig, args: CLIArguments):
         """Initialize the command."""
         super().__init__(config, args)
+        
         self.enrichment_config = WikipediaEnrichmentConfig(
             batch_size=args.batch_size or 50,
             max_documents=args.max_documents,
             dry_run=args.dry_run,
-            data_dir="data",
-            pipeline_name="wikipedia_ingest_pipeline"
+            data_dir=config.data.wikipedia_pages_dir,
+            pipeline_name="wikipedia_ingest_pipeline",
+            index_name="wikipedia"
         )
+        
+        # Create the indexer
+        self.indexer = WikipediaIndexer(self.raw_es_client, self.enrichment_config)
         self.result = WikipediaEnrichmentResult()
     
-    def _query_documents(self) -> List[WikipediaDocument]:
-        """Query Elasticsearch for documents needing enrichment."""
-        self.output.info("Querying Elasticsearch for documents...")
+    def _verify_pipeline(self) -> bool:
+        """Verify that the ingest pipeline exists."""
+        if not self.indexer.verify_pipeline_exists():
+            self.output.warning("Wikipedia ingest pipeline not found")
+            
+            # Try to create it from the definition file
+            pipeline_path = Path(__file__).parent.parent / "elasticsearch" / "pipelines" / "wikipedia_ingest.json"
+            if pipeline_path.exists():
+                with open(pipeline_path, 'r') as f:
+                    pipeline_def = json.load(f)
+                
+                if self.indexer.create_pipeline(pipeline_def):
+                    self.output.success("Created wikipedia_ingest_pipeline")
+                    return True
+                else:
+                    self.output.error("Failed to create pipeline")
+                    return False
+            else:
+                self.output.error(f"Pipeline definition not found: {pipeline_path}")
+                return False
         
-        # Build query to find documents with article_filename but not content_loaded
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"exists": {"field": "article_filename"}}
-                    ],
-                    "must_not": [
-                        {"term": {"content_loaded": True}}
-                    ]
-                }
-            },
-            "size": self.enrichment_config.max_documents or 10000,
-            "_source": ["page_id", "title", "article_filename", "content_loaded", "full_content"]
-        }
-        
-        try:
-            response = self.raw_es_client.search(index="wikipedia", body=query)
-            hits = response.get("hits", {}).get("hits", [])
-            
-            documents = []
-            for hit in hits:
-                doc_data = hit["_source"]
-                doc = WikipediaDocument(
-                    page_id=doc_data.get("page_id"),
-                    title=doc_data.get("title"),
-                    article_filename=doc_data.get("article_filename"),
-                    content_loaded=doc_data.get("content_loaded", False),
-                    full_content=doc_data.get("full_content")
-                )
-                if doc.needs_enrichment():
-                    documents.append(doc)
-            
-            self.result.total_documents_scanned = len(hits)
-            self.result.documents_needing_enrichment = len(documents)
-            
-            self.output.info(f"Found {len(documents)} documents needing enrichment")
-            return documents
-            
-        except Exception as e:
-            error_msg = f"Failed to query documents: {e}"
-            self.logger.error(error_msg)
-            self.result.errors.append(error_msg)
-            return []
+        self.output.info("Pipeline wikipedia_ingest_pipeline exists")
+        return True
     
-    def _read_html_file(self, filename: str) -> Optional[str]:
-        """Read HTML content from file."""
-        # Resolve file path
-        if filename.startswith('data/'):
-            file_path = Path(filename)
-        else:
-            file_path = Path(self.enrichment_config.data_dir) / "wikipedia" / "pages" / filename
-        
-        if not file_path.exists():
-            self.result.files_not_found += 1
-            return None
-        
-        try:
-            with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-            return content
-        except Exception as e:
-            error_msg = f"Failed to read {file_path}: {e}"
-            self.logger.warning(error_msg)
-            self.result.errors.append(error_msg)
-            return None
-    
-    def _prepare_bulk_actions(self, documents: List[WikipediaDocument]) -> List[Dict[str, Any]]:
-        """Prepare bulk update actions for Elasticsearch."""
-        actions = []
-        
-        # Show progress bar if verbose
-        iterator = tqdm(documents, desc="Reading HTML files", disable=not self.args.verbose)
-        
-        for doc in iterator:
-            if not doc.article_filename:
-                continue
-            
-            # Load HTML content from disk
-            html_content = self._read_html_file(doc.article_filename)
-            if html_content is None:
-                continue
-            
-            # Get existing document to preserve all fields
-            try:
-                existing_doc = self.raw_es_client.get(index="wikipedia", id=str(doc.page_id))['_source']
-                
-                # Add the full HTML content
-                existing_doc['full_content'] = html_content
-                
-                # Prepare bulk action
-                action = {
-                    "_op_type": "index",
-                    "_index": "wikipedia",
-                    "_id": str(doc.page_id),
-                    "_source": existing_doc
-                }
-                actions.append(action)
-                
-            except Exception as e:
-                self.logger.warning(f"Could not get document {doc.page_id}: {e}")
-                continue
-        
-        return actions
-    
-    def _perform_bulk_updates(self, actions: List[Dict[str, Any]]) -> None:
-        """
-        Perform bulk updates to Elasticsearch using an ingest pipeline.
-        
-        This method leverages Elasticsearch's ingest pipeline feature for efficient
-        document processing. The pipeline ("wikipedia_ingest_pipeline") performs
-        transformations on documents BEFORE they are indexed:
-        
-        1. HTML Processing: Strips HTML tags, extracts text content
-        2. Text Analysis: Generates summaries, extracts entities
-        3. Field Enrichment: Adds metadata, timestamps, computed fields
-        4. Content Validation: Ensures required fields are present
-        
-        The bulk API with pipeline processing is ideal for:
-        - Large-scale document enrichment (100s to 1000s of docs)
-        - Consistent document transformations
-        - CPU-intensive processing (offloaded to Elasticsearch nodes)
-        - Atomic updates (all-or-nothing per document)
-        
-        Pipeline processing happens on the Elasticsearch cluster, not the client,
-        which distributes the computational load across nodes.
-        """
-        if not actions:
-            self.output.info("No documents to update")
-            return
-        
-        if self.enrichment_config.dry_run:
-            self.output.warning(f"DRY RUN: Would update {len(actions)} documents")
-            self.result.documents_enriched = len(actions)
-            return
-        
-        self.output.info(f"Updating {len(actions)} documents...")
-        
-        # Process in batches to avoid memory issues and network timeouts
-        # Default batch_size is 50-100 documents for optimal throughput
-        batch_size = self.enrichment_config.batch_size
-        for i in range(0, len(actions), batch_size):
-            batch = actions[i:i + batch_size]
-            
-            try:
-                # Use helpers.bulk for efficient bulk indexing with pipeline processing
-                # 
-                # Key parameters:
-                # - pipeline: Name of the ingest pipeline to process documents through
-                #             The pipeline runs ON THE SERVER before indexing
-                # - stats_only: Return only success/failure counts, not full responses
-                #               Reduces network traffic for large batches
-                # - raise_on_error: False allows partial success (some docs may fail)
-                #
-                # The pipeline parameter is the KEY feature here:
-                # It tells Elasticsearch to run each document through the pipeline
-                # BEFORE indexing, allowing complex transformations at scale
-                success, failed = helpers.bulk(
-                    self.raw_es_client,
-                    batch,
-                    pipeline=self.enrichment_config.pipeline_name,  # "wikipedia_ingest_pipeline"
-                    stats_only=True,        # Don't return full responses (saves memory)
-                    raise_on_error=False    # Continue on partial failures
-                )
-                
-                self.result.documents_enriched += success
-                self.result.documents_failed += failed
-                
-                if failed > 0:
-                    # Some documents failed pipeline processing
-                    # Common causes: missing fields, pipeline errors, mapping conflicts
-                    self.output.warning(f"Failed to update {failed} documents in batch")
-                    
-            except Exception as e:
-                # Catastrophic failure - entire batch failed
-                # Usually network issues or pipeline configuration problems
-                error_msg = f"Bulk update failed: {e}"
-                self.logger.error(error_msg)
-                self.result.errors.append(error_msg)
-                self.result.documents_failed += len(batch)
+    def _show_progress(self, message: str):
+        """Show progress message if verbose mode is enabled."""
+        if self.args.verbose:
+            self.output.info(message)
     
     def execute(self) -> OperationStatus:
         """Execute the Wikipedia enrichment command."""
-        start_time = time.time()
-        
         try:
             self.output.header("Wikipedia Article Enrichment")
             
-            # Step 1: Query documents needing enrichment
-            documents = self._query_documents()
-            
-            if not documents:
-                self.output.success("No documents need enrichment")
+            # Step 1: Verify pipeline exists
+            if not self._verify_pipeline():
                 return OperationStatus(
                     operation="enrich-wikipedia",
-                    success=True,
-                    message="No documents need enrichment"
+                    success=False,
+                    message="Pipeline verification failed"
                 )
             
-            # Step 2: Prepare bulk update actions
-            self.output.info("Preparing bulk update actions...")
-            actions = self._prepare_bulk_actions(documents)
+            # Step 2: Run enrichment using the indexer
+            self.output.info("Starting document enrichment...")
+            self.output.info(f"Configuration: batch_size={self.enrichment_config.batch_size}, "
+                           f"max_documents={self.enrichment_config.max_documents or 'all'}, "
+                           f"dry_run={self.enrichment_config.dry_run}")
             
-            # Step 3: Perform bulk updates
-            self._perform_bulk_updates(actions)
+            result = self.indexer.enrich_documents()
             
-            # Calculate execution time
-            self.result.execution_time_ms = (time.time() - start_time) * 1000
-            
-            # Print summary
-            self._print_summary()
+            # Step 3: Print summary
+            self._print_summary(result)
             
             # Determine success
-            success = self.result.documents_failed == 0 and len(self.result.errors) == 0
+            success = result.documents_failed == 0 and len(result.errors) == 0
             
             return OperationStatus(
                 operation="enrich-wikipedia",
                 success=success,
-                message=f"Enriched {self.result.documents_enriched} documents",
+                message=f"Enriched {result.documents_enriched} documents",
                 details={
-                    "total_scanned": self.result.total_documents_scanned,
-                    "needing_enrichment": self.result.documents_needing_enrichment,
-                    "enriched": self.result.documents_enriched,
-                    "failed": self.result.documents_failed,
-                    "files_not_found": self.result.files_not_found,
-                    "execution_time_ms": self.result.execution_time_ms
+                    "total_scanned": result.total_documents_scanned,
+                    "needing_enrichment": result.documents_needing_enrichment,
+                    "enriched": result.documents_enriched,
+                    "failed": result.documents_failed,
+                    "files_not_found": len(result.files_not_found),
+                    "execution_time_ms": result.execution_time_ms
                 }
             )
             
@@ -576,17 +413,17 @@ class EnrichWikipediaCommand(BaseCommand):
                 message=f"Enrichment failed: {str(e)}"
             )
     
-    def _print_summary(self):
+    def _print_summary(self, result):
         """Print enrichment summary."""
         self.output.section("Enrichment Summary")
         
         # Basic stats
         stats = [
-            ("Total documents scanned", self.result.total_documents_scanned),
-            ("Documents needing enrichment", self.result.documents_needing_enrichment),
-            ("Documents successfully enriched", self.result.documents_enriched),
-            ("Documents failed", self.result.documents_failed),
-            ("Files not found", self.result.files_not_found),
+            ("Total documents scanned", result.total_documents_scanned),
+            ("Documents needing enrichment", result.documents_needing_enrichment),
+            ("Documents successfully enriched", result.documents_enriched),
+            ("Documents failed", result.documents_failed),
+            ("Files not found", len(result.files_not_found)),
         ]
         
         for label, value in stats:
@@ -599,19 +436,19 @@ class EnrichWikipediaCommand(BaseCommand):
             self.output.info(f"{label}: {value} {status}")
         
         # Execution time
-        if self.result.execution_time_ms:
-            self.output.info(f"Execution time: {self.result.execution_time_ms:.2f}ms")
+        if result.execution_time_ms:
+            self.output.info(f"Execution time: {result.execution_time_ms:.2f}ms")
         
         # Errors
-        if self.result.errors:
-            self.output.warning(f"\nErrors encountered ({len(self.result.errors)}):")
-            for error in self.result.errors[:5]:  # Show first 5 errors
+        if result.errors:
+            self.output.warning(f"\nErrors encountered ({len(result.errors)}):")
+            for error in result.errors[:5]:  # Show first 5 errors
                 self.output.error(f"  - {error}")
-            if len(self.result.errors) > 5:
-                self.output.info(f"  ... and {len(self.result.errors) - 5} more errors")
+            if len(result.errors) > 5:
+                self.output.info(f"  ... and {len(result.errors) - 5} more errors")
         
         # Final status
-        if self.result.documents_failed == 0 and not self.result.errors:
+        if result.documents_failed == 0 and not result.errors:
             self.output.success("\n✓ Enrichment completed successfully")
         else:
             self.output.error("\n✗ Enrichment completed with errors")

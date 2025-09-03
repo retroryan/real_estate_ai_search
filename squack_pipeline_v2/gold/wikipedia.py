@@ -47,19 +47,12 @@ class WikipediaGoldEnricher(GoldEnricher):
                 url,
                 
                 -- Content fields with business enhancements
-                extract as long_summary,
+                long_summary,
+                short_summary,
                 
-                -- GOLD ENRICHMENT: Dynamic summaries based on content length
-                CASE 
-                    WHEN LENGTH(extract) > 500 
-                    THEN SUBSTRING(extract, 1, 500) || '...'
-                    WHEN LENGTH(extract) > 200
-                    THEN SUBSTRING(extract, 1, 200) || '...'
-                    ELSE extract
-                END as short_summary,
-                
-                extract as full_content,
-                LENGTH(extract) as content_length,
+                -- Full content for comprehensive search
+                long_summary as full_content,
+                LENGTH(long_summary) as content_length,
                 
                 -- Business workflow fields
                 false as content_loaded,
@@ -75,16 +68,16 @@ class WikipediaGoldEnricher(GoldEnricher):
                 
                 -- GOLD ENRICHMENT: Content quality analysis
                 CASE 
-                    WHEN LENGTH(extract) >= 1000 AND links_count >= 10 THEN 'comprehensive'
-                    WHEN LENGTH(extract) >= 500 AND links_count >= 5 THEN 'detailed'
-                    WHEN LENGTH(extract) >= 200 THEN 'basic'
+                    WHEN LENGTH(long_summary) >= 1000 AND links_count >= 10 THEN 'comprehensive'
+                    WHEN LENGTH(long_summary) >= 500 AND links_count >= 5 THEN 'detailed'
+                    WHEN LENGTH(long_summary) >= 200 THEN 'basic'
                     ELSE 'stub'
                 END AS content_depth_category,
                 
                 -- GOLD ENRICHMENT: Business authority scoring
                 CAST((
                     -- Content length factor (40%)
-                    LEAST(LENGTH(extract) / 1000.0, 1.0) * 40 +
+                    LEAST(LENGTH(long_summary) / 1000.0, 1.0) * 40 +
                     -- Link density factor (30%)
                     LEAST(COALESCE(links_count, 0) / 20.0, 1.0) * 30 +
                     -- Relevance factor (30%)
@@ -117,9 +110,9 @@ class WikipediaGoldEnricher(GoldEnricher):
                 CAST((
                     COALESCE(relevance_score, 0) * 0.4 +
                     CASE 
-                        WHEN LENGTH(extract) >= 1000 THEN 0.6
-                        WHEN LENGTH(extract) >= 500 THEN 0.4
-                        WHEN LENGTH(extract) >= 200 THEN 0.2
+                        WHEN LENGTH(long_summary) >= 1000 THEN 0.6
+                        WHEN LENGTH(long_summary) >= 500 THEN 0.4
+                        WHEN LENGTH(long_summary) >= 200 THEN 0.2
                         ELSE 0.1
                     END * 0.3 +
                     CASE 
@@ -132,8 +125,8 @@ class WikipediaGoldEnricher(GoldEnricher):
                 
                 -- GOLD ENRICHMENT: Business quality categories
                 CASE 
-                    WHEN (COALESCE(relevance_score, 0) >= 0.8 AND LENGTH(extract) >= 500) THEN 'premium'
-                    WHEN (COALESCE(relevance_score, 0) >= 0.6 AND LENGTH(extract) >= 200) THEN 'high'
+                    WHEN (COALESCE(relevance_score, 0) >= 0.8 AND LENGTH(long_summary) >= 500) THEN 'premium'
+                    WHEN (COALESCE(relevance_score, 0) >= 0.6 AND LENGTH(long_summary) >= 200) THEN 'high'
                     WHEN (COALESCE(relevance_score, 0) >= 0.4) THEN 'medium'
                     ELSE 'basic'
                 END as article_quality,

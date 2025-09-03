@@ -527,6 +527,11 @@ class DataConfig(BaseModel):
         description="Wikipedia database path"
     )
     
+    wikipedia_pages_dir: str = Field(
+        default="data/wikipedia/pages",
+        description="Directory containing Wikipedia HTML page files"
+    )
+    
     @computed_field
     @property
     def wikipedia_db_exists(self) -> bool:
@@ -619,7 +624,8 @@ class AppConfig(BaseSettings):
     
     data: DataConfig = Field(
         default_factory=lambda: DataConfig(
-            wikipedia_db=Path(os.getenv('DATA_WIKIPEDIA_DB', '../data/wikipedia/wikipedia.db'))
+            wikipedia_db=Path(os.getenv('DATA_WIKIPEDIA_DB', '../data/wikipedia/wikipedia.db')),
+            wikipedia_pages_dir=os.getenv('DATA_WIKIPEDIA_PAGES_DIR', 'data/wikipedia/pages')
         ),
         description="Data paths configuration"
     )

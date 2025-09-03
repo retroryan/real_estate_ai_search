@@ -232,17 +232,42 @@ class LocationFilterBuilder:
     
     Converts LocationIntent objects into Elasticsearch query filters
     using only existing property index fields.
+    
+    PERFORMANCE BEST PRACTICES:
+    These filters are designed to be used INSIDE the kNN query's filter parameter
+    and the bool query's filter context for optimal performance:
+    
+    1. Filter Context Execution:
+       - Filters run in filter context (not query context)
+       - No scoring overhead - just yes/no matching
+       - Results are cached for subsequent queries
+    
+    2. Efficient kNN Integration:
+       - When used with knn.filter, reduces the vector search space
+       - Prevents expensive similarity calculations on filtered-out documents
+       - Much faster than post_filter which computes ALL similarities first
+    
+    3. Consistent Application:
+       - Same filters applied to both text and vector retrievers
+       - Ensures geographic constraints are respected across all search strategies
     """
     
     def build_filters(self, location_intent: LocationIntent) -> List[Dict[str, Any]]:
         """
         Build Elasticsearch filters from location intent.
         
+        These filters are optimized for use in:
+        - knn.filter parameter (for vector search)
+        - bool.filter context (for text search)
+        
+        IMPORTANT: These should NEVER be used as post_filter, which is inefficient
+        for vector search as it applies filtering AFTER similarity computation.
+        
         Args:
             location_intent: Extracted location information
             
         Returns:
-            List of Elasticsearch filter clauses
+            List of Elasticsearch filter clauses optimized for filter context execution
         """
         if not location_intent.has_location:
             return []

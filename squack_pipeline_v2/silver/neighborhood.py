@@ -1,4 +1,69 @@
-"""Neighborhood Silver layer transformation using DuckDB Relation API."""
+"""Neighborhood Silver layer transformation using DuckDB Relation API.
+
+NEIGHBORHOOD EMBEDDING GENERATION DETAILS:
+==========================================
+
+This module transforms neighborhood data into the Silver layer with semantic embeddings
+that capture the essence of each neighborhood for similarity search and matching.
+
+EMBEDDING TEXT COMPOSITION FOR NEIGHBORHOODS:
+---------------------------------------------
+The embedding_text field combines key neighborhood characteristics using pipe delimiter:
+
+1. **description** (Primary): Comprehensive neighborhood description containing
+   details about the area's character, history, lifestyle, attractions, and ambiance.
+   This narrative text provides the richest semantic content about the neighborhood.
+
+2. **name**: Neighborhood name for identity and recognition
+   Important for matching searches that reference specific neighborhood names.
+
+3. **population**: Demographic size indicator formatted as "Population: X"
+   Provides scale context that affects neighborhood character and amenities.
+
+FIELD SELECTION RATIONALE:
+--------------------------
+- **Description First**: Contains the most comprehensive semantic information
+- **Name for Identity**: Essential for name-based searches and disambiguation
+- **Population for Scale**: Indicates urban vs suburban character
+
+DELIMITER CHOICE (PIPE |):
+-------------------------
+- Pipe delimiter used instead of space to create clearer semantic boundaries
+- Format: "description | name | Population: X"
+- Helps embedding model distinguish between different information types
+
+FIELDS EXCLUDED FROM NEIGHBORHOOD EMBEDDINGS:
+---------------------------------------------
+- **City/State/County**: Geographic hierarchy handled separately via joins
+- **Coordinates**: Geo-location handled via dedicated location fields
+- **Scores (walkability, school)**: Numeric metrics better for structured filters
+- **Demographics struct**: Complex nested data not suitable for text embedding
+- **Amenities/Lifestyle tags**: Could be included but kept separate for faceted search
+
+ENRICHMENT WITH LOCATION DATA:
+------------------------------
+This transformer also performs a LEFT JOIN with silver_locations table to:
+- Add standardized county information
+- Include geographic hierarchy IDs (city_id, county_id, state_id)
+- Ensure consistent location standardization across the pipeline
+
+EMBEDDING GENERATION PROCESS:
+-----------------------------
+1. SQL projection creates embedding_text using CONCAT_WS with pipe delimiter (lines 97-101)
+2. Neighborhood IDs and texts extracted from DuckDB (lines 105-110)
+3. Texts sent to embedding provider in batches (line 112)
+4. Vectors stored as DOUBLE[] arrays with generation timestamp (lines 114-132)
+5. Embeddings joined back via neighborhood_id (lines 135-160)
+
+TOKENIZATION NOTES:
+------------------
+- No LlamaIndex usage - direct API embedding generation
+- Provider handles tokenization internally:
+  * Voyage AI: Proprietary tokenizer for voyage-3 model
+  * OpenAI: tiktoken (cl100k_base) for text-embedding-3 models
+  * Ollama: Model-specific tokenizers
+- Text sent as-is without pre-chunking or preprocessing
+"""
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
@@ -14,6 +79,7 @@ class NeighborhoodSilverTransformer(SilverTransformer):
     - Standardize location data
     - Clean and validate fields
     - Prepare for downstream consumption
+    - Generate semantic embeddings for neighborhood similarity
     """
     
     def _get_entity_type(self) -> str:
@@ -94,21 +160,30 @@ class NeighborhoodSilverTransformer(SilverTransformer):
             -- Pass through full wikipedia_correlations for Gold layer
             n.wikipedia_correlations,
             
-            CONCAT_WS(' | ',
-                COALESCE(n.description, ''),
-                COALESCE(n.name, ''),
-                CONCAT('Population: ', COALESCE(n.demographics.population, 0))
+            -- EMBEDDING TEXT GENERATION FOR NEIGHBORHOODS:
+            -- Concatenate neighborhood characteristics with pipe delimiter
+            -- Pipe separator provides clearer semantic boundaries than spaces
+            CONCAT_WS(' | ',  -- Pipe-delimited concatenation
+                COALESCE(n.description, ''),  -- Primary: Full neighborhood narrative
+                COALESCE(n.name, ''),  -- Neighborhood identity for name-based search
+                CONCAT('Population: ', COALESCE(n.demographics.population, 0))  -- Scale indicator
             ) as embedding_text
         """)
         
+        # STEP 1: Extract text data from DuckDB for embedding generation
         # Get embedding text data directly from DuckDB without pandas conversion
+        # Maintains efficient memory usage by avoiding DataFrame intermediaries
         embedding_rows = transformed.project("neighborhood_id, embedding_text").fetchall()
         
-        # Extract data into separate lists
-        neighborhood_ids = [row[0] for row in embedding_rows]
-        texts = [row[1] for row in embedding_rows]
+        # STEP 2: Prepare data for batch embedding generation
+        # Extract data into separate lists for API processing
+        neighborhood_ids = [row[0] for row in embedding_rows]  # Unique neighborhood identifiers
+        texts = [row[1] for row in embedding_rows]  # Pipe-delimited text for each neighborhood
         
+        # STEP 3: Generate embeddings via external provider API
         # Generate embeddings using List[str] interface
+        # Provider performs: tokenization → encoding → dense vector generation
+        # No LlamaIndex involvement - direct API embedding generation
         embedding_response = self.embedding_provider.generate_embeddings(texts)
         
         # Create temporary table with embeddings

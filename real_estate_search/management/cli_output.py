@@ -9,8 +9,7 @@ from .models import (
     EmbeddingValidationResult,
     ClusterHealthInfo,
     DemoQuery,
-    DemoExecutionResult,
-    WikipediaEnrichmentResult
+    DemoExecutionResult
 )
 
 

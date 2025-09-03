@@ -228,3 +228,99 @@ class DemoQueryResult(BaseModel):
         string_buffer.close()
         
         return output
+    
+    def display_location_understanding(self, verbose: bool = False) -> str:
+        """Format location understanding results for display."""
+        import json
+        from rich.console import Console
+        from rich.table import Table
+        from rich import box
+        from io import StringIO
+        
+        # Create a string buffer to capture rich output
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=True, width=150)
+        
+        # Header
+        console.print(f"\n{'='*80}", style="cyan")
+        console.print(f"🔍 Demo Query: {self.query_name}", style="bold cyan")
+        console.print(f"{'='*80}", style="cyan")
+        
+        # Add search description if provided
+        if self.query_description:
+            console.print(f"\n📝 SEARCH DESCRIPTION:", style="bold yellow")
+            console.print(f"   {self.query_description}", style="yellow")
+        
+        # Add Elasticsearch features if provided
+        if self.es_features:
+            console.print(f"\n📊 ELASTICSEARCH FEATURES:", style="bold green")
+            for feature in self.es_features:
+                console.print(f"   • {feature}", style="green")
+        
+        console.print(f"\n{'─'*80}", style="dim")
+        console.print(f"⏱️  Execution Time: {self.execution_time_ms}ms | 📊 Total Hits: {self.total_hits} | 📄 Returned: {self.returned_hits}", style="cyan")
+        
+        # Display location extraction results
+        if self.results and len(self.results) > 0:
+            console.print(f"\n🗺️  LOCATION EXTRACTION RESULTS:", style="bold magenta")
+            
+            table = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold magenta",
+                expand=False,
+                padding=(0, 1)
+            )
+            
+            # Add columns for location results
+            table.add_column("#", style="dim", width=3, justify="center")
+            table.add_column("Query", style="white", width=40)
+            table.add_column("City", style="blue", width=20)
+            table.add_column("State", style="green", width=15)
+            table.add_column("Has Location", style="cyan", width=12, justify="center")
+            table.add_column("Cleaned Query", style="yellow", width=30)
+            
+            # Add results
+            for idx, result in enumerate(self.results[:10], 1):  # Show up to 10 location results
+                query = result.get('query', 'N/A')
+                city = result.get('city', 'N/A') 
+                state = result.get('state', 'N/A') or 'N/A'
+                has_location = "✅" if result.get('has_location', False) else "❌"
+                cleaned_query = result.get('cleaned_query', 'N/A')
+                
+                # Truncate long text
+                if len(query) > 35:
+                    query = query[:32] + "..."
+                if len(cleaned_query) > 25:
+                    cleaned_query = cleaned_query[:22] + "..."
+                
+                table.add_row(
+                    str(idx),
+                    query,
+                    city,
+                    state, 
+                    has_location,
+                    cleaned_query
+                )
+            
+            console.print(table)
+        
+        if verbose:
+            console.print(f"\n{'-'*40}", style="dim")
+            console.print("Query DSL:", style="bold cyan")
+            console.print(f"{'-'*40}", style="dim")
+            console.print(json.dumps(self.query_dsl, indent=2), style="green")
+        
+        # Get the string output
+        output = string_buffer.getvalue()
+        string_buffer.close()
+        
+        return output
+
+
+class LocationUnderstandingResult(DemoQueryResult):
+    """Specialized result class for location understanding demos."""
+    
+    def display(self, verbose: bool = False) -> str:
+        """Use the specialized location understanding display."""
+        return self.display_location_understanding(verbose=verbose)

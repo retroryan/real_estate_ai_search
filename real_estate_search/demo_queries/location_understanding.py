@@ -7,7 +7,7 @@ import time
 from typing import Dict, Any, List
 from elasticsearch import Elasticsearch
 
-from .models import DemoQueryResult
+from .models import DemoQueryResult, LocationUnderstandingResult
 from ..hybrid import LocationUnderstandingModule, LocationIntent
 
 logger = logging.getLogger(__name__)
@@ -81,8 +81,8 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
     
     execution_time = int((time.time() - start_time) * 1000)
     
-    # Return as DemoQueryResult
-    return DemoQueryResult(
+    # Return as LocationUnderstandingResult for proper display formatting
+    return LocationUnderstandingResult(
         query_name="Location Understanding Demo",
         query_description="Extract location information from natural language queries using DSPy",
         total_hits=len(test_queries),

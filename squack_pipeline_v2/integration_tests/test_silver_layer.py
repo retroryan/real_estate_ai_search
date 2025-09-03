@@ -187,7 +187,8 @@ def test_silver_wikipedia_transformation():
     # Check standardized field names
     assert "page_id" in column_names, "Should have page_id (renamed from pageid)"
     assert "title" in column_names, "Should have title"
-    assert "extract" in column_names, "Should have extract"
+    assert "short_summary" in column_names, "Should have short_summary"
+    assert "long_summary" in column_names, "Should have long_summary"
     
     # Clean up
     conn_manager.drop_table("test_bronze_wikipedia")

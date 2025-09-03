@@ -153,6 +153,29 @@ class HybridSearchEngine:
         """
         Build RRF query using Elasticsearch retriever syntax with location filters.
         
+        IMPORTANT PERFORMANCE OPTIMIZATION:
+        This method implements the EFFICIENT filtered vector search pattern by applying
+        filters DURING the kNN search phase, not after. This is critical for performance
+        because:
+        
+        1. Filters are applied DURING vector search (inside the knn retriever's filter parameter)
+           - This reduces the search space BEFORE computing expensive vector similarities
+           - Much more efficient than post-filtering which would compute similarities for ALL vectors
+        
+        2. The same filters are consistently applied to BOTH text and vector retrievers
+           - Ensures both retrieval strategies respect the location constraints
+           - Prevents irrelevant results from either retriever
+        
+        3. Uses Elasticsearch's native RRF (Reciprocal Rank Fusion) for optimal result combination
+           - Better than manual score combination
+           - Preserves the benefits of both search strategies
+        
+        ANTI-PATTERN TO AVOID:
+        Never use post_filter after kNN search - it's inefficient because it:
+        - Computes vector similarities for ALL documents first
+        - THEN filters results, wasting computation on documents that will be discarded
+        - Can lead to fewer results than requested if many are filtered out
+        
         Args:
             params: Search parameters including optional location intent
             query_vector: Generated query embedding
@@ -184,12 +207,13 @@ class HybridSearchEngine:
             }
         }
         
-        # Wrap with filters if they exist
+        # EFFICIENT PATTERN: Wrap text query with filters if they exist
+        # Filters are applied DURING the text search phase
         if location_filters:
             text_query = {
                 "bool": {
                     "must": text_query,
-                    "filter": location_filters
+                    "filter": location_filters  # Applied during search, not after
                 }
             }
         
@@ -201,9 +225,11 @@ class HybridSearchEngine:
             "num_candidates": min(params.size * 10, 200)
         }
         
-        # Add filters to vector search if they exist
+        # CRITICAL OPTIMIZATION: Add filters to vector search if they exist
+        # This ensures filtering happens DURING kNN search, not after (post_filter)
+        # The filter parameter inside knn is the EFFICIENT approach
         if location_filters:
-            vector_config["filter"] = location_filters
+            vector_config["filter"] = location_filters  # CORRECT: Filter during kNN, not post_filter
         
         # Build complete Elasticsearch query with native RRF
         return {

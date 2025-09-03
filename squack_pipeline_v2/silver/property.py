@@ -1,4 +1,69 @@
-"""Property Silver layer transformation using DuckDB Relation API."""
+"""Property Silver layer transformation using DuckDB Relation API.
+
+PROPERTY EMBEDDING GENERATION DETAILS:
+======================================
+
+This module handles the transformation of property listings into the Silver layer,
+with a critical focus on generating semantic embeddings for each property.
+
+EMBEDDING TEXT COMPOSITION FOR PROPERTIES:
+------------------------------------------
+The embedding_text field is carefully constructed from the following property fields
+to capture the semantic essence of each listing:
+
+1. **description** (Primary): Full property description containing rich details about
+   the property's features, condition, location benefits, and unique selling points.
+   This is the most important field as it contains human-written narrative text.
+
+2. **property_type**: Type of property (e.g., "Single Family Home", "Condo", "Townhouse")
+   Provides categorical context that influences how other features are interpreted.
+
+3. **bedrooms**: Number of bedrooms formatted as "X bedrooms"
+   Key numeric feature that defines property capacity and family suitability.
+
+4. **bathrooms**: Number of bathrooms formatted as "X bathrooms"  
+   Important amenity that affects property value and livability.
+
+5. **square_feet**: Total square footage formatted as "X sqft"
+   Critical size metric that provides spatial context for the property.
+
+FIELD CONCATENATION STRATEGY:
+-----------------------------
+Fields are concatenated using CONCAT_WS (Concatenate With Separator) with space delimiter:
+- Order: description → property_type → bedrooms → bathrooms → square_feet
+- Null/empty values are handled gracefully with COALESCE to prevent gaps
+- Numeric fields are converted to descriptive text (e.g., "3 bedrooms" not just "3")
+
+WHY THESE FIELDS WERE CHOSEN:
+-----------------------------
+- **Semantic Richness**: Description provides natural language context
+- **Key Differentiators**: Bedrooms, bathrooms, and square feet are primary search criteria
+- **Property Classification**: Property type helps disambiguate similar descriptions
+- **Search Alignment**: These fields match what users typically search for
+
+FIELDS INTENTIONALLY EXCLUDED FROM EMBEDDINGS:
+----------------------------------------------
+- **Price**: Excluded to prevent price bias in semantic similarity
+- **Address/Location**: Handled separately via geo-coordinates for location-based search
+- **Listing Date**: Temporal data that doesn't affect property semantics
+- **Images/URLs**: Non-textual data not suitable for text embeddings
+- **Market Trends**: Statistical data better suited for structured queries
+
+EMBEDDING GENERATION PROCESS:
+-----------------------------
+1. SQL projection creates embedding_text using CONCAT_WS (lines 80-86)
+2. Text extracted from DuckDB along with listing_ids (lines 90-95)
+3. Texts sent to embedding provider API (line 97)
+4. Resulting vectors stored as DOUBLE[] arrays with timestamps (lines 99-117)
+5. Embeddings joined back to property data via listing_id (lines 120-153)
+
+TOKENIZATION NOTE:
+-----------------
+No pre-tokenization or chunking is performed. The embedding provider's API handles:
+- Text tokenization using model-specific tokenizers
+- Truncation if text exceeds model's context window
+- Conversion to dense vector representation
+"""
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
@@ -13,6 +78,7 @@ class PropertySilverTransformer(SilverTransformer):
     - Clean and validate data
     - Standardize field names and formats
     - Prepare data for downstream consumption
+    - Generate semantic embeddings for similarity search
     """
     
     def _get_entity_type(self) -> str:
@@ -77,23 +143,33 @@ class PropertySilverTransformer(SilverTransformer):
             buyer_demographics,
             nearby_amenities,
             future_enhancements,
-            CONCAT_WS(' ', 
-                COALESCE(description, ''),
-                COALESCE(property_details.property_type, ''),
-                CONCAT(COALESCE(property_details.bedrooms, 0), ' bedrooms'),
-                CONCAT(COALESCE(property_details.bathrooms, 0), ' bathrooms'),
-                CONCAT(COALESCE(property_details.square_feet, 0), ' sqft')
+            -- EMBEDDING TEXT GENERATION:
+            -- Concatenate key property fields to create semantic representation
+            -- Fields chosen for their descriptive value and search relevance
+            -- Order: narrative description → categorical type → numeric features
+            CONCAT_WS(' ',  -- Space-separated concatenation
+                COALESCE(description, ''),  -- Primary: Full property description text
+                COALESCE(property_details.property_type, ''),  -- Property classification
+                CONCAT(COALESCE(property_details.bedrooms, 0), ' bedrooms'),  -- Bedroom count with label
+                CONCAT(COALESCE(property_details.bathrooms, 0), ' bathrooms'),  -- Bathroom count with label
+                CONCAT(COALESCE(property_details.square_feet, 0), ' sqft')  -- Size with unit
             ) as embedding_text
         """)
         
+        # STEP 1: Extract text data from DuckDB for embedding generation
         # Get embedding text data directly from DuckDB without pandas conversion
+        # This avoids memory overhead and maintains DuckDB's efficient data handling
         embedding_rows = transformed.project("listing_id, embedding_text").fetchall()
         
-        # Extract data into separate lists
-        listing_ids = [row[0] for row in embedding_rows]
-        texts = [row[1] for row in embedding_rows]
+        # STEP 2: Prepare data for embedding API
+        # Extract data into separate lists for batch processing
+        listing_ids = [row[0] for row in embedding_rows]  # Property identifiers
+        texts = [row[1] for row in embedding_rows]  # Concatenated text for each property
         
+        # STEP 3: Generate embeddings via external provider
         # Generate embeddings using List[str] interface
+        # Provider handles: tokenization → encoding → vector generation
+        # No LlamaIndex or pre-chunking - direct API call with full texts
         embedding_response = self.embedding_provider.generate_embeddings(texts)
         
         # Create temporary table with embeddings

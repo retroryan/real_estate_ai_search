@@ -1,4 +1,7 @@
 {
+  "_source": {
+    "excludes": ["embedding"]
+  },
   "properties": {
     "listing_id": {
       "type": "keyword"

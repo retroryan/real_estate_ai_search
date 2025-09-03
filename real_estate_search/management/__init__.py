@@ -12,9 +12,7 @@ from .models import (
     ClusterHealthInfo,
     DemoQuery,
     DemoExecutionResult,
-    OperationStatus,
-    WikipediaEnrichmentConfig,
-    WikipediaEnrichmentResult
+    OperationStatus
 )
 
 from .commands import (
@@ -46,8 +44,6 @@ __all__ = [
     'DemoQuery',
     'DemoExecutionResult',
     'OperationStatus',
-    'WikipediaEnrichmentConfig',
-    'WikipediaEnrichmentResult',
     # Commands
     'BaseCommand',
     'SetupIndicesCommand',

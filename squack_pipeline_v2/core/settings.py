@@ -53,6 +53,7 @@ class EmbeddingConfig(BaseModel):
 class ProcessingConfig(BaseModel):
     """Processing configuration."""
     batch_size: int = Field(default=50)
+    embedding_batch_size: int = Field(default=100, description="Batch size for embedding generation to prevent memory issues")
     max_workers: int = Field(default=2)
     show_progress: bool = Field(default=True)
     rate_limit_delay: float = Field(default=0.1)

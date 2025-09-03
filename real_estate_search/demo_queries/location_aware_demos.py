@@ -444,6 +444,35 @@ def _execute_location_demo(
     """
     Execute a location-aware demo search.
     
+    EFFICIENT SEARCH PATTERN IMPLEMENTATION:
+    This function demonstrates the OPTIMAL approach to filtered vector search:
+    
+    1. Location Extraction (DSPy):
+       - Natural language understanding extracts city, state, etc.
+       - Creates a cleaned query without location terms
+    
+    2. Filter Application (CRITICAL for performance):
+       - Filters are applied DURING both text and vector search
+       - knn.filter parameter ensures vector search is filtered efficiently
+       - bool.filter ensures text search is filtered consistently
+       - This is the CORRECT pattern - filters reduce search space before scoring
+    
+    3. Native RRF Fusion:
+       - Elasticsearch combines filtered results from both retrievers
+       - Maintains the benefits of both search strategies
+       - More efficient than manual score combination
+    
+    ANTI-PATTERN AVOIDED:
+    We do NOT use post_filter which would:
+    - Compute similarities for ALL vectors first (expensive!)
+    - Then filter results (wasteful)
+    - Potentially return fewer results than requested
+    
+    Instead, our knn.filter approach:
+    - Reduces the search space BEFORE computing similarities
+    - Only computes expensive vector operations on relevant documents
+    - Guarantees the requested number of results (if available)
+    
     Args:
         es_client: Elasticsearch client
         example: Search example configuration
@@ -454,11 +483,15 @@ def _execute_location_demo(
     """
     logger.info(f"Executing location-aware demo: '{example.query}'")
     
-    # Initialize hybrid search engine
+    # Initialize hybrid search engine with efficient filtering built-in
     engine = HybridSearchEngine(es_client)
     
     try:
         # Execute location-aware hybrid search
+        # This calls search_with_location which:
+        # 1. Extracts location using DSPy
+        # 2. Builds filters from location intent
+        # 3. Applies filters DURING search (not after) for both text and vector
         result = engine.search_with_location(example.query, size)
         
         # Convert to demo format

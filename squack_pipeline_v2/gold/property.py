@@ -41,7 +41,7 @@ class PropertyGoldEnricher(GoldEnricher):
         s.description || 
         COALESCE(
             ' Located in ' || n.name || '. ' || 
-            (SELECT w.extract 
+            (SELECT w.short_summary 
              FROM silver_wikipedia w
              WHERE w.page_id = n.wikipedia_page_id
              LIMIT 1),

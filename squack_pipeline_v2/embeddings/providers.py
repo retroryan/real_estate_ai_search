@@ -1,5 +1,69 @@
 """Embedding provider implementations.
 
+EMBEDDING PROVIDER ARCHITECTURE:
+================================
+
+This module implements the concrete embedding providers that generate dense vector
+representations from text. Each provider uses its own models and tokenization approach.
+
+KEY DESIGN DECISIONS:
+--------------------
+1. **No LlamaIndex Integration**: Direct API calls to embedding providers
+   - No intermediate text processing or chunking frameworks
+   - Simplifies architecture and reduces dependencies
+   - Text sent directly to provider APIs
+
+2. **Provider-Specific Tokenization**: Each provider handles its own tokenization
+   - Voyage AI: Proprietary tokenizer optimized for voyage models
+   - OpenAI: tiktoken library (cl100k_base encoder for text-embedding-3)
+   - Ollama: Model-specific tokenizers (e.g., SentencePiece for nomic-embed-text)
+
+3. **Batch Processing**: Different batch sizes per provider
+   - Voyage: 10 texts per batch (API recommendation for optimal performance)
+   - OpenAI: 100 texts per batch (supports larger batches efficiently)
+   - Ollama: 1 text at a time (local model processing)
+
+TOKENIZATION DETAILS BY PROVIDER:
+---------------------------------
+
+VOYAGE AI:
+- **Tokenizer**: Proprietary, optimized for voyage-3 model
+- **Context Window**: 16,000 tokens (voyage-3)
+- **Truncation**: Automatic server-side if text exceeds limit
+- **Special Tokens**: Handled internally by Voyage API
+- **Dimension**: 1024 for voyage-3
+
+OPENAI:
+- **Tokenizer**: tiktoken (cl100k_base) for text-embedding-3 models
+- **Context Window**: 8,191 tokens
+- **Truncation**: Automatic server-side truncation
+- **Special Tokens**: <|endoftext|> and others handled internally
+- **Dimensions**: 1536 (small) or 3072 (large)
+
+OLLAMA (LOCAL):
+- **Tokenizer**: Model-specific (e.g., SentencePiece for nomic-embed-text)
+- **Context Window**: Varies by model (typically 2048-8192 tokens)
+- **Truncation**: Model-dependent behavior
+- **Special Tokens**: Model-specific
+- **Dimension**: 768 for nomic-embed-text
+
+EMBEDDING GENERATION FLOW:
+-------------------------
+1. Text received from Silver layer transformers (already concatenated)
+2. Provider validates request using Pydantic models
+3. Text sent to provider API/server
+4. Provider tokenizes text internally
+5. Tokens converted to embeddings by model
+6. Dense vectors returned to caller
+7. Vectors stored in DuckDB as DOUBLE[] arrays
+
+NO PRE-PROCESSING:
+-----------------
+- No text chunking (providers handle long text)
+- No pre-tokenization (providers tokenize internally)
+- No text cleaning (preserve original content)
+- No stopword removal (models trained on natural text)
+
 Following DuckDB best practices:
 - Providers handle external API communication
 - Pydantic models validate API responses
@@ -31,7 +95,15 @@ class OpenAIAPIResponse(BaseModel):
 
 
 class VoyageProvider(EmbeddingProvider):
-    """Voyage AI embedding provider."""
+    """Voyage AI embedding provider.
+    
+    TOKENIZATION:
+    - Uses proprietary tokenizer optimized for voyage models
+    - No client-side tokenization - API handles everything
+    - Supports up to 16,000 tokens per text (voyage-3)
+    - Automatic truncation if text exceeds limit
+    - No LlamaIndex preprocessing - text sent directly to API
+    """
     
     def __init__(self, api_key: str, model_name: str, dimension: int):
         """Initialize Voyage provider.
@@ -57,8 +129,14 @@ class VoyageProvider(EmbeddingProvider):
     def generate_embeddings(self, texts: List[str]) -> EmbeddingResponse:
         """Generate embeddings using Voyage AI.
         
+        TOKENIZATION PROCESS:
+        1. Raw text sent to Voyage API without preprocessing
+        2. Voyage applies proprietary tokenizer server-side
+        3. Tokens converted to 1024-dimensional vectors
+        4. No LlamaIndex or local tokenization involved
+        
         Args:
-            texts: Texts to embed
+            texts: Texts to embed (no chunking required)
             
         Returns:
             EmbeddingResponse with embeddings
@@ -66,11 +144,12 @@ class VoyageProvider(EmbeddingProvider):
         request = self.validate_request(texts)
         client = self._get_client()
         
-        # Call Voyage API
+        # Call Voyage API - tokenization happens server-side
+        # input_type="document" optimizes for document-style text
         result = client.embed(
             texts=request.texts,
             model=request.model_name,
-            input_type="document"
+            input_type="document"  # Optimized for document embeddings
         )
         
         # Create structured response from API result
@@ -93,7 +172,15 @@ class VoyageProvider(EmbeddingProvider):
 
 
 class OpenAIProvider(EmbeddingProvider):
-    """OpenAI embedding provider."""
+    """OpenAI embedding provider.
+    
+    TOKENIZATION:
+    - Uses tiktoken library with cl100k_base encoder
+    - Tokenization happens server-side by OpenAI API
+    - Supports up to 8,191 tokens per text
+    - Automatic truncation for texts exceeding limit
+    - No client-side chunking or LlamaIndex usage
+    """
     
     def __init__(self, api_key: str, model_name: str, dimension: int):
         """Initialize OpenAI provider.
@@ -119,8 +206,14 @@ class OpenAIProvider(EmbeddingProvider):
     def generate_embeddings(self, texts: List[str]) -> EmbeddingResponse:
         """Generate embeddings using OpenAI.
         
+        TOKENIZATION PROCESS:
+        1. Raw text sent to OpenAI API
+        2. OpenAI tokenizes using tiktoken (cl100k_base encoder)
+        3. Tokens converted to vectors (1536 or 3072 dimensions)
+        4. No local preprocessing or LlamaIndex involved
+        
         Args:
-            texts: Texts to embed
+            texts: Texts to embed (no pre-chunking needed)
             
         Returns:
             EmbeddingResponse with embeddings
@@ -128,10 +221,11 @@ class OpenAIProvider(EmbeddingProvider):
         request = self.validate_request(texts)
         client = self._get_client()
         
-        # Call OpenAI API
+        # Call OpenAI API - tiktoken tokenization happens server-side
+        # text-embedding-3 models use cl100k_base tokenizer
         response = client.embeddings.create(
             input=request.texts,
-            model=request.model_name
+            model=request.model_name  # e.g., text-embedding-3-small
         )
         
         # Extract embeddings
@@ -150,7 +244,15 @@ class OpenAIProvider(EmbeddingProvider):
 
 
 class OllamaProvider(EmbeddingProvider):
-    """Ollama local embedding provider."""
+    """Ollama local embedding provider.
+    
+    TOKENIZATION:
+    - Uses model-specific tokenizers (e.g., SentencePiece for nomic-embed-text)
+    - Tokenization happens within Ollama server
+    - Token limits vary by model (typically 2048-8192)
+    - No external API calls - runs locally
+    - No LlamaIndex or pre-processing required
+    """
     
     def __init__(self, model_name: str, dimension: int, base_url: str):
         """Initialize Ollama provider.
@@ -166,8 +268,15 @@ class OllamaProvider(EmbeddingProvider):
     def generate_embeddings(self, texts: List[str]) -> EmbeddingResponse:
         """Generate embeddings using local Ollama.
         
+        TOKENIZATION PROCESS:
+        1. Text sent to local Ollama server
+        2. Model-specific tokenizer applied (e.g., SentencePiece)
+        3. Tokens converted to vectors (typically 768 dimensions)
+        4. Processing happens locally - no external API
+        5. No LlamaIndex or text chunking used
+        
         Args:
-            texts: Texts to embed
+            texts: Texts to embed (processed one at a time)
             
         Returns:
             EmbeddingResponse with embeddings
@@ -178,7 +287,8 @@ class OllamaProvider(EmbeddingProvider):
         request = self.validate_request(texts)
         embeddings = []
         
-        # Ollama processes one at a time
+        # Ollama processes one at a time - no batch support
+        # Each model has its own tokenizer (nomic uses SentencePiece)
         for text in request.texts:
             response = requests.post(
                 f"{self.base_url}/api/embeddings",
@@ -208,6 +318,18 @@ class OllamaProvider(EmbeddingProvider):
 
 def create_provider(provider_type: str, api_key: str = "", model_name: str = "", base_url: str = None) -> EmbeddingProvider:
     """Factory function to create embedding providers.
+    
+    IMPORTANT ARCHITECTURE NOTES:
+    - No LlamaIndex is used anywhere in the embedding pipeline
+    - Each provider handles its own tokenization internally
+    - Text is sent directly to providers without pre-processing
+    - No text chunking - providers handle long texts via truncation
+    - Embeddings are generated in batches for efficiency
+    
+    TOKENIZER SUMMARY BY PROVIDER:
+    - Voyage: Proprietary tokenizer, 16k token limit
+    - OpenAI: tiktoken (cl100k_base), 8k token limit  
+    - Ollama: Model-specific (e.g., SentencePiece), varies by model
     
     Args:
         provider_type: Type of provider (voyage, openai, ollama)

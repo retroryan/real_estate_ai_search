@@ -1,4 +1,7 @@
 {
+  "_source": {
+    "excludes": ["embedding"]
+  },
   "properties": {
     "page_id": {
       "type": "keyword"

@@ -1,4 +1,57 @@
-"""Base interface for Silver layer transformation using DuckDB Relation API."""
+"""Base interface for Silver layer transformation using DuckDB Relation API.
+
+EMBEDDING GENERATION ARCHITECTURE:
+===================================
+
+The Silver layer is responsible for generating embeddings for all entities in the pipeline.
+This is a critical step that transforms raw text data into dense vector representations
+that can be used for semantic search and similarity matching.
+
+KEY COMPONENTS:
+--------------
+1. **Embedding Providers**: External APIs (Voyage AI, OpenAI, Ollama) that generate embeddings
+   - Each provider has its own model and dimension specifications
+   - Providers handle tokenization internally using their own tokenizers
+   - No LlamaIndex is used - embeddings are generated directly via provider APIs
+
+2. **Text Preparation**: Each entity type (property, neighborhood, wikipedia) creates
+   an "embedding_text" field by concatenating relevant text fields
+   - This concatenation happens in the SQL projection using CONCAT_WS
+   - Fields are selected based on their semantic relevance to the entity
+   - Wikipedia now uses AI-generated long_summary (not extract) for 3-4x more content
+
+3. **Batch Processing**: Texts are extracted from DuckDB and sent to providers in batches
+   - Batch sizes vary by provider (Voyage: 10, OpenAI: 100, Ollama: 1)
+   - All texts for an entity type are processed together for efficiency
+
+4. **Vector Storage**: Generated embeddings are stored as DOUBLE[] arrays in DuckDB
+   - Embedding dimension varies by model (Voyage-3: 1024, OpenAI: 1536, Ollama: 768)
+   - Timestamp tracking for when embeddings were generated
+
+TOKENIZATION DETAILS:
+--------------------
+- **NO LlamaIndex Usage**: The pipeline does NOT use LlamaIndex for chunking or tokenization
+- **Provider-Specific Tokenizers**: Each embedding provider uses its own internal tokenizer:
+  - Voyage AI: Uses their proprietary tokenizer optimized for voyage-3 model
+  - OpenAI: Uses tiktoken (cl100k_base tokenizer for text-embedding-3 models)
+  - Ollama: Uses model-specific tokenizers (e.g., SentencePiece for nomic-embed-text)
+- **No Pre-Chunking**: Text is sent directly to providers without pre-chunking
+  - Providers handle text truncation if needed based on their token limits
+
+EMBEDDING GENERATION FLOW:
+-------------------------
+1. Transform data in DuckDB using Relation API
+2. Create embedding_text field by concatenating relevant fields
+   - Properties: description + property_type + bedrooms + bathrooms + sqft
+   - Neighborhoods: description | name | population
+   - Wikipedia: title | long_summary (NEW: replaced extract for 3-4x more content)
+3. Extract listing_ids/entity_ids and embedding_texts from DuckDB
+4. Send texts to embedding provider API in batches
+5. Receive embedding vectors from provider
+6. Create temporary table with embeddings in DuckDB
+7. Join embeddings back to main data using entity IDs
+8. Store final result with embedded vectors
+"""
 
 from abc import ABC, abstractmethod
 from typing import Optional

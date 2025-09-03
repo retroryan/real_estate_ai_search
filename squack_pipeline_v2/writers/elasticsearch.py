@@ -217,10 +217,10 @@ class WikipediaInput(BaseModel):
     title: str
     url: str = ""
     article_filename: Optional[str] = ""
-    long_summary: str = ""
-    short_summary: str = ""
-    full_content: str = ""
-    content_length: int = 0
+    long_summary: Optional[str] = None
+    short_summary: Optional[str] = None
+    full_content: Optional[str] = None
+    content_length: Optional[int] = None
     content_loaded: bool = False
     content_loaded_at: Optional[datetime] = None  # Can be None
     
@@ -406,10 +406,10 @@ class WikipediaTransformer:
             title=input_data.title,
             url=input_data.url,
             article_filename=input_data.article_filename or "",
-            long_summary=input_data.long_summary,
-            short_summary=input_data.short_summary,
-            full_content=input_data.full_content,
-            content_length=input_data.content_length,
+            long_summary=input_data.long_summary or "",
+            short_summary=input_data.short_summary or "",
+            full_content=input_data.full_content or "",
+            content_length=input_data.content_length or 0,
             content_loaded=input_data.content_loaded,
             content_loaded_at=input_data.content_loaded_at or datetime.now(),
             categories=input_data.parse_categories(),

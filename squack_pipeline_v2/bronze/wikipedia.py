@@ -70,8 +70,9 @@ class WikipediaBronzeIngester(BronzeIngester):
             # Drop existing Bronze table if it exists
             self.connection_manager.drop_table(table_name)
             
-            # Use SQL to join articles with page_summaries for location data
+            # Use SQL to join articles with page_summaries for location and summary data
             # Bronze layer principle: Load data AS-IS with NO transformations
+            # Include short_summary and long_summary fields from page_summaries
             if sample_size:
                 create_query = f"""
                 CREATE TABLE {table_name} AS
@@ -79,7 +80,9 @@ class WikipediaBronzeIngester(BronzeIngester):
                     a.*,
                     ps.best_city,
                     ps.best_county,
-                    ps.best_state
+                    ps.best_state,
+                    ps.short_summary,
+                    ps.long_summary
                 FROM wiki_db.articles a
                 LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 LIMIT {sample_size}
@@ -91,7 +94,9 @@ class WikipediaBronzeIngester(BronzeIngester):
                     a.*,
                     ps.best_city,
                     ps.best_county,
-                    ps.best_state
+                    ps.best_state,
+                    ps.short_summary,
+                    ps.long_summary
                 FROM wiki_db.articles a
                 LEFT JOIN wiki_db.page_summaries ps ON a.pageid = ps.page_id
                 """
