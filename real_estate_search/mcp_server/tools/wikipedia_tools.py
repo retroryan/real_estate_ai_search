@@ -18,19 +18,19 @@ async def search_wikipedia(
     size: int = 10,
     search_type: str = "hybrid"
 ) -> Dict[str, Any]:
-    """Search Wikipedia articles for location and topic information.
+    """Search Wikipedia articles for general topics and information.
     
-    This tool enables semantic search across Wikipedia content to provide rich contextual
-    information about locations, landmarks, and topics relevant to real estate searches.
+    This is a general-purpose Wikipedia search tool. Use search_wikipedia_by_location 
+    instead when you have a specific city/neighborhood to search for.
     
     Args:
-        query: Natural language query (e.g., "Golden Gate Bridge history", "Mission District culture")
-        search_in: What to search - "full" (complete articles), "summaries", or "chunks"
-        city: Filter by city name
-        state: Filter by state (2-letter code)
-        categories: Filter by Wikipedia categories
-        size: Number of results to return (1-50, default 10)
-        search_type: Search mode - "hybrid" (default), "semantic", or "text"
+        query: REQUIRED - Natural language search query (e.g., "Golden Gate Bridge history")
+        search_in: OPTIONAL - Search scope: "full" (default), "summaries", or "chunks"  
+        city: OPTIONAL - Filter results by city (use only for filtering, not primary location search)
+        state: OPTIONAL - Filter results by state code (e.g., "CA", "NY")
+        categories: OPTIONAL - Filter by Wikipedia category names
+        size: OPTIONAL - Number of results (1-50, default 10)
+        search_type: OPTIONAL - "hybrid" (default), "semantic", or "text"
         
     Returns:
         Search results with Wikipedia article information
@@ -207,19 +207,19 @@ async def search_wikipedia_by_location(
     query: Optional[str] = None,
     size: int = 10
 ) -> Dict[str, Any]:
-    """Search Wikipedia articles by location.
+    """Search Wikipedia articles for a specific city or neighborhood.
     
-    Find Wikipedia articles related to a specific geographic location, useful for
-    understanding neighborhood context, local attractions, and area information.
+    PREFERRED for location-based searches. Use this when you have a specific city, 
+    neighborhood, or area name. It automatically adds location context to searches.
     
     Args:
-        city: City name to search for
-        state: Optional state filter (2-letter code)
-        query: Optional additional search terms
-        size: Number of results to return (1-20, default 10)
+        city: REQUIRED - City or neighborhood name (e.g., "Oakland", "Temescal")
+        state: OPTIONAL - State code for disambiguation (e.g., "CA", "NY") 
+        query: OPTIONAL - Additional search terms (e.g., "amenities culture")
+        size: OPTIONAL - Number of results (1-20, default 10)
         
     Returns:
-        Wikipedia articles related to the specified location
+        Wikipedia articles about the specified location with local context
     """
     # Get request ID safely without hasattr
     request_id = getattr(context, 'request_id', "unknown")

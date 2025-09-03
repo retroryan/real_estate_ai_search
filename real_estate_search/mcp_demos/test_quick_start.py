@@ -33,11 +33,11 @@ async def test_connection():
     for tool in tools:
         print(f"  - {tool}")
     
-    # Test 3: Search properties
-    print("\n4. Searching properties...")
+    # Test 3: Search properties (using new main tool)
+    print("\n4. Searching properties with AI...")
     response = await client.call_tool(
-        "search_properties_tool",
-        {"query": "modern home", "size": 2}
+        "search_properties",
+        {"query": "modern home in Oakland", "size": 2}
     )
     
     if response.success:
@@ -49,10 +49,32 @@ async def test_connection():
         print(f"✗ Error: {response.error}")
     
     # Test 4: Search Wikipedia
-    print("\n5. Searching Wikipedia...")
+    # Test 4.5: Search properties with filters
+    print("\n5. Searching properties with explicit filters...")
     response = await client.call_tool(
-        "search_wikipedia_tool",
-        {"query": "San Francisco", "size": 2}
+        "search_properties_with_filters",
+        {
+            "query": "home",
+            "min_bedrooms": 3,
+            "max_price": 800000,
+            "city": "Oakland",
+            "size": 2
+        }
+    )
+    
+    if response.success:
+        data = response.data
+        print(f"✓ Found {data.get('total_results', 'N/A')} filtered properties")
+        if 'properties' in data:
+            for prop in data['properties'][:2]:
+                print(f"  - {prop['bedrooms']} bed: ${prop['price']:,}")
+    else:
+        print(f"✗ Error: {response.error}")
+    
+    print("\n6. Searching Wikipedia...")
+    response = await client.call_tool(
+        "search_wikipedia",
+        {"query": "San Francisco history", "size": 2}
     )
     
     if response.success:
@@ -60,6 +82,22 @@ async def test_connection():
         print(f"✓ Found {data['total_results']} articles")
         for article in data['articles'][:2]:
             print(f"  - {article['title']}")
+    else:
+        print(f"✗ Error: {response.error}")
+    
+    # Test 5: Search Wikipedia by location  
+    print("\n7. Searching Wikipedia by location...")
+    response = await client.call_tool(
+        "search_wikipedia_by_location",
+        {"city": "Oakland", "query": "Temescal neighborhood", "size": 2}
+    )
+    
+    if response.success:
+        data = response.data
+        print(f"✓ Found location-specific articles")
+        if 'articles' in data:
+            for article in data['articles'][:2]:
+                print(f"  - {article['title']}")
     else:
         print(f"✗ Error: {response.error}")
     

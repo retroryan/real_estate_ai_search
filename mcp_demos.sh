@@ -84,22 +84,18 @@ list_demos() {
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${YELLOW}Demo #  Description${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo "  1     Basic Property Search - Search with natural language"
-    echo "  2     Filtered Property Search - Search with price/type filters"
+    echo "  1     Property Search (AI) - Natural language property search with location extraction"
+    echo "  2     Property Search with Filters - Search with explicit price/bedroom filters"
     echo "  3     Wikipedia Search - Search Wikipedia articles"
-    echo "  4     Wikipedia Location Context - Search Wikipedia by location"
+    echo "  4     Wikipedia Location Search - Search Wikipedia by specific location"
     echo "  5     Location Discovery - Discover properties and info by location"
     echo "  6     Multi-Entity Search - Search properties and Wikipedia together"
     echo "  7     Property Details - Get detailed property information"
     echo "  8     Search Comparison - Compare semantic vs text search"
-    echo " 12     Natural Language Semantic Search - AI-powered natural language"
-    echo " 13     Natural Language Examples - Multiple diverse AI search examples"
-    echo " 14     Semantic vs Keyword Comparison - Compare AI vs traditional search"
-    echo -e "${PURPLE} === Hybrid Search MCP Tool Demos ===${NC}"
+    echo -e "${PURPLE} === Advanced Property Search Demos ===${NC}"
     echo " 15     Hybrid Search Basics - Core hybrid search functionality with RRF"
-    echo " 16     Location Understanding Comparison - Compare DSPy extraction with management demo"
-    echo " 17     [Reserved for future demo]"
-    echo " 18     Location-Aware Search - DSPy location extraction and geographic filtering"
+    echo " 16     Location Understanding - DSPy location extraction demonstration"
+    echo " 18     Location-Aware Search - Advanced location filtering"
     echo " 19     Advanced Scenarios - Edge cases, validation, and complex queries"
     echo -e "${PURPLE} === Rich Property Details Tool Demo ===${NC}"
     echo " 25     Rich Property Details - Comprehensive property with embedded neighborhood & Wikipedia"
@@ -234,13 +230,13 @@ run_demo() {
     # Map demo numbers to actual demo functions
     case $demo_num in
         1)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.demo_basic_property_search('modern home with pool')${NC}"
+            echo -e "${YELLOW}Demo: Property Search with AI Location Extraction${NC}"
+            echo -e "${BLUE}Query: 'modern 3-bedroom home with pool in Oakland'${NC}"
             echo
-            # URL: real_estate_search.mcp_demos.demos.demo_basic_property_search('modern home with pool')
             python -c "
 import asyncio
 from real_estate_search.mcp_demos.demos import demo_basic_property_search
-asyncio.run(demo_basic_property_search('modern home with pool'))
+asyncio.run(demo_basic_property_search('modern 3-bedroom home with pool in Oakland'))
 "
             ;;
         2)
@@ -313,36 +309,6 @@ from real_estate_search.mcp_demos.demos import demo_semantic_vs_text_comparison
 asyncio.run(demo_semantic_vs_text_comparison('modern kitchen'))
 "
             ;;
-        12)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_semantic_search('cozy family home near good schools and parks')${NC}"
-            echo
-            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_semantic_search('cozy family home near good schools and parks')
-            python -c "
-import asyncio
-from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_semantic_search
-asyncio.run(demo_natural_language_semantic_search('cozy family home near good schools and parks'))
-"
-            ;;
-        13)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_examples()${NC}"
-            echo
-            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_natural_language_examples()
-            python -c "
-import asyncio
-from real_estate_search.mcp_demos.demos.natural_language_demo import demo_natural_language_examples
-asyncio.run(demo_natural_language_examples())
-"
-            ;;
-        14)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demos.natural_language_demo.demo_semantic_vs_keyword_comparison('stunning views from modern kitchen')${NC}"
-            echo
-            # URL: real_estate_search.mcp_demos.demos.natural_language_demo.demo_semantic_vs_keyword_comparison('stunning views from modern kitchen')
-            python -c "
-import asyncio
-from real_estate_search.mcp_demos.demos.natural_language_demo import demo_semantic_vs_keyword_comparison
-asyncio.run(demo_semantic_vs_keyword_comparison('stunning views from modern kitchen'))
-"
-            ;;
         15)
             echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_1_basic_hybrid${NC}"
             echo
@@ -379,7 +345,7 @@ asyncio.run(demo_rich_property_details('prop-oak-125'))
             ;;
         *)
             echo -e "${RED}Error: Invalid demo number '$demo_num'${NC}"
-            echo "Valid demo numbers are 1-8, 12-16, 18-19, 25"
+            echo "Valid demo numbers are 1-8, 15-16, 18-19, 25"
             exit 1
             ;;
     esac
@@ -487,7 +453,7 @@ main() {
                 VERBOSE="true"
                 shift
                 ;;
-            [1-8]|1[2-6]|18|19|25)
+            [1-8]|15|16|18|19|25)
                 demo_number=$1
                 shift
                 ;;

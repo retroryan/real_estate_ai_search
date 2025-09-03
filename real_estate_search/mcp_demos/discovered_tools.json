@@ -1,8 +1,8 @@
 {
   "tools": [
     {
-      "name": "search_properties_tool",
-      "description": "Search for properties using natural language queries.\n            \n            Find properties that match your criteria using semantic search. You can describe\n            what you're looking for in natural language and optionally add specific filters.\n            \n            Args:\n                query: Natural language description (e.g., \"modern home with pool near parks\")\n                property_type: Filter by type (House, Condo, Townhouse, etc.)\n                min_price: Minimum price filter\n                max_price: Maximum price filter\n                min_bedrooms: Minimum bedrooms\n                max_bedrooms: Maximum bedrooms\n                city: Filter by city\n                state: Filter by state (2-letter code like CA, NY)\n                size: Number of results (1-100, default 20)\n                search_type: \"hybrid\" (best), \"semantic\" (AI), or \"text\" (keyword)\n                \n            Returns:\n                List of matching properties with details and relevance scores\n            ",
+      "name": "search_properties_with_filters",
+      "description": "Search properties when you have SPECIFIC filter requirements (price, bedrooms, location).",
       "parameters": {
         "properties": {
           "query": {
@@ -10,39 +10,88 @@
             "type": "string"
           },
           "property_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Property Type",
-            "type": "string"
+            "title": "Property Type"
           },
           "min_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Min Price",
-            "type": "number"
+            "title": "Min Price"
           },
           "max_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Max Price",
-            "type": "number"
+            "title": "Max Price"
           },
           "min_bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Min Bedrooms",
-            "type": "integer"
+            "title": "Min Bedrooms"
           },
           "max_bedrooms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Max Bedrooms",
-            "type": "integer"
+            "title": "Max Bedrooms"
           },
           "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "City",
-            "type": "string"
+            "title": "City"
           },
           "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "State",
-            "type": "string"
+            "title": "State"
           },
           "size": {
             "default": 20,
@@ -51,6 +100,11 @@
           },
           "search_type": {
             "default": "hybrid",
+            "enum": [
+              "hybrid",
+              "semantic",
+              "text"
+            ],
             "title": "Search Type",
             "type": "string"
           }
@@ -62,8 +116,8 @@
       }
     },
     {
-      "name": "get_property_details_tool",
-      "description": "Get detailed information for a specific property.\n            \n            Args:\n                listing_id: The unique property listing ID\n                \n            Returns:\n                Complete property information including all available details\n            ",
+      "name": "get_property_details",
+      "description": "Get detailed information for a specific property by its listing ID.",
       "parameters": {
         "properties": {
           "listing_id": {
@@ -78,8 +132,8 @@
       }
     },
     {
-      "name": "get_rich_property_details_tool",
-      "description": "Get comprehensive property listing with embedded neighborhood and Wikipedia data.\n            \n            Retrieves complete property information from the denormalized property_relationships\n            index in a single high-performance query. Returns all property details along with\n            embedded neighborhood demographics and relevant Wikipedia articles.\n            \n            Args:\n                listing_id: The unique property listing ID\n                include_wikipedia: Include Wikipedia articles about the area (default True)\n                include_neighborhood: Include detailed neighborhood information (default True)\n                wikipedia_limit: Maximum Wikipedia articles to return (1-10, default 3)\n                \n            Returns:\n                Rich property listing with embedded neighborhood and Wikipedia context\n            ",
+      "name": "get_rich_property_details",
+      "description": "Get comprehensive property listing with embedded neighborhood and Wikipedia data.",
       "parameters": {
         "properties": {
           "listing_id": {
@@ -109,8 +163,8 @@
       }
     },
     {
-      "name": "search_wikipedia_tool",
-      "description": "Search Wikipedia for location and topic information.\n            \n            Find information about neighborhoods, landmarks, history, and local context\n            to better understand areas and locations.\n            \n            Args:\n                query: What you're looking for (e.g., \"Mission District culture\", \"Golden Gate Bridge\")\n                search_in: \"full\" (complete articles), \"summaries\" (shorter), or \"chunks\" (sections)\n                city: Filter by city name\n                state: Filter by state (2-letter code)\n                categories: List of Wikipedia categories to filter by\n                size: Number of results (1-50, default 10)\n                search_type: \"hybrid\" (best), \"semantic\" (AI), or \"text\" (keyword)\n                \n            Returns:\n                Wikipedia articles with summaries, topics, and location information\n            ",
+      "name": "search_wikipedia",
+      "description": "Search Wikipedia for general information about any topic or location. Use for general searches when you don't have a specific city.",
       "parameters": {
         "properties": {
           "query": {
@@ -119,24 +173,52 @@
           },
           "search_in": {
             "default": "full",
+            "enum": [
+              "full",
+              "summaries",
+              "chunks"
+            ],
             "title": "Search In",
             "type": "string"
           },
           "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "City",
-            "type": "string"
+            "title": "City"
           },
           "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "State",
-            "type": "string"
+            "title": "State"
           },
           "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "items": {},
-            "title": "Categories",
-            "type": "array"
+            "title": "Categories"
           },
           "size": {
             "default": 10,
@@ -145,6 +227,11 @@
           },
           "search_type": {
             "default": "hybrid",
+            "enum": [
+              "hybrid",
+              "semantic",
+              "text"
+            ],
             "title": "Search Type",
             "type": "string"
           }
@@ -156,8 +243,8 @@
       }
     },
     {
-      "name": "search_wikipedia_by_location_tool",
-      "description": "Find Wikipedia articles about a specific location.\n            \n            Discover information about neighborhoods, landmarks, attractions, and local\n            context for any city or area.\n            \n            Args:\n                city: City name to search for\n                state: Optional state filter (2-letter code like CA, NY)\n                query: Optional additional search terms\n                size: Number of results (1-20, default 10)\n                \n            Returns:\n                Location-specific Wikipedia articles with local information\n            ",
+      "name": "search_wikipedia_by_location",
+      "description": "Find Wikipedia articles about a SPECIFIC CITY or neighborhood. PREFERRED for location searches.",
       "parameters": {
         "properties": {
           "city": {
@@ -165,14 +252,28 @@
             "type": "string"
           },
           "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "State",
-            "type": "string"
+            "title": "State"
           },
           "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "default": null,
-            "title": "Query",
-            "type": "string"
+            "title": "Query"
           },
           "size": {
             "default": 10,
@@ -187,42 +288,16 @@
       }
     },
     {
-      "name": "natural_language_search_tool",
-      "description": "Advanced natural language semantic search with AI embeddings.\n            \n            Perform sophisticated natural language search using AI embeddings that understand\n            intent and context beyond simple keyword matching. Choose from different search types\n            to explore semantic understanding capabilities.\n            \n            Args:\n                query: Natural language query (e.g., \"cozy family home near good schools\")\n                search_type: Type of search:\n                    - \"semantic\": Pure AI embedding search (default)\n                    - \"examples\": Run 5 diverse example queries to show capabilities\n                    - \"comparison\": Compare semantic vs keyword search side-by-side\n                size: Number of results to return (1-50, default 10)\n                \n            Returns:\n                Advanced search results with AI-powered semantic understanding\n            ",
-      "parameters": {
-        "properties": {
-          "query": {
-            "title": "Query",
-            "type": "string"
-          },
-          "search_type": {
-            "default": "semantic",
-            "title": "Search Type",
-            "type": "string"
-          },
-          "size": {
-            "default": 10,
-            "title": "Size",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "query"
-        ],
-        "type": "object"
-      }
-    },
-    {
-      "name": "health_check_tool",
-      "description": "Check the health status of all system components.\n            \n            Returns:\n                System health information including service statuses\n            ",
+      "name": "health_check",
+      "description": "Check the health status of all system components.",
       "parameters": {
         "properties": {},
         "type": "object"
       }
     },
     {
-      "name": "search_properties_hybrid_tool",
-      "description": "Search properties using hybrid search with location understanding.\n            \n            Advanced property search that combines semantic vector search, traditional text matching,\n            and intelligent location extraction from natural language queries. Uses Elasticsearch's\n            RRF (Reciprocal Rank Fusion) for optimal result ranking.\n            \n            Args:\n                query: Natural language property search query (e.g., \"luxury waterfront condo in San Francisco\")\n                size: Number of results to return (1-50, default 10)\n                include_location_extraction: Include location extraction details in response (default false)\n                \n            Returns:\n                Structured property results with hybrid relevance scores and execution metadata\n            ",
+      "name": "search_properties",
+      "description": "PREFERRED: Search properties using natural language queries with AI understanding.",
       "parameters": {
         "properties": {
           "query": {
@@ -247,7 +322,7 @@
       }
     }
   ],
-  "total_count": 8,
+  "total_count": 7,
   "server_name": "MCP Server",
-  "discovery_time_ms": 45.54319381713867
+  "discovery_time_ms": 36.982059478759766
 }
