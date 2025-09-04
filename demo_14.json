@@ -1,0 +1,190 @@
+{
+  "demo_name": "Rich Real Estate Listing - Single Query for All Data",
+  "description": "This demonstrates the power of denormalized data in Elasticsearch. The property_relationships index contains property documents with embedded neighborhood and Wikipedia data, allowing a single query to retrieve everything needed for a complete listing.",
+  
+  "elasticsearch_query": {
+    "index": "property_relationships",
+    "body": {
+      "query": {
+        "term": {
+          "listing_id": "prop-oak-125"
+        }
+      },
+      "size": 1,
+      "sort": [
+        {
+          "_score": "desc"
+        }
+      ]
+    }
+  },
+  
+  "data_structure_explanation": {
+    "overview": "The property_relationships index uses a denormalized data model where each property document contains ALL related data embedded within it",
+    
+    "document_structure": {
+      "property_data": {
+        "listing_id": "Unique identifier",
+        "address": "Property street address",
+        "city": "City name",
+        "state": "State code",
+        "zip_code": "ZIP code",
+        "price": "Listing price",
+        "bedrooms": "Number of bedrooms",
+        "bathrooms": "Number of bathrooms",
+        "square_feet": "Total square footage",
+        "lot_size": "Lot size in sqft",
+        "year_built": "Year property was built",
+        "property_type": "Type (single_family, townhome, etc.)",
+        "status": "Listing status",
+        "description": "Full property description",
+        "features": ["Array of property features"],
+        "amenities": ["Array of property amenities"],
+        "parking": {
+          "type": "Parking type",
+          "spaces": "Number of spaces"
+        },
+        "days_on_market": "Days since listing",
+        "listing_date": "Date listed",
+        "price_per_sqft": "Calculated price per square foot"
+      },
+      
+      "embedded_neighborhood": {
+        "neighborhood": {
+          "name": "Neighborhood name",
+          "city": "City name",
+          "state": "State code",
+          "population": "Population count",
+          "median_income": "Median household income",
+          "walkability_score": "Walk score (0-100)",
+          "transit_score": "Transit score (0-100)",
+          "school_rating": "School rating (0-5)",
+          "crime_rate": "Crime rate index",
+          "description": "Full neighborhood description",
+          "amenities": ["Local amenities array"],
+          "demographics": {
+            "median_age": "Median resident age",
+            "household_size": "Average household size"
+          }
+        }
+      },
+      
+      "embedded_wikipedia_articles": {
+        "wikipedia_articles": [
+          {
+            "article_id": "Wikipedia article ID",
+            "title": "Article title",
+            "summary": "Article summary/abstract",
+            "content": "Full article content",
+            "url": "Wikipedia URL",
+            "relationship_type": "How article relates (primary, geographical, historical, etc.)",
+            "confidence": "Relevance confidence score (0-1)",
+            "categories": ["Article categories"],
+            "embeddings": {
+              "summary_embedding": "Vector embedding of summary",
+              "content_embedding": "Vector embedding of full content"
+            }
+          }
+        ]
+      }
+    }
+  },
+  
+  "performance_comparison": {
+    "traditional_normalized_approach": {
+      "description": "Multiple queries to separate indices",
+      "queries_required": [
+        {
+          "query_num": 1,
+          "index": "properties",
+          "purpose": "Get property details",
+          "estimated_time_ms": 50
+        },
+        {
+          "query_num": 2,
+          "index": "neighborhoods",
+          "purpose": "Get neighborhood by ID",
+          "estimated_time_ms": 50
+        },
+        {
+          "query_num": 3,
+          "index": "wikipedia_articles",
+          "purpose": "Get related Wikipedia article 1",
+          "estimated_time_ms": 50
+        },
+        {
+          "query_num": 4,
+          "index": "wikipedia_articles",
+          "purpose": "Get related Wikipedia article 2",
+          "estimated_time_ms": 50
+        },
+        {
+          "query_num": 5,
+          "index": "wikipedia_articles",
+          "purpose": "Get related Wikipedia article 3",
+          "estimated_time_ms": 50
+        }
+      ],
+      "total_estimated_time_ms": 250,
+      "complexity": "High - requires managing multiple async requests, error handling for each, and data assembly"
+    },
+    
+    "denormalized_approach": {
+      "description": "Single query to denormalized index",
+      "queries_required": 1,
+      "actual_time_ms": 5,
+      "improvement_factor": 50,
+      "benefits": [
+        "Single network round trip",
+        "Atomic operation - all data or nothing",
+        "Simplified error handling",
+        "Better cache utilization",
+        "Reduced server load",
+        "Simpler application code"
+      ]
+    }
+  },
+  
+  "use_cases": {
+    "ideal_for": [
+      "Real estate listing pages",
+      "E-commerce product pages with reviews and related items",
+      "Content management systems with rich metadata",
+      "News articles with comments and related stories",
+      "User profiles with activity history and connections"
+    ],
+    
+    "trade_offs": {
+      "benefits": [
+        "Exceptional read performance",
+        "Simplified application logic",
+        "Reduced infrastructure complexity",
+        "Better user experience (faster page loads)",
+        "Easier caching strategies"
+      ],
+      "considerations": [
+        "Larger index storage requirements",
+        "More complex indexing pipeline",
+        "Updates require reindexing entire document",
+        "Potential data duplication",
+        "Need to maintain data consistency during updates"
+      ]
+    }
+  },
+  
+  "elasticsearch_features_used": [
+    "Term query for exact match on listing_id",
+    "Nested objects for complex data structures",
+    "Array support for features, amenities, and articles",
+    "Large document support (documents can be 50KB+)",
+    "_source field to retrieve full document",
+    "Sort by relevance score"
+  ],
+  
+  "implementation_notes": {
+    "indexing_pipeline": "The squack_pipeline processes data from multiple sources and creates these denormalized documents",
+    "data_freshness": "Updates to neighborhood or Wikipedia data require reindexing affected properties",
+    "scaling": "This pattern scales horizontally by adding more Elasticsearch nodes",
+    "monitoring": "Track document size growth and query latencies as data volume increases"
+  }
+}

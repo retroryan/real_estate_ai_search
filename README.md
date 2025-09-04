@@ -1,6 +1,6 @@
 # Real Estate AI Search
 
-This repository demonstrates both **GraphRAG** and **RAG** architectures through two production-ready real estate search implementations, alongside comprehensive tools for Wikipedia content processing and semantic search using generative AI and embeddings. The data is ingested via Spark Data Pipelines, providing scalable processing and transformation capabilities. The core modules showcase how to build AI-driven data pipelines for both approaches. GraphRAG uses Neo4j where embeddings are stored as node properties within the graph database for unified hybrid search. RAG leverages Elasticsearch with vector search capabilities. Both implementations demonstrate how to prepare, process, and serve data for generative AI applications.
+This repository demonstrates both **GraphRAG** and **RAG** architectures through two production-ready real estate search implementations, alongside comprehensive tools for Wikipedia content processing and semantic search using generative AI and embeddings. The data is ingested via a DuckDB-based medallion architecture pipeline, providing efficient local data processing with SQL-first transformations. The core modules showcase how to build AI-driven data pipelines for both approaches. GraphRAG uses Neo4j where embeddings are stored as node properties within the graph database for unified hybrid search. RAG leverages Elasticsearch with vector search capabilities. Both implementations demonstrate how to prepare, process, and serve data for generative AI applications.
 
 ### Core AI Capabilities
 - **Neo4j GraphRAG Implementation**: Graph-based retrieval system with native vector search, combining knowledge graph relationships with semantic embeddings for enhanced accuracy
@@ -45,10 +45,10 @@ graph TB
         F[Voyage AI Vectors<br/>Domain-Specific]
     end
     
-    subgraph "Data Pipeline (Apache Spark)"
-        G[Distributed Processing<br/>DataFrames]
-        H[Relationship Builder<br/>Graph Construction]
-        I[Bulk Indexing<br/>Batch Operations]
+    subgraph "Data Pipeline (DuckDB Medallion Architecture)"
+        G[Bronze Layer<br/>Raw Ingestion]
+        H[Silver Layer<br/>Standardization]
+        I[Gold Layer<br/>Enrichment]
     end
     
     subgraph "Elasticsearch Storage"
@@ -68,13 +68,14 @@ graph TB
     A --> G
     B --> D --> G
     C --> G
-    G --> E --> I
-    G --> F --> I
-    G --> H --> I
+    G --> H
+    H --> I
+    E --> I
+    F --> I
     I --> J
     I --> K
     I --> L
-    H --> M
+    I --> M
     N --> O
     O --> M
     P --> M
@@ -83,15 +84,15 @@ graph TB
 
 #### Key Architectural Components
 
-**1. Multi-Stage Data Pipeline**
-The system processes raw data through six distinct stages, each adding layers of intelligence:
+**1. Multi-Stage Data Pipeline (DuckDB Medallion Architecture)**
+The system processes raw data through a medallion architecture using DuckDB's columnar OLAP engine:
 
-- **Stage 1 - AI Enrichment**: DSPy extracts summaries and key concepts from Wikipedia articles, while location data undergoes geocoding and normalization
-- **Stage 2 - Data Loading**: Ingests property JSON, Wikipedia HTML, and neighborhood CSVs into Apache Spark DataFrames for distributed processing
-- **Stage 3 - Embedding Generation**: LlamaIndex and Voyage AI create 1024-dimensional vectors capturing semantic meaning of all text content
-- **Stage 4 - Relationship Building**: Correlation engine identifies connections between properties, neighborhoods, and Wikipedia articles with confidence scores
-- **Stage 5 - Elasticsearch Loading**: Bulk API efficiently loads enriched documents into specialized indices optimized for different query patterns
-- **Stage 6 - Post-Processing**: Ingest pipelines perform final transformations like HTML stripping and metadata enrichment
+- **Bronze Layer - Raw Ingestion**: Direct file operations using DuckDB's native readers (read_json_auto, read_parquet) for property JSON, Wikipedia HTML, and neighborhood CSVs
+- **Silver Layer - Standardization**: SQL-first transformations to clean, validate, and standardize data types with consistent schemas across all entities
+- **Gold Layer - Enrichment**: Business logic and data enrichment including relationship building, feature engineering, and preparation for embedding generation
+- **Embedding Generation**: LlamaIndex and Voyage AI create 1024-dimensional vectors from Gold layer data, capturing semantic meaning of all text content
+- **Output Writers**: Parallel export to Parquet files for archival and Elasticsearch bulk indexing for search applications
+- **Post-Processing**: Final transformations including metadata enrichment and index optimization for different query patterns
 
 **2. AI-Powered Search Capabilities**
 The search layer combines multiple retrieval methods enhanced by generative AI:
@@ -114,14 +115,14 @@ For a comprehensive deep-dive into the system architecture, implementation patte
 
 ---
 
-### [2. Spark Data Pipeline](./squack_pipeline/)
-**Purpose**: Spark-based distributed data processing and transformation pipeline that adds Vector Embeddings using LlamaIndex  
+### [2. DuckDB Data Pipeline](./squack_pipeline_v2/)
+**Purpose**: DuckDB-based medallion architecture pipeline for efficient local data processing with Vector Embeddings using LlamaIndex  
 **Key Features**:
-- **Scalable ETL Operations**: Distributed processing of property and location data
-- **Data Enrichment**: Feature engineering and data augmentation
-- **Parallel Processing**: Leverages Spark for high-performance data transformations
+- **Medallion Architecture**: Bronze → Silver → Gold data quality tiers with clear separation of concerns
+- **SQL-First Design**: All transformations in SQL leveraging DuckDB's columnar OLAP engine
+- **Direct File Operations**: Native readers for JSON, Parquet, and CSV without Python intermediaries
 - **Vector Embedding Integration**: Coordinates embedding generation across multiple providers like Voyage, Ollama, OpenAI, and Gemini
-- **Output to Multiple Stores**: Writes to Parquet, Neo4j, and Elasticsearch
+- **Output to Multiple Stores**: Writes to Parquet files and Elasticsearch indices with bulk operations
 
 ---
 
@@ -164,16 +165,18 @@ For a comprehensive deep-dive into the system architecture, implementation patte
 
 ---
 
-### [6. SQUACK Pipeline](./squack_pipeline/)
-**Purpose**: Work in progress - replacing Spark for local data processing using DuckDB  
+### [6. Legacy Spark Pipeline](./squack_pipeline/)
+**Purpose**: Original Spark-based pipeline (now replaced by DuckDB pipeline in squack_pipeline_v2)  
 **Key Features**:
-- **DuckDB-based Processing**: High-performance columnar OLAP engine for local data processing
-- **Medallion Architecture**: Bronze → Silver → Gold data quality tiers
-- **LlamaIndex Integration**: Document processing and embedding generation
-- **Multi-Store Output**: Writes to Parquet files and Elasticsearch indexes
-- **Elasticsearch Support**: Direct indexing to Elasticsearch for search applications
+- **Apache Spark Processing**: Distributed data processing using Spark DataFrames
+- **Multi-Source Ingestion**: Reads from JSON, CSV, and database sources
+- **Embedding Generation**: Integrates with multiple embedding providers
+- **Multi-Store Output**: Writes to Parquet, Neo4j, and Elasticsearch
+- **Parallel Processing**: Leverages Spark's distributed computing capabilities
 - **State Management**: Pipeline recovery and comprehensive metrics
-- **CLI Interface**: Full command-line support with YAML configuration
+- **CLI Interface**: Command-line support with YAML configuration
+
+Note: For new deployments, use the DuckDB pipeline (squack_pipeline_v2) which offers better performance for local processing and cleaner architecture.
 
 ## Generative AI Technologies
 
@@ -310,8 +313,8 @@ Process Wikipedia data from crawling to searchable embeddings:
 # 1. Generate summaries with DSPy
 python wiki_summary/summarize_main.py --limit 50
 
-# 2. Run Spark pipeline for Wikipedia data
-python -m squack_pipeline --data-type wikipedia
+# 2. Run DuckDB pipeline for Wikipedia data
+python -m squack_pipeline_v2 --entities wikipedia
 
 # 3. Test embeddings with LlamaIndex
 python -m common_embeddings.main evaluate
@@ -328,7 +331,7 @@ Complete pipeline flow for Elasticsearch-based real estate search:
 python -m real_estate_search.management setup-indices --clear
 
 # 2. Run data pipeline to process and index data
-python -m squack_pipeline
+python -m squack_pipeline_v2
 
 # 3. Enrich Wikipedia articles for full-text search
 python -m real_estate_search.management enrich-wikipedia
@@ -353,8 +356,8 @@ Build a complete GraphRAG system with Neo4j:
 # 1. Setup Neo4j with Docker
 docker-compose up -d
 
-# 2. Run Spark pipeline to populate Neo4j
-python -m squack_pipeline --output-destination neo4j
+# 2. Run DuckDB pipeline to populate Neo4j
+python -m squack_pipeline_v2 --output neo4j
 
 # 3. Test hybrid search
 python graph_real_estate/search_properties.py "modern condo with city views" --demo
@@ -421,10 +424,15 @@ real_estate_ai_search/
 │   │   └── wikipedia.db     # SQLite database
 │   └── embeddings/          # Generated embeddings
 │
-├── squack_pipeline/          # Spark Data Pipeline
-│   ├── core/                # Core pipeline components
-│   ├── loaders/            # Data loaders
-│   ├── enrichment/         # Enrichment processors
+├── squack_pipeline_v2/       # DuckDB Data Pipeline (Current)
+│   ├── bronze/             # Raw data ingestion layer
+│   ├── silver/             # Data standardization layer
+│   ├── gold/               # Business logic & enrichment
+│   ├── embeddings/         # Vector generation
+│   └── writers/            # Output to Parquet/Elasticsearch
+│
+├── squack_pipeline/          # Legacy Spark Pipeline
+│   ├── core/               # Core pipeline components
 │   └── outputs/            # Output writers
 │
 ├── graph_real_estate/        # Neo4j GraphRAG module

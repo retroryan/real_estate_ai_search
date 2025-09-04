@@ -85,6 +85,11 @@ def create_ner_pipeline(es, pipeline_name='wikipedia_ner_pipeline'):
     with open(pipeline_file, 'r') as f:
         pipeline_body = json.load(f)
     
+    # Convert source arrays to strings for Elasticsearch (if needed)
+    for processor in pipeline_body.get('processors', []):
+        if 'script' in processor and isinstance(processor['script'].get('source'), list):
+            processor['script']['source'] = '\n'.join(processor['script']['source'])
+    
     # Delete pipeline if it exists
     try:
         es.ingest.delete_pipeline(id=pipeline_name)

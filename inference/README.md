@@ -822,3 +822,372 @@ Challenge: "University of California, Berkeley"
    - Domain-specific challenges need custom solutions
 
 This deep understanding of NER and the DistilBERT model helps explain why it's so effective for information extraction and how to best utilize it in your Elasticsearch implementation.
+
+---
+
+## 📊 Building Kibana Dashboards for NER Data
+
+### Complete Beginner's Guide to Visualizing Named Entities
+
+This section provides a comprehensive, step-by-step guide for creating interactive Kibana dashboards to visualize and analyze the named entities extracted from Wikipedia articles. No prior Kibana experience required!
+
+### 🎯 What You'll Build
+
+By the end of this guide, you'll have a complete NER analytics dashboard featuring:
+- **Entity Tag Clouds**: Visual word clouds showing most frequent entities
+- **Top Entities Bar Charts**: Ranked lists of organizations, locations, and persons
+- **Entity Distribution Pie Charts**: Proportional breakdowns by entity type
+- **Time-Series Analysis**: Entity mentions over time
+- **Geographic Maps**: Location entity visualization (if coordinates available)
+- **Entity Co-occurrence Matrix**: Which entities appear together
+- **Search and Filter Controls**: Interactive exploration tools
+
+### 📋 Prerequisites
+
+1. **Elasticsearch with NER data**: Run `python inference/process_wikipedia_ner.py` first
+2. **Kibana access**: Usually at http://localhost:5601
+3. **Browser**: Chrome or Firefox recommended
+4. **Sample data**: At least 50-100 processed Wikipedia articles for meaningful visualizations
+
+### 🚀 Step 1: Access Kibana
+
+#### First Time Setup
+```bash
+# If using Docker, Kibana might be included:
+docker run -d \
+  --name kibana \
+  --link elasticsearch:elasticsearch \
+  -p 5601:5601 \
+  docker.elastic.co/kibana/kibana:8.11.0
+
+# Wait 30-60 seconds for Kibana to start
+```
+
+#### Access Kibana Interface
+1. Open browser to http://localhost:5601
+2. If prompted for credentials, use:
+   - Username: `elastic`
+   - Password: Your ES_PASSWORD from .env file
+3. You should see the Kibana home page
+
+### 📁 Step 2: Create a Data View (Index Pattern)
+
+Data Views tell Kibana which Elasticsearch indices to query for visualizations.
+
+#### Navigate to Data Views
+1. Click the **☰** hamburger menu (top left)
+2. Go to **Stack Management** (under Management section)
+3. Click **Data Views** (under Kibana section)
+4. Click **Create data view** button
+
+#### Configure the Data View
+1. **Name**: `Wikipedia NER Entities`
+2. **Index pattern**: `wikipedia_ner*` (matches wikipedia_ner index)
+3. **Timestamp field**: 
+   - Select `ner_processed_at` if you want time-based analysis
+   - Or choose "I don't want to use the time filter" for simpler setup
+4. Click **Save data view to Kibana**
+
+#### Verify Fields
+After creation, you should see fields including:
+- `ner_organizations.keyword` - Organization names
+- `ner_locations.keyword` - Location names  
+- `ner_persons.keyword` - Person names
+- `ner_misc.keyword` - Miscellaneous entities
+- `title` - Article titles
+- `city`, `state` - Geographic metadata
+
+### 🎨 Step 3: Create Your First Visualization - Entity Tag Cloud
+
+Tag clouds are perfect for showing the most frequent entities at a glance.
+
+#### Start Creating
+1. Click **☰** menu → **Dashboard**
+2. Click **Create dashboard**
+3. Click **Create visualization**
+4. Choose **Aggregation based** → **Tag cloud**
+
+#### Configure the Tag Cloud
+1. **Data source**: Select "Wikipedia NER Entities" data view
+
+2. **Metrics** (already set):
+   - Aggregation: Count
+   
+3. **Buckets** - Add a bucket:
+   - Click **Add** → **Tags**
+   - **Aggregation**: Terms
+   - **Field**: `ner_persons.keyword`
+   - **Size**: 30 (shows top 30 persons)
+   - **Custom label**: "Top People Mentioned"
+
+4. **Options** (right panel):
+   - **Font size range**: 20 to 60
+   - **Orientations**: Multiple
+   - **Show labels**: On
+
+5. Click **Update** (blue button, bottom right)
+
+6. **Save visualization**:
+   - Click **Save** (top right)
+   - Title: "Top People in Wikipedia Articles"
+   - Add to dashboard: Current dashboard
+
+### 📊 Step 4: Create Multiple Entity Type Visualizations
+
+Now create similar visualizations for each entity type:
+
+#### A. Organizations Bar Chart
+1. **Create new** → **Aggregation based** → **Vertical bar**
+2. **Configuration**:
+   - Field: `ner_organizations.keyword`
+   - Size: 20
+   - Order by: Count (descending)
+3. **Save as**: "Top Organizations"
+
+#### B. Locations Horizontal Bar
+1. **Create new** → **Aggregation based** → **Horizontal bar**
+2. **Configuration**:
+   - Field: `ner_locations.keyword`
+   - Size: 15
+   - Show percentages: On
+3. **Save as**: "Most Mentioned Locations"
+
+#### C. Entity Type Distribution Pie Chart
+1. **Create new** → **Aggregation based** → **Pie**
+2. **Bucket configuration**:
+   ```
+   Aggregation: Filters
+   Filter 1: ner_organizations: * (Label: "Organizations")
+   Filter 2: ner_locations: * (Label: "Locations")
+   Filter 3: ner_persons: * (Label: "Persons")
+   Filter 4: ner_misc: * (Label: "Miscellaneous")
+   ```
+3. **Save as**: "Entity Type Distribution"
+
+### 🔍 Step 5: Advanced Visualizations
+
+#### A. Entity Co-occurrence Heat Map
+Shows which entities frequently appear together:
+
+1. **Create new** → **Aggregation based** → **Heat map**
+2. **Y-axis**:
+   - Aggregation: Terms
+   - Field: `ner_persons.keyword`
+   - Size: 10
+3. **X-axis**:
+   - Aggregation: Terms
+   - Field: `ner_organizations.keyword`
+   - Size: 10
+4. **Values**:
+   - Aggregation: Count
+5. **Save as**: "Person-Organization Associations"
+
+#### B. Time Series of Entity Mentions
+(Only if you selected a timestamp field):
+
+1. **Create new** → **Aggregation based** → **Line**
+2. **Configuration**:
+   - X-axis: Date Histogram on `ner_processed_at`
+   - Y-axis: Count
+   - Split series: Terms on `ner_organizations.keyword` (top 5)
+3. **Save as**: "Entity Mentions Over Time"
+
+#### C. Data Table of All Entities
+1. **Create new** → **Aggregation based** → **Data table**
+2. **Add multiple metrics**:
+   - Unique count of `ner_organizations.keyword` (Label: "Unique Orgs")
+   - Unique count of `ner_persons.keyword` (Label: "Unique People")
+   - Unique count of `ner_locations.keyword` (Label: "Unique Locations")
+3. **Split rows**:
+   - Terms on `title.keyword` (Size: 50)
+4. **Save as**: "Articles Entity Summary Table"
+
+### 🎯 Step 6: Create Interactive Filters
+
+#### Add Control Visualizations
+1. **Create new** → **Controls**
+2. **Add controls**:
+   
+   **Control 1 - Entity Type Selector**:
+   - Type: Options list
+   - Field: `_index`
+   - Label: "Select Index"
+   
+   **Control 2 - Location Filter**:
+   - Type: Options list  
+   - Field: `city.keyword`
+   - Label: "Filter by City"
+   - Parent control: None
+   
+   **Control 3 - Search Box**:
+   - Type: Options list
+   - Field: `ner_persons.keyword`
+   - Label: "Search for Person"
+   - Allow multiselect: Yes
+
+3. **Save as**: "Dashboard Filters"
+
+### 🏗️ Step 7: Arrange Your Dashboard
+
+#### Layout Best Practices
+1. **Top Row**: Place filter controls and title
+2. **Second Row**: Key metrics (data tables, totals)
+3. **Main Area**: Large visualizations (tag clouds, bar charts)
+4. **Bottom**: Detailed tables and time series
+
+#### Arrange Visualizations
+1. **Resize**: Drag corners to resize each panel
+2. **Move**: Drag panel headers to reposition
+3. **Suggested layout**:
+   ```
+   [Filters (full width)]
+   [Tag Cloud People | Tag Cloud Orgs | Tag Cloud Locations]
+   [Bar Chart Orgs  | Pie Chart Types | Heat Map]
+   [Time Series (full width)]
+   [Data Table (full width)]
+   ```
+
+### 🎨 Step 8: Styling and Customization
+
+#### Dashboard Settings
+1. Click **Settings** (gear icon, top right)
+2. **Options**:
+   - Title: "Wikipedia NER Entity Analysis"
+   - Description: "Named entity extraction insights from Wikipedia articles"
+   - Dark mode: Toggle based on preference
+   - Show query: Off (unless debugging)
+
+#### Color Schemes
+1. Edit each visualization
+2. **Color palette options**:
+   - Organizations: Blue gradient
+   - Persons: Green gradient
+   - Locations: Orange gradient
+   - Miscellaneous: Purple gradient
+
+### 🔄 Step 9: Add Real-time Updates
+
+#### Auto-refresh Setup
+1. Click time picker (top right)
+2. Select **Auto-refresh**
+3. Choose interval: 30 seconds or 1 minute
+4. Useful for monitoring active NER processing
+
+#### Time Range Tips
+- **Last 7 days**: Good for recent processing
+- **Last 30 days**: Better for trend analysis
+- **Custom range**: For specific processing batches
+
+### 📱 Step 10: Interactive Features
+
+#### Enable Drill-downs
+1. Edit any bar/pie chart visualization
+2. Go to **Options** → **Interactions**
+3. Enable **Drill-down** URLs:
+   ```
+   URL template: /app/discover#/?_a=(query:(match:({field}:'{value}')))
+   ```
+4. Now clicking entities opens detailed document view
+
+#### Add Markdown Explanations
+1. **Create new** → **Markdown**
+2. Add helpful text:
+   ```markdown
+   # NER Entity Dashboard
+   
+   This dashboard shows named entities extracted from Wikipedia articles:
+   - **ORG**: Organizations, companies, institutions
+   - **PER**: People, historical figures, authors
+   - **LOC**: Locations, cities, countries
+   - **MISC**: Miscellaneous named entities
+   
+   Click any entity to filter the entire dashboard!
+   ```
+
+### 🚨 Step 11: Common Issues and Solutions
+
+#### Problem: No data showing
+**Solution**: 
+1. Verify index has data: `curl localhost:9200/wikipedia_ner/_count`
+2. Check time range includes your data
+3. Remove all filters and try again
+
+#### Problem: Fields not appearing
+**Solution**:
+1. Refresh data view: Stack Management → Data Views → Refresh
+2. Check field types: Ensure using `.keyword` fields for aggregations
+
+#### Problem: Visualization errors
+**Solution**:
+1. Check field mappings match
+2. Reduce bucket size if too many unique values
+3. Use "exists" query to filter null values
+
+### 💾 Step 12: Save and Share
+
+#### Save Dashboard
+1. Click **Save** (top right)
+2. Name: "Wikipedia NER Analysis"
+3. Description: Add meaningful description
+4. Tags: "ner", "nlp", "wikipedia"
+5. **Save**
+
+#### Export Dashboard
+1. Stack Management → Saved Objects
+2. Find your dashboard
+3. Click checkbox → Export
+4. Saves as `.ndjson` file
+
+#### Share Dashboard
+1. Click **Share** (top right)
+2. Options:
+   - **Embed code**: For websites
+   - **Permalink**: Direct link
+   - **PDF Reports**: Schedule exports
+   - **PNG Image**: Screenshot
+
+### 📈 Advanced Tips
+
+#### 1. Comparative Analysis
+Create split charts comparing:
+- Entities across different cities
+- Entity types by article category
+- Person mentions by time period
+
+#### 2. Alerting
+Set up Watcher alerts for:
+- New entity types discovered
+- Unusual entity frequency spikes
+- Processing errors
+
+#### 3. Machine Learning
+Use Kibana ML features to:
+- Detect anomalous entity patterns
+- Forecast entity trends
+- Classify articles by entity profile
+
+### 🎯 Example Use Cases
+
+1. **Research Analysis**: Track mentions of scientists across articles
+2. **Geographic Study**: Map location entities by frequency
+3. **Historical Figures**: Analyze co-occurrence of historical persons
+4. **Organization Networks**: Discover relationships between companies
+5. **Content Categorization**: Group articles by dominant entity types
+
+### 📚 Additional Resources
+
+- [Kibana Guide](https://www.elastic.co/guide/en/kibana/current/index.html)
+- [Visualization Types](https://www.elastic.co/guide/en/kibana/current/aggregation-based.html)
+- [Dashboard Tutorial](https://www.elastic.co/guide/en/kibana/current/tutorial-build-dashboard.html)
+- [Elastic NER Example](https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-ner-example)
+
+### 🎉 Congratulations!
+
+You've now built a complete NER analytics dashboard! This dashboard will automatically update as you process more Wikipedia articles through the NER pipeline. Experiment with different visualizations and filters to gain deeper insights into your entity data.
+
+**Next Steps**:
+1. Process more articles: `python inference/process_wikipedia_ner.py --sample all`
+2. Create specialized dashboards for specific entity types
+3. Export visualizations for reports and presentations
+4. Set up alerts for interesting entity patterns
+5. Combine with embedding visualizations for hybrid analysis

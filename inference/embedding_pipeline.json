@@ -4,7 +4,35 @@
     {
       "script": {
         "lang": "painless",
-        "source": "// Prepare text for title embedding\nif (ctx.title != null && ctx.title != '') {\n    ctx.title_text = ctx.title;\n} else {\n    ctx.title_text = 'Untitled';\n}\n\n// Prepare text for content embedding (truncate if too long)\nif (ctx.full_content != null && ctx.full_content != '') {\n    String content = ctx.full_content;\n    if (content.length() > 512) {\n        ctx.content_text = content.substring(0, 512);\n    } else {\n        ctx.content_text = content;\n    }\n} else {\n    ctx.content_text = ctx.title_text;\n}\n\n// Prepare text for summary embedding\nif (ctx.long_summary != null && ctx.long_summary != '') {\n    ctx.summary_text = ctx.long_summary;\n} else if (ctx.short_summary != null && ctx.short_summary != '') {\n    ctx.summary_text = ctx.short_summary;\n} else {\n    ctx.summary_text = ctx.content_text;\n}"
+        "source": [
+          "// Prepare text for title embedding",
+          "if (ctx.title != null && ctx.title != '') {",
+          "    ctx.title_text = ctx.title;",
+          "} else {",
+          "    ctx.title_text = 'Untitled';",
+          "}",
+          "",
+          "// Prepare text for content embedding (truncate if too long)",
+          "if (ctx.full_content != null && ctx.full_content != '') {",
+          "    String content = ctx.full_content;",
+          "    if (content.length() > 512) {",
+          "        ctx.content_text = content.substring(0, 512);",
+          "    } else {",
+          "        ctx.content_text = content;",
+          "    }",
+          "} else {",
+          "    ctx.content_text = ctx.title_text;",
+          "}",
+          "",
+          "// Prepare text for summary embedding",
+          "if (ctx.long_summary != null && ctx.long_summary != '') {",
+          "    ctx.summary_text = ctx.long_summary;",
+          "} else if (ctx.short_summary != null && ctx.short_summary != '') {",
+          "    ctx.summary_text = ctx.short_summary;",
+          "} else {",
+          "    ctx.summary_text = ctx.content_text;",
+          "}"
+        ]
       }
     },
     {
@@ -52,7 +80,32 @@
     {
       "script": {
         "lang": "painless",
-        "source": "// Extract embeddings from inference results\nif (ctx.ml?.title_inference?.text_embedding != null) {\n    ctx.title_embedding = ctx.ml.title_inference.text_embedding;\n}\n\nif (ctx.ml?.content_inference?.text_embedding != null) {\n    ctx.content_embedding = ctx.ml.content_inference.text_embedding;\n}\n\nif (ctx.ml?.summary_inference?.text_embedding != null) {\n    ctx.summary_embedding = ctx.ml.summary_inference.text_embedding;\n}\n\n// Set metadata\nctx.embedding_model = 'all-minilm-l6-v2';\nctx.embedding_dimension = 384;\nctx.embeddings_processed = true;\nctx.embeddings_generated_at = new Date();\n\n// Clean up temporary fields\nctx.remove('title_text');\nctx.remove('content_text');\nctx.remove('summary_text');\nctx.remove('ml');"
+        "source": [
+          "// Extract embeddings from inference results",
+          "if (ctx.ml?.title_inference?.text_embedding != null) {",
+          "    ctx.title_embedding = ctx.ml.title_inference.text_embedding;",
+          "}",
+          "",
+          "if (ctx.ml?.content_inference?.text_embedding != null) {",
+          "    ctx.content_embedding = ctx.ml.content_inference.text_embedding;",
+          "}",
+          "",
+          "if (ctx.ml?.summary_inference?.text_embedding != null) {",
+          "    ctx.summary_embedding = ctx.ml.summary_inference.text_embedding;",
+          "}",
+          "",
+          "// Set metadata",
+          "ctx.embedding_model = 'all-minilm-l6-v2';",
+          "ctx.embedding_dimension = 384;",
+          "ctx.embeddings_processed = true;",
+          "ctx.embeddings_generated_at = new Date();",
+          "",
+          "// Clean up temporary fields",
+          "ctx.remove('title_text');",
+          "ctx.remove('content_text');",
+          "ctx.remove('summary_text');",
+          "ctx.remove('ml');"
+        ]
       }
     }
   ],
