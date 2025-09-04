@@ -64,6 +64,21 @@ class BaseMCPDemo(ABC):
             end_time = time.time()
             execution_time = (end_time - start_time) * 1000
             
+            # Check if this is an error response
+            if "error" in response_data and "properties" not in response_data:
+                # Handle error response - create a minimal valid response
+                error_response = HybridSearchResponse(
+                    properties=[],
+                    total_results=0,
+                    returned_results=0,
+                    execution_time_ms=int(execution_time),
+                    query=request.query,
+                    location_extracted=None
+                )
+                # Log the error but return a valid response structure
+                self.console.print(f"[yellow]⚠️ Server returned error: {response_data.get('error')}[/yellow]")
+                return error_response
+            
             # Validate and parse response using Pydantic
             response = HybridSearchResponse(**response_data)
             

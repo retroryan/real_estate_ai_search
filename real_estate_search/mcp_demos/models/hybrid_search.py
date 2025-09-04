@@ -47,7 +47,7 @@ class HybridSearchRequest(BaseModel):
     """Request for hybrid property search."""
     model_config = ConfigDict(extra='forbid')
     
-    query: str = Field(description="Natural language search query")
+    query: str = Field(min_length=1, max_length=500, description="Natural language search query")
     size: int = Field(default=10, ge=1, le=50, description="Number of results")
     include_location_extraction: bool = Field(default=False, description="Include location extraction details")
 

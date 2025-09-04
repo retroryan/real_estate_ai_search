@@ -22,7 +22,7 @@ from rich.columns import Columns
 from rich.syntax import Syntax
 from rich.tree import Tree
 
-from .models import DemoQueryResult
+from .result_models import PropertySearchResult, WikipediaSearchResult, MixedEntityResult, PropertyResult, WikipediaArticle
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def demo_semantic_search(
     es_client: Elasticsearch,
     reference_property_id: Optional[str] = None,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo 6: Semantic similarity search using embeddings.
     
@@ -116,7 +116,7 @@ def demo_semantic_search(
                            f"\n" + "="*60)
             else:
                 logger.warning(f"Reference property {reference_property_id} has no embedding")
-                return DemoQueryResult(
+                return PropertySearchResult(
                     query_name="Semantic Similarity Search",
                     execution_time_ms=0,
                     total_hits=0,
@@ -126,7 +126,7 @@ def demo_semantic_search(
                 )
     except Exception as e:
         logger.error(f"Error getting reference property: {e}")
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name="Semantic Similarity Search",
             execution_time_ms=0,
             total_hits=0,
@@ -256,13 +256,29 @@ def demo_semantic_search(
         # Create descriptive query name with reference property info
         query_name = f"Semantic Similarity Search - Finding properties similar to: {street}, {city} ({prop_type}, {price_fmt})"
         
-        return DemoQueryResult(
+        # Convert results to PropertyResult objects
+        property_results = []
+        for r in results:
+            property_results.append(PropertyResult(
+                listing_id=r.get('listing_id', ''),
+                property_type=r.get('property_type', 'Unknown'),
+                price=r.get('price', 0),
+                bedrooms=r.get('bedrooms', 0),
+                bathrooms=r.get('bathrooms', 0),
+                square_feet=r.get('square_feet', 0),
+                year_built=r.get('year_built'),
+                address=r.get('address', {}),
+                description=r.get('description', ''),
+                score=r.get('_similarity_score')
+            ))
+        
+        return PropertySearchResult(
             query_name="Demo 6: " + query_name,
             query_description=f"Finds properties semantically similar to reference property {reference_property_id} using AI embeddings and vector similarity",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=query,
             es_features=[
                 "KNN Search - K-nearest neighbors for efficient vector similarity search",
@@ -279,7 +295,7 @@ def demo_semantic_search(
         )
     except Exception as e:
         logger.error(f"Error in semantic search: {e}")
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name="Semantic Similarity Search",
             execution_time_ms=0,
             total_hits=0,
@@ -293,7 +309,7 @@ def demo_multi_entity_search(
     es_client: Elasticsearch,
     query_text: str = "historic downtown",
     size: int = 5
-) -> DemoQueryResult:
+) -> MixedEntityResult:
     """
     Demo 7: Multi-entity combined search across different indices.
     
@@ -522,17 +538,47 @@ def demo_multi_entity_search(
         if 'aggregations' in response:
             aggregations = response['aggregations']
         
-        # Extract only property results for the standard display table
-        property_results = [r for r in results if r.get('_entity_type') == 'property']
+        # Convert results to typed objects
+        property_results = []
+        wikipedia_results = []
+        neighborhood_results = []
         
-        return DemoQueryResult(
+        for r in results:
+            if r.get('_entity_type') == 'property':
+                property_results.append(PropertyResult(
+                    listing_id=r.get('listing_id', ''),
+                    property_type=r.get('property_type', 'Unknown'),
+                    price=r.get('price', 0),
+                    bedrooms=r.get('bedrooms', 0),
+                    bathrooms=r.get('bathrooms', 0),
+                    square_feet=r.get('square_feet', 0),
+                    year_built=r.get('year_built'),
+                    address=r.get('address', {}),
+                    description=r.get('description', ''),
+                    score=r.get('_score')
+                ))
+            elif r.get('_entity_type') == 'wikipedia':
+                wikipedia_results.append(WikipediaArticle(
+                    page_id=str(r.get('page_id', '')),
+                    title=r.get('title', ''),
+                    summary=r.get('short_summary', r.get('long_summary', '')),
+                    city=r.get('city'),
+                    state=r.get('state'),
+                    url=r.get('url'),
+                    score=r.get('_score')
+                ))
+            elif r.get('_entity_type') == 'neighborhood':
+                neighborhood_results.append(r)
+        
+        return MixedEntityResult(
             query_name=f"Demo 7: Multi-Entity Search - '{query_text}'",
             query_description=f"Unified search across properties, neighborhoods, and Wikipedia articles for '{query_text}', combining results from multiple data sources",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
-            returned_hits=len(property_results),
-            results=property_results,  # Only return property results for standard display
-            aggregations=aggregations,
+            returned_hits=len(results),
+            property_results=property_results,
+            wikipedia_results=wikipedia_results,
+            neighborhood_results=neighborhood_results,
             query_dsl=query,
             es_features=[
                 "Multi-Index Search - Query multiple indices in single request",
@@ -551,12 +597,14 @@ def demo_multi_entity_search(
         )
     except Exception as e:
         logger.error(f"Error in multi-entity search: {e}")
-        return DemoQueryResult(
+        return MixedEntityResult(
             query_name="Multi-Entity Search",
             execution_time_ms=0,
             total_hits=0,
             returned_hits=0,
-            results=[],
+            property_results=[],
+            wikipedia_results=[],
+            neighborhood_results=[],
             query_dsl=query
         )
 
@@ -567,7 +615,7 @@ def demo_wikipedia_search(
     state: Optional[str] = "CA",
     topics: Optional[List[str]] = None,
     size: int = 10
-) -> DemoQueryResult:
+) -> WikipediaSearchResult:
     """
     Demo 8: Wikipedia article search with location filtering.
     
@@ -798,15 +846,26 @@ def demo_wikipedia_search(
                 border_style="yellow"
             ))
         
-        # Return empty results for standard property display since these are Wikipedia articles
-        # The custom display above already shows the Wikipedia results properly
-        return DemoQueryResult(
+        # Convert results to WikipediaArticle objects
+        wikipedia_articles = []
+        for r in results:
+            wikipedia_articles.append(WikipediaArticle(
+                page_id=str(r.get('page_id', '')),
+                title=r.get('title', ''),
+                summary=r.get('short_summary', r.get('long_summary', '')),
+                city=r.get('city'),
+                state=r.get('state'),
+                url=r.get('url'),
+                score=r.get('_score')
+            ))
+        
+        return WikipediaSearchResult(
             query_name=f"Demo 8: Wikipedia Location & Topic Search",
             query_description=f"Searches Wikipedia articles about {', '.join(topics or [])} in {city}, {state}, demonstrating complex filtering and boosting strategies",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=[],  # Empty list since Wikipedia articles are not properties
+            returned_hits=len(wikipedia_articles),
+            results=wikipedia_articles,
             query_dsl=query,
             es_features=[
                 "Complex Bool Query - Combining must, filter, and should clauses",
@@ -824,7 +883,7 @@ def demo_wikipedia_search(
         )
     except Exception as e:
         logger.error(f"Error in Wikipedia search: {e}")
-        return DemoQueryResult(
+        return WikipediaSearchResult(
             query_name="Wikipedia Search",
             execution_time_ms=0,
             total_hits=0,

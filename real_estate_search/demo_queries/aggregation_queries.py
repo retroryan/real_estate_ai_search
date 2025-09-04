@@ -20,7 +20,7 @@ from rich.columns import Columns
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.layout import Layout
 
-from .models import DemoQueryResult
+from .result_models import AggregationSearchResult, PropertyResult
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ def build_neighborhood_stats_query(size: int = 20) -> Dict[str, Any]:
 def demo_neighborhood_stats(
     es_client: Elasticsearch,
     size: int = 20
-) -> DemoQueryResult:
+) -> AggregationSearchResult:
     """
     Demo 4: Neighborhood statistics aggregation.
     
@@ -286,7 +286,7 @@ def demo_price_distribution(
     interval: int = 100000,
     min_price: float = 0,
     max_price: float = 2000000
-) -> DemoQueryResult:
+) -> AggregationSearchResult:
     """
     Demo 5: Price distribution analysis with top 5 most expensive properties.
     
@@ -318,14 +318,29 @@ def demo_price_distribution(
         # DISPLAY RESULTS (separated from query logic)
         display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
-        return DemoQueryResult(
+        # Convert raw property dicts to PropertyResult objects
+        top_properties = []
+        for prop in property_results:
+            top_properties.append(PropertyResult(
+                listing_id=prop.get('listing_id', ''),
+                property_type=prop.get('property_type', 'Unknown'),
+                price=prop.get('price', 0),
+                bedrooms=prop.get('bedrooms', 0),
+                bathrooms=prop.get('bathrooms', 0),
+                square_feet=prop.get('square_feet', 0),
+                year_built=prop.get('year_built'),
+                address=prop.get('address', {}),
+                description=prop.get('description', '')
+            ))
+        
+        return AggregationSearchResult(
             query_name=f"Demo 5: Price Distribution Analysis",
             query_description=f"Creates histogram of property prices from ${min_price:,.0f} to ${max_price:,.0f} with ${interval:,.0f} intervals, showing top 5 most expensive properties",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'] if 'hits' in response else 0,
-            returned_hits=len(property_results),
-            results=property_results,  # Now returns actual properties
+            returned_hits=len(top_properties),
             aggregations=aggregations,
+            top_properties=top_properties,
             query_dsl=query,
             es_features=[
                 "Histogram Aggregation - Creates fixed-size price range buckets",
@@ -344,12 +359,13 @@ def demo_price_distribution(
         )
     except Exception as e:
         logger.error(f"Error in price distribution analysis: {e}")
-        return DemoQueryResult(
+        return AggregationSearchResult(
             query_name="Price Distribution Analysis",
             execution_time_ms=0,
             total_hits=0,
             returned_hits=0,
-            results=[],
+            aggregations={},
+            top_properties=[],
             query_dsl=query
         )
 
