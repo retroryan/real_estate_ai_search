@@ -1,0 +1,73 @@
+{
+  "description": "Generate text embeddings for Wikipedia articles using all-MiniLM-L6-v2",
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "source": "// Prepare text for title embedding\nif (ctx.title != null && ctx.title != '') {\n    ctx.title_text = ctx.title;\n} else {\n    ctx.title_text = 'Untitled';\n}\n\n// Prepare text for content embedding (truncate if too long)\nif (ctx.full_content != null && ctx.full_content != '') {\n    String content = ctx.full_content;\n    if (content.length() > 512) {\n        ctx.content_text = content.substring(0, 512);\n    } else {\n        ctx.content_text = content;\n    }\n} else {\n    ctx.content_text = ctx.title_text;\n}\n\n// Prepare text for summary embedding\nif (ctx.long_summary != null && ctx.long_summary != '') {\n    ctx.summary_text = ctx.long_summary;\n} else if (ctx.short_summary != null && ctx.short_summary != '') {\n    ctx.summary_text = ctx.short_summary;\n} else {\n    ctx.summary_text = ctx.content_text;\n}"
+      }
+    },
+    {
+      "inference": {
+        "model_id": "sentence-transformers__all-minilm-l6-v2",
+        "target_field": "ml.title_inference",
+        "field_map": {
+          "title_text": "text_field"
+        },
+        "inference_config": {
+          "text_embedding": {
+            "results_field": "text_embedding"
+          }
+        }
+      }
+    },
+    {
+      "inference": {
+        "model_id": "sentence-transformers__all-minilm-l6-v2",
+        "target_field": "ml.content_inference",
+        "field_map": {
+          "content_text": "text_field"
+        },
+        "inference_config": {
+          "text_embedding": {
+            "results_field": "text_embedding"
+          }
+        }
+      }
+    },
+    {
+      "inference": {
+        "model_id": "sentence-transformers__all-minilm-l6-v2",
+        "target_field": "ml.summary_inference",
+        "field_map": {
+          "summary_text": "text_field"
+        },
+        "inference_config": {
+          "text_embedding": {
+            "results_field": "text_embedding"
+          }
+        }
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "// Extract embeddings from inference results\nif (ctx.ml?.title_inference?.text_embedding != null) {\n    ctx.title_embedding = ctx.ml.title_inference.text_embedding;\n}\n\nif (ctx.ml?.content_inference?.text_embedding != null) {\n    ctx.content_embedding = ctx.ml.content_inference.text_embedding;\n}\n\nif (ctx.ml?.summary_inference?.text_embedding != null) {\n    ctx.summary_embedding = ctx.ml.summary_inference.text_embedding;\n}\n\n// Set metadata\nctx.embedding_model = 'all-minilm-l6-v2';\nctx.embedding_dimension = 384;\nctx.embeddings_processed = true;\nctx.embeddings_generated_at = new Date();\n\n// Clean up temporary fields\nctx.remove('title_text');\nctx.remove('content_text');\nctx.remove('summary_text');\nctx.remove('ml');"
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "embedding_error",
+        "value": "{{_ingest.on_failure_message}}"
+      }
+    },
+    {
+      "set": {
+        "field": "embeddings_processed",
+        "value": false
+      }
+    }
+  ]
+}

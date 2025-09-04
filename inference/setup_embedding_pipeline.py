@@ -27,11 +27,17 @@ EMBEDDING_DIM = 384
 
 def create_elasticsearch_client():
     """Create and return Elasticsearch client."""
-    client = Elasticsearch(
-        [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
-        basic_auth=(ES_USERNAME, ES_PASSWORD),
-        verify_certs=False
-    )
+    if ES_PASSWORD:
+        client = Elasticsearch(
+            [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
+            basic_auth=(ES_USERNAME, ES_PASSWORD),
+            verify_certs=False
+        )
+    else:
+        client = Elasticsearch(
+            [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
+            verify_certs=False
+        )
     return client
 
 def create_embedding_index(es, index_name='wikipedia_embeddings'):
@@ -78,132 +84,17 @@ def create_embedding_index(es, index_name='wikipedia_embeddings'):
 def create_embedding_pipeline(es, pipeline_name='wikipedia_embedding_pipeline'):
     """Create the text embedding inference pipeline."""
     
-    pipeline_body = {
-        "description": "Generate text embeddings for Wikipedia articles using all-MiniLM-L6-v2",
-        "processors": [
-            {
-                "script": {
-                    "lang": "painless",
-                    "source": """
-                        // Prepare text for title embedding
-                        if (ctx.title != null && ctx.title != '') {
-                            ctx.title_text = ctx.title;
-                        } else {
-                            ctx.title_text = 'Untitled';
-                        }
-                        
-                        // Prepare text for content embedding (truncate if too long)
-                        if (ctx.full_content != null && ctx.full_content != '') {
-                            String content = ctx.full_content;
-                            if (content.length() > 512) {
-                                ctx.content_text = content.substring(0, 512);
-                            } else {
-                                ctx.content_text = content;
-                            }
-                        } else {
-                            ctx.content_text = ctx.title_text;
-                        }
-                        
-                        // Prepare text for summary embedding
-                        if (ctx.long_summary != null && ctx.long_summary != '') {
-                            ctx.summary_text = ctx.long_summary;
-                        } else if (ctx.short_summary != null && ctx.short_summary != '') {
-                            ctx.summary_text = ctx.short_summary;
-                        } else {
-                            ctx.summary_text = ctx.content_text;
-                        }
-                    """
-                }
-            },
-            {
-                "inference": {
-                    "model_id": MODEL_ID,
-                    "target_field": "ml.title_inference",
-                    "field_map": {
-                        "title_text": "text_field"
-                    },
-                    "inference_config": {
-                        "text_embedding": {
-                            "results_field": "text_embedding"
-                        }
-                    }
-                }
-            },
-            {
-                "inference": {
-                    "model_id": MODEL_ID,
-                    "target_field": "ml.content_inference",
-                    "field_map": {
-                        "content_text": "text_field"
-                    },
-                    "inference_config": {
-                        "text_embedding": {
-                            "results_field": "text_embedding"
-                        }
-                    }
-                }
-            },
-            {
-                "inference": {
-                    "model_id": MODEL_ID,
-                    "target_field": "ml.summary_inference",
-                    "field_map": {
-                        "summary_text": "text_field"
-                    },
-                    "inference_config": {
-                        "text_embedding": {
-                            "results_field": "text_embedding"
-                        }
-                    }
-                }
-            },
-            {
-                "script": {
-                    "lang": "painless",
-                    "source": """
-                        // Extract embeddings from inference results
-                        if (ctx.ml?.title_inference?.text_embedding != null) {
-                            ctx.title_embedding = ctx.ml.title_inference.text_embedding;
-                        }
-                        
-                        if (ctx.ml?.content_inference?.text_embedding != null) {
-                            ctx.content_embedding = ctx.ml.content_inference.text_embedding;
-                        }
-                        
-                        if (ctx.ml?.summary_inference?.text_embedding != null) {
-                            ctx.summary_embedding = ctx.ml.summary_inference.text_embedding;
-                        }
-                        
-                        // Set metadata
-                        ctx.embedding_model = 'all-minilm-l6-v2';
-                        ctx.embedding_dimension = 384;
-                        ctx.embeddings_processed = true;
-                        ctx.embeddings_generated_at = new Date();
-                        
-                        // Clean up temporary fields
-                        ctx.remove('title_text');
-                        ctx.remove('content_text');
-                        ctx.remove('summary_text');
-                        ctx.remove('ml');
-                    """
-                }
-            }
-        ],
-        "on_failure": [
-            {
-                "set": {
-                    "field": "embedding_error",
-                    "value": "{{_ingest.on_failure_message}}"
-                }
-            },
-            {
-                "set": {
-                    "field": "embeddings_processed",
-                    "value": False
-                }
-            }
-        ]
-    }
+    # Load pipeline definition from JSON file
+    pipeline_file = Path(__file__).parent / 'embedding_pipeline.json'
+    
+    if not pipeline_file.exists():
+        print(f"❌ Pipeline definition file not found: {pipeline_file}")
+        return False
+    
+    print(f"📄 Loading pipeline definition from: {pipeline_file.name}")
+    
+    with open(pipeline_file, 'r') as f:
+        pipeline_body = json.load(f)
     
     # Delete pipeline if it exists
     try:

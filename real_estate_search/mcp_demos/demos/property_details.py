@@ -22,7 +22,7 @@ console = Console()
 async def demo_property_details_deep_dive(
     listing_id: str = "prop_001"
 ) -> DemoResult:
-    """Demo 4: Property Details Deep Dive.
+    """Demo 7: Property Details Deep Dive.
     
     Get comprehensive details for a specific property by its listing ID,
     showcasing all available property information.
@@ -34,7 +34,7 @@ async def demo_property_details_deep_dive(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 4: Property Details Deep Dive[/bold cyan]\n"
+        f"[bold cyan]Demo 7: Property Details Deep Dive[/bold cyan]\n"
         f"Listing ID: {listing_id}",
         border_style="cyan"
     ))

@@ -26,7 +26,7 @@ async def demo_location_based_discovery(
     state: str = "CA",
     property_type: PropertyType = PropertyType.CONDO
 ) -> DemoResult:
-    """Demo 7: Location-Based Discovery.
+    """Demo 5: Location-Based Discovery.
     
     Discover properties and Wikipedia information for a specific city,
     providing a comprehensive view of what's available in an area.
@@ -40,7 +40,7 @@ async def demo_location_based_discovery(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 7: Location-Based Discovery[/bold cyan]\n"
+        f"[bold cyan]Demo 5: Location-Based Discovery[/bold cyan]\n"
         f"Exploring: {city}, {state}\n"
         f"Property Type: {property_type.value}",
         border_style="cyan"

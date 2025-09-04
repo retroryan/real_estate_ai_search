@@ -24,7 +24,7 @@ console = Console()
 async def demo_multi_entity_search(
     query: str = "Victorian architecture San Francisco"
 ) -> DemoResult:
-    """Demo 5: Multi-Entity Search.
+    """Demo 6: Multi-Entity Search.
     
     Search across both properties and Wikipedia articles simultaneously,
     demonstrating parallel search capabilities across different entity types.
@@ -36,7 +36,7 @@ async def demo_multi_entity_search(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 5: Multi-Entity Search[/bold cyan]\n"
+        f"[bold cyan]Demo 6: Multi-Entity Search[/bold cyan]\n"
         f"Query: '{query}'\n"
         f"Searching: Properties + Wikipedia",
         border_style="cyan"

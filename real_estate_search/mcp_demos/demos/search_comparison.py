@@ -22,7 +22,7 @@ console = Console()
 async def demo_semantic_vs_text_comparison(
     query: str = "cozy cottage with fireplace near parks"
 ) -> DemoResult:
-    """Demo 6: Semantic vs Text Search Comparison.
+    """Demo 8: Semantic vs Text Search Comparison.
     
     Compare semantic (embedding-based) search with traditional text search
     to demonstrate the differences in search approaches.
@@ -34,7 +34,7 @@ async def demo_semantic_vs_text_comparison(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 6: Semantic vs Text Search Comparison[/bold cyan]\n"
+        f"[bold cyan]Demo 8: Semantic vs Text Search Comparison[/bold cyan]\n"
         f"Query: '{query}'",
         border_style="cyan"
     ))

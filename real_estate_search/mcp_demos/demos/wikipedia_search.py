@@ -23,7 +23,7 @@ async def demo_wikipedia_location_context(
     city: str = "San Francisco",
     state: str = "CA"
 ) -> DemoResult:
-    """Demo 3: Wikipedia Location Context.
+    """Demo 4: Wikipedia Location Context.
     
     Find Wikipedia articles about a specific location to understand
     neighborhood context, landmarks, and local attractions.
@@ -36,7 +36,7 @@ async def demo_wikipedia_location_context(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 3: Wikipedia Location Context[/bold cyan]\n"
+        f"[bold cyan]Demo 4: Wikipedia Location Context[/bold cyan]\n"
         f"Location: {city}, {state}",
         border_style="cyan"
     ))
@@ -110,7 +110,7 @@ async def demo_wikipedia_search(
     query: str = "Golden Gate Bridge history architecture",
     search_in: str = "full"
 ) -> DemoResult:
-    """Demo 8: Wikipedia Article Search.
+    """Demo 3: Wikipedia Article Search.
     
     Search Wikipedia articles with natural language queries,
     demonstrating different search modes (full, summaries, chunks).
@@ -123,7 +123,7 @@ async def demo_wikipedia_search(
         Demo execution result
     """
     console.print(Panel.fit(
-        f"[bold cyan]Demo 8: Wikipedia Article Search[/bold cyan]\n"
+        f"[bold cyan]Demo 3: Wikipedia Article Search[/bold cyan]\n"
         f"Query: '{query}'\n"
         f"Search in: {search_in}",
         border_style="cyan"

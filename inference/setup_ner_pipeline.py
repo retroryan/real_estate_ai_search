@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 # Load environment variables
-env_path = Path(__file__).parent / '.env'
+env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 
 # Elasticsearch configuration
@@ -22,11 +22,17 @@ ES_SCHEME = os.getenv('ES_SCHEME', 'http')
 
 def create_elasticsearch_client():
     """Create and return Elasticsearch client."""
-    client = Elasticsearch(
-        [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
-        basic_auth=(ES_USERNAME, ES_PASSWORD),
-        verify_certs=False
-    )
+    if ES_PASSWORD:
+        client = Elasticsearch(
+            [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
+            basic_auth=(ES_USERNAME, ES_PASSWORD),
+            verify_certs=False
+        )
+    else:
+        client = Elasticsearch(
+            [f"{ES_SCHEME}://{ES_HOST}:{ES_PORT}"],
+            verify_certs=False
+        )
     return client
 
 def create_ner_index(es, index_name='wikipedia_ner'):
@@ -67,98 +73,17 @@ def create_ner_index(es, index_name='wikipedia_ner'):
 def create_ner_pipeline(es, pipeline_name='wikipedia_ner_pipeline'):
     """Create the NER inference ingest pipeline."""
     
-    pipeline_body = {
-        "description": "Extract named entities from Wikipedia articles",
-        "processors": [
-            {
-                "inference": {
-                    "model_id": "elastic__distilbert-base-uncased-finetuned-conll03-english",
-                    "target_field": "ml.inference",
-                    "field_map": {
-                        "full_content": "text_field"
-                    },
-                    "inference_config": {
-                        "ner": {
-                            "results_field": "entities",
-                            "tokenization": {
-                                "bert": {
-                                    "truncate": "first",
-                                    "max_sequence_length": 512
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                "script": {
-                    "lang": "painless",
-                    "source": """
-                        if (ctx.ml?.inference?.entities != null) {
-                            ctx.ner_entities = ctx.ml.inference.entities;
-                            
-                            // Extract entities by type
-                            def organizations = [];
-                            def locations = [];
-                            def persons = [];
-                            def misc = [];
-                            
-                            for (entity in ctx.ml.inference.entities) {
-                                String entityText = entity.entity;
-                                String className = entity.class_name;
-                                
-                                if (className == 'ORG') {
-                                    if (!organizations.contains(entityText)) {
-                                        organizations.add(entityText);
-                                    }
-                                } else if (className == 'LOC') {
-                                    if (!locations.contains(entityText)) {
-                                        locations.add(entityText);
-                                    }
-                                } else if (className == 'PER') {
-                                    if (!persons.contains(entityText)) {
-                                        persons.add(entityText);
-                                    }
-                                } else if (className == 'MISC') {
-                                    if (!misc.contains(entityText)) {
-                                        misc.add(entityText);
-                                    }
-                                }
-                            }
-                            
-                            ctx.ner_organizations = organizations;
-                            ctx.ner_locations = locations;
-                            ctx.ner_persons = persons;
-                            ctx.ner_misc = misc;
-                            ctx.ner_processed = true;
-                            ctx.ner_processed_at = new Date();
-                            ctx.ner_model_id = 'elastic__distilbert-base-uncased-finetuned-conll03-english';
-                        }
-                    """
-                }
-            },
-            {
-                "remove": {
-                    "field": "ml",
-                    "ignore_failure": True
-                }
-            }
-        ],
-        "on_failure": [
-            {
-                "set": {
-                    "field": "ner_error",
-                    "value": "{{_ingest.on_failure_message}}"
-                }
-            },
-            {
-                "set": {
-                    "field": "ner_processed",
-                    "value": False
-                }
-            }
-        ]
-    }
+    # Load pipeline definition from JSON file
+    pipeline_file = Path(__file__).parent / 'ner_pipeline.json'
+    
+    if not pipeline_file.exists():
+        print(f"❌ Pipeline definition file not found: {pipeline_file}")
+        return False
+    
+    print(f"📄 Loading pipeline definition from: {pipeline_file}")
+    
+    with open(pipeline_file, 'r') as f:
+        pipeline_body = json.load(f)
     
     # Delete pipeline if it exists
     try:

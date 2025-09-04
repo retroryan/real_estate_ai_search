@@ -1,0 +1,51 @@
+{
+  "description": "Extract named entities from Wikipedia articles",
+  "processors": [
+    {
+      "inference": {
+        "model_id": "elastic__distilbert-base-uncased-finetuned-conll03-english",
+        "target_field": "ml.inference",
+        "field_map": {
+          "full_content": "text_field"
+        },
+        "inference_config": {
+          "ner": {
+            "results_field": "entities",
+            "tokenization": {
+              "bert": {
+                "truncate": "first",
+                "max_sequence_length": 512
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.ml?.inference?.entities != null) {\n    ctx.ner_entities = ctx.ml.inference.entities;\n    \n    // Extract entities by type\n    def organizations = [];\n    def locations = [];\n    def persons = [];\n    def misc = [];\n    \n    for (entity in ctx.ml.inference.entities) {\n        String entityText = entity.entity;\n        String className = entity.class_name;\n        \n        if (className == 'ORG') {\n            if (!organizations.contains(entityText)) {\n                organizations.add(entityText);\n            }\n        } else if (className == 'LOC') {\n            if (!locations.contains(entityText)) {\n                locations.add(entityText);\n            }\n        } else if (className == 'PER') {\n            if (!persons.contains(entityText)) {\n                persons.add(entityText);\n            }\n        } else if (className == 'MISC') {\n            if (!misc.contains(entityText)) {\n                misc.add(entityText);\n            }\n        }\n    }\n    \n    ctx.ner_organizations = organizations;\n    ctx.ner_locations = locations;\n    ctx.ner_persons = persons;\n    ctx.ner_misc = misc;\n    ctx.ner_processed = true;\n    ctx.ner_processed_at = new Date();\n    ctx.ner_model_id = 'elastic__distilbert-base-uncased-finetuned-conll03-english';\n}"
+      }
+    },
+    {
+      "remove": {
+        "field": "ml",
+        "ignore_failure": true
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "ner_error",
+        "value": "{{_ingest.on_failure_message}}"
+      }
+    },
+    {
+      "set": {
+        "field": "ner_processed",
+        "value": false
+      }
+    }
+  ]
+}
