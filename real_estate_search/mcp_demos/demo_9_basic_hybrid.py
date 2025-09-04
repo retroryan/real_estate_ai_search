@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo 15: Basic Hybrid Search Functionality
+Demo 9: Basic Hybrid Search Functionality
 
 This demo showcases the core hybrid search capabilities using clean Pydantic models
 and FastMCP client best practices. Demonstrates semantic vector search, text matching,
@@ -30,7 +30,7 @@ class BasicHybridSearchDemo(BaseMCPDemo):
     def __init__(self):
         super().__init__(
             demo_name="Basic Hybrid Search Functionality",
-            demo_number=15
+            demo_number=9
         )
     
     def get_demo_queries(self) -> List[dict]:

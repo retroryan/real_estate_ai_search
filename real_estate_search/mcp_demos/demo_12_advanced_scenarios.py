@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo 19: Advanced Search Scenarios and Edge Cases
+Demo 12: Advanced Search Scenarios and Edge Cases
 
 This demo tests the robustness and advanced capabilities of the hybrid search
 using clean Pydantic models and FastMCP client patterns. Includes parameter 
@@ -35,7 +35,7 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
     def __init__(self):
         super().__init__(
             demo_name="Advanced Search Scenarios and Edge Cases",
-            demo_number=19
+            demo_number=12
         )
     
     def get_validation_test_cases(self) -> List[ValidationTestCase]:

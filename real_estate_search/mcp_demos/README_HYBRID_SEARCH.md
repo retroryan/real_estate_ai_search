@@ -14,7 +14,7 @@ The Hybrid Search MCP Tool provides AI models with powerful property search capa
 
 ## Demo Files
 
-### Demo 1: Basic Hybrid Search (`demo_1_basic_hybrid.py`)
+### Demo 1: Basic Hybrid Search (`demo_9_basic_hybrid.py`)
 **Purpose**: Demonstrates core hybrid search functionality with RRF fusion
 
 **Features Tested**:
@@ -29,7 +29,7 @@ The Hybrid Search MCP Tool provides AI models with powerful property search capa
 - "family-friendly house with backyard and multiple bedrooms"
 - "income property duplex or multi-unit rental"
 
-### Demo 2: Location-Aware Search (`demo_2_location_aware.py`)
+### Demo 2: Location-Aware Search (`demo_11_location_aware.py`)
 **Purpose**: Showcases DSPy-powered location extraction and geographic filtering
 
 **Features Tested**:
@@ -46,7 +46,7 @@ The Hybrid Search MCP Tool provides AI models with powerful property search capa
 - "beachfront property with ocean views in Monterey"
 - "investment property in San Jose or nearby Santa Clara California"
 
-### Demo 3: Advanced Scenarios (`demo_3_advanced_scenarios.py`)
+### Demo 3: Advanced Scenarios (`demo_12_advanced_scenarios.py`)
 **Purpose**: Tests robustness, edge cases, and advanced capabilities
 
 **Features Tested**:
@@ -68,14 +68,14 @@ The Hybrid Search MCP Tool provides AI models with powerful property search capa
 
 ```bash
 # Using the mcp_demos.sh script
-./mcp_demos.sh 15    # Demo 1: Basic Hybrid Search
-./mcp_demos.sh 16    # Demo 2: Location-Aware Search  
-./mcp_demos.sh 17    # Demo 3: Advanced Scenarios
+./mcp_demos.sh 9     # Demo 1: Basic Hybrid Search
+./mcp_demos.sh 11    # Demo 2: Location-Aware Search  
+./mcp_demos.sh 12    # Demo 3: Advanced Scenarios
 
 # Or run directly
-python3 real_estate_search/mcp_demos/demo_1_basic_hybrid.py
-python3 real_estate_search/mcp_demos/demo_2_location_aware.py
-python3 real_estate_search/mcp_demos/demo_3_advanced_scenarios.py
+python3 real_estate_search/mcp_demos/demo_9_basic_hybrid.py
+python3 real_estate_search/mcp_demos/demo_11_location_aware.py
+python3 real_estate_search/mcp_demos/demo_12_advanced_scenarios.py
 ```
 
 ### Prerequisites
@@ -101,7 +101,7 @@ export VOYAGE_API_KEY=your-voyage-api-key
 python -m squack_pipeline
 
 # Run a hybrid search demo
-./mcp_demos.sh 15
+./mcp_demos.sh 9
 ```
 
 ## Demo Output
@@ -249,4 +249,4 @@ When adding new demo scenarios:
 - `../mcp_server/models/hybrid.py` - Pydantic models for requests/responses
 - `../mcp_server/tools/hybrid_search_tool.py` - Core MCP tool implementation
 - `../hybrid/` - Hybrid search engine and location understanding modules
-- `../../mcp_demos.sh` - Demo runner script (use demos 15-17)
+- `../../mcp_demos.sh` - Demo runner script (use demos 9-12)

@@ -567,38 +567,171 @@ def demo_location_aware_search_showcase(
     """
     logger.info(f"Running location-aware search showcase (show_all={show_all_examples})")
     
-    # Define demo functions to run
+    # Select examples to run
     if show_all_examples:
-        demo_functions = [
-            demo_location_aware_waterfront_luxury,
-            demo_location_aware_family_schools,
-            demo_location_aware_urban_modern,
-            demo_location_aware_recreation_mountain,
-            demo_location_aware_historic_urban,
-            demo_location_aware_beach_proximity,
-            demo_location_aware_investment_market,
-            demo_location_aware_luxury_urban_views,
-            demo_location_aware_suburban_architecture,
-            demo_location_aware_neighborhood_character
-        ]
+        examples = LOCATION_SEARCH_EXAMPLES
     else:
-        # Curated selection showing variety
-        demo_functions = [
-            demo_location_aware_waterfront_luxury,
-            demo_location_aware_family_schools,
-            demo_location_aware_recreation_mountain,
-            demo_location_aware_investment_market,
-            demo_location_aware_neighborhood_character
+        # Curated selection showing variety - indices 0, 1, 3, 8, 9
+        examples = [
+            LOCATION_SEARCH_EXAMPLES[0],  # Luxury waterfront in SF
+            LOCATION_SEARCH_EXAMPLES[1],  # Family home in San Jose
+            LOCATION_SEARCH_EXAMPLES[3],  # Investment property in Salinas
+            LOCATION_SEARCH_EXAMPLES[8],  # Condo with amenities in San Jose
+            LOCATION_SEARCH_EXAMPLES[9],  # Modern condo in SF
         ]
     
     results = []
-    for demo_func in demo_functions:
-        try:
-            result = demo_func(es_client, size)
-            results.append(result)
-        except Exception as e:
-            logger.error(f"Demo {demo_func.__name__} failed: {e}")
-            continue
+    showcase_data = []  # Store data for summary display
+    
+    # Display showcase header
+    console = Console()
+    console.print("\n[bold cyan]🌍 Location-Aware Search Showcase[/bold cyan]")
+    console.print("=" * 70)
+    console.print("[yellow]Processing location-aware searches...[/yellow]")
+    
+    # Use progress indicator for cleaner output
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True
+    ) as progress:
+        task = progress.add_task("Running searches...", total=len(examples))
+        
+        for i, example in enumerate(examples, 1):
+            try:
+                progress.update(task, description=f"Processing: {example.query[:50]}...")
+                logger.info(f"Executing location-aware demo: '{example.query}'")
+                
+                # Execute the demo
+                result = _execute_location_demo(es_client, example, size)
+                results.append(result)
+                
+                # Save data for summary
+                if hasattr(result, 'results') and result.results:
+                    top_results = []
+                    for prop in result.results[:3]:
+                        address = prop.get('address', {})
+                        top_results.append({
+                            'street': address.get('street', 'Unknown'),
+                            'city': address.get('city', 'Unknown'),
+                            'price': prop.get('price', 0),
+                            'type': prop.get('property_type', 'Unknown')
+                        })
+                    
+                    showcase_data.append({
+                        'query': example.query,
+                        'description': example.description,
+                        'total_hits': result.total_hits,
+                        'execution_time_ms': result.execution_time_ms,
+                        'top_results': top_results,
+                        'location_extracted': getattr(result, 'location_intent', {})
+                    })
+                else:
+                    showcase_data.append({
+                        'query': example.query,
+                        'description': example.description,
+                        'total_hits': 0,
+                        'execution_time_ms': 0,
+                        'top_results': [],
+                        'location_extracted': {}
+                    })
+                    
+                progress.advance(task)
+                
+            except Exception as e:
+                logger.error(f"Example '{example.query}' failed: {e}")
+                showcase_data.append({
+                    'query': example.query,
+                    'description': example.description,
+                    'error': str(e)
+                })
+                progress.advance(task)
+                continue
+    
+    # Display comprehensive summary
+    console.print("\n" + "=" * 70)
+    console.print("[bold green]📊 Location-Aware Search Results Summary[/bold green]")
+    console.print("=" * 70 + "\n")
+    
+    # Create summary table
+    summary_table = Table(title="Search Results Overview", box=box.ROUNDED)
+    summary_table.add_column("#", style="cyan", width=3)
+    summary_table.add_column("Query", style="yellow", width=35)
+    summary_table.add_column("Location", style="blue", width=20)
+    summary_table.add_column("Results", style="green", justify="right", width=8)
+    summary_table.add_column("Time (ms)", style="magenta", justify="right", width=10)
+    
+    for i, data in enumerate(showcase_data, 1):
+        if 'error' in data:
+            summary_table.add_row(
+                str(i),
+                data['query'][:35],
+                "❌ Error",
+                "-",
+                "-"
+            )
+        else:
+            # Extract location from the query result if available
+            location = "Not extracted"
+            if data.get('location_extracted'):
+                loc = data['location_extracted']
+                if isinstance(loc, dict):
+                    city = loc.get('city', '')
+                    state = loc.get('state', '')
+                    location = f"{city}, {state}" if state else city
+            
+            summary_table.add_row(
+                str(i),
+                data['query'][:35] + ("..." if len(data['query']) > 35 else ""),
+                location,
+                str(data['total_hits']),
+                f"{data['execution_time_ms']:.0f}"
+            )
+    
+    console.print(summary_table)
+    
+    # Display top properties for each search
+    console.print("\n[bold cyan]🏠 Top Properties by Search:[/bold cyan]\n")
+    
+    for i, data in enumerate(showcase_data, 1):
+        if 'error' not in data and data['top_results']:
+            panel_content = f"[yellow]Query:[/yellow] {data['query']}\n"
+            panel_content += f"[dim]{data['description']}[/dim]\n\n"
+            panel_content += "[bold]Top 3 Properties:[/bold]\n"
+            
+            for j, prop in enumerate(data['top_results'], 1):
+                panel_content += f"{j}. {prop['street']}, {prop['city']} - "
+                panel_content += f"[green]${prop['price']:,.0f}[/green] "
+                panel_content += f"[dim]({prop['type']})[/dim]\n"
+            
+            panel = Panel(
+                panel_content.strip(),
+                title=f"Search #{i}",
+                border_style="blue",
+                padding=(0, 1)
+            )
+            console.print(panel)
+    
+    # Final statistics
+    if results:
+        total_time = sum(r.execution_time_ms for r in results if hasattr(r, 'execution_time_ms'))
+        total_hits = sum(r.total_hits for r in results if hasattr(r, 'total_hits'))
+        avg_time = total_time / len(results) if results else 0
+        
+        stats_panel = Panel(
+            f"[bold green]✅ Showcase Complete[/bold green]\n\n"
+            f"[cyan]Searches Executed:[/cyan] {len(results)}/{len(examples)}\n"
+            f"[yellow]Total Execution Time:[/yellow] {total_time:.0f}ms\n"
+            f"[magenta]Average Query Time:[/magenta] {avg_time:.0f}ms\n"
+            f"[green]Total Properties Found:[/green] {total_hits:,}\n"
+            f"[blue]Average Results per Search:[/blue] {total_hits/len(results):.0f}",
+            title="[bold]Performance Statistics[/bold]",
+            border_style="green",
+            expand=False
+        )
+        console.print("\n")
+        console.print(stats_panel)
     
     logger.info(f"Completed showcase with {len(results)} successful demos")
     return results

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo 16: Location Understanding Comparison
+Demo 10: Location Understanding Comparison
 
 This demo uses the exact same queries as management demo 16 to compare
 DSPy location extraction results between the management system and MCP server.
@@ -31,7 +31,7 @@ class LocationComparisonDemo(BaseMCPDemo):
     def __init__(self):
         super().__init__(
             demo_name="Location Understanding Comparison",
-            demo_number=16
+            demo_number=10
         )
     
     def get_demo_queries(self) -> List[dict]:

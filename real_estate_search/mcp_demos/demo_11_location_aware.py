@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo 18: Location-Aware Hybrid Search
+Demo 11: Location-Aware Hybrid Search
 
 This demo showcases location extraction and understanding capabilities using DSPy
 and clean Pydantic models. Demonstrates how the system automatically extracts
@@ -31,7 +31,7 @@ class LocationAwareSearchDemo(BaseMCPDemo):
     def __init__(self):
         super().__init__(
             demo_name="Location-Aware Hybrid Search",
-            demo_number=18
+            demo_number=11
         )
     
     def get_demo_queries(self) -> List[dict]:

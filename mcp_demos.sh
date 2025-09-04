@@ -57,7 +57,7 @@ show_help() {
     echo "  --config FILE  Use custom config file"
     echo
     echo -e "${GREEN}Commands:${NC}"
-    echo "  1-8,12-19      Run specific demo number"
+    echo "  1-8,9-12       Run specific demo number"
     echo "  --all          Run all demos"
     echo "  --list, -l     List all available demos"
     echo "  --list-tools   Discover and list all MCP server tools with metadata"
@@ -93,12 +93,12 @@ list_demos() {
     echo "  7     Property Details - Get detailed property information"
     echo "  8     Search Comparison - Compare semantic vs text search"
     echo -e "${PURPLE} === Advanced Property Search Demos ===${NC}"
-    echo " 15     Hybrid Search Basics - Core hybrid search functionality with RRF"
-    echo " 16     Location Understanding - DSPy location extraction demonstration"
-    echo " 18     Location-Aware Search - Advanced location filtering"
-    echo " 19     Advanced Scenarios - Edge cases, validation, and complex queries"
+    echo "  9     Hybrid Search Basics - Core hybrid search functionality with RRF"
+    echo " 10     Location Understanding - DSPy location extraction demonstration"
+    echo " 11     Location-Aware Search - Advanced location filtering"
+    echo " 12     Advanced Scenarios - Edge cases, validation, and complex queries"
     echo -e "${PURPLE} === Rich Property Details Tool Demo ===${NC}"
-    echo " 25     Rich Property Details - Comprehensive property with embedded neighborhood & Wikipedia"
+    echo " 13     Rich Property Details - Comprehensive property with embedded neighborhood & Wikipedia"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -309,32 +309,27 @@ from real_estate_search.mcp_demos.demos import demo_semantic_vs_text_comparison
 asyncio.run(demo_semantic_vs_text_comparison('modern kitchen'))
 "
             ;;
-        15)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_1_basic_hybrid${NC}"
+        9)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_9_basic_hybrid${NC}"
             echo
-            python3 real_estate_search/mcp_demos/demo_1_basic_hybrid.py
+            python3 real_estate_search/mcp_demos/demo_9_basic_hybrid.py
             ;;
-        16)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_2_location_comparison${NC}"
+        10)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_10_location_comparison${NC}"
             echo
-            python3 real_estate_search/mcp_demos/demo_2_location_comparison.py
+            python3 real_estate_search/mcp_demos/demo_10_location_comparison.py
             ;;
-        17)
-            echo -e "${YELLOW}Reserved for future demo${NC}"
-            echo -e "${RED}Demo 17 is not implemented yet${NC}"
-            exit 1
-            ;;
-        18)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_4_location_aware${NC}"
+        11)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_11_location_aware${NC}"
             echo
-            python3 real_estate_search/mcp_demos/demo_4_location_aware.py
+            python3 real_estate_search/mcp_demos/demo_11_location_aware.py
             ;;
-        19)
-            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_5_advanced_scenarios${NC}"
+        12)
+            echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_12_advanced_scenarios${NC}"
             echo
-            python3 real_estate_search/mcp_demos/demo_5_advanced_scenarios.py
+            python3 real_estate_search/mcp_demos/demo_12_advanced_scenarios.py
             ;;
-        25)
+        13)
             echo -e "${YELLOW}Module: real_estate_search.mcp_demos.demo_rich_property_details.demo_rich_property_details('prop-oak-125')${NC}"
             echo
             python -c "
@@ -345,7 +340,7 @@ asyncio.run(demo_rich_property_details('prop-oak-125'))
             ;;
         *)
             echo -e "${RED}Error: Invalid demo number '$demo_num'${NC}"
-            echo "Valid demo numbers are 1-8, 15-16, 18-19, 25"
+            echo "Valid demo numbers are 1-13"
             exit 1
             ;;
     esac
@@ -453,7 +448,7 @@ main() {
                 VERBOSE="true"
                 shift
                 ;;
-            [1-8]|15|16|18|19|25)
+            [1-9]|1[0-3])
                 demo_number=$1
                 shift
                 ;;
