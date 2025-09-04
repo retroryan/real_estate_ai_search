@@ -397,7 +397,7 @@ class MCPServer:
         ) -> Dict[str, Any]:
             """Search properties using natural language with AI understanding.
             
-            ⭐ PREFERRED TOOL for all property searches. Uses advanced AI to understand your
+            PREFERRED TOOL for all property searches. Uses advanced AI to understand your
             search intent, automatically extracts locations from your query, and combines
             semantic search with text matching for best results.
             

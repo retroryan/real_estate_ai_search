@@ -522,13 +522,16 @@ def demo_multi_entity_search(
         if 'aggregations' in response:
             aggregations = response['aggregations']
         
+        # Extract only property results for the standard display table
+        property_results = [r for r in results if r.get('_entity_type') == 'property']
+        
         return DemoQueryResult(
             query_name=f"Demo 7: Multi-Entity Search - '{query_text}'",
             query_description=f"Unified search across properties, neighborhoods, and Wikipedia articles for '{query_text}', combining results from multiple data sources",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,  # Only return property results for standard display
             aggregations=aggregations,
             query_dsl=query,
             es_features=[
@@ -795,13 +798,15 @@ def demo_wikipedia_search(
                 border_style="yellow"
             ))
         
+        # Return empty results for standard property display since these are Wikipedia articles
+        # The custom display above already shows the Wikipedia results properly
         return DemoQueryResult(
             query_name=f"Demo 8: Wikipedia Location & Topic Search",
             query_description=f"Searches Wikipedia articles about {', '.join(topics or [])} in {city}, {state}, demonstrating complex filtering and boosting strategies",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'],
             returned_hits=len(results),
-            results=results,
+            results=[],  # Empty list since Wikipedia articles are not properties
             query_dsl=query,
             es_features=[
                 "Complex Bool Query - Combining must, filter, and should clauses",
