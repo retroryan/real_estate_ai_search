@@ -68,13 +68,13 @@ class BaseMCPDemo(ABC):
             response = HybridSearchResponse(**response_data)
             
             # Collect performance metrics
-            server_time = response.metadata.execution_time_ms
+            server_time = response.execution_time_ms
             metrics = PerformanceMetrics(
                 query_length=len(request.query),
                 execution_time_ms=execution_time,
                 server_time_ms=server_time,
-                total_hits=response.metadata.total_hits,
-                returned_hits=response.metadata.returned_hits,
+                total_hits=response.total_results,
+                returned_hits=response.returned_results,
                 network_overhead_ms=max(0, execution_time - server_time)
             )
             self.performance_metrics.append(metrics)

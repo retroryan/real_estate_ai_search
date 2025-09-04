@@ -50,8 +50,8 @@ class Address(BaseModel):
 
 
 class Property(BaseModel):
-    """Property listing model."""
-    model_config = ConfigDict(extra='allow')
+    """Property listing model - matches server response exactly."""
+    model_config = ConfigDict(extra='forbid')
     
     listing_id: str
     property_type: str
@@ -60,40 +60,21 @@ class Property(BaseModel):
     bathrooms: float
     square_feet: Optional[int] = None
     description: str
-    amenities: List[str]
     address: Address
-    score: Optional[float] = Field(default=None, description="Search relevance score")
-    # Additional fields from server
-    neighborhood: Optional[str] = None
-    features: Optional[List[str]] = None
-    relevance_score: Optional[float] = None
-    highlights: Optional[Dict[str, Any]] = None
+    features: List[str]
+    score: float
 
 
 class PropertySearchResponse(BaseModel):
-    """Property search response model."""
-    model_config = ConfigDict(extra='allow')
+    """Property search response - matches server response exactly."""
+    model_config = ConfigDict(extra='forbid')
     
-    # Server returns these field names
-    total_results: int = Field(description="Total matching properties")
-    returned_results: int = Field(description="Number of properties returned")
     properties: List[Property]
-    execution_time_ms: int = Field(description="Search execution time in milliseconds")
-    query: Optional[str] = None
-    search_type: Optional[str] = None
-    
-    # Aliases for backward compatibility with demos
-    @property
-    def total(self) -> int:
-        return self.total_results
-    
-    @property
-    def returned(self) -> int:
-        return self.returned_results
-    
-    @property
-    def search_time_ms(self) -> int:
-        return self.execution_time_ms
+    total_results: int
+    returned_results: int
+    execution_time_ms: int
+    query: str
+    location_extracted: Optional[Dict[str, Any]] = None
 
 
 class WikipediaSearchRequest(BaseModel):

@@ -2,16 +2,8 @@
 
 from typing import Dict, Any, Optional, List
 from fastmcp import Context
-from pydantic import ValidationError
 
-from ..models.hybrid import (
-    HybridSearchRequest, 
-    HybridSearchResponse, 
-    HybridSearchMetadata, 
-    LocationExtractionMetadata, 
-    HybridSearchProperty, 
-    PropertyAddress
-)
+from ..models.responses import PropertySearchResponse, Property, PropertyAddress
 from ..utils.logging import get_request_logger
 from ...hybrid import HybridSearchEngine, HybridSearchParams
 
@@ -41,19 +33,10 @@ async def search_properties_hybrid(
         ValueError: If required services are not available
         Exception: For other search execution errors
     """
-    # Get request ID safely without hasattr
+    # Get request ID safely
     request_id = getattr(context, 'request_id', "unknown")
     logger = get_request_logger(request_id)
     logger.info(f"Hybrid property search: {query}")
-    
-    # Validate input parameters using Pydantic
-    request_model = HybridSearchRequest(
-        query=query,
-        size=size,
-        include_location_extraction=include_location_extraction
-    )
-    
-    logger.info(f"Validated request: query length={len(request_model.query)}, size={request_model.size}")
     
     try:
         # Get hybrid search engine from context
@@ -62,11 +45,11 @@ async def search_properties_hybrid(
             raise ValueError("Hybrid search engine service not available")
         
         # Execute hybrid search with location extraction
-        logger.info(f"Executing hybrid search: query='{request_model.query}', size={request_model.size}")
-        hybrid_result = hybrid_search_engine.search_with_location(request_model.query, request_model.size)
+        logger.info(f"Executing hybrid search: query='{query}', size={size}")
+        hybrid_result = hybrid_search_engine.search_with_location(query, size)
         
-        # Format properties for MCP response
-        properties: List[HybridSearchProperty] = []
+        # Format properties for standard response
+        properties: List[Property] = []
         for result in hybrid_result.results:
             # Access property data from SearchResult object
             prop_data = result.property_data
@@ -80,7 +63,7 @@ async def search_properties_hybrid(
                 zip_code=address_data.get('zip_code')
             )
             
-            property_result = HybridSearchProperty(
+            property_result = Property(
                 listing_id=result.listing_id,
                 property_type=prop_data.get('property_type'),
                 address=address,
@@ -88,35 +71,30 @@ async def search_properties_hybrid(
                 bedrooms=prop_data.get('bedrooms'),
                 bathrooms=prop_data.get('bathrooms'),
                 square_feet=prop_data.get('square_feet'),
-                description=prop_data.get('description', '')[:500] if prop_data.get('description') else None,  # Truncate long descriptions
+                description=prop_data.get('description', '')[:500] if prop_data.get('description') else None,
                 features=prop_data.get('features', []),
-                hybrid_score=result.hybrid_score
+                score=result.hybrid_score
             )
             properties.append(property_result)
         
-        # Build location extraction metadata if requested
-        location_metadata: Optional[LocationExtractionMetadata] = None
-        if request_model.include_location_extraction and hybrid_result.location_intent:
-            location_metadata = LocationExtractionMetadata(
-                city=hybrid_result.location_intent.city,
-                state=hybrid_result.location_intent.state,
-                has_location=hybrid_result.location_intent.has_location,
-                cleaned_query=hybrid_result.location_intent.cleaned_query
-            )
+        # Build location extraction if requested
+        location_extracted = None
+        if include_location_extraction and hybrid_result.location_intent:
+            location_extracted = {
+                'city': hybrid_result.location_intent.city,
+                'state': hybrid_result.location_intent.state,
+                'has_location': hybrid_result.location_intent.has_location,
+                'cleaned_query': hybrid_result.location_intent.cleaned_query
+            }
         
-        # Create metadata
-        metadata = HybridSearchMetadata(
-            query=request_model.query,
-            total_hits=hybrid_result.total_hits,
-            returned_hits=len(properties),
+        # Create standard response
+        response = PropertySearchResponse(
+            properties=properties,
+            total_results=hybrid_result.total_hits,
+            returned_results=len(properties),
             execution_time_ms=hybrid_result.execution_time_ms,
-            location_extracted=location_metadata
-        )
-        
-        # Create and validate response using Pydantic
-        response = HybridSearchResponse(
-            results=properties,
-            metadata=metadata
+            query=query,
+            location_extracted=location_extracted
         )
         logger.info(f"Search completed successfully: {len(properties)} results in {hybrid_result.execution_time_ms}ms")
         return response.model_dump()

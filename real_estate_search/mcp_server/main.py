@@ -18,9 +18,9 @@ if __name__ == "__main__" and __package__ is None:
     from real_estate_search.mcp_server.services.wikipedia_search import WikipediaSearchService
     from real_estate_search.mcp_server.services.health_check import HealthCheckService
     from real_estate_search.mcp_server.utils.logging import setup_logging, get_logger
-    from real_estate_search.mcp_server.tools.property_tools import search_properties, get_property_details, get_rich_property_details
-    from real_estate_search.mcp_server.tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
-    from real_estate_search.mcp_server.tools.hybrid_search_tool import search_properties_hybrid
+    from real_estate_search.mcp_server.tools import property_tools
+    from real_estate_search.mcp_server.tools import wikipedia_tools
+    from real_estate_search.mcp_server.tools import hybrid_search_tool
     from real_estate_search.hybrid import HybridSearchEngine
 else:
     # Running as module
@@ -31,9 +31,9 @@ else:
     from .services.wikipedia_search import WikipediaSearchService
     from .services.health_check import HealthCheckService
     from .utils.logging import setup_logging, get_logger
-    from .tools.property_tools import search_properties, get_property_details, get_rich_property_details
-    from .tools.wikipedia_tools import search_wikipedia, get_wikipedia_article, search_wikipedia_by_location
-    from .tools.hybrid_search_tool import search_properties_hybrid
+    from .tools import property_tools
+    from .tools import wikipedia_tools
+    from .tools import hybrid_search_tool
     from ..hybrid import HybridSearchEngine
 
 
@@ -133,7 +133,7 @@ class MCPServer:
             description="Search properties when you have SPECIFIC filter requirements (price, bedrooms, location).",
             tags={"property", "search", "filters", "real_estate"}
         )
-        async def search_properties_with_filters_tool(
+        async def search_properties_with_filters(
             query: str,
             property_type: Optional[str] = None,
             min_price: Optional[float] = None,
@@ -170,7 +170,7 @@ class MCPServer:
                 Properties matching your filters and query
             """
             try:
-                return await search_properties(
+                return await property_tools.search_properties(
                     self._create_context(),
                     query=query,
                     property_type=property_type,
@@ -185,7 +185,16 @@ class MCPServer:
                 )
             except Exception as e:
                 logger.error(f"Property search with filters failed: {e}")
-                return {"error": str(e), "query": query}
+                # Return standardized error response with required fields
+                return {
+                    "query": query,
+                    "search_type": search_type,
+                    "total_results": 0,
+                    "returned_results": 0,
+                    "execution_time_ms": 0,
+                    "properties": [],
+                    "error": str(e)
+                }
         
         # Property details tool
         @self.app.tool(
@@ -193,7 +202,7 @@ class MCPServer:
             description="Get detailed information for a specific property by its listing ID.",
             tags={"property", "details", "real_estate"}
         )
-        async def get_property_details_tool(listing_id: str) -> Dict[str, Any]:
+        async def get_property_details(listing_id: str) -> Dict[str, Any]:
             """Get detailed information for a specific property.
             
             Args:
@@ -202,7 +211,7 @@ class MCPServer:
             Returns:
                 Complete property information including all available details
             """
-            return await get_property_details(
+            return await property_tools.get_property_details(
                 self._create_context(),
                 listing_id=listing_id
             )
@@ -213,7 +222,7 @@ class MCPServer:
             description="Get comprehensive property listing with embedded neighborhood and Wikipedia data.",
             tags={"property", "details", "enriched", "real_estate"}
         )
-        async def get_rich_property_details_tool(
+        async def get_rich_property_details(
             listing_id: str,
             include_wikipedia: bool = True,
             include_neighborhood: bool = True,
@@ -234,7 +243,7 @@ class MCPServer:
             Returns:
                 Rich property listing with embedded neighborhood and Wikipedia context
             """
-            return await get_rich_property_details(
+            return await property_tools.get_rich_property_details(
                 self._create_context(),
                 listing_id=listing_id,
                 include_wikipedia=include_wikipedia,
@@ -248,7 +257,7 @@ class MCPServer:
             description="Search Wikipedia for general information about any topic or location. Use for general searches when you don't have a specific city.",
             tags={"wikipedia", "search", "knowledge"}
         )
-        async def search_wikipedia_tool(
+        async def search_wikipedia(
             query: str,
             search_in: Literal["full", "summaries", "chunks"] = "full",
             city: Optional[str] = None,
@@ -264,7 +273,7 @@ class MCPServer:
             All filter parameters are OPTIONAL - only use them if you want to narrow results.
             
             IMPORTANT: For location-specific searches where you KNOW the city name, use 
-            search_wikipedia_by_location_tool instead - it's optimized for that use case.
+            search_wikipedia_by_location instead - it's optimized for that use case.
             
             Args:
                 query: REQUIRED - What to search for (e.g., "Oakland culture", "California history", "Victorian architecture")
@@ -284,7 +293,7 @@ class MCPServer:
                 Wikipedia articles with summaries, topics, and location information
             """
             try:
-                return await search_wikipedia(
+                return await wikipedia_tools.search_wikipedia(
                     self._create_context(),
                     query=query,
                     search_in=search_in,
@@ -304,7 +313,7 @@ class MCPServer:
             description="Find Wikipedia articles about a SPECIFIC CITY or neighborhood. PREFERRED for location searches.",
             tags={"wikipedia", "location", "city", "neighborhood"}
         )
-        async def search_wikipedia_by_location_tool(
+        async def search_wikipedia_by_location(
             city: str,
             state: Optional[str] = None,
             query: Optional[str] = None,
@@ -337,7 +346,7 @@ class MCPServer:
                 landmarks, neighborhoods, and cultural context
             """
             try:
-                return await search_wikipedia_by_location(
+                return await wikipedia_tools.search_wikipedia_by_location(
                     self._create_context(),
                     city=city,
                     state=state,
@@ -354,7 +363,7 @@ class MCPServer:
             description="Check the health status of all system components.",
             tags={"system", "health", "monitoring"}
         )
-        async def health_check_tool() -> Dict[str, Any]:
+        async def health_check() -> Dict[str, Any]:
             """Check the health status of all system components.
             
             Returns:
@@ -381,7 +390,7 @@ class MCPServer:
             description="PREFERRED: Search properties using natural language queries with AI understanding.",
             tags={"property", "search", "hybrid", "ai", "real_estate", "preferred"}
         )
-        async def search_properties_tool(
+        async def search_properties(
             query: str,
             size: int = 10,
             include_location_extraction: bool = False
@@ -407,7 +416,7 @@ class MCPServer:
                 Properties matching your search with AI relevance scores
             """
             try:
-                return await search_properties_hybrid(
+                return await hybrid_search_tool.search_properties_hybrid(
                     self._create_context(),
                     query=query,
                     size=size,

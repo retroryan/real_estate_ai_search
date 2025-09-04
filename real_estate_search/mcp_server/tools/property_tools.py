@@ -113,10 +113,15 @@ async def search_properties(
         
     except Exception as e:
         logger.error(f"Property search failed: {e}")
+        # Return standardized error response with required fields
         return {
-            "error": str(e),
             "query": query,
-            "search_type": search_type
+            "search_type": search_type,
+            "total_results": 0,
+            "returned_results": 0,
+            "execution_time_ms": 0,
+            "properties": [],
+            "error": str(e)
         }
 
 

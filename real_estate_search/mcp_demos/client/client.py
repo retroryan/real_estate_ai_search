@@ -46,10 +46,17 @@ class RealEstateSearchClient(BaseModel):
             Exception: If the MCP call fails
         """
         # Convert request to dict for MCP tool call
-        params = request.model_dump(exclude_none=True)
+        params = request.model_dump(exclude_none=True, mode='json')
         
-        # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_properties", params)
+        # The search_properties tool only accepts query, size, and include_location_extraction
+        # So we only pass those parameters
+        search_params = {
+            'query': params.get('query'),
+            'size': params.get('size', 10)
+        }
+        
+        # Always use search_properties tool
+        response = await self.mcp_client.call_tool("search_properties", search_params)
         
         if not response.success:
             raise Exception(f"Property search failed: {response.error}")

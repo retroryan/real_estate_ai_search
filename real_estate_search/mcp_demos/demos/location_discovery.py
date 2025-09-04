@@ -86,7 +86,7 @@ async def demo_location_based_discovery(
             max_price = max(prices)
             
             overview.append("🏠 Property Market:\n", style="bold cyan")
-            overview.append(f"   • {property_response.total} {property_type.value}s available\n")
+            overview.append(f"   • {property_response.total_results} {property_type.value}s available\n")
             overview.append(f"   • Price range: ${min_price:,.0f} - ${max_price:,.0f}\n")
             overview.append(f"   • Average price: ${avg_price:,.0f}\n\n")
         
@@ -117,7 +117,7 @@ async def demo_location_based_discovery(
             property_table.add_column("Features", style="green")
             
             for prop in property_response.properties[:5]:
-                features = ", ".join(prop.amenities[:2]) if prop.amenities else "N/A"
+                features = ", ".join(prop.features[:2]) if prop.features else "N/A"
                 property_table.add_row(
                     f"${prop.price:,.0f}",
                     str(prop.bedrooms),
@@ -143,17 +143,17 @@ async def demo_location_based_discovery(
                 console.print(wiki_panel)
         
         # Discovery summary
-        total_discoveries = property_response.total + wiki_response.get("total_results", 0)
-        total_time = property_response.search_time_ms + wiki_response.get("execution_time_ms", 0)
+        total_discoveries = property_response.total_results + wiki_response.get("total_results", 0)
+        total_time = property_response.execution_time_ms + wiki_response.get("execution_time_ms", 0)
         
         console.print(Panel(
             f"[green]✓[/green] Location discovery completed\n\n"
             f"📊 Discovery Summary:\n"
-            f"   • Properties found: {property_response.total}\n"
+            f"   • Properties found: {property_response.total_results}\n"
             f"   • Wikipedia articles: {wiki_response.get('total_results', 0)}\n"
             f"   • Total discoveries: {total_discoveries}\n"
             f"   • Search time: {total_time}ms\n\n"
-            f"💡 Tip: This location has {'high' if property_response.total > 10 else 'moderate' if property_response.total > 5 else 'limited'} "
+            f"💡 Tip: This location has {'high' if property_response.total_results > 10 else 'moderate' if property_response.total_results > 5 else 'limited'} "
             f"property availability and {'rich' if wiki_response.get('total_results', 0) > 10 else 'good' if wiki_response.get('total_results', 0) > 5 else 'basic'} "
             f"contextual information.",
             title="Discovery Complete",

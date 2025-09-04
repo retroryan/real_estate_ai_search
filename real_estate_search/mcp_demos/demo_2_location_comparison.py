@@ -121,11 +121,11 @@ class LocationComparisonDemo(BaseMCPDemo):
     
     def display_location_comparison_table(self, response, query_config, query_name: str) -> None:
         """Display location extraction comparison with expected results."""
-        if not response.metadata.location_extracted:
+        if not response.location_extracted:
             self.console.print("[dim]No location extraction data available[/dim]")
             return
             
-        location_data = response.metadata.location_extracted
+        location_data = response.location_extracted
         
         # Create comparison table
         table = Table(
@@ -140,30 +140,30 @@ class LocationComparisonDemo(BaseMCPDemo):
         
         # Compare has_location
         expected_has_location = query_config.get("expected_has_location", False)
-        has_location_match = location_data.has_location == expected_has_location
+        has_location_match = location_data.get("has_location") == expected_has_location
         table.add_row(
             "Has Location",
-            "✅ Yes" if location_data.has_location else "❌ No",
+            "✅ Yes" if location_data.get("has_location") else "❌ No",
             "✅ Yes" if expected_has_location else "❌ No", 
             "✅" if has_location_match else "❌"
         )
         
         # Compare city
         expected_city = query_config.get("expected_city")
-        city_match = location_data.city == expected_city
+        city_match = location_data.get("city") == expected_city
         table.add_row(
             "City",
-            location_data.city or "None",
+            location_data.get("city") or "None",
             expected_city or "None",
             "✅" if city_match else "❌"
         )
         
         # Compare state
         expected_state = query_config.get("expected_state")
-        state_match = location_data.state == expected_state
+        state_match = location_data.get("state") == expected_state
         table.add_row(
             "State", 
-            location_data.state or "None",
+            location_data.get("state") or "None",
             expected_state or "None",
             "✅" if state_match else "❌"
         )
@@ -171,7 +171,7 @@ class LocationComparisonDemo(BaseMCPDemo):
         # Show cleaned query
         table.add_row(
             "Cleaned Query",
-            f'"{location_data.cleaned_query}"',
+            f'"{location_data.get("cleaned_query", "")}"',
             "N/A",
             "—"
         )
@@ -189,7 +189,7 @@ class LocationComparisonDemo(BaseMCPDemo):
     
     def display_property_results_summary(self, response, query_name: str) -> None:
         """Display property results in a detailed table format."""
-        if not response.results:
+        if not response.properties:
             self.console.print("[dim]No results found[/dim]")
             return
             
@@ -208,13 +208,13 @@ class LocationComparisonDemo(BaseMCPDemo):
         table.add_column("Description", style="white", min_width=35)
         table.add_column("Score", justify="center", style="red", min_width=6)
         
-        for i, prop in enumerate(response.results[:3], 1):  # Show top 3
+        for i, prop in enumerate(response.properties[:3], 1):  # Show top 3
             prop_type = prop.property_type or "Unknown"
             price_str = f"${prop.price:,}" if prop.price else "N/A"
             city = prop.address.city or ""
             state = prop.address.state or ""
             location = f"{city}, {state}" if city and state else city or state or "Unknown"
-            score = prop.hybrid_score or 0
+            score = prop.score or 0
             
             # Get description and truncate if too long
             description = prop.description or "No description available"
@@ -266,8 +266,7 @@ class LocationComparisonDemo(BaseMCPDemo):
                 self.display_property_results_summary(response, query_config['name'])
                 
                 # Show metadata
-                metadata = response.metadata
-                self.console.print(f"\n[dim]⏱️ Execution time: {metadata.execution_time_ms}ms | Results: {metadata.returned_hits}/{metadata.total_hits}[/dim]")
+                self.console.print(f"\n[dim]⏱️ Execution time: {response.execution_time_ms}ms | Results: {response.returned_results}/{response.total_results}[/dim]")
                 
                 self.console.print("[green]✅ Comparison query completed successfully[/green]")
                 queries_successful += 1

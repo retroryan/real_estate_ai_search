@@ -64,13 +64,13 @@ class BasicHybridSearchDemo(BaseMCPDemo):
     
     def display_search_results_table(self, response, query_name: str) -> None:
         """Display search results in a formatted table."""
-        if not response.results:
+        if not response.properties:
             self.console.print("[dim]No results found[/dim]")
             return
             
         # Create results table
         table = Table(
-            title=f"{query_name} - Top {len(response.results)} Properties",
+            title=f"{query_name} - Top {len(response.properties)} Properties",
             show_header=True,
             header_style="bold magenta"
         )
@@ -81,7 +81,7 @@ class BasicHybridSearchDemo(BaseMCPDemo):
         table.add_column("Location", style="yellow", min_width=15)
         table.add_column("Score", justify="center", style="red", min_width=6)
         
-        for i, prop in enumerate(response.results, 1):
+        for i, prop in enumerate(response.properties, 1):
             # Format property data safely
             property_type = prop.property_type or "Unknown"
             
@@ -95,7 +95,7 @@ class BasicHybridSearchDemo(BaseMCPDemo):
             state = prop.address.state or ""
             location = f"{city}, {state}" if city and state else "Unknown"
             
-            score_str = f"{prop.hybrid_score:.3f}" if prop.hybrid_score else "N/A"
+            score_str = f"{prop.score:.3f}" if prop.score else "N/A"
             
             table.add_row(str(i), property_type, price_str, beds_baths, location, score_str)
         
@@ -103,10 +103,10 @@ class BasicHybridSearchDemo(BaseMCPDemo):
     
     def display_sample_property_details(self, response) -> None:
         """Display detailed information about the first property result."""
-        if not response.results:
+        if not response.properties:
             return
             
-        sample_prop = response.results[0]
+        sample_prop = response.properties[0]
         addr = sample_prop.address
         
         details = []
@@ -135,8 +135,8 @@ class BasicHybridSearchDemo(BaseMCPDemo):
         if size_parts:
             details.append(f"[bold]Size:[/bold] {', '.join(size_parts)}")
         
-        if sample_prop.hybrid_score:
-            details.append(f"[bold]Hybrid Score:[/bold] {sample_prop.hybrid_score:.3f}")
+        if sample_prop.score:
+            details.append(f"[bold]Hybrid Score:[/bold] {sample_prop.score:.3f}")
         
         if sample_prop.features:
             top_features = sample_prop.features[:3]
@@ -176,9 +176,8 @@ class BasicHybridSearchDemo(BaseMCPDemo):
                 response = await self.execute_hybrid_search(request)
                 
                 # Display results
-                metadata = response.metadata
-                self.console.print(f"\n[green]📊 Results ({metadata.returned_hits} of {metadata.total_hits} total):[/green]")
-                self.console.print(f"[dim]⏱️ Execution time: {metadata.execution_time_ms}ms[/dim]")
+                self.console.print(f"\n[green]📊 Results ({response.returned_results} of {response.total_results} total):[/green]")
+                self.console.print(f"[dim]⏱️ Execution time: {response.execution_time_ms}ms[/dim]")
                 
                 # Show results table
                 self.display_search_results_table(response, query_config['name'])

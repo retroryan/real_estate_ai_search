@@ -98,7 +98,7 @@ async def demo_multi_entity_search(
         
         property_panel = Panel(
             property_text,
-            title=f"Found {property_response.total} properties",
+            title=f"Found {property_response.total_results} properties",
             border_style="green"
         )
         
@@ -123,7 +123,7 @@ async def demo_multi_entity_search(
         
         wiki_panel = Panel(
             wiki_text,
-            title=f"Found {wikipedia_response.total} articles",
+            title=f"Found {wikipedia_response.total_results} articles",
             border_style="blue"
         )
         
@@ -131,14 +131,14 @@ async def demo_multi_entity_search(
         console.print(Columns([property_panel, wiki_panel], equal=True, expand=True))
         
         # Summary statistics
-        total_time = property_response.search_time_ms + wikipedia_response.search_time_ms
-        total_results = property_response.total + wikipedia_response.total
+        total_time = property_response.execution_time_ms + wikipedia_response.execution_time_ms
+        total_results = property_response.total_results + wikipedia_response.total_results
         
         console.print(Panel(
             f"[green]✓[/green] Search completed\n"
             f"Total results: {total_results}\n"
-            f"Properties: {property_response.total} in {property_response.search_time_ms}ms\n"
-            f"Wikipedia: {wikipedia_response.total} in {wikipedia_response.search_time_ms}ms\n"
+            f"Properties: {property_response.total_results} in {property_response.execution_time_ms}ms\n"
+            f"Wikipedia: {wikipedia_response.total_results} in {wikipedia_response.execution_time_ms}ms\n"
             f"Total time: {total_time}ms",
             title="Search Summary",
             border_style="yellow"

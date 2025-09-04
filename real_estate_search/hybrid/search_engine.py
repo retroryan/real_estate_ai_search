@@ -75,9 +75,20 @@ class HybridSearchEngine:
         # Build RRF query using native Elasticsearch syntax
         query_body = self._build_rrf_query(params, query_vector, query_for_search)
         
-        # Log the complete query being sent to Elasticsearch
+        # Log the complete query being sent to Elasticsearch with truncated vector
         import json
-        logger.info(f"Elasticsearch query body (truncated): {json.dumps(query_body, default=str)[:500]}...")
+        
+        def truncate_vectors(obj):
+            """Truncate query_vector fields to first 3 elements for logging."""
+            if isinstance(obj, dict):
+                if 'query_vector' in obj and isinstance(obj['query_vector'], list) and len(obj['query_vector']) > 3:
+                    return {**obj, 'query_vector': obj['query_vector'][:3] + ['...truncated...']}
+                return {k: truncate_vectors(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [truncate_vectors(item) for item in obj]
+            return obj
+        
+        logger.info(f"Elasticsearch query body: {json.dumps(truncate_vectors(query_body), default=str)}")
         
         # Log specific filter information
         if 'retriever' in query_body and 'rrf' in query_body['retriever']:

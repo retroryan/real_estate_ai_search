@@ -69,22 +69,22 @@ class LocationAwareSearchDemo(BaseMCPDemo):
     
     def display_location_extraction_details(self, response, query_name: str) -> None:
         """Display detailed location extraction information."""
-        if not response.metadata.location_extracted:
+        if not response.location_extracted:
             self.console.print("[dim]No location extraction data available[/dim]")
             return
             
-        location_data = response.metadata.location_extracted
+        location_data = response.location_extracted
         
         # Create location details panel
         details = []
-        details.append(f"[bold]Has Location:[/bold] {'✅ Yes' if location_data.has_location else '❌ No'}")
+        details.append(f"[bold]Has Location:[/bold] {'✅ Yes' if location_data.get('has_location') else '❌ No'}")
         
-        if location_data.city:
-            details.append(f"[bold]Extracted City:[/bold] {location_data.city}")
-        if location_data.state:
-            details.append(f"[bold]Extracted State:[/bold] {location_data.state}")
-        if location_data.cleaned_query:
-            details.append(f"[bold]Cleaned Query:[/bold] \"{location_data.cleaned_query}\"")
+        if location_data.get('city'):
+            details.append(f"[bold]Extracted City:[/bold] {location_data.get('city')}")
+        if location_data.get('state'):
+            details.append(f"[bold]Extracted State:[/bold] {location_data.get('state')}")
+        if location_data.get('cleaned_query'):
+            details.append(f"[bold]Cleaned Query:[/bold] \"{location_data.get('cleaned_query')}\"")
         
         self.console.print(Panel(
             "\n".join(details),
@@ -94,7 +94,7 @@ class LocationAwareSearchDemo(BaseMCPDemo):
     
     def display_geographic_results_table(self, response, query_name: str) -> None:
         """Display search results with geographic context."""
-        if not response.results:
+        if not response.properties:
             self.console.print("[dim]No results found[/dim]")
             return
             
@@ -111,7 +111,7 @@ class LocationAwareSearchDemo(BaseMCPDemo):
         table.add_column("Address", style="white", min_width=25)
         table.add_column("Score", justify="center", style="red", min_width=6)
         
-        for i, prop in enumerate(response.results, 1):
+        for i, prop in enumerate(response.properties, 1):
             # Format property data with location emphasis
             property_type = prop.property_type or "Unknown"
             price_str = f"${prop.price:,.0f}" if prop.price else "N/A"
@@ -125,7 +125,7 @@ class LocationAwareSearchDemo(BaseMCPDemo):
             if len(address) > 25:
                 address = address[:22] + "..."
             
-            score_str = f"{prop.hybrid_score:.3f}" if prop.hybrid_score else "N/A"
+            score_str = f"{prop.score:.3f}" if prop.score else "N/A"
             
             table.add_row(str(i), property_type, price_str, location, address, score_str)
         
@@ -140,12 +140,12 @@ class LocationAwareSearchDemo(BaseMCPDemo):
         states_extracted = set()
         
         for response, config in zip(responses, query_configs):
-            if response.metadata.location_extracted and response.metadata.location_extracted.has_location:
+            if response.location_extracted and response.location_extracted.get('has_location'):
                 location_found_count += 1
-                if response.metadata.location_extracted.city:
-                    cities_extracted.add(response.metadata.location_extracted.city)
-                if response.metadata.location_extracted.state:
-                    states_extracted.add(response.metadata.location_extracted.state)
+                if response.location_extracted.get('city'):
+                    cities_extracted.add(response.location_extracted.get('city'))
+                if response.location_extracted.get('state'):
+                    states_extracted.add(response.location_extracted.get('state'))
         
         insights.append(f"[bold]Location Detection Rate:[/bold] {location_found_count}/{len(responses)} queries")
         
@@ -155,7 +155,7 @@ class LocationAwareSearchDemo(BaseMCPDemo):
             insights.append(f"[bold]States Detected:[/bold] {', '.join(sorted(states_extracted))}")
         
         # Calculate average results per location query
-        avg_results = sum(len(r.results) for r in responses) / len(responses) if responses else 0
+        avg_results = sum(len(r.properties) for r in responses) / len(responses) if responses else 0
         insights.append(f"[bold]Average Results per Query:[/bold] {avg_results:.1f}")
         
         self.console.print(Panel(
@@ -196,9 +196,9 @@ class LocationAwareSearchDemo(BaseMCPDemo):
                 self.display_location_extraction_details(response, query_config['name'])
                 
                 # Display results with geographic emphasis
-                metadata = response.metadata
-                self.console.print(f"\n[green]📊 Results ({metadata.returned_hits} of {metadata.total_hits} total):[/green]")
-                self.console.print(f"[dim]⏱️ Execution time: {metadata.execution_time_ms}ms[/dim]")
+                # Get metadata directly from response
+                self.console.print(f"\n[green]📊 Results ({response.returned_results} of {response.total_results} total):[/green]")
+                self.console.print(f"[dim]⏱️ Execution time: {response.execution_time_ms}ms[/dim]")
                 
                 self.display_geographic_results_table(response, query_config['name'])
                 

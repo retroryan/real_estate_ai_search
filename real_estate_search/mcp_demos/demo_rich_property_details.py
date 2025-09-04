@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Demo: Rich Property Details Retrieval
-Demonstrates the get_rich_property_details_tool that returns comprehensive
+Demonstrates the get_rich_property_details that returns comprehensive
 property information with embedded neighborhood and Wikipedia data.
 """
 
@@ -45,7 +45,7 @@ async def demo_rich_property_details(listing_id: str = "prop-oak-125"):
         print("=" * 60)
         
         result = await client.call_tool(
-            "get_rich_property_details_tool",
+            "get_rich_property_details",
             {
                 "listing_id": listing_id,
                 "include_wikipedia": True,
@@ -134,7 +134,7 @@ async def demo_rich_property_details(listing_id: str = "prop-oak-125"):
         print("="*60)
         
         result = await client.call_tool(
-            "get_rich_property_details_tool",
+            "get_rich_property_details",
             {
                 "listing_id": listing_id,
                 "include_wikipedia": False,
@@ -170,7 +170,7 @@ async def demo_rich_property_details(listing_id: str = "prop-oak-125"):
         print("="*60)
         
         result = await client.call_tool(
-            "get_rich_property_details_tool",
+            "get_rich_property_details",
             {
                 "listing_id": listing_id,
                 "include_wikipedia": True,

@@ -87,15 +87,15 @@ async def demo_semantic_vs_text_comparison(
         
         comparison_table.add_row(
             "Total Results",
-            str(semantic_response.total),
-            str(text_response.total),
-            str(hybrid_response.total)
+            str(semantic_response.total_results),
+            str(text_response.total_results),
+            str(hybrid_response.total_results)
         )
         comparison_table.add_row(
             "Search Time (ms)",
-            str(semantic_response.search_time_ms),
-            str(text_response.search_time_ms),
-            str(hybrid_response.search_time_ms)
+            str(semantic_response.execution_time_ms),
+            str(text_response.execution_time_ms),
+            str(hybrid_response.execution_time_ms)
         )
         comparison_table.add_row(
             "Top Score",
@@ -157,13 +157,13 @@ async def demo_semantic_vs_text_comparison(
             border_style="magenta"
         ))
         
-        total_time = semantic_response.search_time_ms + text_response.search_time_ms + hybrid_response.search_time_ms
+        total_time = semantic_response.execution_time_ms + text_response.execution_time_ms + hybrid_response.execution_time_ms
         
         return DemoResult(
             demo_name="Semantic vs Text Search Comparison",
             success=True,
             execution_time_ms=total_time,
-            total_results=semantic_response.total + text_response.total + hybrid_response.total,
+            total_results=semantic_response.total_results + text_response.total_results + hybrid_response.total_results,
             returned_results=len(semantic_response.properties) + len(text_response.properties) + len(hybrid_response.properties),
             sample_results=[
                 {"type": "semantic", "results": [p.model_dump() for p in semantic_response.properties[:2]]},

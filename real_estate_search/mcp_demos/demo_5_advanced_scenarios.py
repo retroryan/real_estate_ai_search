@@ -114,31 +114,31 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
             EdgeCaseTest(
                 name="Modern Oakland Apartment",
                 query="Modern apartment in Oakland",
-                description="Tests Oakland location extraction",
+                expected_location="Oakland",
                 expected_behavior="Should extract Oakland location correctly"
             ),
             EdgeCaseTest(
                 name="Investment Property Generic",
                 query="investment property with rental income",
-                description="Tests non-location query handling",
+                expected_location=None,
                 expected_behavior="Should handle queries without location"
             ),
             EdgeCaseTest(
                 name="Luxury Features Only",
                 query="luxury waterfront condo with amazing views",
-                description="Tests feature-only queries without location",
+                expected_location=None,
                 expected_behavior="Should return results without location filtering"
             ),
             EdgeCaseTest(
                 name="Minimal Query",
                 query="home",
-                description="Tests very minimal search terms",
+                expected_location=None,
                 expected_behavior="Should return broad results for minimal queries"
             ),
             EdgeCaseTest(
                 name="Bay Area Reference",
                 query="properties in the Bay Area California",
-                description="Tests regional location reference",
+                expected_location="Bay Area",
                 expected_behavior="Should handle vague regional terms"
             ),
         ]
@@ -172,28 +172,29 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
     
     def display_complex_query_summary(self, query_name: str, query_text: str, response, execution_time: float) -> None:
         """Display detailed summary for a complex query result."""
-        metadata = response.metadata
+        # Get metadata directly from response
         
         self.console.print(f"\n[green]📊 {query_name} Summary:[/green]")
         self.console.print(f"   [dim]🔍 Query:[/dim] \"{query_text}\"")
-        self.console.print(f"   [dim]⏱️ Total time:[/dim] {execution_time:.1f}ms (Server: {metadata.execution_time_ms}ms)")
-        self.console.print(f"   [dim]📈 Results:[/dim] {metadata.returned_hits} of {metadata.total_hits} total")
+        self.console.print(f"   [dim]⏱️ Total time:[/dim] {execution_time:.1f}ms (Server: {response.execution_time_ms}ms)")
+        self.console.print(f"   [dim]📈 Results:[/dim] {response.returned_results} of {response.total_results} total")
         
         # Show location extraction if present
-        if metadata.location_extracted and metadata.location_extracted.has_location:
-            city = metadata.location_extracted.city or "N/A"
-            state = metadata.location_extracted.state or "N/A"
-            cleaned = metadata.location_extracted.cleaned_query[:60]
-            if len(metadata.location_extracted.cleaned_query) > 60:
+        if response.location_extracted and response.location_extracted.get('has_location'):
+            city = response.location_extracted.get('city') or "N/A"
+            state = response.location_extracted.get('state') or "N/A"
+            cleaned_query = response.location_extracted.get('cleaned_query', '')
+            cleaned = cleaned_query[:60]
+            if len(cleaned_query) > 60:
                 cleaned += "..."
             self.console.print(f"   [dim]📍 Location:[/dim] {city}, {state}")
             self.console.print(f"   [dim]🧹 Cleaned:[/dim] \"{cleaned}\"")
         
         # Show detailed property results
-        if response.results:
+        if response.properties:
             self.console.print(f"\n   [bold magenta]🏆 Property Details:[/bold magenta]")
-            for j, prop in enumerate(response.results, 1):
-                score = prop.hybrid_score or 0
+            for j, prop in enumerate(response.properties, 1):
+                score = prop.score or 0
                 prop_type = prop.property_type or "Unknown"
                 price_str = f"${prop.price:,}" if prop.price else "N/A"
                 
@@ -220,7 +221,7 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
                         features_str += f" (+{len(prop.features) - 3} more)"
                     self.console.print(f"        ✨ {features_str}")
                 
-                if j < len(response.results):
+                if j < len(response.properties):
                     self.console.print("")  # Add spacing between properties
     def display_edge_case_results(self, edge_cases: List[EdgeCaseTest], results: List[Dict]) -> None:
         """Display edge case test results."""
@@ -240,15 +241,15 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
                 table.add_row(edge_case.name, "❌", "ERROR", "N/A", "❌")
             else:
                 response_data = result["response"]
-                metadata = response_data.metadata
-                has_location = (metadata.location_extracted and 
-                              metadata.location_extracted.has_location) if metadata.location_extracted else False
+                # Get metadata directly from response_data
+                has_location = (response_data.location_extracted and 
+                              response_data.location_extracted.get('has_location')) if response_data.location_extracted else False
                 
                 table.add_row(
                     edge_case.name,
                     "✅",
-                    str(metadata.returned_hits),
-                    f"{metadata.execution_time_ms}",
+                    str(response_data.returned_results),
+                    f"{response_data.execution_time_ms}",
                     "✅" if has_location else "❌"
                 )
         
@@ -280,14 +281,14 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
                         request = HybridSearchRequest(**test_case.params)
                         # If no validation error, try the actual request
                         response = await self.execute_hybrid_search(request)
-                        validation_results.append({"error": None, "hits": len(response.results), "error_type": None})
+                        validation_results.append({"error": None, "hits": len(response.properties), "error_type": None})
                     except ValidationError as e:
                         validation_results.append({"error": str(e), "error_type": "ValidationError"})
                         successful_queries += 1  # Expected validation failure
                 else:
                     request = HybridSearchRequest(**test_case.params)
                     response = await self.execute_hybrid_search(request)
-                    validation_results.append({"error": None, "hits": len(response.results), "error_type": None})
+                    validation_results.append({"error": None, "hits": len(response.properties), "error_type": None})
                     successful_queries += 1
                     
             except Exception as e:

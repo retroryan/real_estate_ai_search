@@ -48,6 +48,35 @@ class QueryCaptureClient:
         # Store all captured queries for this demo
         self.captured_queries: List[Dict[str, Any]] = []
     
+    def _truncate_query_vectors(self, obj: Any, max_vector_items: int = 3) -> Any:
+        """
+        Recursively truncate query_vector fields in the query structure.
+        
+        Args:
+            obj: The object to process (dict, list, or other)
+            max_vector_items: Maximum number of vector items to keep
+            
+        Returns:
+            The object with truncated query_vector fields
+        """
+        if isinstance(obj, dict):
+            # Create a new dict to avoid modifying the original
+            new_obj = {}
+            for key, value in obj.items():
+                if key == 'query_vector' and isinstance(value, list) and len(value) > max_vector_items:
+                    # Truncate the query_vector
+                    new_obj[key] = value[:max_vector_items] + ['...truncated...']
+                else:
+                    # Recursively process nested structures
+                    new_obj[key] = self._truncate_query_vectors(value, max_vector_items)
+            return new_obj
+        elif isinstance(obj, list):
+            # Recursively process list items
+            return [self._truncate_query_vectors(item, max_vector_items) for item in obj]
+        else:
+            # Return other types as-is
+            return obj
+    
     def search(self, **kwargs) -> Dict[str, Any]:
         """
         Intercept search calls and save the query to a JSON file.
@@ -65,13 +94,13 @@ class QueryCaptureClient:
         body = kwargs.get('body', {})
         index = kwargs.get('index', '')
         
-        # Create the query info object
+        # Create the query info object with truncated vectors
         query_info = {
             "demo_number": self.demo_number,
             "query_number": self.query_counter,
             "timestamp": datetime.now().isoformat(),
             "index": index,
-            "query": body
+            "query": self._truncate_query_vectors(body)
         }
         
         # Add any other search parameters
@@ -90,8 +119,14 @@ class QueryCaptureClient:
         except Exception as e:
             logger.error(f"Failed to save query to {filepath}: {e}")
         
-        # Store the query in memory as well
-        self.captured_queries.append(query_info)
+        # Store the query in memory as well (with full vectors for internal use)
+        self.captured_queries.append({
+            "demo_number": self.demo_number,
+            "query_number": self.query_counter,
+            "timestamp": query_info["timestamp"],
+            "index": index,
+            "query": body  # Keep full query in memory
+        })
         
         # Execute the actual search
         return self.es_client.search(**kwargs)
@@ -240,11 +275,21 @@ class QueryCaptureClient:
         if not self.captured_queries:
             return
         
+        # Truncate vectors in all captured queries for the summary
+        truncated_queries = [
+            {
+                **q,
+                "query": self._truncate_query_vectors(q.get("query", {}))
+                if "query" in q else q
+            }
+            for q in self.captured_queries
+        ]
+        
         summary = {
             "demo_number": self.demo_number,
             "total_queries": len(self.captured_queries),
             "timestamp": datetime.now().isoformat(),
-            "queries": self.captured_queries
+            "queries": truncated_queries
         }
         
         # Save summary file

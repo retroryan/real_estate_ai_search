@@ -187,7 +187,12 @@ def build_price_distribution_query(
     - stats: Multiple metrics in one aggregation
     """
     return {
-        "size": 0,  # Only aggregations, no documents
+        "size": 5,  # Return top 5 documents along with aggregations
+        
+        # SORT: Order documents by price descending to show most expensive
+        "sort": [
+            {"price": {"order": "desc"}}
+        ],
         
         # QUERY WITH AGGREGATIONS: Filter documents before aggregating
         # Aggregations only operate on documents matching the query
@@ -283,13 +288,14 @@ def demo_price_distribution(
     max_price: float = 2000000
 ) -> DemoQueryResult:
     """
-    Demo 5: Price distribution analysis.
+    Demo 5: Price distribution analysis with top 5 most expensive properties.
     
     DEMONSTRATES:
     - Histogram aggregation for price ranges
     - Percentiles aggregation for distribution
     - Nested aggregations for property type breakdown
     - Stats aggregation for multiple metrics
+    - Sorting by price to show most expensive properties
     """
     # BUILD ELASTICSEARCH QUERY
     query = build_price_distribution_query(interval, min_price, max_price)
@@ -298,20 +304,27 @@ def demo_price_distribution(
     try:
         response = es_client.search(index="properties", body=query)
         
-        # PROCESS RESULTS
-        results = process_price_distribution(response, interval)
+        # PROCESS AGGREGATION RESULTS
+        histogram_results = process_price_distribution(response, interval)
         aggregations = response.get('aggregations', {})
         
+        # EXTRACT TOP PROPERTIES FOR DISPLAY
+        property_results = []
+        if 'hits' in response and 'hits' in response['hits']:
+            for hit in response['hits']['hits']:
+                source = hit['_source']
+                property_results.append(source)
+        
         # DISPLAY RESULTS (separated from query logic)
-        display_price_distribution(response, results, interval, min_price, max_price)
+        display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
         return DemoQueryResult(
             query_name=f"Demo 5: Price Distribution Analysis",
-            query_description=f"Creates histogram of property prices from ${min_price:,.0f} to ${max_price:,.0f} with ${interval:,.0f} intervals, including property type breakdowns",
+            query_description=f"Creates histogram of property prices from ${min_price:,.0f} to ${max_price:,.0f} with ${interval:,.0f} intervals, showing top 5 most expensive properties",
             execution_time_ms=response.get('took', 0),
             total_hits=response['hits']['total']['value'] if 'hits' in response else 0,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,  # Now returns actual properties
             aggregations=aggregations,
             query_dsl=query,
             es_features=[
@@ -321,7 +334,8 @@ def demo_price_distribution(
                 "Stats Aggregation - Multiple metrics (min/max/avg/sum) in one aggregation",
                 "Nested Terms Aggregation - Property type breakdown per price bucket",
                 "Extended Bounds - Forces consistent histogram range",
-                "Min Doc Count - Omits empty buckets for cleaner results"
+                "Min Doc Count - Omits empty buckets for cleaner results",
+                "Sort - Orders results by price descending"
             ],
             indexes_used=[
                 "properties index - Real estate property listings",
