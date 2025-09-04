@@ -1,0 +1,116 @@
+{
+  "_source": {
+    "excludes": []
+  },
+  "properties": {
+    "page_id": {
+      "type": "keyword"
+    },
+    "title": {
+      "type": "text",
+      "analyzer": "english",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "url": {
+      "type": "keyword",
+      "index": false,
+      "doc_values": false
+    },
+    "article_filename": {
+      "type": "keyword",
+      "index": false
+    },
+    "long_summary": {
+      "type": "text",
+      "analyzer": "english"
+    },
+    "short_summary": {
+      "type": "text",
+      "analyzer": "english"
+    },
+    "full_content": {
+      "type": "text",
+      "analyzer": "english",
+      "index_options": "offsets",
+      "fields": {
+        "exact": {
+          "type": "text",
+          "analyzer": "standard"
+        }
+      }
+    },
+    "content_length": {
+      "type": "integer"
+    },
+    "content_loaded": {
+      "type": "boolean"
+    },
+    "content_loaded_at": {
+      "type": "date"
+    },
+    "city": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "state": {
+      "type": "keyword"
+    },
+    "location": {
+      "type": "geo_point"
+    },
+    "key_topics": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "categories": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "article_quality": {
+      "type": "keyword"
+    },
+    "last_updated": {
+      "type": "date"
+    },
+    "relevance_score": {
+      "type": "float"
+    },
+    "article_quality_score": {
+      "type": "float"
+    },
+    "title_embedding": {
+      "type": "dense_vector",
+      "dims": 384,
+      "index": true,
+      "similarity": "cosine"
+    },
+    "content_embedding": {
+      "type": "dense_vector",
+      "dims": 384,
+      "index": true,
+      "similarity": "cosine"
+    },
+    "summary_embedding": {
+      "type": "dense_vector",
+      "dims": 384,
+      "index": true,
+      "similarity": "cosine"
+    },
+    "embedding_model": {
+      "type": "keyword"
+    },
+    "embedding_dimension": {
+      "type": "integer"
+    },
+    "embeddings_generated_at": {
+      "type": "date"
+    },
+    "embeddings_processed": {
+      "type": "boolean"
+    }
+  }
+}
