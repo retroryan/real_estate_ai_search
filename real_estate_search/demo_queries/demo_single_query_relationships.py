@@ -15,7 +15,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from .models import DemoQueryResult
+from .result_models import MixedEntityResult, PropertyResult, WikipediaArticle
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class SimplifiedRelationshipDemo:
         """Initialize with Elasticsearch client."""
         self.es_client = es_client
         
-    def demo_single_query_property(self, property_id: str = None) -> DemoQueryResult:
+    def demo_single_query_property(self, property_id: str = None) -> MixedEntityResult:
         """
         Get complete property context with a single query.
         
@@ -82,12 +82,14 @@ class SimplifiedRelationshipDemo:
             )
             
             if not response['hits']['hits']:
-                return DemoQueryResult(
+                return MixedEntityResult(
                     query_name="Single Query Property Relationships",
                     execution_time_ms=int((time.time() - start_time) * 1000),
                     total_hits=0,
                     returned_hits=0,
-                    results=[],
+                    property_results=[],
+                    wikipedia_results=[],
+                    neighborhood_results=[],
                     query_dsl=query
                 )
             
@@ -100,12 +102,31 @@ class SimplifiedRelationshipDemo:
             
             execution_time = int((time.time() - start_time) * 1000)
             
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name=f"Property: {property_data.get('address', {}).get('street', 'Unknown')}",
                 execution_time_ms=execution_time,
                 total_hits=1,
                 returned_hits=1,
-                results=[property_data],
+                property_results=[PropertyResult(
+                    listing_id=property_data.get('listing_id', ''),
+                    property_type=property_data.get('property_type', 'Unknown'),
+                    price=property_data.get('price', 0),
+                    bedrooms=property_data.get('bedrooms', 0),
+                    bathrooms=property_data.get('bathrooms', 0),
+                    square_feet=property_data.get('square_feet', 0),
+                    year_built=property_data.get('year_built'),
+                    address=property_data.get('address', {}),
+                    description=property_data.get('description', '')
+                )],
+                wikipedia_results=[WikipediaArticle(
+                    page_id=str(a.get('page_id', '')),
+                    title=a.get('title', ''),
+                    summary=a.get('summary', ''),
+                    city=a.get('city'),
+                    state=a.get('state'),
+                    url=a.get('url')
+                ) for a in wikipedia_articles],
+                neighborhood_results=[neighborhood] if neighborhood else [],
                 query_dsl={
                     "description": "SINGLE query retrieves all relationships",
                     "query": query,
@@ -120,16 +141,18 @@ class SimplifiedRelationshipDemo:
             
         except Exception as e:
             logger.error(f"Query error: {e}")
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name="Single Query Property Relationships",
                 execution_time_ms=int((time.time() - start_time) * 1000),
                 total_hits=0,
                 returned_hits=0,
-                results=[],
+                property_results=[],
+                wikipedia_results=[],
+                neighborhood_results=[],
                 query_dsl={"error": str(e)}
             )
     
-    def demo_neighborhood_properties_simplified(self, neighborhood_name: str) -> DemoQueryResult:
+    def demo_neighborhood_properties_simplified(self, neighborhood_name: str) -> MixedEntityResult:
         """
         Get all properties in a neighborhood with a single query.
         
@@ -165,27 +188,41 @@ class SimplifiedRelationshipDemo:
             
             execution_time = int((time.time() - start_time) * 1000)
             
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name=f"Neighborhood: {neighborhood_name}",
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                results=results,
+                property_results=[PropertyResult(
+                    listing_id=r.get('listing_id', ''),
+                    property_type=r.get('property_type', 'Unknown'),
+                    price=r.get('price', 0),
+                    bedrooms=r.get('bedrooms', 0),
+                    bathrooms=r.get('bathrooms', 0),
+                    square_feet=r.get('square_feet', 0),
+                    year_built=r.get('year_built'),
+                    address=r.get('address', {}),
+                    description=r.get('description', '')
+                ) for r in results],
+                wikipedia_results=[],
+                neighborhood_results=[],
                 query_dsl=query
             )
             
         except Exception as e:
             logger.error(f"Query error: {e}")
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name=f"Neighborhood: {neighborhood_name}",
                 execution_time_ms=int((time.time() - start_time) * 1000),
                 total_hits=0,
                 returned_hits=0,
-                results=[],
+                property_results=[],
+                wikipedia_results=[],
+                neighborhood_results=[],
                 query_dsl={"error": str(e)}
             )
     
-    def demo_location_search_simplified(self, city: str, state: str) -> DemoQueryResult:
+    def demo_location_search_simplified(self, city: str, state: str) -> MixedEntityResult:
         """
         Search by location with full context in a single query.
         
@@ -226,23 +263,37 @@ class SimplifiedRelationshipDemo:
             
             execution_time = int((time.time() - start_time) * 1000)
             
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name=f"Location: {city}, {state}",
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                results=results,
+                property_results=[PropertyResult(
+                    listing_id=r.get('listing_id', ''),
+                    property_type=r.get('property_type', 'Unknown'),
+                    price=r.get('price', 0),
+                    bedrooms=r.get('bedrooms', 0),
+                    bathrooms=r.get('bathrooms', 0),
+                    square_feet=r.get('square_feet', 0),
+                    year_built=r.get('year_built'),
+                    address=r.get('address', {}),
+                    description=r.get('description', '')
+                ) for r in results],
+                wikipedia_results=[],
+                neighborhood_results=[],
                 query_dsl=query
             )
             
         except Exception as e:
             logger.error(f"Query error: {e}")
-            return DemoQueryResult(
+            return MixedEntityResult(
                 query_name=f"Location: {city}, {state}",
                 execution_time_ms=int((time.time() - start_time) * 1000),
                 total_hits=0,
                 returned_hits=0,
-                results=[],
+                property_results=[],
+                wikipedia_results=[],
+                neighborhood_results=[],
                 query_dsl={"error": str(e)}
             )
 
@@ -271,7 +322,7 @@ def display_denormalized_structure(es_client: Elasticsearch):
     console.print("• Consistent data snapshot")
 
 
-def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
+def demo_simplified_relationships(es_client: Elasticsearch) -> MixedEntityResult:
     """
     Main demo entry point showing simplified relationship queries.
     
@@ -318,8 +369,8 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> DemoQueryResult:
     )
     console.print(query_panel)
     
-    if result1.results:
-        property = result1.results[0]
+    if result1.property_results:
+        property = result1.property_results[0].__dict__
         
         # Create results table
         results_table = Table(title="Query Results", box=box.ROUNDED)
@@ -429,19 +480,31 @@ retrieved with single queries - no JOINs or multiple lookups needed!""",
     
     # Return combined results
     all_results = []
-    if result1.results:
-        all_results.extend(result1.results)
-    if result2.results:
-        all_results.extend(result2.results)
-    if result3.results:
-        all_results.extend(result3.results)
+    if result1.property_results:
+        all_results.extend([p.__dict__ for p in result1.property_results])
+    if result2.property_results:
+        all_results.extend([p.__dict__ for p in result2.property_results])
+    if result3.property_results:
+        all_results.extend([p.__dict__ for p in result3.property_results])
     
-    return DemoQueryResult(
+    return MixedEntityResult(
         query_name="Property Relationships via Denormalized Index",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
         returned_hits=len(all_results),
-        results=all_results[:10],  # Limit to 10 for display
+        property_results=[PropertyResult(
+            listing_id=r.get('listing_id', ''),
+            property_type=r.get('property_type', 'Unknown'),
+            price=r.get('price', 0),
+            bedrooms=r.get('bedrooms', 0),
+            bathrooms=r.get('bathrooms', 0),
+            square_feet=r.get('square_feet', 0),
+            year_built=r.get('year_built'),
+            address=r.get('address', {}),
+            description=r.get('description', '')
+        ) for r in all_results[:10] if 'listing_id' in r],
+        wikipedia_results=[],
+        neighborhood_results=[],  # Limit to 10 for display
         query_dsl={
             "description": "Denormalized index enables single-query retrieval",
             "comparison": {

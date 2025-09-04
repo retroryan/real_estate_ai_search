@@ -27,7 +27,7 @@ from rich import box
 from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.syntax import Syntax
-from .models import DemoQueryResult
+from .result_models import WikipediaSearchResult, WikipediaArticle
 from ..html_generators import WikipediaHTMLGenerator
 
 
@@ -554,7 +554,7 @@ def generate_summary_statistics(all_results: List[Dict[str, Any]]) -> Dict[str, 
     }
 
 
-def demo_wikipedia_fulltext(es_client: Elasticsearch) -> DemoQueryResult:
+def demo_wikipedia_fulltext(es_client: Elasticsearch) -> WikipediaSearchResult:
     """
     Demonstrate full-text search on enriched Wikipedia articles.
     
@@ -773,15 +773,29 @@ def demo_wikipedia_fulltext(es_client: Elasticsearch) -> DemoQueryResult:
         }
     }]
     
-    return DemoQueryResult(
-        query_name="Demo 10: Wikipedia Full-Text Search",
+    # Convert results to WikipediaArticle objects
+    wikipedia_articles = []
+    for result in all_search_results[:15]:  # Take first 15 results
+        if 'doc' in result:
+            doc = result['doc']
+            wikipedia_articles.append(WikipediaArticle(
+                page_id=str(doc.page_id) if doc.page_id else '',
+                title=doc.title,
+                summary=doc.content or doc.full_content[:500] if doc.full_content else '',
+                city=doc.city,
+                state=doc.state,
+                url=doc.url,
+                score=result.get('score', 0.0)
+            ))
+    
+    return WikipediaSearchResult(
+        query_name="Demo 9: Wikipedia Full-Text Search",
         query_description="Demonstrates enterprise-scale full-text search across 450+ Wikipedia articles (100MB+ text), showcasing complex query patterns and sub-100ms performance",
         execution_time_ms=0,
         total_hits=stats['total_documents_found'],
-        returned_hits=min(stats['total_documents_found'], 15),
+        returned_hits=len(wikipedia_articles),
         query_dsl=sample_query_dsl,
-        results=summary_results,
-        aggregations=None,
+        results=wikipedia_articles,
         es_features=[
             "Full-Text Search - Searching across 100MB+ of text content",
             "Match Queries - Basic full-text search with OR operator",

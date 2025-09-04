@@ -44,7 +44,7 @@ from .base_models import (
     BucketAggregation,
     StatsAggregation
 )
-from .models import DemoQueryResult
+from .result_models import PropertySearchResult, PropertyResult, AggregationSearchResult
 from .es_models import ESProperty, ESSearchHit
 from .display_formatter import PropertyDisplayFormatter
 
@@ -445,7 +445,7 @@ class PropertySearchDemo:
     def demo_basic_search(
         self,
         query_text: str = "modern home with pool"
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Execute basic property search demo.
         
@@ -464,7 +464,7 @@ class PropertySearchDemo:
         # PROCESS RESULTS
         if not response:
             self._display_no_results("Basic Property Search", exec_time)
-            return DemoQueryResult(
+            return PropertySearchResult(
                 query_name="Basic Property Search",
                 execution_time_ms=exec_time,
                 total_hits=0,
@@ -478,13 +478,29 @@ class PropertySearchDemo:
         # DISPLAY RESULTS (separated from query logic)
         self._display_basic_search(query_text, response, results, exec_time)
         
-        return DemoQueryResult(
+        # Convert results to PropertyResult objects
+        property_results = []
+        for r in results:
+            property_results.append(PropertyResult(
+                listing_id=r.get('listing_id', ''),
+                property_type=r.get('property_type', 'Unknown'),
+                price=r.get('price', 0),
+                bedrooms=r.get('bedrooms', 0),
+                bathrooms=r.get('bathrooms', 0),
+                square_feet=r.get('square_feet', 0),
+                year_built=r.get('year_built'),
+                address=r.get('address', {}),
+                description=r.get('description', ''),
+                score=r.get('_score')
+            ))
+        
+        return PropertySearchResult(
             query_name=f"Basic Property Search: '{query_text}'",
             query_description=f"Full-text search for '{query_text}' across property descriptions, amenities, and addresses with fuzzy matching to handle typos",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=request.to_dict(),
             es_features=[
                 "Multi-Match Query: Searches across multiple fields simultaneously",
@@ -507,7 +523,7 @@ class PropertySearchDemo:
         max_price: float = 800000,
         min_bedrooms: int = 3,
         min_bathrooms: float = 2.0
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Execute filtered property search demo.
         
@@ -562,7 +578,7 @@ class PropertySearchDemo:
                 "[red]Search failed - no response received[/red]",
                 border_style="red"
             ))
-            return DemoQueryResult(
+            return PropertySearchResult(
                 query_name="Filtered Property Search",
                 execution_time_ms=exec_time,
                 total_hits=0,
@@ -635,13 +651,29 @@ class PropertySearchDemo:
                 border_style="red"
             ))
         
-        return DemoQueryResult(
+        # Convert results to PropertyResult objects
+        property_results = []
+        for r in results:
+            property_results.append(PropertyResult(
+                listing_id=r.get('listing_id', ''),
+                property_type=r.get('property_type', 'Unknown'),
+                price=r.get('price', 0),
+                bedrooms=r.get('bedrooms', 0),
+                bathrooms=r.get('bathrooms', 0),
+                square_feet=r.get('square_feet', 0),
+                year_built=r.get('year_built'),
+                address=r.get('address', {}),
+                description=r.get('description', ''),
+                score=r.get('_score')
+            ))
+        
+        return PropertySearchResult(
             query_name="Filtered Property Search",
             query_description=f"Filter properties by: {PropertyDisplayFormatter.format_property_type(property_type)} type, ${min_price:,.0f}-${max_price:,.0f} price range, {min_bedrooms}+ bedrooms, {min_bathrooms}+ bathrooms",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=request.to_dict(),
             es_features=[
                 "Bool Query with Filters: Combines multiple criteria using filter context",
@@ -663,7 +695,7 @@ class PropertySearchDemo:
         center_lon: float = -122.4194,
         radius_km: float = 5.0,
         max_price: Optional[float] = 1000000
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Execute geo-distance search demo.
         
@@ -715,7 +747,7 @@ class PropertySearchDemo:
                 "[red]Search failed - no response received[/red]",
                 border_style="red"
             ))
-            return DemoQueryResult(
+            return PropertySearchResult(
                 query_name="Geo-Distance Property Search",
                 execution_time_ms=exec_time,
                 total_hits=0,
@@ -790,13 +822,29 @@ class PropertySearchDemo:
                 border_style="red"
             ))
         
-        return DemoQueryResult(
+        # Convert results to PropertyResult objects
+        property_results = []
+        for r in results:
+            property_results.append(PropertyResult(
+                listing_id=r.get('listing_id', ''),
+                property_type=r.get('property_type', 'Unknown'),
+                price=r.get('price', 0),
+                bedrooms=r.get('bedrooms', 0),
+                bathrooms=r.get('bathrooms', 0),
+                square_feet=r.get('square_feet', 0),
+                year_built=r.get('year_built'),
+                address=r.get('address', {}),
+                description=r.get('description', ''),
+                score=r.get('_score')
+            ))
+        
+        return PropertySearchResult(
             query_name="Geo-Distance Property Search",
             query_description=f"Find properties within {radius_km}km radius of coordinates ({center_lat:.4f}, {center_lon:.4f}) with optional price filtering",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=request.to_dict(),
             es_features=[
                 "Geo-Distance Query: Filters documents within radius of a point",
@@ -910,7 +958,7 @@ class PropertySearchDemo:
         self,
         min_price: float = 400000,
         max_price: float = 800000
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Execute price range search with analytics.
         
@@ -950,7 +998,7 @@ class PropertySearchDemo:
                 "[red]Analysis failed - no response received[/red]",
                 border_style="red"
             ))
-            return DemoQueryResult(
+            return PropertySearchResult(
                 query_name="Price Range Search with Analytics",
                 execution_time_ms=exec_time,
                 total_hits=0,
@@ -1061,13 +1109,29 @@ class PropertySearchDemo:
             border_style="green"
         ))
         
-        return DemoQueryResult(
+        # Convert results to PropertyResult objects
+        property_results = []
+        for r in results:
+            property_results.append(PropertyResult(
+                listing_id=r.get('listing_id', ''),
+                property_type=r.get('property_type', 'Unknown'),
+                price=r.get('price', 0),
+                bedrooms=r.get('bedrooms', 0),
+                bathrooms=r.get('bathrooms', 0),
+                square_feet=r.get('square_feet', 0),
+                year_built=r.get('year_built'),
+                address=r.get('address', {}),
+                description=r.get('description', ''),
+                score=r.get('_score')
+            ))
+        
+        return AggregationSearchResult(
             query_name="Price Range Search with Analytics",
             query_description=f"Search properties in ${min_price:,.0f}-${max_price:,.0f} range with statistical aggregations for market analysis",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=len(property_results),
+            top_properties=property_results,
             query_dsl=request.to_dict(),
             aggregations=aggregations,
             es_features=[
@@ -1091,7 +1155,7 @@ def demo_basic_property_search(
     es_client: Elasticsearch,
     query_text: str = "family home with pool",
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo 1: Basic property search using multi-match query.
     
@@ -1110,7 +1174,7 @@ def demo_filtered_property_search(
     min_bedrooms: int = 3,
     min_bathrooms: float = 2.0,
     amenities: Optional[List[str]] = None
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo 2: Filtered property search with multiple criteria.
     
@@ -1134,7 +1198,7 @@ def demo_geo_distance_search(
     radius_km: float = 5.0,
     property_type: Optional[str] = None,
     max_price: Optional[float] = None
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo 3: Geo-distance search for properties near a location.
     
@@ -1154,7 +1218,7 @@ def demo_price_range_search(
     es_client: Elasticsearch,
     min_price: float = 400000,
     max_price: float = 800000
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo 4: Price range search with aggregation statistics.
     

@@ -138,14 +138,14 @@ def demo_neighborhood_stats(
         # DISPLAY RESULTS (separated from query logic)
         display_neighborhood_stats(response, results, size)
         
-        return DemoQueryResult(
+        return AggregationSearchResult(
             query_name="Demo 4: Neighborhood Statistics Aggregation",
             query_description=f"Aggregates property data by neighborhood showing average prices, counts, and breakdowns for top {size} neighborhoods",
             execution_time_ms=response.get('took', 0),
             total_hits=response['aggregations']['total_properties']['value'] if 'aggregations' in response else 0,
-            returned_hits=len(results),
-            results=results,
+            returned_hits=0,
             aggregations=response.get('aggregations', {}),
+            top_properties=[],
             query_dsl=query,
             es_features=[
                 "Terms Aggregation - Groups properties by neighborhood_id (like SQL GROUP BY)",
@@ -162,12 +162,13 @@ def demo_neighborhood_stats(
         )
     except Exception as e:
         logger.error(f"Error in neighborhood stats aggregation: {e}")
-        return DemoQueryResult(
+        return AggregationSearchResult(
             query_name="Neighborhood Statistics Aggregation",
             execution_time_ms=0,
             total_hits=0,
             returned_hits=0,
-            results=[],
+            aggregations={},
+            top_properties=[],
             query_dsl=query
         )
 
