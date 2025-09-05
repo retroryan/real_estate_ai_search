@@ -76,10 +76,15 @@ graph TB
     I --> K
     I --> L
     I --> M
-    N --> O
-    O --> M
-    P --> M
-    Q --> M
+    M --> N
+    M --> O
+    M --> P
+    M --> Q
+    
+    N --> R[real_estate_search/mcp_server<br/>Model Context Protocol]
+    O --> R
+    P --> R
+    Q --> R
 ```
 
 #### Key Architectural Components

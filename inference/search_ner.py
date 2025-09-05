@@ -310,17 +310,21 @@ class NERSearchTester:
             response = self.es.search(index='wikipedia_ner', body=query)
             aggs = response['aggregations']
             
+            total_entities_found = 0
+            
             # Display top organizations
             if 'top_organizations' in aggs:
                 print("\n🏢 Top Organizations:")
                 for bucket in aggs['top_organizations']['buckets'][:5]:
                     print(f"   {bucket['key']}: {bucket['doc_count']} articles")
+                total_entities_found += len(aggs['top_organizations']['buckets'])
             
             # Display top locations
             if 'top_locations' in aggs:
                 print("\n📍 Top Locations:")
                 for bucket in aggs['top_locations']['buckets'][:5]:
                     print(f"   {bucket['key']}: {bucket['doc_count']} articles")
+                total_entities_found += len(aggs['top_locations']['buckets'])
             
             # Display top persons
             if 'top_persons' in aggs:
@@ -329,14 +333,15 @@ class NERSearchTester:
                     print("\n👤 Top People:")
                     for bucket in persons[:5]:
                         print(f"   {bucket['key']}: {bucket['doc_count']} articles")
+                    total_entities_found += len(persons)
                 else:
                     print("\n👤 No people entities found in the index")
             
-            # Add result summary for aggregations
+            # Add result summary for aggregations with meaningful counts
             self.test_results.append({
                 'description': description,
-                'total_hits': 'N/A',
-                'max_score': None,
+                'total_hits': f'{total_entities_found} unique',
+                'max_score': 'Aggregation',
                 'results': []
             })
             
@@ -431,11 +436,29 @@ class NERSearchTester:
         table_data = []
         for result in self.test_results:
             if 'error' not in result:
+                # Handle different result types
+                total_hits = result['total_hits']
+                max_score = result['max_score']
+                
+                # Format max_score appropriately
+                if isinstance(max_score, str):
+                    score_str = max_score
+                elif max_score is not None:
+                    score_str = f"{max_score:.2f}"
+                else:
+                    score_str = "N/A"
+                
+                # For aggregations, show entity count instead of result count
+                if score_str == "Aggregation":
+                    shown = total_hits.split()[0] if isinstance(total_hits, str) and 'unique' in total_hits else len(result['results'])
+                else:
+                    shown = len(result['results'])
+                    
                 table_data.append([
                     result['description'][:40] + "...",
-                    result['total_hits'],
-                    f"{result['max_score']:.2f}" if result['max_score'] else "N/A",
-                    len(result['results'])
+                    total_hits,
+                    score_str,
+                    shown
                 ])
         
         if table_data:
