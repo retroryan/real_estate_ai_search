@@ -95,6 +95,10 @@ class MarketIntelligenceAnalyzer:
         
         # City-level market overview
         self.print_subsection("City Market Overview")
+        # NEO4J CYPHER QUERY: City Market Overview
+        # - Aggregation with DISTINCT counting and collect() function
+        # - Groups properties by city and calculates statistics
+        # - collect(DISTINCT ...) creates array of unique property types
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n.city as City, 
@@ -121,6 +125,11 @@ class MarketIntelligenceAnalyzer:
         
         # Neighborhood market segmentation
         self.print_subsection("Neighborhood Market Segmentation")
+        # NEO4J CYPHER QUERY: Dynamic Market Segmentation
+        # - CASE statement for conditional market categorization
+        # - Groups neighborhoods into market segments based on avg price
+        # - First aggregation calculates neighborhood metrics
+        # - Second WITH adds market segment classification
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n,
@@ -130,7 +139,7 @@ class MarketIntelligenceAnalyzer:
              collect(DISTINCT p.property_type) as PropertyTypes
         WHERE PropertyCount >= 5
         WITH n, PropertyCount, AvgPrice, AvgSqft, PropertyTypes,
-             CASE 
+             CASE
                 WHEN AvgPrice > 8000000 THEN 'Ultra-Luxury'
                 WHEN AvgPrice > 3000000 THEN 'Luxury' 
                 WHEN AvgPrice > 1500000 THEN 'Premium'
@@ -156,6 +165,11 @@ class MarketIntelligenceAnalyzer:
 
         # Geographic arbitrage opportunities
         self.print_subsection("Geographic Arbitrage Analysis")
+        # NEO4J CYPHER QUERY: Cross-Neighborhood Arbitrage Analysis
+        # - Cartesian product for pairwise neighborhood comparison
+        # - Calculates price per sqft differences between neighborhoods
+        # - WITH * passes all previous variables forward
+        # - Filters to significant price differences (>30%)
         query = """
         MATCH (p1:Property)-[:LOCATED_IN]->(n1:Neighborhood),
               (p2:Property)-[:LOCATED_IN]->(n2:Neighborhood)
@@ -196,6 +210,12 @@ class MarketIntelligenceAnalyzer:
         
         # Feature-based price correlation analysis
         self.print_subsection("Feature Value Impact Analysis")
+        # NEO4J CYPHER QUERY: Feature Value Impact Analysis
+        # Multi-stage analysis comparing properties WITH and WITHOUT features:
+        # Stage 1: Find properties WITH each feature
+        # Stage 2: Find properties WITHOUT feature using NOT pattern
+        # Stage 3: Calculate baseline price from properties without feature
+        # Stage 4: Calculate premium percentage feature adds to value
         query = """
         MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)
         WITH f.name as Feature, f.category as Category,
@@ -204,7 +224,6 @@ class MarketIntelligenceAnalyzer:
              collect(p.listing_price) as Prices
         WHERE PropertyCount >= 5
         
-        // Calculate baseline price (properties without this feature)
         MATCH (p2:Property)
         WHERE NOT (p2)-[:HAS_FEATURE]->(:Feature {name: Feature})
         WITH Feature, Category, PropertyCount, AvgPriceWithFeature, Prices,
@@ -265,6 +284,12 @@ class MarketIntelligenceAnalyzer:
 
         # Pricing anomaly detection
         self.print_subsection("Pricing Anomaly Detection")
+        # NEO4J CYPHER QUERY: Statistical Anomaly Detection
+        # - collect() creates array of all properties
+        # - stdev() calculates standard deviation
+        # - UNWIND expands array back into rows
+        # - Z-score calculation identifies outliers (>2 std dev)
+        # - OPTIONAL MATCH handles properties without features
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n, 
@@ -276,7 +301,7 @@ class MarketIntelligenceAnalyzer:
         UNWIND Properties as prop
         WITH prop, n, NeighborhoodAvg, PriceStdDev,
              abs(prop.listing_price - NeighborhoodAvg) / PriceStdDev as ZScore
-        WHERE ZScore > 2.0  // Statistical outliers
+        WHERE ZScore > 2.0
         
         MATCH (prop)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
         OPTIONAL MATCH (prop)-[:HAS_FEATURE]->(f:Feature)
@@ -428,12 +453,17 @@ class MarketIntelligenceAnalyzer:
         
         # Lifestyle tag market analysis
         self.print_subsection("Lifestyle Preference Markets")
+        # NEO4J CYPHER QUERY: Array Processing with UNWIND
+        # - UNWIND converts lifestyle_tags array into individual rows
+        # - Each tag becomes a separate row for processing
+        # - collect() re-aggregates data after UNWIND
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE n.lifestyle_tags IS NOT NULL
         UNWIND n.lifestyle_tags as LifestyleTag
         
         MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+        
         WITH LifestyleTag, n.city as City,
              count(DISTINCT p) as PropertyCount,
              avg(p.listing_price) as AvgPrice,
@@ -583,9 +613,16 @@ class MarketIntelligenceAnalyzer:
 
         # Feature co-occurrence network analysis
         self.print_subsection("Feature Co-occurrence Network Analysis")
+        # NEO4J CYPHER QUERY: Feature Co-occurrence with Lift Calculation
+        # Statistical lift analysis for feature correlations:
+        # - Finds properties with both features
+        # - Calculates lift: P(A and B) / (P(A) * P(B))
+        # - split() function extracts feature names from pair string
+        # - toFloat() ensures decimal division
+        # - Lift > 1 indicates positive correlation
         query = """
         MATCH (f1:Feature)<-[:HAS_FEATURE]-(p:Property)-[:HAS_FEATURE]->(f2:Feature)
-        WHERE f1.name < f2.name  // Avoid duplicates
+        WHERE f1.name < f2.name
         
         WITH f1.name + " + " + f2.name as FeaturePair,
              f1.category + " + " + f2.category as CategoryPair,
@@ -594,9 +631,9 @@ class MarketIntelligenceAnalyzer:
              collect(DISTINCT p.listing_id)[0..3] as SampleProperties
         WHERE CoOccurrenceCount >= 5
         
-        // Calculate lift (how often they appear together vs expected)
         MATCH (pf1:Property)-[:HAS_FEATURE]->(f1Feature:Feature {name: split(FeaturePair, " + ")[0]})
         MATCH (pf2:Property)-[:HAS_FEATURE]->(f2Feature:Feature {name: split(FeaturePair, " + ")[1]})
+        
         WITH FeaturePair, CategoryPair, CoOccurrenceCount, AvgPriceWithBoth, SampleProperties,
              count(DISTINCT pf1) as Feature1Count, count(DISTINCT pf2) as Feature2Count
         
@@ -605,7 +642,7 @@ class MarketIntelligenceAnalyzer:
              Feature1Count, Feature2Count, count(allProps) as TotalProperties
         
         WITH *, (toFloat(CoOccurrenceCount) * TotalProperties) / (Feature1Count * Feature2Count) as Lift
-        WHERE Lift > 1.5  // Strong co-occurrence
+        WHERE Lift > 1.5
         
         RETURN FeaturePair, CategoryPair, CoOccurrenceCount, 
                AvgPriceWithBoth, Lift, SampleProperties
@@ -672,13 +709,17 @@ class MarketIntelligenceAnalyzer:
         
         # Competitive clustering analysis based on shared features
         self.print_subsection("Competitive Property Clusters")
+        # NEO4J CYPHER QUERY: Competitive Clustering Analysis
+        # Two-stage aggregation to find competitive property clusters:
+        # Stage 1: Count shared features between property pairs
+        # Stage 2: Analyze competitive network for each property
+        # Properties with many competitors form competitive clusters
         query = """
-        // Find properties with many shared features (competitive indicator)
         MATCH (p:Property)-[:HAS_FEATURE]->(f:Feature)<-[:HAS_FEATURE]-(similar:Property)
         WHERE p <> similar
         
         WITH p, similar, count(DISTINCT f) as SharedFeatures
-        WHERE SharedFeatures >= 5  // Properties sharing 5+ features are competitive
+        WHERE SharedFeatures >= 5
         
         WITH p, count(DISTINCT similar) as CompetitorCount,
              avg(SharedFeatures) as AvgSharedFeatures,

@@ -16,6 +16,7 @@ from ..demo_queries import (
     demo_multi_entity_search,
     demo_wikipedia_search,
     demo_wikipedia_fulltext,
+    demo_wikipedia_location_search,
     demo_simplified_relationships,
     demo_natural_language_search,
     demo_natural_language_examples,
@@ -221,6 +222,12 @@ class DemoRunner:
                 name="Location-Aware Search Showcase",
                 description="Run multiple location-aware demos to showcase full capabilities",
                 query_function="demo_location_aware_search_showcase"
+            ),
+            28: DemoQuery(
+                number=28,
+                name="Wikipedia Location Search",
+                description="Wikipedia search with automatic location extraction from natural language",
+                query_function="demo_wikipedia_location_search"
             )
         }
         return demos
@@ -362,7 +369,8 @@ class DemoRunner:
             24: demo_location_aware_luxury_urban_views,
             25: demo_location_aware_suburban_architecture,
             26: demo_location_aware_neighborhood_character,
-            27: demo_location_aware_search_showcase
+            27: demo_location_aware_search_showcase,
+            28: demo_wikipedia_location_search
         }
         
         return demo_functions[demo_number]

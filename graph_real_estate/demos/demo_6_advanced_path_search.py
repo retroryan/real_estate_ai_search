@@ -513,10 +513,12 @@ class AdvancedPathSearchDemo:
         WHERE f.category IN ['Luxury', 'View']
         WITH f, COLLECT(DISTINCT p1) as properties
         WHERE SIZE(properties) >= 5
+        UNWIND properties as p
         WITH f.name as feature, 
-             SIZE(properties) as property_count,
-             [p IN properties | p.listing_id][0..5] as sample_properties,
-             AVG([p IN properties | p.listing_price]) as avg_price
+             properties,
+             COUNT(p) as property_count,
+             AVG(p.listing_price) as avg_price,
+             COLLECT(p.listing_id)[0..5] as sample_properties
         RETURN 
             feature,
             property_count,

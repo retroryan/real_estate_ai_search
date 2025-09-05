@@ -54,8 +54,8 @@ Note: Uses real_estate_search/config.yaml by default. Override with --config fla
             'demo_number',
             type=int,
             nargs='?',
-            choices=range(1, 28),
-            help='Demo query number to run (1-27)'
+            choices=range(1, 29),
+            help='Demo query number to run (1-28)'
         )
         
         parser.add_argument(

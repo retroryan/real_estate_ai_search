@@ -219,8 +219,9 @@ def test_relation_api_usage():
     # Check wikipedia transformer source
     wikipedia_source = inspect.getsource(wikipedia.WikipediaSilverTransformer._apply_transformations)
     assert "conn.table" in wikipedia_source, "Wikipedia transformer should use Relation API"
-    assert "filtered.project" in wikipedia_source, "Should use project method"
-    assert ".create(output_table)" in wikipedia_source, "Should create table from relation"
+    assert "filtered.project" in wikipedia_source or "bronze.filter" in wikipedia_source, "Should use filter/project methods"
+    # Wikipedia now uses CREATE TABLE AS WITH CTE which is better DuckDB practice
+    assert "CREATE TABLE" in wikipedia_source, "Should create final table"
     
     print("✓ Relation API usage test passed")
 

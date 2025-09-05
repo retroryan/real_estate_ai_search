@@ -3,6 +3,11 @@
 from squack_pipeline_v2.gold.base import GoldEnricher
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
+from squack_pipeline_v2.utils.gold_enrichment import (
+    GoldNeighborhoodEnricher,
+    NeighborhoodSearchFacets,
+    NeighborhoodQualityBoost
+)
 
 
 class WikipediaGoldEnricher(GoldEnricher):
@@ -13,6 +18,7 @@ class WikipediaGoldEnricher(GoldEnricher):
     - Content quality scoring and categorization
     - Relevance and authority metrics
     - Search optimization for knowledge discovery
+    - Neighborhood-based enrichments and faceting
     """
     
     def _get_entity_type(self) -> str:
@@ -28,6 +34,8 @@ class WikipediaGoldEnricher(GoldEnricher):
         - Content categorization and topics
         - Geographic relevance analysis
         - Business-ready search optimization
+        - Neighborhood association enrichments
+        - Enhanced quality scoring with neighborhood presence
         
         Args:
             input_table: Silver Wikipedia table
@@ -35,6 +43,9 @@ class WikipediaGoldEnricher(GoldEnricher):
         """
         # Get connection
         conn = self.connection_manager.get_connection()
+        
+        # Initialize neighborhood enricher
+        neighborhood_enricher = GoldNeighborhoodEnricher()
         
         # Use DuckDB Relation API for type-safe, lazy-evaluated operations
         silver_wikipedia = conn.table(input_table).set_alias("w")
@@ -106,21 +117,30 @@ class WikipediaGoldEnricher(GoldEnricher):
                 -- Quality and relevance scoring (enhanced)
                 relevance_score,
                 
-                -- GOLD ENRICHMENT: Multi-factor article quality score
+                -- GOLD ENRICHMENT: Multi-factor article quality score with neighborhood boost
                 CAST((
-                    COALESCE(relevance_score, 0) * 0.4 +
+                    -- Base quality score
+                    (
+                        COALESCE(relevance_score, 0) * 0.4 +
+                        CASE 
+                            WHEN LENGTH(long_summary) >= 1000 THEN 0.6
+                            WHEN LENGTH(long_summary) >= 500 THEN 0.4
+                            WHEN LENGTH(long_summary) >= 200 THEN 0.2
+                            ELSE 0.1
+                        END * 0.3 +
+                        CASE 
+                            WHEN COALESCE(links_count, 0) >= 20 THEN 0.6
+                            WHEN COALESCE(links_count, 0) >= 10 THEN 0.4
+                            WHEN COALESCE(links_count, 0) >= 5 THEN 0.2
+                            ELSE 0.1
+                        END * 0.3
+                    ) +
+                    -- Neighborhood boost: +0.1 for having neighborhoods, +0.05 more for multiple
                     CASE 
-                        WHEN LENGTH(long_summary) >= 1000 THEN 0.6
-                        WHEN LENGTH(long_summary) >= 500 THEN 0.4
-                        WHEN LENGTH(long_summary) >= 200 THEN 0.2
-                        ELSE 0.1
-                    END * 0.3 +
-                    CASE 
-                        WHEN COALESCE(links_count, 0) >= 20 THEN 0.6
-                        WHEN COALESCE(links_count, 0) >= 10 THEN 0.4
-                        WHEN COALESCE(links_count, 0) >= 5 THEN 0.2
-                        ELSE 0.1
-                    END * 0.3
+                        WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) > 1 THEN 0.15
+                        WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) >= 1 THEN 0.1
+                        ELSE 0.0
+                    END
                 ) AS FLOAT) as article_quality_score,
                 
                 -- GOLD ENRICHMENT: Business quality categories
@@ -148,28 +168,57 @@ class WikipediaGoldEnricher(GoldEnricher):
                 -- Embedding text from Silver
                 embedding_text,
                 
-                -- GOLD ENRICHMENT: Business search facets
+                -- GOLD ENRICHMENT: Business search facets with neighborhood filters
                 ARRAY[
                     article_quality,
                     content_depth_category,
                     CASE WHEN geographic_relevance_score >= 0.5 THEN 'geo_located' ELSE 'no_location' END,
-                    CASE WHEN authority_score >= 70 THEN 'high_authority' ELSE 'standard_authority' END
+                    CASE WHEN authority_score >= 70 THEN 'high_authority' ELSE 'standard_authority' END,
+                    -- Neighborhood association facets
+                    CASE 
+                        WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) > 1 THEN 'multi_neighborhood'
+                        WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) = 1 THEN 'has_neighborhood'
+                        ELSE 'no_neighborhood'
+                    END
                 ] AS search_facets,
                 
                 -- GOLD ENRICHMENT: Business intelligence metadata
                 CURRENT_TIMESTAMP as gold_processed_at,
-                'wikipedia_gold_v3_business_ready' as processing_version,
+                'wikipedia_gold_v4_neighborhood_enhanced' as processing_version,
                 
-                -- GOLD ENRICHMENT: Search ranking score
+                -- GOLD ENRICHMENT: Neighborhood metadata
+                CASE 
+                    WHEN neighborhood_names IS NOT NULL 
+                        THEN array_length(neighborhood_names)
+                    ELSE 0
+                END as neighborhood_count,
+                
+                CASE 
+                    WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) > 0
+                        THEN true
+                    ELSE false
+                END as has_neighborhood_association,
+                
+                -- GOLD ENRICHMENT: Search ranking score with neighborhood component
                 CAST((
-                    article_quality_score * 0.5 +
-                    geographic_relevance_score * 0.3 +
-                    CASE WHEN LENGTH(title) BETWEEN 10 AND 100 THEN 0.2 ELSE 0.1 END
+                    article_quality_score * 0.45 +
+                    geographic_relevance_score * 0.25 +
+                    CASE WHEN LENGTH(title) BETWEEN 10 AND 100 THEN 0.15 ELSE 0.05 END +
+                    -- Neighborhood presence component (15% weight)
+                    CASE 
+                        WHEN neighborhood_names IS NOT NULL AND array_length(neighborhood_names) > 0 THEN 0.15
+                        ELSE 0.0
+                    END
                 ) AS FLOAT) as search_ranking_score,
                 
                 -- Embeddings from Silver
                 embedding_vector,
-                embedding_generated_at
+                embedding_generated_at,
+                
+                -- Neighborhood fields from Silver layer
+                neighborhood_ids,
+                neighborhood_names,
+                primary_neighborhood_name
                 
         """)
         
@@ -191,7 +240,10 @@ class WikipediaGoldEnricher(GoldEnricher):
             "geographic_relevance",
             "business_categorization",
             "search_optimization",
-            "ranking_algorithms"
+            "ranking_algorithms",
+            "neighborhood_enrichment",
+            "neighborhood_quality_boost",
+            "neighborhood_search_facets"
         ])
         
         self.logger.info(f"Created Gold view {output_table} with {len(self.enrichments_applied)} enrichments")

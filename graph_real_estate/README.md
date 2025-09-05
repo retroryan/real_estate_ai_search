@@ -198,6 +198,7 @@ RETURN
     COUNT(DISTINCT p.city) as unique_cities,
     COUNT(DISTINCT p.state) as unique_states
 ```
+**Query Explanation:** This query provides a high-level overview of vector embeddings in your database. It counts properties with embeddings, calculates the average vector dimension size (e.g., 1024 for Voyage-3), identifies which embedding model was used, and shows geographic distribution across cities and states.
 
 #### 2. Properties by Location with Embedding Info
 ```cypher
@@ -215,6 +216,7 @@ RETURN
 ORDER BY property_count DESC
 LIMIT 10
 ```
+**Query Explanation:** Groups properties by geographic location to analyze market characteristics. Shows property counts, average prices, and square footage per city. The `COLLECT()[0..3]` syntax takes the first 3 listing IDs as examples. Useful for understanding which locations have the most embedded property data.
 
 #### 3. Find Similar Properties by Embedding Text
 ```cypher
@@ -234,6 +236,7 @@ RETURN
 ORDER BY p.listing_price
 LIMIT 5
 ```
+**Query Explanation:** Searches for properties based on the text used to generate embeddings. The `CONTAINS` operator performs text search on the embedding source text. String concatenation (`+`) combines city and state. The `[0..100]` slice shows first 100 characters of text. Useful for debugging what content was embedded.
 
 #### 4. Properties by Price Range with Embedding Analysis
 ```cypher
@@ -257,6 +260,7 @@ RETURN
     COLLECT(DISTINCT p.property_type)[0..3] as common_types
 ORDER BY avg_price
 ```
+**Query Explanation:** Uses a `CASE` expression to bucket properties into price ranges, then analyzes each bucket. The `WITH` clause creates the price categories before aggregation. Shows market segmentation with average metrics per price tier. `COLLECT(DISTINCT)` gets unique property types per range.
 
 #### 5. Embedding Quality and Completeness Check
 ```cypher
@@ -270,6 +274,7 @@ RETURN
     COUNT(DISTINCT p.embedding_model) as embedding_models_used,
     COLLECT(DISTINCT p.embedding_model) as models_list
 ```
+**Query Explanation:** Data quality audit query using conditional aggregation. `SUM(CASE...)` counts properties meeting specific conditions. Helps identify data gaps - how many properties have embeddings vs. just text. Shows if multiple embedding models were used (important for consistency).
 
 #### 6. Properties with Rich Feature Sets
 ```cypher
@@ -292,6 +297,7 @@ RETURN
 ORDER BY p.embedding_text_length DESC
 LIMIT 10
 ```
+**Query Explanation:** Identifies properties with rich content that produce high-quality embeddings. Filters by text length (>200 chars) and feature count (≥3). `toString()` converts numbers to strings for concatenation. `size()` gets array length. These properties are best for semantic search since they have more descriptive content.
 
 #### 7. Vector Search Preparation Query
 ```cypher
@@ -315,6 +321,7 @@ RETURN
     } as metadata
 LIMIT 50
 ```
+**Query Explanation:** Formats data for external vector similarity calculations. Returns embeddings as raw vectors alongside metadata in a map/dictionary structure using `{}` syntax. The metadata object contains all property details needed after similarity matching. This format is ideal for feeding into vector search libraries.
 
 #### 8. Neighborhoods with Embedding Statistics
 ```cypher
@@ -336,6 +343,7 @@ RETURN
 ORDER BY property_count DESC
 LIMIT 15
 ```
+**Query Explanation:** Groups properties by neighborhood using `COLLECT()` to create lists. List comprehension syntax `[item IN list | expression]` extracts values from collected properties for aggregation. This pattern allows complex aggregations on grouped data. Shows neighborhood-level market analysis with embedding coverage.
 
 #### 9. Time-based Embedding Analysis
 ```cypher
@@ -350,6 +358,7 @@ RETURN
     COLLECT(DISTINCT p.embedding_model) as models
 ORDER BY embedding_date DESC
 ```
+**Query Explanation:** Tracks embedding generation over time. The `date()` function extracts just the date part from timestamps. Useful for monitoring batch processing or identifying when different models were used. Helps track pipeline runs and model version changes.
 
 #### 10. Properties Ready for Hybrid Search
 ```cypher
@@ -375,6 +384,7 @@ RETURN
 ORDER BY (relationship_count * 0.3 + p.property_quality_score * 0.4 + size(p.features) * 0.3) DESC
 LIMIT 20
 ```
+**Query Explanation:** Identifies properties ideal for hybrid search combining vectors and graph. `OPTIONAL MATCH` finds relationships without filtering out nodes that lack them. The `(p)-[r]-()` pattern matches any relationship type in any direction. The ORDER BY uses a weighted formula to rank by multiple factors. These properties have both good embeddings and rich graph context for optimal search results.
 
 ### Usage Tips
 

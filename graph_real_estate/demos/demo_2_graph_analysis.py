@@ -89,12 +89,21 @@ class GraphRelationshipAnalysisDemo:
         print("\nNEIGHBORHOOD PROPERTY DENSITY:")
         print("   Neighborhoods with the highest concentration of properties")
         
+        # NEO4J CYPHER QUERY:
+        # Relationship traversal and aggregation patterns
+        # - MATCH finds properties connected to neighborhoods via LOCATED_IN
+        # - WITH creates processing pipeline to group and aggregate data  
+        # - Aggregation functions: count(), avg(), min(), max()
+        # - Groups by neighborhood and calculates statistics
+        # - ORDER BY sorts results by property count (descending)
+        # - LIMIT restricts output to top 10 results
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n, count(p) as property_count,
              avg(p.listing_price) as avg_price,
              min(p.listing_price) as min_price,
              max(p.listing_price) as max_price
+        
         RETURN n.name as neighborhood,
                n.city as city,
                n.state as state,
@@ -120,6 +129,11 @@ class GraphRelationshipAnalysisDemo:
         print("\n\nPROPERTY PRICE DISTRIBUTION:")
         print("   Price ranges across all properties")
         
+        # NEO4J CYPHER QUERY:
+        # Statistical analysis using percentile functions
+        # - percentileCont() calculates continuous percentiles (Q1, median, Q3)
+        # - Useful for understanding price distribution
+        # - Returns comprehensive statistical summary
         query = """
         MATCH (p:Property)
         WITH p.listing_price as price
@@ -152,6 +166,12 @@ class GraphRelationshipAnalysisDemo:
         print("\n\nHIGH-VALUE PROPERTY CLUSTERS:")
         print("   Neighborhoods with highest concentration of luxury properties (>$2M)")
         
+        # NEO4J CYPHER QUERY:
+        # Multi-stage query comparing luxury properties to total properties
+        # Stage 1: Find luxury properties (>$2M) and their neighborhoods
+        # Stage 2: Filter to neighborhoods with at least 3 luxury properties
+        # Stage 3: Find ALL properties in these neighborhoods
+        # Stage 4: Calculate luxury percentage as derived field
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WHERE p.listing_price > 2000000
@@ -165,6 +185,7 @@ class GraphRelationshipAnalysisDemo:
                total_props,
                (luxury_count * 100.0 / total_props) as luxury_percentage,
                avg_luxury_price
+        
         ORDER BY luxury_percentage DESC
         LIMIT 5
         """
@@ -187,6 +208,11 @@ class GraphRelationshipAnalysisDemo:
         print("\nWIKIPEDIA-NEIGHBORHOOD RELATIONSHIPS:")
         print("   Wikipedia articles that provide detailed descriptions of neighborhoods")
         
+        # NEO4J CYPHER QUERY:
+        # Knowledge graph integration with Wikipedia articles
+        # - collect() aggregates values into a list/array
+        # - [0..3] array slicing gets first 3 elements
+        # - Shows Neo4j's ability to integrate external knowledge
         query = """
         MATCH (w:WikipediaArticle)-[:DESCRIBES]->(n:Neighborhood)
         WITH n, count(w) as article_count,
@@ -196,6 +222,7 @@ class GraphRelationshipAnalysisDemo:
         WITH n, article_count, sample_articles,
              count(p) as property_count,
              avg(p.listing_price) as avg_price
+        
         RETURN n.name as neighborhood,
                n.city as city,
                n.state as state,
@@ -314,6 +341,11 @@ class GraphRelationshipAnalysisDemo:
         print("\n\n NEIGHBORHOOD PROXIMITY NETWORKS:")
         print("   Analyzing 200 NEAR relationships between neighborhoods")
         
+        # NEO4J CYPHER QUERY:
+        # Bidirectional relationship analysis of connected neighborhoods
+        # - WHERE n1.name < n2.name prevents duplicate pairs (A->B and B->A)
+        # - Two separate MATCH clauses for parallel traversal
+        # - abs() function calculates absolute value for price differences
         query = """
         MATCH (n1:Neighborhood)-[:NEAR]->(n2:Neighborhood)
         WHERE n1.name < n2.name
@@ -332,6 +364,7 @@ class GraphRelationshipAnalysisDemo:
                abs(avg_price1 - avg_price2) as price_difference,
                properties1,
                properties2
+        
         ORDER BY price_difference DESC
         LIMIT 5
         """
@@ -361,16 +394,30 @@ class GraphRelationshipAnalysisDemo:
         # Lifestyle tag distribution and property characteristics
         print("\nLIFESTYLE TAG ANALYSIS:")
         
+        # NEO4J CYPHER QUERY EXPLANATION:
+        # Array processing with UNWIND - expands arrays into individual rows.
+        # IS NOT NULL - checks for property existence
+        # collect(DISTINCT ...) - creates unique lists
         query = """
         MATCH (n:Neighborhood)<-[:LOCATED_IN]-(p:Property)
         WHERE n.lifestyle_tags IS NOT NULL
+        // Find neighborhoods with lifestyle_tags array property
+        -- IS NOT NULL checks property exists and has value
+        
         UNWIND n.lifestyle_tags as lifestyle_tag
+        -- UNWIND expands array into rows (like Python's itertools.chain)
+        -- Each lifestyle tag becomes a separate row for processing
+        
         WITH lifestyle_tag, 
              collect(DISTINCT n.city) as cities,
              count(DISTINCT n) as neighborhoods,
              count(p) as properties,
              avg(p.listing_price) as avg_price,
              avg(p.price_per_sqft) as avg_price_per_sqft
+        -- Group by lifestyle_tag after unwinding
+        -- collect(DISTINCT ...) creates array of unique values
+        -- count(DISTINCT ...) counts unique occurrences
+        
         RETURN lifestyle_tag,
                cities,
                neighborhoods,
@@ -394,6 +441,12 @@ class GraphRelationshipAnalysisDemo:
         print("\n\n LIFESTYLE COMPATIBILITY MATRIX:")
         print("   Neighborhoods sharing multiple lifestyle characteristics")
         
+        # NEO4J CYPHER QUERY:
+        # Lifestyle compatibility analysis using list comprehension
+        # - Cartesian product creates all neighborhood pairs
+        # - List comprehension [var IN array WHERE condition] finds shared tags
+        # - size() function counts shared tags
+        # - Filters to pairs sharing at least 2 lifestyle tags
         query = """
         MATCH (n1:Neighborhood), (n2:Neighborhood)
         WHERE n1.name < n2.name 
@@ -443,6 +496,13 @@ class GraphRelationshipAnalysisDemo:
         print("\nUNDERVALUED OPPORTUNITIES:")
         print("   Properties priced below neighborhood average with high similarity scores")
         
+        # NEO4J CYPHER QUERY:
+        # Investment opportunity analysis through multi-stage processing
+        # Stage 1: Calculate neighborhood average prices
+        # Stage 2: Find properties 15% below neighborhood average
+        # Stage 3: Validate with similar property relationships (sim.score > 0.8)
+        # Stage 4: Filter to properties with 3+ similar matches
+        # Stage 5: Collect features and calculate potential upside
         query = """
         MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
         WITH n, avg(p.listing_price) as neighborhood_avg
@@ -532,8 +592,14 @@ class GraphRelationshipAnalysisDemo:
         print("\nFEATURE CONNECTION CHAINS:")
         print("   Properties connected through shared feature paths")
         
+        # NEO4J CYPHER QUERY:
+        # Variable-length path patterns for feature chains
+        # - [:RELATIONSHIP*min..max] defines variable length paths
+        # - path = ... binds entire path to a variable
+        # - nodes(path) extracts all nodes from path
+        # - length(path) returns number of relationships
+        # - List comprehension filters Feature nodes from path
         query = """
-        // Find properties connected through feature chains
         MATCH path = (start:Property)-[:HAS_FEATURE*2..6]-(end:Property)
         WHERE start.listing_id < end.listing_id
         AND start <> end
@@ -567,10 +633,15 @@ class GraphRelationshipAnalysisDemo:
         print("\n\nFEATURE INFLUENCE PROPAGATION:")
         print("   How premium features influence connected properties")
         
+        # NEO4J CYPHER QUERY:
+        # Feature influence analysis using negative patterns
+        # - IN operator tests list membership for luxury features
+        # - Shared neighborhood traversal pattern
+        # - NOT (...) pattern checks for absence of relationship
+        # - Finds properties WITHOUT luxury features in same neighborhood
         query = """
         MATCH (premium:Property)-[:HAS_FEATURE]->(luxury:Feature)
         WHERE luxury.name IN ['Wine cellar', 'Home theater', 'Elevator', 'Pool/spa']
-        // Find properties in same neighborhood without luxury features
         MATCH (premium)-[:LOCATED_IN]->(n:Neighborhood)<-[:LOCATED_IN]-(influenced:Property)
         WHERE NOT (influenced)-[:HAS_FEATURE]->(luxury)
           AND premium <> influenced

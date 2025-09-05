@@ -15,6 +15,7 @@ from .advanced_queries import (
     demo_wikipedia_search
 )
 from .wikipedia_fulltext import demo_wikipedia_fulltext
+from .wikipedia_location_search import demo_wikipedia_location_search
 from .demo_single_query_relationships import demo_simplified_relationships
 from .semantic_query_search import (
     demo_natural_language_search,
@@ -48,6 +49,7 @@ __all__ = [
     'demo_multi_entity_search',
     'demo_wikipedia_search',
     'demo_wikipedia_fulltext',
+    'demo_wikipedia_location_search',
     'demo_simplified_relationships',
     'demo_natural_language_search',
     'demo_natural_language_examples',

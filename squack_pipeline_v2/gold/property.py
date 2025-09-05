@@ -36,15 +36,12 @@ class PropertyGoldEnricher(GoldEnricher):
         # Get connection
         conn = self.connection_manager.get_connection()
         
-        # Build enriched description - wikipedia data is always required
+        # Build enriched description with neighborhood info
+        # Note: Simplified to avoid subquery issues in Relation API
         enriched_description_sql = """
         s.description || 
         COALESCE(
-            ' Located in ' || n.name || '. ' || 
-            (SELECT w.short_summary 
-             FROM silver_wikipedia w
-             WHERE w.page_id = n.wikipedia_page_id
-             LIMIT 1),
+            ' Located in ' || n.name || '.', 
             ''
         ) AS enriched_description
         """

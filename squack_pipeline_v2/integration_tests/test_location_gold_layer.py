@@ -176,12 +176,59 @@ class TestLocationGoldLayer:
     
     def test_build_all_includes_location(self, settings, connection_manager, setup_data):
         """Test that build_all_graph_tables includes location data."""
-        # Create gold enrichment
+        conn = connection_manager.get_connection()
+        
+        # Create gold enrichment for locations
         gold_enricher = LocationGoldEnricher(settings, connection_manager)
         gold_enricher.enrich(
             input_table=ENTITY_TYPES.location.silver_table,
             output_table=ENTITY_TYPES.location.gold_table
         )
+        
+        # Create dummy gold tables that build_all_graph_tables expects
+        # These are minimal tables just to satisfy the graph builder
+        conn.execute("""
+            CREATE OR REPLACE VIEW gold_properties AS
+            SELECT 
+                'prop1' as listing_id,
+                'n1' as neighborhood_id,
+                100000.0 as price,
+                'Single Family' as property_type,
+                'Available' as status,
+                '94102' as zip_code,
+                3 as bedrooms,
+                2.5 as bathrooms,
+                1500 as square_feet,
+                'Test property description' as description,
+                'Test features' as features,
+                'San Francisco' as city,
+                'CA' as state,
+                'San Francisco County' as county,
+                2020 as year_built,
+                5000 as lot_size,
+                37.7749 as latitude,
+                -122.4194 as longitude,
+                'test address' as address,
+                '2024-01-01' as listed_date
+        """)
+        
+        conn.execute("""
+            CREATE OR REPLACE VIEW gold_neighborhoods AS
+            SELECT 
+                'n1' as neighborhood_id,
+                'Test Neighborhood' as name,
+                'San Francisco' as city,
+                'CA' as state
+        """)
+        
+        conn.execute("""
+            CREATE OR REPLACE VIEW gold_wikipedia AS
+            SELECT 
+                12345 as page_id,
+                'Test Article' as title,
+                'San Francisco' as city,
+                'CA' as state
+        """)
         
         # Build all graph tables
         graph_builder = GoldGraphBuilder(connection_manager)

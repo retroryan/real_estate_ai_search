@@ -64,6 +64,15 @@ This transformer also standardizes location data:
 - Preserves latitude/longitude for geo-queries
 - Maintains city/county/state hierarchy for location-based filtering
 
+NEIGHBORHOOD ENRICHMENT:
+-----------------------
+This transformer enriches Wikipedia articles with neighborhood associations:
+- Extracts neighborhood mappings from silver_neighborhoods table
+- Joins Wikipedia articles with neighborhood data using page_id
+- Adds neighborhood_names (list), primary_neighborhood_name, and neighborhood_ids fields
+- Handles one-to-many relationships (multiple neighborhoods per article)
+- Gracefully handles missing silver_neighborhoods table
+
 EMBEDDING GENERATION PROCESS:
 ----------------------------
 1. SQL projection creates embedding_text with CONCAT_WS using long_summary
@@ -85,6 +94,11 @@ TOKENIZATION APPROACH:
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
 from squack_pipeline_v2.utils import StateStandardizer
+from squack_pipeline_v2.utils.table_validation import validate_table_name
+from squack_pipeline_v2.utils.neighborhood_enrichment import (
+    NeighborhoodWikipediaEnricher,
+    NeighborhoodEnrichmentResult
+)
 from datetime import datetime
 
 
@@ -104,6 +118,17 @@ class WikipediaSilverTransformer(SilverTransformer):
         """Return entity type."""
         return "wikipedia"
     
+    def _has_neighborhood_data(self) -> bool:
+        """Check if neighborhood data is available for enrichment.
+        
+        DuckDB Best Practice: Check table existence efficiently.
+        
+        Returns:
+            True if silver_neighborhoods table exists, False otherwise
+        """
+        conn = self.connection_manager.get_connection()
+        enricher = NeighborhoodWikipediaEnricher(conn)
+        return enricher.check_neighborhoods_table_exists()
     
     @log_stage("Silver: Wikipedia Transformation")
     def _apply_transformations(self, input_table: str, output_table: str) -> None:
@@ -121,7 +146,16 @@ class WikipediaSilverTransformer(SilverTransformer):
             input_table: Bronze input table
             output_table: Silver output table
         """
+        # Validate table names (DuckDB best practice)
+        input_table = validate_table_name(input_table)
+        output_table = validate_table_name(output_table)
+        
         conn = self.connection_manager.get_connection()
+        
+        # Check if neighborhood data is available
+        has_neighborhoods = self._has_neighborhood_data()
+        if not has_neighborhoods:
+            self.logger.warning("silver_neighborhoods table not found. Skipping neighborhood enrichment.")
         
         # Get state transformation SQL for use in project
         state_case_sql = StateStandardizer.get_sql_case_statement('best_state', 'state')
@@ -166,6 +200,10 @@ class WikipediaSilverTransformer(SilverTransformer):
             -- Average ~985 chars vs ~250 chars for extract = superior embeddings
             CONCAT_WS(' | ', TRIM(title), TRIM(long_summary)) as embedding_text
         """)
+        
+        # Clean up any existing temporary tables first
+        conn.execute("DROP TABLE IF EXISTS transformed_wiki_temp")
+        conn.execute("DROP TABLE IF EXISTS embedding_data")
         
         # First, create the transformed data without embeddings
         # This ensures we have all the data ready even if embedding fails
@@ -252,39 +290,93 @@ class WikipediaSilverTransformer(SilverTransformer):
         
         self.logger.info(f"Successfully generated embeddings for {processed} articles")
         
-        # Now join the embeddings back to the transformed data
-        # Using DuckDB's efficient join operations
-        final_result = conn.execute(f"""
-            CREATE TABLE {output_table} AS
-            SELECT 
-                t.id,
-                t.page_id,
-                t.location_id,
-                t.title,
-                t.url,
-                t.categories,
-                t.latitude,
-                t.longitude,
-                t.city,
-                t.county,
-                t.state,
-                t.relevance_score,
-                t.depth,
-                t.crawled_at,
-                t.html_file,
-                t.file_hash,
-                t.image_url,
-                t.links_count,
-                t.infobox_data,
-                t.short_summary,
-                t.long_summary,
-                COALESCE(e.embedding_text, t.embedding_text) as embedding_text,
-                e.embedding_vector,
-                e.embedding_generated_at
-            FROM transformed_wiki_temp t
-            LEFT JOIN embedding_data e ON t.page_id = e.page_id
-            ORDER BY t.page_id
-        """)
+        # Create final table with neighborhood enrichment
+        # DuckDB Best Practice: Use CTEs instead of temporary tables where possible
+        if has_neighborhoods:
+            # Use CTE for neighborhood mappings (best practice)
+            conn.execute(f"""
+                CREATE TABLE {output_table} AS
+                WITH neighborhood_mappings AS (
+                    SELECT 
+                        wikipedia_page_id as page_id,
+                        LIST(DISTINCT neighborhood_id ORDER BY neighborhood_id) as neighborhood_ids,
+                        LIST(DISTINCT name ORDER BY name) as neighborhood_names,
+                        FIRST(name ORDER BY neighborhood_id) as primary_neighborhood_name
+                    FROM silver_neighborhoods
+                    WHERE wikipedia_page_id IS NOT NULL
+                    GROUP BY wikipedia_page_id
+                )
+                SELECT 
+                    t.id,
+                    t.page_id,
+                    t.location_id,
+                    t.title,
+                    t.url,
+                    t.categories,
+                    t.latitude,
+                    t.longitude,
+                    t.city,
+                    t.county,
+                    t.state,
+                    t.relevance_score,
+                    t.depth,
+                    t.crawled_at,
+                    t.html_file,
+                    t.file_hash,
+                    t.image_url,
+                    t.links_count,
+                    t.infobox_data,
+                    t.short_summary,
+                    t.long_summary,
+                    COALESCE(e.embedding_text, t.embedding_text) as embedding_text,
+                    e.embedding_vector,
+                    e.embedding_generated_at,
+                    -- Neighborhood enrichment fields
+                    n.neighborhood_ids,
+                    n.neighborhood_names,
+                    n.primary_neighborhood_name
+                FROM transformed_wiki_temp t
+                LEFT JOIN embedding_data e ON t.page_id = e.page_id
+                LEFT JOIN neighborhood_mappings n ON t.page_id = n.page_id
+                ORDER BY t.page_id
+            """)
+        else:
+            # No neighborhood mappings, create table with NULL fields for consistency
+            conn.execute(f"""
+                CREATE TABLE {output_table} AS
+                SELECT 
+                    t.id,
+                    t.page_id,
+                    t.location_id,
+                    t.title,
+                    t.url,
+                    t.categories,
+                    t.latitude,
+                    t.longitude,
+                    t.city,
+                    t.county,
+                    t.state,
+                    t.relevance_score,
+                    t.depth,
+                    t.crawled_at,
+                    t.html_file,
+                    t.file_hash,
+                    t.image_url,
+                    t.links_count,
+                    t.infobox_data,
+                    t.short_summary,
+                    t.long_summary,
+                    COALESCE(e.embedding_text, t.embedding_text) as embedding_text,
+                    e.embedding_vector,
+                    e.embedding_generated_at,
+                    -- NULL neighborhood fields for consistency
+                    CAST(NULL AS VARCHAR[]) as neighborhood_ids,
+                    CAST(NULL AS VARCHAR[]) as neighborhood_names,
+                    CAST(NULL AS VARCHAR) as primary_neighborhood_name
+                FROM transformed_wiki_temp t
+                LEFT JOIN embedding_data e ON t.page_id = e.page_id
+                ORDER BY t.page_id
+            """)
         
         # Clean up temporary tables
         conn.execute("DROP TABLE IF EXISTS transformed_wiki_temp")
@@ -293,6 +385,13 @@ class WikipediaSilverTransformer(SilverTransformer):
         # Verify the output
         output_count = conn.execute(f"SELECT COUNT(*) FROM {output_table}").fetchone()[0]
         embedding_count = conn.execute(f"SELECT COUNT(*) FROM {output_table} WHERE embedding_vector IS NOT NULL").fetchone()[0]
+        
+        # Log enrichment statistics using utility
+        if has_neighborhoods:
+            enricher = NeighborhoodWikipediaEnricher(conn)
+            stats = enricher.get_enrichment_statistics(output_table)
+            if stats.articles_enriched > 0:
+                self.logger.info(f"Enriched {stats.articles_enriched} articles with neighborhood data from {stats.mapping_count} mappings")
         
         self.logger.info(f"Transformed {output_count} Wikipedia articles from {input_table} to {output_table}")
         self.logger.info(f"Successfully embedded {embedding_count}/{output_count} articles ({embedding_count*100/output_count:.1f}%)")

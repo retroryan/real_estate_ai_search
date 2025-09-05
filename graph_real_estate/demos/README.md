@@ -2,6 +2,15 @@
 
 This directory contains comprehensive demonstrations of Neo4j graph database queries showcasing the power of graph relationships for real estate intelligence. Each demo illustrates specific graph patterns, traversal algorithms, and relationship analysis techniques that leverage Neo4j's unique capabilities beyond traditional relational or vector databases.
 
+## 📖 Query Documentation Updates
+
+**All demo files now include comprehensive inline documentation:**
+- **Detailed Cypher Query Explanations**: Each query includes comments explaining Neo4j patterns, functions, and techniques
+- **Pattern Descriptions**: Clear explanations of graph traversal patterns like `(node)-[:RELATIONSHIP]->(node)`
+- **Stage-by-Stage Breakdowns**: Multi-stage queries are documented with explanations for each WITH clause
+- **Function Documentation**: Explanations of Neo4j functions like `collect()`, `UNWIND`, `percentileCont()`, etc.
+- **Performance Notes**: Comments on query optimization and index usage
+
 ## 📋 Demo Query Summary
 
 | Demo | Description | Key Neo4j Concepts | Query Types | Code Location |
@@ -39,6 +48,15 @@ This directory contains comprehensive demonstrations of Neo4j graph database que
 
 ## 📚 Cypher Query Types and Concepts
 
+### 🔍 New: Enhanced Query Documentation
+
+All demo files now feature comprehensive inline documentation with:
+- **Query Pattern Explanations**: Comments explaining each MATCH pattern
+- **Aggregation Pipeline Documentation**: Step-by-step WITH clause explanations  
+- **Function Usage Examples**: Detailed explanations of Neo4j-specific functions
+- **Relationship Traversal Notes**: Comments on direction and cardinality
+- **Performance Optimization Tips**: Index usage and query planning notes
+
 ### Core Query Patterns Explained
 
 #### 1. **Node Pattern Matching**
@@ -50,12 +68,14 @@ This directory contains comprehensive demonstrations of Neo4j graph database que
   - Variables capture matched nodes for further processing
 - **Pattern structure**:
   ```cypher
+  // Basic node patterns - now with inline documentation in demos
   (p:Property {property_type: "Condo"})  // Node with label and property
   (n:Neighborhood)                       // Node with just label
   (:Feature)-[:HAS_FEATURE]->(p)        // Anonymous node in relationship
   ```
 - **Use case**: Finding specific entities like properties, neighborhoods, or features
 - **Performance**: O(log n) with indexes on labels and properties
+- **See in demos**: Check demo_2_graph_analysis.py for detailed pattern examples with comments
 
 #### 2. **Relationship Traversal Queries**
 - **What it is**: Following connections between nodes to discover related entities
@@ -66,12 +86,15 @@ This directory contains comprehensive demonstrations of Neo4j graph database que
   - Breadth-first search by default, configurable traversal strategies
 - **Traversal patterns**:
   ```cypher
+  // Relationship patterns - extensively documented in demo files
   (p:Property)-[:LOCATED_IN]->(n:Neighborhood)     // Direct relationship
-  (p1:Property)-[:SIMILAR_TO*1..2]-(p2:Property)   // Variable-length path
+  (p1:Property)-[:SIMILAR_TO*1..2]-(p2:Property)   // Variable-length path (1-2 hops)
   path = (p:Property)-[*]-(n:Neighborhood)         // Any path between nodes
+  // See demo_2_graph_analysis.py for detailed explanations of each pattern
   ```
 - **Use case**: Finding connected entities, relationship chains, network paths
 - **Performance**: O(b^d) where b=branching factor, d=depth
+- **See in demos**: demo_2_graph_analysis.py includes comprehensive traversal examples with inline documentation
 
 #### 3. **Graph Aggregation Queries**
 - **What it is**: Statistical analysis across graph relationships and node sets
@@ -82,13 +105,17 @@ This directory contains comprehensive demonstrations of Neo4j graph database que
   - Multi-stage aggregations possible through chained WITH clauses
 - **Aggregation patterns**:
   ```cypher
+  // Multi-stage aggregation pipeline - fully documented in demos
   MATCH (p:Property)-[:LOCATED_IN]->(n:Neighborhood)
   WITH n, count(p) as property_count, avg(p.listing_price) as avg_price
+  -- WITH creates processing pipeline, groups by 'n'
   RETURN n.name, property_count, avg_price
   ORDER BY property_count DESC
+  // See demo_3_market_intelligence.py for advanced aggregation examples
   ```
 - **Use case**: Market statistics, distribution analysis, relationship metrics
 - **Performance**: O(n) scan with O(1) aggregation operations
+- **See in demos**: demo_3_market_intelligence.py showcases complex multi-stage aggregations with detailed comments
 
 #### 4. **Path Finding Queries**
 - **What it is**: Discovering optimal paths between nodes using Neo4j's graph algorithms
@@ -558,6 +585,14 @@ This directory contains comprehensive demonstrations of Neo4j graph database que
 
 ## 🎯 Query Pattern Showcase
 
+### 📝 Documentation Improvements
+
+All query patterns now include:
+- **Inline Comments**: Every query has detailed inline explanations
+- **Pattern Breakdowns**: Complex patterns are explained step-by-step
+- **Function Documentation**: Neo4j-specific functions are thoroughly documented
+- **Performance Notes**: Query optimization tips included where relevant
+
 ### Graph Traversal Patterns
 
 | Pattern | Query Type | Demo File | Example |
@@ -823,6 +858,21 @@ cypher.query_max_allocations=1000000000
 ```
 
 ## 🏆 Advanced Graph Patterns
+
+### 🆕 Recent Improvements
+
+**Enhanced Query Documentation:**
+- All Cypher queries now include comprehensive inline comments
+- Pattern explanations for complex graph traversals
+- Stage-by-stage breakdowns of multi-step queries
+- Function usage documentation (UNWIND, collect(), percentileCont(), etc.)
+- Performance optimization notes and index usage guidance
+
+**Code Quality Improvements:**
+- Cleaner code structure with better organization
+- More descriptive variable names in queries
+- Consistent comment formatting throughout
+- Clear explanations of Neo4j-specific concepts
 
 This demonstration suite showcases Neo4j's unique capabilities for real estate intelligence:
 
