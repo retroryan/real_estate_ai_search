@@ -3,8 +3,8 @@
 from typing import Dict, Any, Optional, List
 from fastmcp import Context
 
-from ..models.search import WikipediaSearchRequest
-from ..services.wikipedia_search import WikipediaSearchService
+from ...search_service.models import WikipediaSearchRequest
+from ...search_service.wikipedia import WikipediaSearchService
 from ..utils.logging import get_request_logger
 
 
@@ -61,58 +61,8 @@ async def search_wikipedia(
         # Execute search
         response = wikipedia_search_service.search(request)
         
-        # Format response for MCP
-        articles = []
-        for article in response.results:
-            article_data = {
-                "page_id": article.get("page_id"),
-                "title": article.get("title"),
-                "entity_type": article.get("entity_type"),
-                "score": article.get("_score")
-            }
-            
-            # Add content based on search type
-            if search_in == "chunks":
-                article_data.update({
-                    "chunk_id": article.get("chunk_id"),
-                    "chunk_text": article.get("chunk_text", "")[:1000],  # Truncate long chunks
-                    "chunk_index": article.get("chunk_index"),
-                    "total_chunks": article.get("total_chunks")
-                })
-            else:
-                article_data.update({
-                    "short_summary": article.get("short_summary", "")[:500],
-                    "long_summary": article.get("long_summary", "")[:1000] if article.get("long_summary") else None,
-                    "key_topics": article.get("key_topics", []),
-                    "categories": article.get("categories", [])
-                })
-            
-            # Add location info if available
-            if article.get("city"):
-                article_data["location"] = {
-                    "city": article.get("city"),
-                    "state": article.get("state"),
-                    "coordinates": {
-                        "lat": article.get("latitude"),
-                        "lon": article.get("longitude")
-                    } if article.get("latitude") and article.get("longitude") else None
-                }
-            
-            # Add highlights if available
-            if article.get("_highlights"):
-                article_data["highlights"] = article["_highlights"]
-            
-            articles.append(article_data)
-        
-        return {
-            "query": query,
-            "search_in": search_in,
-            "search_type": search_type,
-            "total_results": response.metadata.total_hits,
-            "returned_results": response.metadata.returned_hits,
-            "execution_time_ms": response.metadata.execution_time_ms,
-            "articles": articles
-        }
+        # Return search_service response directly as dict
+        return response.model_dump()
         
     except Exception as e:
         logger.error(f"Wikipedia search failed: {e}")

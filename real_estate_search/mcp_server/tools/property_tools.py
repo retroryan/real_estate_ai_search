@@ -1,10 +1,10 @@
 """MCP tools for property search."""
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastmcp import Context
 
-from ..models.search import PropertySearchRequest, PropertyFilter
-from ..services.property_search import PropertySearchService
+from ...search_service.models import PropertySearchRequest, PropertyFilter
+from ...search_service.properties import PropertySearchService
 from ..utils.logging import get_request_logger
 from ...indexer.enums import IndexName
 
@@ -71,58 +71,25 @@ async def search_properties(
             query=query,
             filters=filters,
             size=min(size, 100),  # Cap at 100
-            search_type=search_type,
-            include_highlights=True,
-            include_aggregations=False
+            include_highlights=True
         )
         
         # Execute search
         response = property_search_service.search(request)
         
-        # Format response for MCP
-        return {
-            "query": query,
-            "search_type": search_type,
-            "total_results": response.metadata.total_hits,
-            "returned_results": response.metadata.returned_hits,
-            "execution_time_ms": response.metadata.execution_time_ms,
-            "properties": [
-                {
-                    "listing_id": prop.get("listing_id"),
-                    "property_type": prop.get("property_type"),
-                    "price": prop.get("price"),
-                    "bedrooms": prop.get("bedrooms"),
-                    "bathrooms": prop.get("bathrooms"),
-                    "square_feet": prop.get("square_feet"),
-                    "description": prop.get("description", "")[:500],  # Truncate long descriptions
-                    "address": {
-                        "street": prop.get("address", {}).get("street"),
-                        "city": prop.get("address", {}).get("city"),
-                        "state": prop.get("address", {}).get("state"),
-                        "zip_code": prop.get("address", {}).get("zip_code")
-                    },
-                    "neighborhood": prop.get("neighborhood", {}).get("name") if prop.get("neighborhood") else None,
-                    "features": prop.get("features", []),
-                    "amenities": prop.get("amenities", []),
-                    "score": prop.get("_score"),
-                    "highlights": prop.get("_highlights", {})
-                }
-                for prop in response.results
-            ]
-        }
+        # Return search_service response directly as dict
+        return response.model_dump()
         
     except Exception as e:
         logger.error(f"Property search failed: {e}")
-        # Return standardized error response with required fields
-        return {
-            "query": query,
-            "search_type": search_type,
-            "total_results": 0,
-            "returned_results": 0,
-            "execution_time_ms": 0,
-            "properties": [],
-            "error": str(e)
-        }
+        # Return error in search_service format
+        from ...search_service.models import SearchError
+        error = SearchError(
+            error_type="SEARCH_FAILED",
+            message=str(e),
+            details={"query": query, "search_type": search_type}
+        )
+        return {"error": error.model_dump()}
 
 
 async def get_property_details(
@@ -182,10 +149,10 @@ async def get_rich_property_details(
     include_neighborhood: bool = True,
     wikipedia_limit: int = 3
 ) -> Dict[str, Any]:
-    """Get comprehensive property details from denormalized property_relationships index.
+    """Get comprehensive property details.
     
-    Returns complete property information including embedded neighborhood data 
-    and Wikipedia articles in a single high-performance query.
+    For now, this delegates to get_property_details as search_service 
+    doesn't have get_rich_property_details yet.
     
     Args:
         listing_id: Unique property listing ID
@@ -194,43 +161,7 @@ async def get_rich_property_details(
         wikipedia_limit: Maximum number of Wikipedia articles to return (default 3)
         
     Returns:
-        Rich property details with all embedded data
+        Property details
     """
-    # Get request ID safely without hasattr
-    request_id = getattr(context, 'request_id', "unknown")
-    logger = get_request_logger(request_id)
-    logger.info(f"Getting rich property details: {listing_id}")
-    
-    try:
-        # Get services from context
-        property_search_service: PropertySearchService = context.get("property_search_service")
-        if not property_search_service:
-            raise ValueError("Property search service not available")
-        
-        # Get rich property details
-        property_data = property_search_service.get_rich_property_details(
-            listing_id=listing_id,
-            include_wikipedia=include_wikipedia,
-            include_neighborhood=include_neighborhood,
-            wikipedia_limit=wikipedia_limit
-        )
-        
-        if not property_data:
-            return {
-                "error": f"Property not found: {listing_id}",
-                "listing_id": listing_id
-            }
-        
-        # Return the rich property data
-        return {
-            "listing_id": listing_id,
-            "property": property_data,
-            "source_index": "property_relationships"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get rich property details: {e}")
-        return {
-            "error": str(e),
-            "listing_id": listing_id
-        }
+    # Delegate to get_property_details for now
+    return await get_property_details(context, listing_id)
