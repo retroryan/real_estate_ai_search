@@ -185,6 +185,15 @@ class TestLocationGoldLayer:
             output_table=ENTITY_TYPES.location.gold_table
         )
         
+        # Create minimal silver_wikipedia table for graph builder
+        # Graph builder expects this table to always exist
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS silver_wikipedia AS
+            SELECT 
+                12345 as page_id,
+                ARRAY[]::FLOAT[] as embedding_vector
+        """)
+        
         # Create dummy gold tables that build_all_graph_tables expects
         # These are minimal tables just to satisfy the graph builder
         conn.execute("""
@@ -193,23 +202,27 @@ class TestLocationGoldLayer:
                 'prop1' as listing_id,
                 'n1' as neighborhood_id,
                 100000.0 as price,
+                66.67 as price_per_sqft,
                 'Single Family' as property_type,
                 'Available' as status,
-                '94102' as zip_code,
                 3 as bedrooms,
                 2.5 as bathrooms,
                 1500 as square_feet,
-                'Test property description' as description,
-                'Test features' as features,
-                'San Francisco' as city,
-                'CA' as state,
-                'San Francisco County' as county,
                 2020 as year_built,
                 5000 as lot_size,
-                37.7749 as latitude,
-                -122.4194 as longitude,
-                'test address' as address,
-                '2024-01-01' as listed_date
+                'Test property description' as description,
+                ['Pool', 'Garage', 'Garden'] as features,
+                NULL as virtual_tour_url,
+                NULL as images,
+                '2024-01-01' as listing_date,
+                30 as days_on_market,
+                STRUCT_PACK(
+                    street := 'test address',
+                    city := 'San Francisco', 
+                    state := 'CA',
+                    zip_code := '94102',
+                    location := [37.7749, -122.4194]
+                ) as address
         """)
         
         conn.execute("""
@@ -218,16 +231,36 @@ class TestLocationGoldLayer:
                 'n1' as neighborhood_id,
                 'Test Neighborhood' as name,
                 'San Francisco' as city,
-                'CA' as state
+                'CA' as state,
+                50000 as population,
+                85 as walkability_score,
+                8.5 as school_rating,
+                'Test neighborhood description' as description,
+                37.7749 as center_latitude,
+                -122.4194 as center_longitude,
+                STRUCT_PACK(
+                    parent_geography := STRUCT_PACK(
+                        county_wiki := STRUCT_PACK(
+                            title := 'San Francisco County'
+                        )
+                    ),
+                    primary_wiki_article := STRUCT_PACK(
+                        page_id := 12345
+                    )
+                ) as wikipedia_correlations
         """)
         
         conn.execute("""
             CREATE OR REPLACE VIEW gold_wikipedia AS
             SELECT 
                 12345 as page_id,
-                'Test Article' as title,
-                'San Francisco' as city,
-                'CA' as state
+                'Test Neighborhood Article' as title,
+                'This is a test article about Test Neighborhood in San Francisco.' as full_content,
+                'Geography|Neighborhoods' as categories,
+                ARRAY['n1']::VARCHAR[] as neighborhood_ids,
+                ARRAY['Test Neighborhood']::VARCHAR[] as neighborhood_names,
+                'Test Neighborhood' as primary_neighborhood_name,
+                1 as neighborhood_count
         """)
         
         # Build all graph tables

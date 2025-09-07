@@ -41,7 +41,7 @@ from squack_pipeline_v2.embeddings.providers import create_provider
 
 # Writers
 from squack_pipeline_v2.writers.parquet import ParquetWriter
-from squack_pipeline_v2.writers.elasticsearch import ElasticsearchWriter
+from squack_pipeline_v2.writers.elastic import ElasticsearchWriter
 
 logger = logging.getLogger(__name__)
 

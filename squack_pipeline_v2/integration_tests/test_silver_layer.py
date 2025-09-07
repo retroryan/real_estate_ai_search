@@ -208,20 +208,20 @@ def test_relation_api_usage():
     property_source = inspect.getsource(property.PropertySilverTransformer._apply_transformations)
     assert "conn.table" in property_source, "Property transformer should use Relation API"
     assert "filtered.project" in property_source, "Should use project method"
-    assert ".create(output_table)" in property_source, "Should create table from relation"
+    # Now using CREATE TABLE AS WITH CTE which is better DuckDB practice
+    assert "CREATE TABLE" in property_source and "WITH" in property_source, "Should create table using CTEs"
     
     # Check neighborhood transformer source
     neighborhood_source = inspect.getsource(neighborhood.NeighborhoodSilverTransformer._apply_transformations)
     assert "conn.table" in neighborhood_source, "Neighborhood transformer should use Relation API"
     assert ".project" in neighborhood_source, "Should use project method"
-    assert ".create(output_table)" in neighborhood_source, "Should create table from relation"
+    # Now using CREATE TABLE AS WITH CTE which is better DuckDB practice
+    assert "CREATE TABLE" in neighborhood_source and "WITH" in neighborhood_source, "Should create table using CTEs"
     
     # Check wikipedia transformer source
     wikipedia_source = inspect.getsource(wikipedia.WikipediaSilverTransformer._apply_transformations)
-    assert "conn.table" in wikipedia_source, "Wikipedia transformer should use Relation API"
-    assert "filtered.project" in wikipedia_source or "bronze.filter" in wikipedia_source, "Should use filter/project methods"
-    # Wikipedia now uses CREATE TABLE AS WITH CTE which is better DuckDB practice
-    assert "CREATE TABLE" in wikipedia_source, "Should create final table"
+    # Wikipedia now uses direct SQL with CTEs which is better DuckDB practice
+    assert "CREATE TABLE" in wikipedia_source and "WITH" in wikipedia_source, "Should create table using CTEs"
     
     print("✓ Relation API usage test passed")
 

@@ -198,44 +198,41 @@ class NeighborhoodSilverTransformer(SilverTransformer):
             embedding_str = '[' + ','.join(str(v) for v in embedding) + ']'
             values_clause.append(f"('{nid}', '{escaped_text}', {embedding_str}::DOUBLE[], TIMESTAMP '{current_timestamp}')")
         
-        # Create embedding table
+        # Create final table with embeddings using CTEs - no temporary tables
         conn.execute(f"""
-            CREATE TABLE embedding_data AS
-            SELECT * FROM (
-                VALUES {','.join(values_clause)}
-            ) AS t(neighborhood_id, embedding_text, embedding_vector, embedding_generated_at)
+            CREATE TABLE {output_table} AS
+            WITH transformed_data AS (
+                {transformed.sql_query()}
+            ),
+            embedding_data AS (
+                SELECT * FROM (
+                    VALUES {','.join(values_clause)}
+                ) AS t(neighborhood_id, embedding_text, embedding_vector, embedding_generated_at)
+            )
+            SELECT 
+                t.neighborhood_id,
+                t.name,
+                t.city,
+                t.state,
+                t.county,
+                t.city_id,
+                t.county_id,
+                t.state_id,
+                t.location,
+                t.population,
+                t.walkability_score,
+                t.school_rating,
+                t.demographics,
+                t.description,
+                t.amenities,
+                t.lifestyle_tags,
+                t.wikipedia_page_id,
+                t.wikipedia_correlations,
+                e.embedding_text,
+                e.embedding_vector,
+                e.embedding_generated_at
+            FROM transformed_data t
+            LEFT JOIN embedding_data e ON t.neighborhood_id = e.neighborhood_id
         """)
-        
-        # Join embeddings and create final table
-        final_result = (transformed
-            .join(conn.table('embedding_data'), 'neighborhood_id', how='left')
-            .project("""
-                neighborhood_id,
-                name,
-                city,
-                state,
-                county,
-                city_id,
-                county_id,
-                state_id,
-                location,
-                population,
-                walkability_score,
-                school_rating,
-                demographics,
-                description,
-                amenities,
-                lifestyle_tags,
-                wikipedia_page_id,
-                wikipedia_correlations,
-                embedding_data.embedding_text,
-                embedding_data.embedding_vector,
-                embedding_data.embedding_generated_at
-            """))
-        
-        final_result.create(output_table)
-        
-        # Clean up temporary table
-        conn.execute("DROP TABLE IF EXISTS embedding_data")
         
         self.logger.info(f"Transformed neighborhoods from {input_table} to {output_table}")

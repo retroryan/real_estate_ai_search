@@ -7,7 +7,7 @@ Following DuckDB best practices:
 """
 
 from squack_pipeline_v2.writers.parquet import ParquetWriter
-from squack_pipeline_v2.writers.elasticsearch import ElasticsearchWriter
+from squack_pipeline_v2.writers.elastic import ElasticsearchWriter
 
 __all__ = [
     "ParquetWriter",

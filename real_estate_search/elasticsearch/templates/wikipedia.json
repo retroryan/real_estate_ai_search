@@ -52,6 +52,10 @@
     "content_loaded_at": {
       "type": "date"
     },
+    "neighborhood": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
     "city": {
       "type": "keyword",
       "normalizer": "lowercase_normalizer"

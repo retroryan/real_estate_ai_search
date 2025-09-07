@@ -75,6 +75,19 @@ class Neo4jWriter:
     
     This writer handles all node and relationship types defined in the
     graph builder. All data transformation is done in the Gold layer.
+    
+    Neo4j Best Practices Applied:
+    - UNWIND for batch operations instead of individual transactions
+    - Parameterized queries to prevent injection and improve caching
+    - Proper constraint creation for performance
+    - Transaction management with session scope
+    - CAST decimal types in SQL to avoid runtime conversion
+    
+    Future Improvements for Production:
+    - Add batch processing with configurable batch size
+    - Implement retry logic for transient failures  
+    - Add transaction batching for large datasets
+    - Consider using apoc.periodic.iterate for very large imports
     """
     
     def __init__(
@@ -146,32 +159,42 @@ class Neo4jWriter:
     def _get_records_from_table(self, table_name: str) -> List[Dict[str, Any]]:
         """Get all records from a DuckDB table.
         
+        Neo4j best practice: Cast DECIMAL types to DOUBLE in SQL to avoid
+        type conversion issues and improve performance.
+        
         Args:
             table_name: Name of the table
             
         Returns:
             List of records as dictionaries
         """
-        from decimal import Decimal
-        
         conn = self.connection_manager.get_connection()
         safe_table = DuckDBConnectionManager.safe_identifier(table_name)
         
-        # Use DuckDB's native iteration - no pandas
-        result = conn.execute(f"SELECT * FROM {safe_table}")
+        # Get schema to identify decimal columns
+        # DESCRIBE returns: (column_name, column_type, null, key, default, extra)
+        schema = conn.execute(f"DESCRIBE {safe_table}").fetchall()
+        
+        # Build SELECT with CAST for decimal types - Neo4j best practice
+        select_columns = []
+        for row in schema:
+            col_name = row[0]  # First element is column name
+            col_type = row[1]  # Second element is column type
+            if 'DECIMAL' in col_type.upper() or 'NUMERIC' in col_type.upper():
+                # Cast to DOUBLE for Neo4j compatibility
+                select_columns.append(f"CAST({col_name} AS DOUBLE) AS {col_name}")
+            else:
+                select_columns.append(col_name)
+        
+        # Execute query with type casting
+        query = f"SELECT {', '.join(select_columns)} FROM {safe_table}"
+        result = conn.execute(query)
         
         # Convert to list of dicts for Neo4j
         columns = [desc[0] for desc in result.description]
         records = []
         for row in result.fetchall():
-            # Convert Decimal to float for Neo4j compatibility
-            converted_row = []
-            for value in row:
-                if isinstance(value, Decimal):
-                    converted_row.append(float(value))
-                else:
-                    converted_row.append(value)
-            records.append(dict(zip(columns, converted_row)))
+            records.append(dict(zip(columns, row)))
         
         return records
     
@@ -939,7 +962,7 @@ class Neo4jWriter:
             duration_seconds=duration
         )
     
-    @log_stage("Neo4j: Write Neighborhood IN_ZIP_CODE relationships")
+    @log_stage("Neo4j: Write IN_ZIP_CODE relationships")
     def write_neighborhood_in_zip_relationships(self) -> RelationshipWriteResult:
         """Write IN_ZIP_CODE relationships (Neighborhood -> ZipCode)."""
         table_name = "gold_graph_rel_neighborhood_in_zip"
@@ -948,7 +971,7 @@ class Neo4jWriter:
         if not self.connection_manager.table_exists(table_name):
             self.logger.warning(f"Table {table_name} does not exist")
             return RelationshipWriteResult(
-                relationship_type="NEIGHBORHOOD_IN_ZIP",
+                relationship_type="IN_ZIP_CODE",
                 table_name=table_name,
                 records_read=0,
                 relationships_created=0,
@@ -971,7 +994,7 @@ class Neo4jWriter:
         duration = (datetime.now() - start_time).total_seconds()
         
         return RelationshipWriteResult(
-            relationship_type="NEIGHBORHOOD_IN_ZIP",
+            relationship_type="IN_ZIP_CODE",
             table_name=table_name,
             records_read=len(records),
             relationships_created=summary.counters.relationships_created,

@@ -61,10 +61,6 @@ class WikipediaGoldEnricher(GoldEnricher):
                 long_summary,
                 short_summary,
                 
-                -- Full content for comprehensive search
-                long_summary as full_content,
-                LENGTH(long_summary) as content_length,
-                
                 -- Business workflow fields
                 false as content_loaded,
                 crawled_at as content_loaded_at,

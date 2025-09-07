@@ -255,43 +255,26 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Check if silver_wikipedia table exists with embeddings
-        check_embedding = """
-        SELECT COUNT(*) 
-        FROM information_schema.tables 
-        WHERE table_name = 'silver_wikipedia'
+        # Always expect silver_wikipedia to exist
+        # TODO - add wikipedia short and long summaries to gold_wikipedia
+        query = f"""
+        CREATE TABLE {table_name} AS
+        SELECT
+            w.page_id as wikipedia_id,
+            w.title,
+            w.full_content as content,
+            w.categories,
+            w.neighborhood_ids,
+            w.neighborhood_names,
+            w.primary_neighborhood_name,
+            w.neighborhood_count,
+            s.embedding_vector as embedding,
+            'WikipediaArticle' as node_label,
+            'wikipedia:' || w.page_id as graph_node_id
+        FROM gold_wikipedia w
+        LEFT JOIN silver_wikipedia s ON w.page_id = s.page_id
+        WHERE w.page_id IS NOT NULL
         """
-        has_embedding_table = self.connection_manager.execute(check_embedding).fetchone()[0] > 0
-        
-        if has_embedding_table:
-            query = f"""
-            CREATE TABLE {table_name} AS
-            SELECT
-                w.page_id as wikipedia_id,
-                w.title,
-                w.full_content as content,
-                w.categories,
-                s.embedding_vector as embedding,
-                'WikipediaArticle' as node_label,
-                'wikipedia:' || w.page_id as graph_node_id
-            FROM gold_wikipedia w
-            LEFT JOIN silver_wikipedia s ON w.page_id = s.page_id
-            WHERE w.page_id IS NOT NULL
-            """
-        else:
-            query = f"""
-            CREATE TABLE {table_name} AS
-            SELECT
-                page_id as wikipedia_id,
-                title,
-                full_content as content,
-                categories,
-                NULL::FLOAT[] as embedding,
-                'WikipediaArticle' as node_label,
-                'wikipedia:' || page_id as graph_node_id
-            FROM gold_wikipedia
-            WHERE page_id IS NOT NULL
-            """
         
         self.connection_manager.execute(query)
         
@@ -359,8 +342,7 @@ class GoldGraphBuilder:
             'Feature' as node_label,
             'feature:' || LOWER(REPLACE(feature_name, ' ', '_')) as graph_node_id
         FROM unnested_features
-        FROM gold_properties
-        WHERE features IS NOT NULL AND array_length(features) > 0
+        WHERE feature_name IS NOT NULL
         """
         
         self.connection_manager.execute(query)
@@ -689,24 +671,25 @@ class GoldGraphBuilder:
         
         self.connection_manager.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-        # Wikipedia articles describe neighborhoods based on geographic matching
+        # Wikipedia articles describe neighborhoods based on neighborhood associations
         query = f"""
         CREATE TABLE {table_name} AS
+        WITH wikipedia_neighborhoods AS (
+            -- Unnest the neighborhood associations from Wikipedia articles
+            SELECT 
+                w.page_id,
+                unnest(w.neighborhood_ids) as neighborhood_id
+            FROM gold_wikipedia w
+            WHERE w.neighborhood_ids IS NOT NULL 
+                AND array_length(w.neighborhood_ids) > 0
+        )
         SELECT DISTINCT
-            'wikipedia:' || CAST(w.page_id AS VARCHAR) as from_id,
-            'neighborhood:' || n.neighborhood_id as to_id,
+            'wikipedia:' || CAST(wn.page_id AS VARCHAR) as from_id,
+            'neighborhood:' || wn.neighborhood_id as to_id,
             'DESCRIBES' as relationship_type,
             1.0 as confidence
-        FROM gold_wikipedia w
-        JOIN gold_neighborhoods n ON (
-            -- Match based on title containing neighborhood name and city
-            (LOWER(w.title) LIKE '%' || LOWER(n.name) || '%' 
-             AND LOWER(w.title) LIKE '%' || LOWER(n.city) || '%')
-            OR
-            -- Match based on primary wiki article
-            (n.wikipedia_correlations.primary_wiki_article.page_id = w.page_id)
-        )
-        WHERE w.page_id IS NOT NULL AND n.neighborhood_id IS NOT NULL
+        FROM wikipedia_neighborhoods wn
+        WHERE wn.page_id IS NOT NULL AND wn.neighborhood_id IS NOT NULL
         """
         
         self.connection_manager.execute(query)

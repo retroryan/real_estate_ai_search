@@ -184,51 +184,48 @@ class PropertySilverTransformer(SilverTransformer):
             embedding_str = '[' + ','.join(str(v) for v in embedding) + ']'
             values_clause.append(f"('{lid}', '{escaped_text}', {embedding_str}::DOUBLE[], TIMESTAMP '{current_timestamp}')")
         
-        # Create embedding table
+        # Create final table with embeddings using CTEs - no temporary tables
         conn.execute(f"""
-            CREATE TABLE embedding_data AS
-            SELECT * FROM (
-                VALUES {','.join(values_clause)}
-            ) AS t(listing_id, embedding_text, embedding_vector, embedding_generated_at)
+            CREATE TABLE {output_table} AS
+            WITH transformed_data AS (
+                {transformed.sql_query()}
+            ),
+            embedding_data AS (
+                SELECT * FROM (
+                    VALUES {','.join(values_clause)}
+                ) AS t(listing_id, embedding_text, embedding_vector, embedding_generated_at)
+            )
+            SELECT 
+                t.listing_id,
+                t.neighborhood_id,
+                t.bedrooms,
+                t.bathrooms,
+                t.square_feet,
+                t.property_type,
+                t.year_built,
+                t.lot_size,
+                t.garage_spaces,
+                t.price,
+                t.price_per_sqft,
+                t.address,
+                t.description,
+                t.features,
+                t.listing_date,
+                t.days_on_market,
+                t.virtual_tour_url,
+                t.images,
+                t.price_history,
+                t.market_trends,
+                t.buyer_persona,
+                t.viewing_statistics,
+                t.buyer_demographics,
+                t.nearby_amenities,
+                t.future_enhancements,
+                e.embedding_text,
+                e.embedding_vector,
+                e.embedding_generated_at
+            FROM transformed_data t
+            LEFT JOIN embedding_data e ON t.listing_id = e.listing_id
         """)
-        
-        # Join embeddings and create final table
-        final_result = (transformed
-            .join(conn.table('embedding_data'), 'listing_id', how='left')
-            .project("""
-                listing_id,
-                neighborhood_id,
-                bedrooms,
-                bathrooms,
-                square_feet,
-                property_type,
-                year_built,
-                lot_size,
-                garage_spaces,
-                price,
-                price_per_sqft,
-                address,
-                description,
-                features,
-                listing_date,
-                days_on_market,
-                virtual_tour_url,
-                images,
-                price_history,
-                market_trends,
-                buyer_persona,
-                viewing_statistics,
-                buyer_demographics,
-                nearby_amenities,
-                future_enhancements,
-                embedding_data.embedding_text,
-                embedding_data.embedding_vector,
-                embedding_data.embedding_generated_at
-            """))
-        
-        final_result.create(output_table)
-        
-        # Clean up temporary table
-        conn.execute("DROP TABLE IF EXISTS embedding_data")
         
         self.logger.info(f"Transformed properties from {input_table} to {output_table}")

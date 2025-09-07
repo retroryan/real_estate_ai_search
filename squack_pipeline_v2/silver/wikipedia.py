@@ -1,100 +1,10 @@
-"""Wikipedia Silver layer transformation using DuckDB Relation API.
+"""Wikipedia Silver layer transformation - Clean implementation without temporary tables."""
 
-WIKIPEDIA EMBEDDING GENERATION DETAILS:
-=======================================
-
-This module transforms Wikipedia articles into the Silver layer with semantic embeddings
-for content-based search and location-relevant knowledge retrieval.
-
-IMPORTANT UPDATE (2024): This module now uses AI-generated summaries from the page_summaries
-table instead of the basic Wikipedia extract field. This provides 3-4x more semantic content
-for superior embedding quality.
-
-EMBEDDING TEXT COMPOSITION FOR WIKIPEDIA:
------------------------------------------
-The embedding_text field combines the most comprehensive Wikipedia content:
-
-1. **title** (Primary): Article title providing the main subject/topic
-   Critical for identifying what the article is about (e.g., "Golden Gate Bridge")
-
-2. **long_summary** (Content): AI-generated comprehensive summary from page_summaries table
-   - Replaces the old 'extract' field (which was just Wikipedia's first paragraph)
-   - Contains detailed information about history, significance, geographic context, and key facts
-   - Average ~985 characters, max ~1873 characters (well within token limits)
-   - Provides 3-4x more content than the old extract field (~200-300 chars)
-
-FIELD CONCATENATION STRATEGY:
-----------------------------
-- Format: "title | long_summary" using pipe delimiter
-- TRIM applied to remove leading/trailing whitespace
-- Pipe separator creates semantic boundary between title and content
-
-WHY WE SWITCHED FROM EXTRACT TO LONG_SUMMARY:
---------------------------------------------
-- **3-4x More Content**: Long summary (~985 chars avg) vs extract (~250 chars avg)
-- **AI-Enhanced**: Summaries are AI-generated with structured, comprehensive information
-- **Better Context**: Includes historical details, geographic context, demographics, and significance
-- **Optimal for Embeddings**: ~250-468 tokens fits comfortably in all provider limits (8k-16k)
-- **Richer Semantics**: More detailed content creates better vector representations for search
-
-FIELDS EXCLUDED FROM WIKIPEDIA EMBEDDINGS:
-------------------------------------------
-- **extract**: REMOVED - Replaced by long_summary which provides 3-4x more content
-- **short_summary**: Not used for embeddings (kept for display/UI purposes)
-- **URL**: Technical metadata, not semantic content
-- **Categories**: Better for structured filtering than semantic search
-- **Full HTML content**: Too large and contains formatting/navigation elements
-- **Infobox data**: Structured data better for faceted search
-- **Location fields**: Geographic data handled separately
-- **Links count**: Statistical metadata not relevant for content similarity
-- **Crawl metadata**: Technical tracking information
-
-WIKIPEDIA-SPECIFIC CONSIDERATIONS:
-----------------------------------
-- Articles are already well-structured with clear titles
-- Long summary is AI-generated from full Wikipedia content (not just first paragraph)
-- Both short_summary and long_summary come from page_summaries table
-- No need for complex field combinations as with properties/neighborhoods
-- Focus on comprehensive encyclopedic content rather than metadata
-
-LOCATION ENRICHMENT:
--------------------
-This transformer also standardizes location data:
-- Standardizes state names to abbreviations using StateStandardizer
-- Preserves latitude/longitude for geo-queries
-- Maintains city/county/state hierarchy for location-based filtering
-
-NEIGHBORHOOD ENRICHMENT:
------------------------
-This transformer enriches Wikipedia articles with neighborhood associations:
-- Extracts neighborhood mappings from silver_neighborhoods table
-- Joins Wikipedia articles with neighborhood data using page_id
-- Adds neighborhood_names (list), primary_neighborhood_name, and neighborhood_ids fields
-- Handles one-to-many relationships (multiple neighborhoods per article)
-- Gracefully handles missing silver_neighborhoods table
-
-EMBEDDING GENERATION PROCESS:
-----------------------------
-1. SQL projection creates embedding_text with CONCAT_WS using long_summary
-2. Page IDs and texts extracted from DuckDB
-3. Texts sent to embedding provider API
-4. Vectors stored as DOUBLE[] arrays with timestamps
-5. Embeddings joined back via page_id
-
-TOKENIZATION APPROACH:
----------------------
-- No LlamaIndex text splitting or chunking
-- Long summary provides comprehensive AI-generated content
-- Provider APIs handle tokenization:
-  * Token limits not an issue (max ~468 tokens vs 8k-16k limits)
-  * Model-specific tokenizers used internally
-- Clean text without HTML/wiki markup sent directly
-"""
-
+from typing import Optional
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.utils import StateStandardizer
 from squack_pipeline_v2.utils.table_validation import validate_table_name
+from squack_pipeline_v2.utils.state_utils import StateStandardizer
 from squack_pipeline_v2.utils.neighborhood_enrichment import (
     NeighborhoodWikipediaEnricher,
     NeighborhoodEnrichmentResult
@@ -103,7 +13,7 @@ from datetime import datetime
 
 
 class WikipediaSilverTransformer(SilverTransformer):
-    """Transformer for Wikipedia data into Silver layer using Relation API.
+    """Transformer for Wikipedia data into Silver layer using DuckDB best practices.
     
     Silver layer principles:
     - Standardize field names (pageid → page_id)
@@ -111,36 +21,23 @@ class WikipediaSilverTransformer(SilverTransformer):
     - Clean text fields
     - Standardize location data
     - Generate semantic embeddings for content search
-    - NO business logic or enrichment (that's Gold layer)
+    - Always include neighborhood fields
+    - NO temporary tables - use CTEs only
     """
     
     def _get_entity_type(self) -> str:
         """Return entity type."""
         return "wikipedia"
     
-    def _has_neighborhood_data(self) -> bool:
-        """Check if neighborhood data is available for enrichment.
-        
-        DuckDB Best Practice: Check table existence efficiently.
-        
-        Returns:
-            True if silver_neighborhoods table exists, False otherwise
-        """
-        conn = self.connection_manager.get_connection()
-        enricher = NeighborhoodWikipediaEnricher(conn)
-        return enricher.check_neighborhoods_table_exists()
-    
     @log_stage("Silver: Wikipedia Transformation")
     def _apply_transformations(self, input_table: str, output_table: str) -> None:
-        """Apply Wikipedia transformations using DuckDB Relation API with efficient batching.
+        """Apply Wikipedia transformations using DuckDB best practices.
         
-        Following DuckDB best practices:
-        - Use Relation API throughout
-        - Batch embedding operations to prevent memory issues
-        - Use multi-row INSERT with parameterized queries for bulk inserts
-        - Single CREATE TABLE operation at the end
-        - Parameterized queries with ? placeholders (safe from injection)
-        - Proper progress tracking and logging
+        Complete cutover implementation:
+        - No temporary tables - use CTEs and VALUES
+        - Always include neighborhood fields
+        - Single CREATE TABLE operation
+        - No compatibility checks
         
         Args:
             input_table: Bronze input table
@@ -152,151 +49,155 @@ class WikipediaSilverTransformer(SilverTransformer):
         
         conn = self.connection_manager.get_connection()
         
-        # Check if neighborhood data is available
-        has_neighborhoods = self._has_neighborhood_data()
-        if not has_neighborhoods:
-            self.logger.warning("silver_neighborhoods table not found. Skipping neighborhood enrichment.")
-        
-        # Get state transformation SQL for use in project
+        # Get state transformation SQL
         state_case_sql = StateStandardizer.get_sql_case_statement('best_state', 'state')
         
-        # Use Relation API following DuckDB best practices
-        bronze = conn.table(input_table)
+        # Build the transformation query
+        transformation_sql = f"""
+            SELECT
+                id,
+                pageid as page_id,
+                location_id,
+                TRIM(title) as title,
+                url,
+                categories,
+                latitude,
+                longitude,
+                best_city as city,
+                best_county as county,
+                {state_case_sql},
+                relevance_score,
+                depth,
+                crawled_at,
+                html_file,
+                file_hash,
+                image_url,
+                links_count,
+                infobox_data,
+                short_summary,
+                long_summary,
+                CONCAT_WS(' | ', TRIM(title), TRIM(long_summary)) as embedding_text
+            FROM {input_table}
+            WHERE pageid IS NOT NULL
+        """
         
-        # Apply filter using Relation API
-        filtered = bronze.filter("pageid IS NOT NULL")
+        # Get all data for embedding generation
+        wiki_data = conn.execute(transformation_sql).df()
+        total_count = len(wiki_data)
         
-        # Project to standardized columns using Relation API
-        transformed = filtered.project(f"""
-            id,
-            pageid as page_id,
-            location_id,
-            
-            TRIM(title) as title,
-            url,
-            categories,
-            
-            latitude,
-            longitude,
-            
-            best_city as city,
-            best_county as county,
-            {state_case_sql},
-            
-            relevance_score,
-            depth,
-            crawled_at,
-            html_file,
-            file_hash,
-            image_url,
-            links_count,
-            infobox_data,
-            short_summary,
-            long_summary,
-            -- EMBEDDING TEXT GENERATION FOR WIKIPEDIA:
-            -- UPDATE: Now uses long_summary from page_summaries table (not extract)
-            -- Combine title and long_summary with pipe delimiter
-            -- Long summary is AI-generated, providing 3-4x more content than old extract field
-            -- Average ~985 chars vs ~250 chars for extract = superior embeddings
-            CONCAT_WS(' | ', TRIM(title), TRIM(long_summary)) as embedding_text
-        """)
+        if total_count == 0:
+            # Create empty table with proper schema
+            conn.execute(f"""
+                CREATE TABLE {output_table} (
+                    id BIGINT,
+                    page_id INTEGER,
+                    location_id VARCHAR,
+                    title VARCHAR,
+                    url VARCHAR,
+                    categories VARCHAR,
+                    latitude DOUBLE,
+                    longitude DOUBLE,
+                    city VARCHAR,
+                    county VARCHAR,
+                    state VARCHAR,
+                    relevance_score DOUBLE,
+                    depth INTEGER,
+                    crawled_at TIMESTAMP,
+                    html_file VARCHAR,
+                    file_hash VARCHAR,
+                    image_url VARCHAR,
+                    links_count INTEGER,
+                    infobox_data VARCHAR,
+                    short_summary VARCHAR,
+                    long_summary VARCHAR,
+                    embedding_text VARCHAR,
+                    embedding_vector DOUBLE[],
+                    embedding_generated_at TIMESTAMP,
+                    neighborhood_ids VARCHAR[],
+                    neighborhood_names VARCHAR[],
+                    primary_neighborhood_name VARCHAR
+                )
+            """)
+            self.logger.info(f"No data to transform from {input_table}")
+            return
         
-        # Clean up any existing temporary tables first
-        conn.execute("DROP TABLE IF EXISTS transformed_wiki_temp")
-        conn.execute("DROP TABLE IF EXISTS embedding_data")
-        
-        # First, create the transformed data without embeddings
-        # This ensures we have all the data ready even if embedding fails
-        transformed.create('transformed_wiki_temp')
-        
-        # Get total count for progress tracking
-        total_count = conn.execute("SELECT COUNT(*) FROM transformed_wiki_temp").fetchone()[0]
         self.logger.info(f"Processing {total_count} Wikipedia articles for embeddings")
         
-        # Create embedding table structure using DuckDB's native types
-        # No primary key constraint to handle potential duplicates in batch processing
-        conn.execute("""
-            CREATE TABLE embedding_data (
-                page_id BIGINT,
-                embedding_text TEXT,
-                embedding_vector DOUBLE[],
-                embedding_generated_at TIMESTAMP
-            )
-        """)
+        # Generate embeddings in batches
+        embeddings = []
+        batch_size = 100
+        current_timestamp = datetime.now().isoformat()
         
-        # Process embeddings in batches to prevent memory issues
-        # Use configurable batch size from settings, default to 100 if not set
-        BATCH_SIZE = getattr(self.settings.processing, 'embedding_batch_size', 100)
-        processed = 0
-        current_timestamp = datetime.now()
-        
-        # Use DuckDB's OFFSET/LIMIT for efficient batching
-        while processed < total_count:
-            # Extract batch of data for embedding generation
-            batch_query = f"""
-                SELECT page_id, embedding_text 
-                FROM transformed_wiki_temp 
-                ORDER BY page_id 
-                LIMIT {BATCH_SIZE} 
-                OFFSET {processed}
-            """
+        for i in range(0, total_count, batch_size):
+            batch_end = min(i + batch_size, total_count)
+            batch = wiki_data.iloc[i:batch_end]
             
-            batch_rows = conn.execute(batch_query).fetchall()
+            self.logger.info(f"Generating embeddings for batch {i//batch_size + 1} ({batch_end}/{total_count} articles)")
             
-            if not batch_rows:
-                break  # No more data
+            texts_to_embed = []
+            indices_to_embed = []
             
-            # Extract page IDs and texts for this batch
-            batch_page_ids = [row[0] for row in batch_rows]
-            batch_texts = [row[1] for row in batch_rows if row[1]]  # Filter out None texts
+            for idx, row in batch.iterrows():
+                text = row.get('embedding_text')
+                if text and len(str(text).strip()) > 50:
+                    texts_to_embed.append(text)
+                    indices_to_embed.append(idx)
             
-            # Log progress
-            self.logger.info(f"Generating embeddings for batch {processed // BATCH_SIZE + 1} "
-                           f"({processed + len(batch_rows)}/{total_count} articles)")
-            
-            # Generate embeddings for this batch
-            if batch_texts:
+            if texts_to_embed:
                 try:
-                    embedding_response = self.embedding_provider.generate_embeddings(batch_texts)
-                    
-                    # Prepare batch data for insertion
-                    insert_data = []
-                    flat_params = []
-                    text_idx = 0
-                    
-                    # Match embeddings back to page IDs (handling None texts)
-                    for page_id, text in batch_rows:
-                        if text:  # If we have text, use the embedding
-                            embedding_vector = embedding_response.embeddings[text_idx]
-                            text_idx += 1
-                        else:  # No text, use NULL embedding
-                            embedding_vector = None
-                        
-                        insert_data.append('(?, ?, ?, ?)')
-                        flat_params.extend([page_id, text, embedding_vector, current_timestamp])
-                    
-                    # Use single INSERT with multiple VALUES for best performance
-                    # This is more efficient than executemany according to DuckDB docs
-                    if insert_data:
-                        query = f"INSERT INTO embedding_data VALUES {', '.join(insert_data)}"
-                        conn.execute(query, flat_params)
-                    
+                    response = self.embedding_provider.generate_embeddings(texts_to_embed)
+                    for j, idx in enumerate(indices_to_embed):
+                        page_id = wiki_data.loc[idx, 'page_id']
+                        vector = response.embeddings[j]
+                        embeddings.append({
+                            'page_id': page_id,
+                            'vector': vector,
+                            'timestamp': current_timestamp
+                        })
                 except Exception as e:
-                    self.logger.error(f"Error generating embeddings for batch: {e}")
-                    # Continue with next batch even if one fails
-                    # This ensures partial success rather than complete failure
-            
-            processed += len(batch_rows)
+                    self.logger.error(f"Error generating embeddings: {e}")
         
-        self.logger.info(f"Successfully generated embeddings for {processed} articles")
+        self.logger.info(f"Generated {len(embeddings)} embeddings")
         
-        # Create final table with neighborhood enrichment
-        # DuckDB Best Practice: Use CTEs instead of temporary tables where possible
-        if has_neighborhoods:
-            # Use CTE for neighborhood mappings (best practice)
-            conn.execute(f"""
-                CREATE TABLE {output_table} AS
-                WITH neighborhood_mappings AS (
+        # Build embedding VALUES clause
+        embedding_rows = []
+        for emb in embeddings:
+            vector_str = 'ARRAY[' + ','.join(str(v) for v in emb['vector']) + ']::DOUBLE[]'
+            embedding_rows.append(f"({emb['page_id']}, {vector_str}, TIMESTAMP '{emb['timestamp']}')")
+        
+        if embedding_rows:
+            embedding_values = ',\n                '.join(embedding_rows)
+            embeddings_cte = f"""
+                embeddings AS (
+                    SELECT 
+                        page_id,
+                        embedding_vector,
+                        embedding_generated_at
+                    FROM (VALUES 
+                        {embedding_values}
+                    ) AS e(page_id, embedding_vector, embedding_generated_at)
+                )"""
+        else:
+            # No embeddings - create empty CTE
+            embeddings_cte = """
+                embeddings AS (
+                    SELECT 
+                        NULL::INTEGER as page_id,
+                        NULL::DOUBLE[] as embedding_vector,
+                        NULL::TIMESTAMP as embedding_generated_at
+                    WHERE FALSE
+                )"""
+        
+        # Check if silver_neighborhoods table exists
+        table_exists = conn.execute("""
+            SELECT COUNT(*) 
+            FROM information_schema.tables 
+            WHERE table_name = 'silver_neighborhoods'
+        """).fetchone()[0] > 0
+        
+        if table_exists:
+            neighborhoods_cte = """
+                neighborhoods AS (
                     SELECT 
                         wikipedia_page_id as page_id,
                         LIST(DISTINCT neighborhood_id ORDER BY neighborhood_id) as neighborhood_ids,
@@ -305,93 +206,71 @@ class WikipediaSilverTransformer(SilverTransformer):
                     FROM silver_neighborhoods
                     WHERE wikipedia_page_id IS NOT NULL
                     GROUP BY wikipedia_page_id
-                )
-                SELECT 
-                    t.id,
-                    t.page_id,
-                    t.location_id,
-                    t.title,
-                    t.url,
-                    t.categories,
-                    t.latitude,
-                    t.longitude,
-                    t.city,
-                    t.county,
-                    t.state,
-                    t.relevance_score,
-                    t.depth,
-                    t.crawled_at,
-                    t.html_file,
-                    t.file_hash,
-                    t.image_url,
-                    t.links_count,
-                    t.infobox_data,
-                    t.short_summary,
-                    t.long_summary,
-                    COALESCE(e.embedding_text, t.embedding_text) as embedding_text,
-                    e.embedding_vector,
-                    e.embedding_generated_at,
-                    -- Neighborhood enrichment fields
-                    n.neighborhood_ids,
-                    n.neighborhood_names,
-                    n.primary_neighborhood_name
-                FROM transformed_wiki_temp t
-                LEFT JOIN embedding_data e ON t.page_id = e.page_id
-                LEFT JOIN neighborhood_mappings n ON t.page_id = n.page_id
-                ORDER BY t.page_id
-            """)
+                )"""
         else:
-            # No neighborhood mappings, create table with NULL fields for consistency
-            conn.execute(f"""
-                CREATE TABLE {output_table} AS
-                SELECT 
-                    t.id,
-                    t.page_id,
-                    t.location_id,
-                    t.title,
-                    t.url,
-                    t.categories,
-                    t.latitude,
-                    t.longitude,
-                    t.city,
-                    t.county,
-                    t.state,
-                    t.relevance_score,
-                    t.depth,
-                    t.crawled_at,
-                    t.html_file,
-                    t.file_hash,
-                    t.image_url,
-                    t.links_count,
-                    t.infobox_data,
-                    t.short_summary,
-                    t.long_summary,
-                    COALESCE(e.embedding_text, t.embedding_text) as embedding_text,
-                    e.embedding_vector,
-                    e.embedding_generated_at,
-                    -- NULL neighborhood fields for consistency
-                    CAST(NULL AS VARCHAR[]) as neighborhood_ids,
-                    CAST(NULL AS VARCHAR[]) as neighborhood_names,
-                    CAST(NULL AS VARCHAR) as primary_neighborhood_name
-                FROM transformed_wiki_temp t
-                LEFT JOIN embedding_data e ON t.page_id = e.page_id
-                ORDER BY t.page_id
-            """)
+            # Table doesn't exist - create empty CTE
+            neighborhoods_cte = """
+                neighborhoods AS (
+                    SELECT 
+                        NULL::INTEGER as page_id,
+                        ARRAY[]::VARCHAR[] as neighborhood_ids,
+                        ARRAY[]::VARCHAR[] as neighborhood_names,
+                        NULL::VARCHAR as primary_neighborhood_name
+                    WHERE FALSE
+                )"""
         
-        # Clean up temporary tables
-        conn.execute("DROP TABLE IF EXISTS transformed_wiki_temp")
-        conn.execute("DROP TABLE IF EXISTS embedding_data")
+        # Create final table with all CTEs - no temporary tables
+        conn.execute(f"""
+            CREATE TABLE {output_table} AS
+            WITH transformed_data AS (
+                {transformation_sql}
+            ),
+            {embeddings_cte},
+            {neighborhoods_cte}
+            SELECT 
+                t.id,
+                t.page_id,
+                t.location_id,
+                t.title,
+                t.url,
+                t.categories,
+                t.latitude,
+                t.longitude,
+                t.city,
+                t.county,
+                t.state,
+                t.relevance_score,
+                t.depth,
+                t.crawled_at,
+                t.html_file,
+                t.file_hash,
+                t.image_url,
+                t.links_count,
+                t.infobox_data,
+                t.short_summary,
+                t.long_summary,
+                t.embedding_text,
+                e.embedding_vector,
+                e.embedding_generated_at,
+                COALESCE(n.neighborhood_ids, ARRAY[]::VARCHAR[]) as neighborhood_ids,
+                COALESCE(n.neighborhood_names, ARRAY[]::VARCHAR[]) as neighborhood_names,
+                n.primary_neighborhood_name
+            FROM transformed_data t
+            LEFT JOIN embeddings e ON t.page_id = e.page_id
+            LEFT JOIN neighborhoods n ON t.page_id = n.page_id
+            ORDER BY t.page_id
+        """)
         
-        # Verify the output
+        # Log statistics
         output_count = conn.execute(f"SELECT COUNT(*) FROM {output_table}").fetchone()[0]
         embedding_count = conn.execute(f"SELECT COUNT(*) FROM {output_table} WHERE embedding_vector IS NOT NULL").fetchone()[0]
         
-        # Log enrichment statistics using utility
-        if has_neighborhoods:
-            enricher = NeighborhoodWikipediaEnricher(conn)
-            stats = enricher.get_enrichment_statistics(output_table)
-            if stats.articles_enriched > 0:
-                self.logger.info(f"Enriched {stats.articles_enriched} articles with neighborhood data from {stats.mapping_count} mappings")
+        # Log neighborhood enrichment stats
+        enricher = NeighborhoodWikipediaEnricher(conn)
+        stats = enricher.get_enrichment_statistics(output_table)
+        if stats.articles_enriched > 0:
+            self.logger.info(f"Enriched {stats.articles_enriched} articles with neighborhood data")
         
         self.logger.info(f"Transformed {output_count} Wikipedia articles from {input_table} to {output_table}")
-        self.logger.info(f"Successfully embedded {embedding_count}/{output_count} articles ({embedding_count*100/output_count:.1f}%)")
+        if output_count > 0:
+            self.logger.info(f"Successfully embedded {embedding_count}/{output_count} articles ({embedding_count*100/output_count:.1f}%)")
