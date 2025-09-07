@@ -138,24 +138,27 @@ class WikipediaSilverTransformer(SilverTransformer):
             indices_to_embed = []
             
             for idx, row in batch.iterrows():
-                text = row.get('embedding_text')
-                if text and len(str(text).strip()) > 50:
-                    texts_to_embed.append(text)
-                    indices_to_embed.append(idx)
+                # ALWAYS generate embeddings for Wikipedia articles
+                # The embedding_text is title + long_summary which should always exist
+                text = row.get('embedding_text', '')
+                texts_to_embed.append(str(text))
+                indices_to_embed.append(idx)
             
-            if texts_to_embed:
-                try:
-                    response = self.embedding_provider.generate_embeddings(texts_to_embed)
-                    for j, idx in enumerate(indices_to_embed):
-                        page_id = wiki_data.loc[idx, 'page_id']
-                        vector = response.embeddings[j]
-                        embeddings.append({
-                            'page_id': page_id,
-                            'vector': vector,
-                            'timestamp': current_timestamp
-                        })
-                except Exception as e:
-                    self.logger.error(f"Error generating embeddings: {e}")
+            # Always generate embeddings - no conditional needed
+            # Wikipedia articles MUST have embeddings for search to work
+            try:
+                response = self.embedding_provider.generate_embeddings(texts_to_embed)
+                for j, idx in enumerate(indices_to_embed):
+                    page_id = wiki_data.loc[idx, 'page_id']
+                    vector = response.embeddings[j]
+                    embeddings.append({
+                        'page_id': page_id,
+                        'vector': vector,
+                        'timestamp': current_timestamp
+                    })
+            except Exception as e:
+                self.logger.error(f"Critical error generating embeddings for batch: {e}")
+                raise RuntimeError(f"Failed to generate embeddings for Wikipedia articles: {e}")
         
         self.logger.info(f"Generated {len(embeddings)} embeddings")
         

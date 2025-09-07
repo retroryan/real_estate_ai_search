@@ -225,8 +225,22 @@ class WikipediaGoldEnricher(GoldEnricher):
             AND LENGTH(title) > 0
         """)
         
-        # Create view using Relation API
-        filtered.create_view(output_table)
+        # Deduplicate by page_id - keep the record with the highest article_quality_score
+        # This handles the duplicate page_ids in the source data
+        conn.execute(f"""
+            CREATE TABLE {output_table} AS
+            WITH ranked AS (
+                SELECT *, 
+                    ROW_NUMBER() OVER (
+                        PARTITION BY page_id 
+                        ORDER BY article_quality_score DESC, embedding_generated_at DESC NULLS LAST
+                    ) as rn
+                FROM ({filtered.sql_query()}) as filtered_data
+            )
+            SELECT * EXCLUDE (rn)
+            FROM ranked
+            WHERE rn = 1
+        """)
         
         # Track enrichments applied
         self.enrichments_applied.extend([

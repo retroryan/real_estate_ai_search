@@ -2,14 +2,13 @@
 
 import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 
 from squack_pipeline_v2.writers.elastic.base import ElasticsearchWriterBase
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.core.settings import PipelineSettings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +37,13 @@ class WikipediaDocument(BaseModel):
     city: str = ""
     state: str = ""
     
+    # Neighborhood association fields (from Gold layer)
+    neighborhood_ids: List[str] = Field(default_factory=list)
+    neighborhood_names: List[str] = Field(default_factory=list)
+    primary_neighborhood_name: str = ""
+    neighborhood_count: int = 0
+    has_neighborhood_association: bool = False
+    
     # Metadata fields
     categories: List[str] = Field(default_factory=list)
     key_topics: List[str] = Field(default_factory=list)
@@ -61,6 +67,13 @@ class WikipediaDocument(BaseModel):
 def transform_wikipedia(record: Dict[str, Any], embedding_model: str) -> WikipediaDocument:
     """Transform DuckDB Wikipedia record to Elasticsearch document.
     
+    Data types from gold_wikipedia:
+    - categories: VARCHAR (JSON string)
+    - key_topics: VARCHAR[] (array)
+    - neighborhood_ids: VARCHAR[] (array)
+    - neighborhood_names: VARCHAR[] (array)
+    - embedding_vector: DOUBLE[] (returned as tuple from DuckDB)
+    
     Args:
         record: Raw dictionary from DuckDB query
         embedding_model: Name of the embedding model used
@@ -68,54 +81,70 @@ def transform_wikipedia(record: Dict[str, Any], embedding_model: str) -> Wikiped
     Returns:
         WikipediaDocument ready for Elasticsearch
     """
-    # Parse categories from JSON string if present
+    # Parse categories from JSON string (categories is VARCHAR in Gold layer)
     categories = []
     categories_raw = record.get('categories')
     if categories_raw:
         try:
-            # Try to parse as JSON
-            parsed = json.loads(categories_raw)
-            categories = list(parsed) if parsed else []
+            # Categories is stored as JSON string in Gold layer
+            categories = json.loads(categories_raw) or []
         except (json.JSONDecodeError, TypeError, ValueError):
-            # Fallback to comma-separated
-            categories = [c.strip() for c in str(categories_raw).split(',') if c.strip()]
+            # Fallback for malformed JSON - split on comma
+            categories = [c.strip() for c in categories_raw.split(',') if c.strip()]
     
-    # Convert tuple embedding to list
-    embedding_vector = record.get('embedding_vector', tuple())
+    # Convert embedding to list for Elasticsearch
+    # DuckDB returns DOUBLE[] arrays - ensure it's a list for ES
+    embedding_vector = record.get('embedding_vector', [])
     embedding_list = list(embedding_vector) if embedding_vector else []
     
-    # Get embedding timestamp
+    # Get embedding timestamp - should always exist for Wikipedia
     embedded_at = record.get('embedding_generated_at')
     if not embedded_at:
-        embedded_at = datetime.now()
+        raise ValueError(f"Missing embedding_generated_at for page_id {record.get('page_id')}")
     
-    # Handle nullable datetime fields
-    content_loaded_at = record.get('content_loaded_at')
-    if not content_loaded_at:
-        content_loaded_at = datetime.now()
+    # Handle nullable datetime fields with defaults
+    content_loaded_at = record.get('content_loaded_at') or datetime.now()
+    last_updated = record.get('last_updated') or datetime.now()
     
-    last_updated = record.get('last_updated')
-    if not last_updated:
-        last_updated = datetime.now()
+    # Extract neighborhood fields - these are VARCHAR[] arrays from Gold layer
+    # DuckDB returns arrays as lists, None if NULL
+    neighborhood_ids = record.get('neighborhood_ids', []) or []
+    neighborhood_names = record.get('neighborhood_names', []) or []
+    primary_neighborhood_name = record.get('primary_neighborhood_name', '') or ''
+    neighborhood_count = record.get('neighborhood_count', 0) or 0
+    has_neighborhood_association = record.get('has_neighborhood_association', False) or False
     
-    # Create WikipediaDocument with all transformations
+    # key_topics is VARCHAR[] array from Gold layer
+    # DuckDB returns it as a list, None if NULL
+    key_topics = record.get('key_topics', []) or []
+    
+    # Create WikipediaDocument - let Pydantic handle validation
+    # page_id needs string conversion as ES requires string IDs
+    page_id_value = record.get('page_id')
+    page_id_str = f"{page_id_value}" if page_id_value is not None else ""
+    
     return WikipediaDocument(
-        page_id=str(record['page_id']),  # Convert int to string for ES
-        title=record['title'],
-        url=record.get('url', ''),
-        article_filename=record.get('article_filename', ''),
-        long_summary=record.get('long_summary', ''),
-        short_summary=record.get('short_summary', ''),
-        content_length=int(record.get('content_length', 0)),
-        content_loaded=bool(record.get('content_loaded', False)),
+        page_id=page_id_str,  # ES requires string IDs
+        title=record.get('title', '') or '',
+        url=record.get('url', '') or '',
+        article_filename=record.get('article_filename', '') or '',
+        long_summary=record.get('long_summary', '') or '',
+        short_summary=record.get('short_summary', '') or '',
+        content_length=record.get('content_length', 0) or 0,
+        content_loaded=record.get('content_loaded', False) or False,
         content_loaded_at=content_loaded_at,
-        city=record.get('city', ''),
-        state=record.get('state', ''),
+        city=record.get('city', '') or '',
+        state=record.get('state', '') or '',
+        neighborhood_ids=neighborhood_ids,
+        neighborhood_names=neighborhood_names,
+        primary_neighborhood_name=primary_neighborhood_name,
+        neighborhood_count=neighborhood_count,
+        has_neighborhood_association=has_neighborhood_association,
         categories=categories,
-        key_topics=record.get('key_topics', []),
-        relevance_score=float(record.get('relevance_score', 0.0)),
-        article_quality_score=float(record.get('article_quality_score', 0.0)),
-        article_quality=record.get('article_quality', ''),
+        key_topics=key_topics,
+        relevance_score=record.get('relevance_score', 0.0) or 0.0,
+        article_quality_score=record.get('article_quality_score', 0.0) or 0.0,
+        article_quality=record.get('article_quality', '') or '',
         last_updated=last_updated,
         embedding=embedding_list,
         embedding_model=embedding_model,

@@ -1,7 +1,7 @@
 """Neighborhood writer for Elasticsearch."""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -9,7 +9,6 @@ from squack_pipeline_v2.writers.elastic.base import ElasticsearchWriterBase
 from squack_pipeline_v2.writers.elastic.property import GeoPoint  # Reuse from property module
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.core.settings import PipelineSettings
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ class NeighborhoodDocument(BaseModel):
     
     # Complex fields
     demographics: Dict[str, Any] = Field(default_factory=dict)
-    wikipedia_correlations: Optional[Dict[str, Any]] = None
+    wikipedia_correlations: Dict[str, Any] = Field(default_factory=dict)
     
     # Embedding fields
     embedding: List[float] = Field(default_factory=list)
@@ -69,35 +68,48 @@ def transform_neighborhood(record: Dict[str, Any], embedding_model: str) -> Neig
     """
     # Build GeoPoint from center coordinates
     location = GeoPoint(
-        lat=float(record.get('center_latitude', 0.0)),
-        lon=float(record.get('center_longitude', 0.0))
+        lat=record.get('center_latitude', 0.0) or 0.0,
+        lon=record.get('center_longitude', 0.0) or 0.0
     )
     
-    # Convert tuple embedding to list
-    embedding_vector = record.get('embedding_vector', tuple())
+    # Convert embedding to list for Elasticsearch
+    embedding_vector = record.get('embedding_vector', [])
     embedding_list = list(embedding_vector) if embedding_vector else []
     
     # Get embedding timestamp
-    embedded_at = record.get('embedding_generated_at')
-    if not embedded_at:
-        embedded_at = datetime.now()
+    embedded_at = record.get('embedding_generated_at') or datetime.now()
     
-    # Create NeighborhoodDocument with all transformations
+    # Handle demographics JSON from DuckDB
+    import json
+    demographics_raw = record.get('demographics', {})
+    try:
+        demographics = json.loads(demographics_raw) if demographics_raw else {}
+    except (TypeError, json.JSONDecodeError):
+        demographics = demographics_raw or {}
+    
+    # Handle wikipedia_correlations JSON from DuckDB
+    correlations_raw = record.get('wikipedia_correlations')
+    try:
+        wikipedia_correlations = json.loads(correlations_raw) if correlations_raw else {}
+    except (TypeError, json.JSONDecodeError):
+        wikipedia_correlations = correlations_raw or {}
+    
+    # Create NeighborhoodDocument - let Pydantic handle validation
     return NeighborhoodDocument(
-        neighborhood_id=record['neighborhood_id'],
-        name=record['name'],
-        city=record['city'],
-        state=record['state'],
-        population=int(record.get('population', 0)),
-        walkability_score=float(record.get('walkability_score', 0.0)),
-        school_rating=float(record.get('school_rating', 0.0)),
-        overall_livability_score=float(record.get('overall_livability_score', 0.0)),
+        neighborhood_id=record.get('neighborhood_id', ''),
+        name=record.get('name', ''),
+        city=record.get('city', ''),
+        state=record.get('state', ''),
+        population=record.get('population', 0) or 0,  # Handle None without int()
+        walkability_score=record.get('walkability_score', 0.0) or 0.0,
+        school_rating=record.get('school_rating', 0.0) or 0.0,
+        overall_livability_score=record.get('overall_livability_score', 0.0) or 0.0,
         location=location,
         description=record.get('description', ''),
-        amenities=record.get('amenities', []),
-        lifestyle_tags=record.get('lifestyle_tags', []),
-        demographics=record.get('demographics', {}),
-        wikipedia_correlations=record.get('wikipedia_correlations'),
+        amenities=record.get('amenities', []) or [],
+        lifestyle_tags=record.get('lifestyle_tags', []) or [],
+        demographics=demographics,
+        wikipedia_correlations=wikipedia_correlations,
         embedding=embedding_list,
         embedding_model=embedding_model,
         embedding_dimension=len(embedding_list),

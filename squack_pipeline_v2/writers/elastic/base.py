@@ -85,26 +85,22 @@ class ElasticsearchWriterBase:
         Returns:
             Indexing statistics
         """
-        # Get total count
-        count_query = f"SELECT COUNT(*) FROM ({query}) t"
-        total_records = self.connection_manager.execute(count_query).fetchone()[0]
+        # Execute query once and stream results
+        results = self.connection_manager.execute(query)
         
-        logger.info(f"Indexing {total_records} documents to {index_name}")
+        # Get column names for dict conversion
+        columns = [desc[0] for desc in results.description]
+        
+        logger.info(f"Starting indexing to {index_name}")
         
         indexed = 0
         errors = 0
         validation_errors = 0
-        offset = 0
         start_time = datetime.now()
         
-        while offset < total_records:
-            # Fetch batch
-            batch_query = f"{query} LIMIT {batch_size} OFFSET {offset}"
-            results = self.connection_manager.execute(batch_query)
-            
-            # Get column names and rows
-            columns = [desc[0] for desc in results.description]
-            rows = results.fetchall()
+        while True:
+            # Fetch batch using DuckDB's efficient fetchmany
+            rows = results.fetchmany(batch_size)
             
             if not rows:
                 break
@@ -158,17 +154,14 @@ class ElasticsearchWriterBase:
                     logger.error(f"Bulk indexing error: {e}")
                     errors += len(actions)
             
-            offset += batch_size
-            
-            if indexed > 0 and indexed % 100 == 0:
-                logger.info(f"Indexed {indexed}/{total_records} documents")
+            if indexed > 0 and indexed % 1000 == 0:
+                logger.info(f"Indexed {indexed} documents to {index_name}")
         
         duration = (datetime.now() - start_time).total_seconds()
         self.documents_indexed += indexed
         
         stats = {
             "index": index_name,
-            "total_records": total_records,
             "indexed": indexed,
             "errors": errors,
             "validation_errors": validation_errors,
@@ -176,6 +169,6 @@ class ElasticsearchWriterBase:
             "docs_per_second": round(indexed / duration) if duration > 0 else 0
         }
         
-        logger.info(f"Completed indexing to {index_name}: {indexed}/{total_records} documents")
+        logger.info(f"Completed indexing to {index_name}: {indexed} documents indexed")
         
         return stats

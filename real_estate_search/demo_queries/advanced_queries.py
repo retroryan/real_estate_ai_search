@@ -718,7 +718,8 @@ def demo_wikipedia_search(
         
         "_source": [
             "page_id", "title", "url", "short_summary", "long_summary", "city", "state",
-            "location", "article_quality_score", "topics", "full_content"
+            "location", "article_quality_score", "topics", "full_content",
+            "neighborhood_ids", "neighborhood_names", "primary_neighborhood_name", "has_neighborhood_association"
         ],
         
         # HIGHLIGHTING: Show matching content
@@ -840,6 +841,173 @@ def demo_wikipedia_search(
                 title="[bold]📚 Search Results[/bold]",
                 border_style="green"
             ))
+            
+            # NEW: Search for Wikipedia articles with neighborhood associations
+            console.print("\n[bold cyan]🏘️ Articles with Neighborhood Associations[/bold cyan]")
+            
+            neighborhood_query = {
+                "query": {
+                    "bool": {
+                        "filter": [
+                            {"term": {"has_neighborhood_association": True}}
+                        ]
+                    }
+                },
+                "size": 10,
+                "_source": ["page_id", "title", "city", "state", "neighborhood_ids", "neighborhood_names", "primary_neighborhood_name"],
+                "sort": [
+                    {"neighborhood_count": {"order": "desc", "missing": "_last"}},
+                    "_score"
+                ]
+            }
+            
+            # Add location filter if provided
+            # For San Francisco, also search for articles where title contains "San Francisco"
+            # since many SF neighborhood articles have the neighborhood name as city
+            if city:
+                if "San Francisco" in city:
+                    # Special handling for SF - look for title containing SF or city=SF
+                    neighborhood_query["query"]["bool"]["filter"].append({
+                        "bool": {
+                            "should": [
+                                {"match": {"city": city}},
+                                {"match_phrase": {"title": "San Francisco"}},
+                                {"terms": {"city": ["Mission District", "Pacific Heights", 
+                                                   "Sunset District", "Noe Valley", "SOMA"]}}
+                            ],
+                            "minimum_should_match": 1
+                        }
+                    })
+                else:
+                    neighborhood_query["query"]["bool"]["filter"].append({
+                        "match": {"city": city}
+                    })
+            if state:
+                neighborhood_query["query"]["bool"]["filter"].append({
+                    "match": {"state": state}
+                })
+            
+            try:
+                with console.status("[yellow]Searching for neighborhood-associated articles...[/yellow]"):
+                    neighborhood_response = es_client.search(index="wikipedia", body=neighborhood_query)
+                
+                if neighborhood_response['hits']['hits']:
+                    # Create neighborhood table
+                    neigh_table = Table(
+                        title=f"[bold green]Found {len(neighborhood_response['hits']['hits'])} Articles with Neighborhoods[/bold green]",
+                        box=box.SIMPLE,
+                        show_header=True,
+                        header_style="bold cyan",
+                        show_lines=False
+                    )
+                    neigh_table.add_column("Title", style="cyan")
+                    neigh_table.add_column("Location", style="green", no_wrap=True)
+                    neigh_table.add_column("Neighborhoods", style="yellow")
+                    
+                    for hit in neighborhood_response['hits']['hits']:
+                        article = hit['_source']
+                        location = f"{article.get('city', 'N/A')}, {article.get('state', 'N/A')}"
+                        neighborhoods = article.get('neighborhood_names', [])
+                        neigh_display = ', '.join(neighborhoods[:3])
+                        if len(neighborhoods) > 3:
+                            neigh_display += f" (+{len(neighborhoods) - 3} more)"
+                        
+                        neigh_table.add_row(
+                            article.get('title', 'N/A'),
+                            location,
+                            neigh_display or 'N/A'
+                        )
+                    
+                    console.print(neigh_table)
+                else:
+                    console.print(f"[yellow]No articles with neighborhood associations found in {city}, {state}[/yellow]")
+            except Exception as e:
+                console.print(f"[red]Error searching for neighborhood associations: {e}[/red]")
+            
+            # NEW: Search for specific neighborhood - Temescal
+            console.print("\n[bold cyan]🔍 Searching for Temescal Neighborhood[/bold cyan]")
+            
+            temescal_query = {
+                "query": {
+                    "bool": {
+                        "should": [
+                            # Search in neighborhood_names array
+                            {"match": {"neighborhood_names": "Temescal"}},
+                            # Search in title
+                            {"match_phrase": {"title": "Temescal"}},
+                            # Search in content
+                            {"match": {"long_summary": "Temescal"}},
+                            # Search by neighborhood ID
+                            {"term": {"neighborhood_ids": "oak-temescal-006"}}
+                        ],
+                        "minimum_should_match": 1
+                    }
+                },
+                "size": 5,
+                "_source": ["page_id", "title", "city", "state", "neighborhood_ids", "neighborhood_names", "short_summary"],
+                "highlight": {
+                    "fields": {
+                        "title": {},
+                        "long_summary": {"fragment_size": 150},
+                        "neighborhood_names": {}
+                    }
+                }
+            }
+            
+            try:
+                with console.status("[yellow]Searching for Temescal-related articles...[/yellow]"):
+                    temescal_response = es_client.search(index="wikipedia", body=temescal_query)
+                
+                if temescal_response['hits']['hits']:
+                    # Create Temescal results table
+                    temescal_table = Table(
+                        title=f"[bold green]Found {len(temescal_response['hits']['hits'])} Temescal-Related Articles[/bold green]",
+                        box=box.SIMPLE,
+                        show_header=True,
+                        header_style="bold cyan",
+                        show_lines=False
+                    )
+                    temescal_table.add_column("Title", style="cyan")
+                    temescal_table.add_column("Location", style="green", no_wrap=True)
+                    temescal_table.add_column("Summary", style="yellow", overflow="fold")
+                    
+                    for hit in temescal_response['hits']['hits']:
+                        article = hit['_source']
+                        location = f"{article.get('city', 'N/A')}, {article.get('state', 'N/A')}"
+                        
+                        # Use highlight if available, otherwise use short_summary
+                        summary = article.get('short_summary', '')[:100]
+                        if 'highlight' in hit:
+                            if 'long_summary' in hit['highlight']:
+                                summary = hit['highlight']['long_summary'][0]
+                            elif 'title' in hit['highlight']:
+                                summary = f"Title match: {hit['highlight']['title'][0]}"
+                        
+                        temescal_table.add_row(
+                            article.get('title', 'N/A'),
+                            location,
+                            summary + "..." if len(summary) > 100 else summary
+                        )
+                    
+                    console.print(temescal_table)
+                    
+                    # Show which fields matched
+                    console.print("\n[dim]Match details:[/dim]")
+                    for hit in temescal_response['hits']['hits']:
+                        article = hit['_source']
+                        matches = []
+                        if 'Temescal' in str(article.get('neighborhood_names', [])):
+                            matches.append("neighborhood_names")
+                        if 'Temescal' in article.get('title', ''):
+                            matches.append("title")
+                        if 'oak-temescal-006' in str(article.get('neighborhood_ids', [])):
+                            matches.append("neighborhood_id")
+                        if matches:
+                            console.print(f"  [dim]• {article.get('title')}: matched on {', '.join(matches)}[/dim]")
+                else:
+                    console.print("[yellow]No articles found related to Temescal neighborhood[/yellow]")
+            except Exception as e:
+                console.print(f"[red]Error searching for Temescal: {e}[/red]")
         else:
             console.print(Panel(
                 f"[yellow]No Wikipedia articles found for {city}, {state}[/yellow]",

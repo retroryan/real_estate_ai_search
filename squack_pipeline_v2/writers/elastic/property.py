@@ -1,14 +1,13 @@
 """Property writer for Elasticsearch."""
 
 import logging
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, date
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Dict, Any, List
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 from squack_pipeline_v2.writers.elastic.base import ElasticsearchWriterBase
 from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.core.settings import PipelineSettings
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +98,21 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
         PropertyDocument ready for Elasticsearch
     """
     # Extract and transform address data
-    address_data = record.get('address', {})
+    # DuckDB returns JSON as string, need to parse it
+    import json
+    address_raw = record.get('address', {})
+    try:
+        # Try to parse as JSON string first (from DuckDB)
+        address_data = json.loads(address_raw) if address_raw else {}
+    except (TypeError, json.JSONDecodeError):
+        # Already a dict (from direct Python call)
+        address_data = address_raw or {}
     location_array = address_data.get('location', [0, 0])
     
     # Build GeoPoint from location array [lon, lat]
     geo_point = GeoPoint(
-        lat=float(location_array[1]) if len(location_array) > 1 else 0.0,
-        lon=float(location_array[0]) if len(location_array) > 0 else 0.0
+        lat=location_array[1] if len(location_array) > 1 else 0.0,
+        lon=location_array[0] if len(location_array) > 0 else 0.0
     )
     
     # Build AddressInfo
@@ -118,7 +125,14 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
     )
     
     # Build ParkingInfo
-    parking_data = record.get('parking', {})
+    # DuckDB returns JSON as string, need to parse it
+    parking_raw = record.get('parking', {})
+    try:
+        # Try to parse as JSON string first (from DuckDB)
+        parking_data = json.loads(parking_raw) if parking_raw else {}
+    except (TypeError, json.JSONDecodeError):
+        # Already a dict (from direct Python call)
+        parking_data = parking_raw or {}
     parking = ParkingInfo(
         spaces=parking_data.get('spaces', 0),
         type=parking_data.get('type', 'none')
@@ -134,8 +148,8 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
         except AttributeError:
             listing_date_str = str(listing_date_raw)
     
-    # Convert tuple embedding to list
-    embedding_vector = record.get('embedding_vector', tuple())
+    # Convert embedding to list for Elasticsearch
+    embedding_vector = record.get('embedding_vector', [])
     embedding_list = list(embedding_vector) if embedding_vector else []
     
     # Get embedding timestamp
@@ -143,29 +157,29 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
     if not embedded_at:
         embedded_at = datetime.now()
     
-    # Create PropertyDocument with all transformations
+    # Create PropertyDocument - let Pydantic handle validation
     return PropertyDocument(
-        listing_id=record['listing_id'],
+        listing_id=record.get('listing_id', ''),
         neighborhood_id=record.get('neighborhood_id', ''),
-        price=float(record['price']),
-        bedrooms=int(record['bedrooms']),
-        bathrooms=float(record['bathrooms']),
-        square_feet=int(record['square_feet']),
-        property_type=record['property_type'],
-        year_built=int(record.get('year_built', 0)),
-        lot_size=int(record.get('lot_size', 0)),
+        price=record.get('price', 0.0) or 0.0,
+        bedrooms=record.get('bedrooms', 0) or 0,
+        bathrooms=record.get('bathrooms', 0.0) or 0.0,
+        square_feet=record.get('square_feet', 0) or 0,
+        property_type=record.get('property_type', ''),
+        year_built=record.get('year_built', 0) or 0,
+        lot_size=record.get('lot_size', 0) or 0,
         address=address,
-        price_per_sqft=float(record.get('price_per_sqft', 0.0)),
+        price_per_sqft=record.get('price_per_sqft', 0.0) or 0.0,
         parking=parking,
         description=record.get('description', ''),
-        features=record.get('features', []),
-        amenities=record.get('amenities', []),
-        status=record.get('status', 'active'),
-        search_tags=record.get('search_tags', []),
+        features=record.get('features', []) or [],
+        amenities=record.get('amenities', []) or [],
+        status=record.get('status', 'active') or 'active',
+        search_tags=record.get('search_tags', []) or [],
         listing_date=listing_date_str,
-        days_on_market=int(record.get('days_on_market', 0)),
+        days_on_market=record.get('days_on_market', 0) or 0,
         virtual_tour_url=record.get('virtual_tour_url', ''),
-        images=record.get('images', []),
+        images=record.get('images', []) or [],
         embedding=embedding_list,
         embedding_model=embedding_model,
         embedding_dimension=len(embedding_list),

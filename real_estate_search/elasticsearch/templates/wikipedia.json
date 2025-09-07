@@ -52,9 +52,34 @@
     "content_loaded_at": {
       "type": "date"
     },
-    "neighborhood": {
-      "type": "keyword",
-      "normalizer": "lowercase_normalizer"
+    "neighborhood_ids": {
+      "type": "keyword"
+    },
+    "neighborhood_names": {
+      "type": "text",
+      "analyzer": "english",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        }
+      }
+    },
+    "primary_neighborhood_name": {
+      "type": "text",
+      "analyzer": "english",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        }
+      }
+    },
+    "neighborhood_count": {
+      "type": "integer"
+    },
+    "has_neighborhood_association": {
+      "type": "boolean"
     },
     "city": {
       "type": "keyword",
