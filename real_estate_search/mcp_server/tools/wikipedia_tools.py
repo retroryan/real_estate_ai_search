@@ -46,15 +46,24 @@ async def search_wikipedia(
         if not wikipedia_search_service:
             raise ValueError("Wikipedia search service not available")
         
+        # Map search_in to search_type enum
+        if search_in == "full":
+            search_type_enum = "full_text"
+        elif search_in == "summaries":
+            search_type_enum = "summaries"
+        elif search_in == "chunks":
+            search_type_enum = "chunks"
+        else:
+            search_type_enum = "full_text"
+            
+        from ...search_service.models import WikipediaSearchType
+        
         # Create search request
         request = WikipediaSearchRequest(
             query=query,
-            search_in=search_in,
-            city=city,
-            state=state,
+            search_type=WikipediaSearchType(search_type_enum),
             categories=categories,
             size=min(size, 50),  # Cap at 50
-            search_type=search_type,
             include_highlights=True
         )
         

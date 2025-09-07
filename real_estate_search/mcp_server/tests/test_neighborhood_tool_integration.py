@@ -34,28 +34,23 @@ async def test_neighborhood_tool_uses_search_service_directly():
     # Create mock context with search_service
     mock_neighborhood_service = Mock(spec=NeighborhoodSearchService)
     mock_response = NeighborhoodSearchResponse(
-        neighborhoods=[
+        results=[
             NeighborhoodResult(
                 name="Mission District",
-                city="San Francisco",
+                city="San Francisco", 
                 state="CA",
-                population=45000,
-                median_income=85000,
-                description="Vibrant neighborhood"
+                description="Vibrant neighborhood",
+                score=0.92
             )
         ],
         total_hits=1,
+        execution_time_ms=85,
         statistics=NeighborhoodStatistics(
-            avg_price=1200000,
-            median_price=1100000,
             total_properties=500,
-            price_range={"min": 500000, "max": 5000000}
-        ),
-        request=NeighborhoodSearchRequest(
-            city="San Francisco",
-            state="CA",
-            include_properties=True,
-            include_wikipedia=True
+            avg_price=1200000.0,
+            avg_bedrooms=2.5,
+            avg_square_feet=1800.0,
+            property_types={"House": 300, "Condo": 150, "Townhouse": 50}
         )
     )
     mock_neighborhood_service.search.return_value = mock_response
@@ -68,16 +63,15 @@ async def test_neighborhood_tool_uses_search_service_directly():
         context=context,
         city="San Francisco",
         state="CA",
-        include_properties=True,
-        include_wikipedia=True,
+        include_related_properties=True,
+        include_related_wikipedia=True,
         size=10
     )
     
     # Verify it returns search_service response format directly
-    assert "neighborhoods" in result
+    assert "results" in result
     assert "total_hits" in result
-    assert "property_stats" in result
-    assert "request" in result
+    assert "execution_time_ms" in result
     
     # Verify the service was called with search_service models
     mock_neighborhood_service.search.assert_called_once()
