@@ -55,16 +55,19 @@ class BaseSearchService:
         try:
             start_time = datetime.now()
             
-            response = self.es_client.search(
+            # Use the new API without 'body' parameter (deprecated)
+            es_response = self.es_client.search(
                 index=index,
-                body={
-                    **query,
-                    "size": size,
-                    "from": from_offset
-                }
+                **query,
+                size=size,
+                from_=from_offset
             )
             
             execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            # Create a new dict with the response body and add execution time
+            # ObjectApiResponse is immutable, so we need to create a new dict
+            response = dict(es_response.body)
             response['execution_time_ms'] = execution_time_ms
             
             self.logger.debug(
@@ -104,6 +107,7 @@ class BaseSearchService:
                 params["_source"] = source_fields
                 
             response = self.es_client.get(**params)
+            # ObjectApiResponse delegates to body, which is a dict
             return response.get("_source")
             
         except Exception as e:
@@ -129,7 +133,9 @@ class BaseSearchService:
                 body.append({"index": index})
                 body.append(query)
             
+            # msearch still uses body parameter
             response = self.es_client.msearch(body=body)
+            # ObjectApiResponse delegates to body, which is a dict
             return response.get("responses", [])
             
         except Exception as e:
@@ -209,9 +215,6 @@ class BaseSearchService:
         hits = response.get("hits", {})
         total = hits.get("total", {})
         
-        if isinstance(total, dict):
-            return total.get("value", 0)
-        elif isinstance(total, int):
-            return total
-        else:
-            return 0
+        # Elasticsearch 7+ always returns total as dict with 'value' field
+        # We directly access it without type checking
+        return total.get("value", 0) if total else 0

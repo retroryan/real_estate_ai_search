@@ -56,16 +56,19 @@ class BaseMCPDemo(ABC):
         
         try:
             # Execute the MCP tool call
+            # Remove include_location_extraction as it's not supported by the new API
+            params = request.model_dump(exclude_none=True)
+            params.pop('include_location_extraction', None)
             response_data = await self.client.call_tool(
-                "search_properties",
-                request.model_dump(exclude_none=True)
+                "search_properties_with_filters",
+                params
             )
             
             end_time = time.time()
             execution_time = (end_time - start_time) * 1000
             
             # Check if this is an error response
-            if "error" in response_data and "properties" not in response_data:
+            if "error" in response_data and "results" not in response_data:
                 # Handle error response - create a minimal valid response
                 error_response = HybridSearchResponse(
                     properties=[],
@@ -79,8 +82,49 @@ class BaseMCPDemo(ABC):
                 self.console.print(f"[yellow]⚠️ Server returned error: {response_data.get('error')}[/yellow]")
                 return error_response
             
-            # Validate and parse response using Pydantic
-            response = HybridSearchResponse(**response_data)
+            # Transform PropertySearchResponse to HybridSearchResponse format
+            # The new format has 'results' instead of 'properties' and 'total_hits' instead of 'total_results'
+            if "results" in response_data and "properties" not in response_data:
+                # Transform PropertyResult to HybridProperty format
+                from .models.hybrid_search import HybridProperty, HybridPropertyAddress
+                
+                properties = []
+                for result in response_data.get("results", []):
+                    # Create HybridPropertyAddress from PropertyAddress
+                    address = HybridPropertyAddress(
+                        street=result["address"]["street"],
+                        city=result["address"]["city"],
+                        state=result["address"]["state"],
+                        zip_code=result["address"]["zip_code"]
+                    )
+                    
+                    # Create HybridProperty from PropertyResult
+                    property_obj = HybridProperty(
+                        listing_id=result["listing_id"],
+                        property_type=result["property_type"],
+                        price=result["price"],
+                        bedrooms=result["bedrooms"],
+                        bathrooms=result["bathrooms"],
+                        square_feet=result.get("square_feet"),
+                        address=address,
+                        description=result["description"],
+                        features=result.get("features", []),
+                        score=result["score"]
+                    )
+                    properties.append(property_obj)
+                
+                # Create HybridSearchResponse with transformed data
+                response = HybridSearchResponse(
+                    properties=properties,
+                    total_results=response_data.get("total_hits", 0),
+                    returned_results=len(properties),
+                    execution_time_ms=response_data.get("execution_time_ms", int(execution_time)),
+                    query=request.query,
+                    location_extracted=None  # The new API doesn't provide location extraction
+                )
+            else:
+                # Try to parse as-is (for backward compatibility)
+                response = HybridSearchResponse(**response_data)
             
             # Collect performance metrics
             server_time = response.execution_time_ms

@@ -296,33 +296,126 @@
       }
     },
     {
-      "name": "search_properties",
-      "description": "PREFERRED: Search properties using natural language queries with AI understanding.",
+      "name": "search_neighborhoods",
+      "description": "Search for neighborhoods and related information using Wikipedia data.",
       "parameters": {
         "properties": {
           "query": {
-            "title": "Query",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Query"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State"
+          },
+          "include_statistics": {
+            "default": false,
+            "title": "Include Statistics",
+            "type": "boolean"
+          },
+          "include_related_properties": {
+            "default": false,
+            "title": "Include Related Properties",
+            "type": "boolean"
+          },
+          "include_related_wikipedia": {
+            "default": false,
+            "title": "Include Related Wikipedia",
+            "type": "boolean"
           },
           "size": {
             "default": 10,
             "title": "Size",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_neighborhoods_by_location",
+      "description": "Search for neighborhoods in a specific city with property statistics.",
+      "parameters": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
           },
-          "include_location_extraction": {
-            "default": false,
-            "title": "Include Location Extraction",
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State"
+          },
+          "include_statistics": {
+            "default": true,
+            "title": "Include Statistics",
             "type": "boolean"
+          },
+          "size": {
+            "default": 10,
+            "title": "Size",
+            "type": "integer"
           }
         },
         "required": [
-          "query"
+          "city"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_wikipedia_article",
+      "description": "Get complete Wikipedia article details by page ID.",
+      "parameters": {
+        "properties": {
+          "page_id": {
+            "title": "Page Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_id"
         ],
         "type": "object"
       }
     }
   ],
-  "total_count": 7,
+  "total_count": 9,
   "server_name": "MCP Server",
-  "discovery_time_ms": 46.833038330078125
+  "discovery_time_ms": 35.63880920410156
 }

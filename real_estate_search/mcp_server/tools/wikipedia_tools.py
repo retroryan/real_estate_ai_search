@@ -3,7 +3,7 @@
 from typing import Dict, Any, Optional, List
 from fastmcp import Context
 
-from ...search_service.models import WikipediaSearchRequest
+from ...search_service.models import WikipediaSearchRequest, WikipediaSearchType
 from ...search_service.wikipedia import WikipediaSearchService
 from ..utils.logging import get_request_logger
 
@@ -48,20 +48,18 @@ async def search_wikipedia(
         
         # Map search_in to search_type enum
         if search_in == "full":
-            search_type_enum = "full_text"
+            search_type_enum = WikipediaSearchType.FULL_TEXT
         elif search_in == "summaries":
-            search_type_enum = "summaries"
+            search_type_enum = WikipediaSearchType.SUMMARIES
         elif search_in == "chunks":
-            search_type_enum = "chunks"
+            search_type_enum = WikipediaSearchType.CHUNKS
         else:
-            search_type_enum = "full_text"
-            
-        from ...search_service.models import WikipediaSearchType
+            search_type_enum = WikipediaSearchType.FULL_TEXT
         
         # Create search request
         request = WikipediaSearchRequest(
             query=query,
-            search_type=WikipediaSearchType(search_type_enum),
+            search_type=search_type_enum,
             categories=categories,
             size=min(size, 50),  # Cap at 50
             include_highlights=True
@@ -200,11 +198,8 @@ async def search_wikipedia_by_location(
         # Create search request
         request = WikipediaSearchRequest(
             query=search_query,
-            search_in="full",
-            city=city,
-            state=state,
             size=min(size, 20),
-            search_type="hybrid",
+            search_type=WikipediaSearchType.FULL_TEXT,
             include_highlights=True
         )
         
@@ -214,30 +209,28 @@ async def search_wikipedia_by_location(
         # Format response focusing on location relevance
         articles = []
         for article in response.results:
+            # WikipediaResult is a Pydantic model, access attributes directly
             article_data = {
-                "page_id": article.get("page_id"),
-                "title": article.get("title"),
-                "short_summary": article.get("short_summary", "")[:300],
+                "page_id": article.page_id,
+                "title": article.title,
+                "short_summary": article.summary[:300] if article.summary else "",
                 "location_match": {
-                    "city": article.get("city"),
-                    "state": article.get("state"),
-                    "coordinates": {
-                        "lat": article.get("latitude"),
-                        "lon": article.get("longitude")
-                    } if article.get("latitude") and article.get("longitude") else None
+                    "city": None,  # These fields aren't in WikipediaResult
+                    "state": None,
+                    "coordinates": None
                 },
-                "key_topics": article.get("key_topics", [])[:10],  # Limit topics
-                "score": article.get("_score"),
-                "highlights": article.get("_highlights", {})
+                "key_topics": [],  # Not in WikipediaResult
+                "score": article.score,
+                "highlights": article.highlights if article.highlights else []
             }
             articles.append(article_data)
         
         return {
             "location": {"city": city, "state": state},
             "search_query": search_query,
-            "total_results": response.metadata.total_hits,
-            "returned_results": response.metadata.returned_hits,
-            "execution_time_ms": response.metadata.execution_time_ms,
+            "total_results": response.total_hits,
+            "returned_results": len(response.results),
+            "execution_time_ms": response.execution_time_ms,
             "articles": articles
         }
         
