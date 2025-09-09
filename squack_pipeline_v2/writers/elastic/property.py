@@ -63,7 +63,6 @@ class PropertyDocument(BaseModel):
     # Text and list fields
     description: str = ""
     features: List[str] = Field(default_factory=list)
-    amenities: List[str] = Field(default_factory=list)
     status: str = "active"
     search_tags: List[str] = Field(default_factory=list)
     
@@ -173,7 +172,6 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
         parking=parking,
         description=record.get('description', ''),
         features=record.get('features', []) or [],
-        amenities=record.get('amenities', []) or [],
         status=record.get('status', 'active') or 'active',
         search_tags=record.get('search_tags', []) or [],
         listing_date=listing_date_str,

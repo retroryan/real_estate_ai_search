@@ -13,28 +13,24 @@ if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     from real_estate_search.mcp_server.settings import MCPServerConfig
     from real_estate_search.mcp_server.services.elasticsearch_client import ElasticsearchClient
-    from real_estate_search.embeddings import QueryEmbeddingService, EmbeddingConfig
-    from real_estate_search.mcp_server.services.property_search import PropertySearchService
-    from real_estate_search.mcp_server.services.wikipedia_search import WikipediaSearchService
+    from real_estate_search.search_service.properties import PropertySearchService
+    from real_estate_search.search_service.wikipedia import WikipediaSearchService
+    from real_estate_search.search_service.neighborhoods import NeighborhoodSearchService
     from real_estate_search.mcp_server.services.health_check import HealthCheckService
     from real_estate_search.mcp_server.utils.logging import setup_logging, get_logger
-    from real_estate_search.mcp_server.tools import property_tools
-    from real_estate_search.mcp_server.tools import wikipedia_tools
-    from real_estate_search.mcp_server.tools import hybrid_search_tool
-    from real_estate_search.hybrid import HybridSearchEngine
+    from real_estate_search.mcp_server.tool_registry import ToolRegistry
+    from real_estate_search.embeddings import QueryEmbeddingService
 else:
     # Running as module
     from .settings import MCPServerConfig
     from .services.elasticsearch_client import ElasticsearchClient
-    from ..embeddings import QueryEmbeddingService, EmbeddingConfig
-    from .services.property_search import PropertySearchService
-    from .services.wikipedia_search import WikipediaSearchService
+    from ..search_service.properties import PropertySearchService
+    from ..search_service.wikipedia import WikipediaSearchService
+    from ..search_service.neighborhoods import NeighborhoodSearchService
     from .services.health_check import HealthCheckService
     from .utils.logging import setup_logging, get_logger
-    from .tools import property_tools
-    from .tools import wikipedia_tools
-    from .tools import hybrid_search_tool
-    from ..hybrid import HybridSearchEngine
+    from .tool_registry import ToolRegistry
+    from ..embeddings import QueryEmbeddingService
 
 
 logger = get_logger(__name__)
@@ -64,14 +60,14 @@ class MCPServer:
         self.embedding_service: Optional[QueryEmbeddingService] = None
         self.property_search_service: Optional[PropertySearchService] = None
         self.wikipedia_search_service: Optional[WikipediaSearchService] = None
+        self.neighborhood_search_service: Optional[NeighborhoodSearchService] = None
         self.health_check_service: Optional[HealthCheckService] = None
-        self.hybrid_search_engine: Optional[HybridSearchEngine] = None
         
         # Initialize FastMCP app
         self.app = FastMCP(self.config.server_name)
         
-        # Register tools
-        self._register_tools()
+        # Initialize tool registry
+        self.tool_registry = ToolRegistry(self.app)
     
     def _initialize_services(self):
         """Initialize all services."""
@@ -82,26 +78,26 @@ class MCPServer:
             self.es_client = ElasticsearchClient(self.config.elasticsearch)
             logger.info("Elasticsearch client initialized")
             
-            # Embedding service
-            embedding_config = EmbeddingConfig()  # Uses defaults and loads API key from env
-            self.embedding_service = QueryEmbeddingService(config=embedding_config)
-            self.embedding_service.initialize()
-            logger.info(f"Embedding service initialized with {embedding_config.provider}")
+            # Embedding service - use config directly from AppConfig
+            self.embedding_service = QueryEmbeddingService(config=self.config.embedding)
+            self.embedding_service.initialize()  # Initialize the embedding model
+            logger.info("Embedding service initialized")
             
-            # Search services
+            # Search services - directly use search_service implementations
             self.property_search_service = PropertySearchService(
-                self.config,
-                self.es_client,
-                self.embedding_service
+                es_client=self.es_client.client
             )
             logger.info("Property search service initialized")
             
             self.wikipedia_search_service = WikipediaSearchService(
-                self.config,
-                self.es_client,
-                self.embedding_service
+                es_client=self.es_client.client
             )
             logger.info("Wikipedia search service initialized")
+            
+            self.neighborhood_search_service = NeighborhoodSearchService(
+                es_client=self.es_client.client
+            )
+            logger.info("Neighborhood search service initialized")
             
             # Health check service
             self.health_check_service = HealthCheckService(
@@ -110,13 +106,6 @@ class MCPServer:
             )
             logger.info("Health check service initialized")
             
-            # Hybrid search engine
-            self.hybrid_search_engine = HybridSearchEngine(
-                es_client=self.es_client.client,
-                config=None  # Uses default AppConfig
-            )
-            logger.info("Hybrid search engine initialized")
-            
             logger.info("All services initialized successfully")
             
         except Exception as e:
@@ -124,309 +113,8 @@ class MCPServer:
             raise
     
     def _register_tools(self):
-        """Register MCP tools."""
-        logger.info("Registering MCP tools")
-        
-        # Property search with explicit filters tool
-        @self.app.tool(
-            name="search_properties_with_filters",
-            description="Search properties when you have SPECIFIC filter requirements (price, bedrooms, location).",
-            tags={"property", "search", "filters", "real_estate"}
-        )
-        async def search_properties_with_filters(
-            query: str,
-            property_type: Optional[str] = None,
-            min_price: Optional[float] = None,
-            max_price: Optional[float] = None,
-            min_bedrooms: Optional[int] = None,
-            max_bedrooms: Optional[int] = None,
-            city: Optional[str] = None,
-            state: Optional[str] = None,
-            size: int = 20,
-            search_type: Literal["hybrid", "semantic", "text"] = "hybrid"
-        ) -> Dict[str, Any]:
-            """Search properties with EXPLICIT filters.
-            
-            USE THIS TOOL ONLY WHEN:
-            • You have specific price ranges, bedroom counts, or property types
-            • You need precise filter control
-            • The user explicitly provides filter values
-            
-            For general natural language searches, use 'search_properties' instead.
-            
-            Args:
-                query: Search description (can be simple since you're using filters)
-                property_type: Specific type filter (House, Condo, Townhouse, etc.)
-                min_price: Minimum price requirement
-                max_price: Maximum price requirement
-                min_bedrooms: Minimum bedrooms required
-                max_bedrooms: Maximum bedrooms required
-                city: Specific city filter
-                state: Specific state filter (2-letter code)
-                size: Number of results (1-100, default 20)
-                search_type: "hybrid", "semantic", or "text"
-                
-            Returns:
-                Properties matching your filters and query
-            """
-            try:
-                return await property_tools.search_properties(
-                    self._create_context(),
-                    query=query,
-                    property_type=property_type,
-                    min_price=min_price,
-                    max_price=max_price,
-                    min_bedrooms=min_bedrooms,
-                    max_bedrooms=max_bedrooms,
-                    city=city,
-                    state=state,
-                    size=size,
-                    search_type=search_type
-                )
-            except Exception as e:
-                logger.error(f"Property search with filters failed: {e}")
-                # Return standardized error response with required fields
-                return {
-                    "query": query,
-                    "search_type": search_type,
-                    "total_results": 0,
-                    "returned_results": 0,
-                    "execution_time_ms": 0,
-                    "properties": [],
-                    "error": str(e)
-                }
-        
-        # Property details tool
-        @self.app.tool(
-            name="get_property_details",
-            description="Get detailed information for a specific property by its listing ID.",
-            tags={"property", "details", "real_estate"}
-        )
-        async def get_property_details(listing_id: str) -> Dict[str, Any]:
-            """Get detailed information for a specific property.
-            
-            Args:
-                listing_id: The unique property listing ID
-                
-            Returns:
-                Complete property information including all available details
-            """
-            return await property_tools.get_property_details(
-                self._create_context(),
-                listing_id=listing_id
-            )
-        
-        # Rich property details tool
-        @self.app.tool(
-            name="get_rich_property_details",
-            description="Get comprehensive property listing with embedded neighborhood and Wikipedia data.",
-            tags={"property", "details", "enriched", "real_estate"}
-        )
-        async def get_rich_property_details(
-            listing_id: str,
-            include_wikipedia: bool = True,
-            include_neighborhood: bool = True,
-            wikipedia_limit: int = 3
-        ) -> Dict[str, Any]:
-            """Get comprehensive property listing with embedded neighborhood and Wikipedia data.
-            
-            Retrieves complete property information from the denormalized property_relationships
-            index in a single high-performance query. Returns all property details along with
-            embedded neighborhood demographics and relevant Wikipedia articles.
-            
-            Args:
-                listing_id: The unique property listing ID
-                include_wikipedia: Include Wikipedia articles about the area (default True)
-                include_neighborhood: Include detailed neighborhood information (default True)
-                wikipedia_limit: Maximum Wikipedia articles to return (1-10, default 3)
-                
-            Returns:
-                Rich property listing with embedded neighborhood and Wikipedia context
-            """
-            return await property_tools.get_rich_property_details(
-                self._create_context(),
-                listing_id=listing_id,
-                include_wikipedia=include_wikipedia,
-                include_neighborhood=include_neighborhood,
-                wikipedia_limit=wikipedia_limit
-            )
-        
-        # Wikipedia search tool
-        @self.app.tool(
-            name="search_wikipedia",
-            description="Search Wikipedia for general information about any topic or location. Use for general searches when you don't have a specific city.",
-            tags={"wikipedia", "search", "knowledge"}
-        )
-        async def search_wikipedia(
-            query: str,
-            search_in: Literal["full", "summaries", "chunks"] = "full",
-            city: Optional[str] = None,
-            state: Optional[str] = None,
-            categories: Optional[List[str]] = None,
-            size: int = 10,
-            search_type: Literal["hybrid", "semantic", "text"] = "hybrid"
-        ) -> Dict[str, Any]:
-            """Search Wikipedia for general information about any topic or location.
-            
-            Use this tool for general Wikipedia searches when you DON'T have a specific city/location,
-            or when searching for concepts, history, or general topics. The query parameter is REQUIRED.
-            All filter parameters are OPTIONAL - only use them if you want to narrow results.
-            
-            IMPORTANT: For location-specific searches where you KNOW the city name, use 
-            search_wikipedia_by_location instead - it's optimized for that use case.
-            
-            Args:
-                query: REQUIRED - What to search for (e.g., "Oakland culture", "California history", "Victorian architecture")
-                search_in: OPTIONAL - Search scope: "full" (default, complete articles), "summaries" (shorter), or "chunks" (sections)
-                city: OPTIONAL - Filter results to this city (only if you want to filter, not for primary location searches)
-                state: OPTIONAL - Filter results to this state (2-letter code like "CA", only for filtering)
-                categories: OPTIONAL - Filter by Wikipedia category names (rarely needed)
-                size: OPTIONAL - Number of results (1-50, default 10)
-                search_type: OPTIONAL - "hybrid" (default, recommended), "semantic" (AI-based), or "text" (keyword matching)
-                
-            Examples:
-                - General search: query="Victorian architecture San Francisco"
-                - Topic search: query="Golden Gate Bridge history"
-                - Filtered search: query="parks", city="Oakland", state="CA"
-                
-            Returns:
-                Wikipedia articles with summaries, topics, and location information
-            """
-            try:
-                return await wikipedia_tools.search_wikipedia(
-                    self._create_context(),
-                    query=query,
-                    search_in=search_in,
-                    city=city,
-                    state=state,
-                    categories=categories,
-                    size=size,
-                    search_type=search_type
-                )
-            except Exception as e:
-                logger.error(f"Wikipedia search failed: {e}")
-                return {"error": str(e), "query": query}
-        
-        # Wikipedia by location tool
-        @self.app.tool(
-            name="search_wikipedia_by_location",
-            description="Find Wikipedia articles about a SPECIFIC CITY or neighborhood. PREFERRED for location searches.",
-            tags={"wikipedia", "location", "city", "neighborhood"}
-        )
-        async def search_wikipedia_by_location(
-            city: str,
-            state: Optional[str] = None,
-            query: Optional[str] = None,
-            size: int = 10
-        ) -> Dict[str, Any]:
-            """Find Wikipedia articles about a SPECIFIC CITY or neighborhood.
-            
-            PREFERRED TOOL for location-based searches when you KNOW the city name.
-            This tool is optimized for finding information about neighborhoods, landmarks,
-            attractions, and local context for a specific city.
-            
-            USE THIS TOOL WHEN:
-            - You have a specific city name (e.g., "Oakland", "San Francisco")
-            - You want information about a neighborhood (e.g., "Temescal" in Oakland)
-            - You need local context about an area
-            
-            Args:
-                city: REQUIRED - City or neighborhood name (e.g., "Oakland", "Temescal", "San Francisco")
-                state: OPTIONAL - State code for disambiguation (e.g., "CA", "NY", "TX") - only needed if city name is ambiguous
-                query: OPTIONAL - Additional search terms to refine results (e.g., "restaurants", "parks", "history")
-                size: OPTIONAL - Number of results (1-20, default 10)
-                
-            Examples:
-                - Neighborhood info: city="Oakland", query="Temescal neighborhood amenities culture"
-                - City overview: city="San Francisco", state="CA"
-                - Local attractions: city="Berkeley", query="attractions landmarks"
-                
-            Returns:
-                Wikipedia articles specifically about the requested location with local information,
-                landmarks, neighborhoods, and cultural context
-            """
-            try:
-                return await wikipedia_tools.search_wikipedia_by_location(
-                    self._create_context(),
-                    city=city,
-                    state=state,
-                    query=query,
-                    size=size
-                )
-            except Exception as e:
-                logger.error(f"Location Wikipedia search failed: {e}")
-                return {"error": str(e), "city": city}
-        
-        # Health check tool
-        @self.app.tool(
-            name="health_check",
-            description="Check the health status of all system components.",
-            tags={"system", "health", "monitoring"}
-        )
-        async def health_check() -> Dict[str, Any]:
-            """Check the health status of all system components.
-            
-            Returns:
-                System health information including service statuses
-            """
-            if not self.health_check_service:
-                return {"error": "Health check service not initialized"}
-            
-            try:
-                health_response = self.health_check_service.perform_health_check()
-                return {
-                    "status": health_response.status,
-                    "timestamp": health_response.timestamp.isoformat(),
-                    "services": health_response.services,
-                    "version": health_response.version
-                }
-            except Exception as e:
-                logger.error(f"Health check failed: {e}")
-                return {"error": str(e)}
-        
-        # Main property search tool (formerly hybrid)
-        @self.app.tool(
-            name="search_properties",
-            description="PREFERRED: Search properties using natural language queries with AI understanding.",
-            tags={"property", "search", "hybrid", "ai", "real_estate", "preferred"}
-        )
-        async def search_properties(
-            query: str,
-            size: int = 10,
-            include_location_extraction: bool = False
-        ) -> Dict[str, Any]:
-            """Search properties using natural language with AI understanding.
-            
-            PREFERRED TOOL for all property searches. Uses advanced AI to understand your
-            search intent, automatically extracts locations from your query, and combines
-            semantic search with text matching for best results.
-            
-            USE THIS TOOL FOR:
-            • Any natural language property search
-            • Queries with location in the text (e.g., "luxury condo in San Francisco")
-            • General property searches without specific filters
-            • When you want the best AI-powered results
-            
-            Args:
-                query: Natural language property search query (e.g., "modern 3-bedroom home with pool near good schools in Oakland")
-                size: Number of results to return (1-50, default 10)
-                include_location_extraction: Show how AI understood the location (default false)
-                
-            Returns:
-                Properties matching your search with AI relevance scores
-            """
-            try:
-                return await hybrid_search_tool.search_properties_hybrid(
-                    self._create_context(),
-                    query=query,
-                    size=size,
-                    include_location_extraction=include_location_extraction
-                )
-            except Exception as e:
-                logger.error(f"Property search failed: {e}")
-                return {"error": str(e), "query": query}
-        
-        logger.info("MCP tools registered successfully")
+        """Register MCP tools using ToolRegistry."""
+        self.tool_registry.register_all_tools(self)
     
     def _create_context(self) -> Context:
         """Create a context object with services for tools.
@@ -448,8 +136,8 @@ class MCPServer:
             "embedding_service": self.embedding_service,
             "property_search_service": self.property_search_service,
             "wikipedia_search_service": self.wikipedia_search_service,
-            "health_check_service": self.health_check_service,
-            "hybrid_search_engine": self.hybrid_search_engine
+            "neighborhood_search_service": self.neighborhood_search_service,
+            "health_check_service": self.health_check_service
         })
     
     def start(self, transport: str = None, host: str = None, port: int = None):
@@ -470,6 +158,9 @@ class MCPServer:
         try:
             # Initialize services
             self._initialize_services()
+            
+            # Register tools after services are initialized
+            self._register_tools()
             
             # Perform initial health check
             health_response = self.health_check_service.perform_health_check()
@@ -522,13 +213,15 @@ def print_startup_banner():
 def print_available_tools():
     """Print information about available tools."""
     print("\n📦 Available MCP Tools:")
-    print("  • search_properties - ⭐ PREFERRED: Natural language property search with AI")
     print("  • search_properties_with_filters - Property search with explicit filters")
+    print("  • search_properties - Natural language property search")
     print("  • get_property_details - Get property details by ID")
     print("  • get_rich_property_details - Get rich property listing with embedded data")
     print("  • search_wikipedia - Search Wikipedia content")
     print("  • search_wikipedia_by_location - Location-based Wikipedia search")
     print("  • get_wikipedia_article - Get Wikipedia article by ID")
+    print("  • search_neighborhoods - Search neighborhoods with optional statistics")
+    print("  • search_neighborhoods_by_location - Location-based neighborhood search")
     print("  • health_check - Check system health status")
     print("-"*60)
 

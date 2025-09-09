@@ -20,22 +20,11 @@ import logging
 from typing import Dict, List, Any, Optional, Iterator
 from pydantic import BaseModel, Field, ConfigDict
 from elasticsearch import Elasticsearch, helpers
+from ..models import WikipediaArticle
 
 logger = logging.getLogger(__name__)
 
 
-class WikipediaArticle(BaseModel):
-    """Embedded Wikipedia article structure."""
-    
-    page_id: str = Field(description="Wikipedia page ID")
-    title: str = Field(description="Article title")
-    url: Optional[str] = Field(default=None, description="Article URL")
-    summary: Optional[str] = Field(default=None, description="Article summary")
-    city: Optional[str] = Field(default=None, description="City")
-    state: Optional[str] = Field(default=None, description="State")
-    relationship_type: str = Field(default="neighborhood_related", description="Type of relationship")
-    confidence: float = Field(default=0.8, description="Confidence score")
-    relevance_score: Optional[float] = Field(default=None, description="Relevance score")
 
 
 class NeighborhoodData(BaseModel):
@@ -72,7 +61,6 @@ class RelationshipDocument(BaseModel):
     address: Optional[Dict[str, Any]] = Field(default=None, description="Property address")
     description: Optional[str] = Field(default=None, description="Property description")
     features: List[str] = Field(default_factory=list, description="Property features")
-    amenities: List[str] = Field(default_factory=list, description="Property amenities")
     status: Optional[str] = Field(default=None, description="Listing status")
     listing_date: Optional[str] = Field(default=None, description="Listing date")
     days_on_market: Optional[int] = Field(default=None, description="Days on market")
@@ -416,7 +404,8 @@ class PropertyRelationshipBuilder:
                         "page_id": str(article_data.get("page_id")),
                         "title": article_data.get("title"),
                         "url": article_data.get("url"),
-                        "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
+                        "short_summary": article_data.get("short_summary"),
+                        "long_summary": article_data.get("long_summary"),
                         "city": article_data.get("city"),
                         "state": article_data.get("state"),
                         "relationship_type": "primary",
@@ -434,7 +423,8 @@ class PropertyRelationshipBuilder:
                             "page_id": str(article_data.get("page_id")),
                             "title": article_data.get("title"),
                             "url": article_data.get("url"),
-                            "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
+                            "short_summary": article_data.get("short_summary"),
+                            "long_summary": article_data.get("long_summary"),
                             "city": article_data.get("city"),
                             "state": article_data.get("state"),
                             "relationship_type": wiki_ref.get("relationship", "related"),
@@ -460,7 +450,6 @@ class PropertyRelationshipBuilder:
             "address": "address",
             "description": "description",
             "features": "features",
-            "amenities": "amenities",
             "status": "status",
             "listing_date": "listing_date",
             "days_on_market": "days_on_market",

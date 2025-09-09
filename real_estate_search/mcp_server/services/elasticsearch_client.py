@@ -14,7 +14,6 @@ from tenacity import (
 )
 
 from ..settings import ElasticsearchConfig
-from ..models.search import ErrorResponse
 
 
 logger = logging.getLogger(__name__)

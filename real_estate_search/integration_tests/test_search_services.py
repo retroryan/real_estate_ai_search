@@ -11,6 +11,10 @@ from typing import Optional
 from elasticsearch import Elasticsearch
 from pathlib import Path
 
+# Import config first to load .env file
+from real_estate_search.config import AppConfig
+from real_estate_search.infrastructure.elasticsearch_client import ElasticsearchClientFactory
+
 from real_estate_search.search_service import (
     PropertySearchService,
     WikipediaSearchService,
@@ -27,26 +31,13 @@ from real_estate_search.search_service import (
 
 @pytest.fixture(scope="module")
 def es_client():
-    """Create Elasticsearch client for integration tests."""
-    # Use environment variable or default to localhost
-    es_host = os.getenv("ELASTICSEARCH_HOST", "localhost")
-    es_port = int(os.getenv("ELASTICSEARCH_PORT", "9200"))
-    es_password = os.getenv("ES_PASSWORD")
+    """Create Elasticsearch client for integration tests using proper configuration."""
+    # Load configuration (which loads .env file)
+    config = AppConfig.load()
     
-    # Try with authentication if password is available
-    if es_password:
-        client = Elasticsearch(
-            hosts=[f"http://{es_host}:{es_port}"],
-            basic_auth=("elastic", es_password),
-            verify_certs=False,
-            ssl_show_warn=False
-        )
-    else:
-        client = Elasticsearch(
-            hosts=[f"http://{es_host}:{es_port}"],
-            verify_certs=False,
-            ssl_show_warn=False
-        )
+    # Create client using the factory
+    factory = ElasticsearchClientFactory(config.elasticsearch)
+    client = factory.create_client()
     
     # Verify connection
     try:

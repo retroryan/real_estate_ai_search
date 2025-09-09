@@ -65,8 +65,8 @@ async def demo_basic_property_search(query: str = "modern home with pool") -> De
 
 async def demo_property_filter(
     property_type: PropertyType = PropertyType.CONDO,
-    min_price: float = 800000,
-    max_price: float = 1500000,
+    min_price: float = 900000,
+    max_price: float = 1400000,
     city: str = "San Francisco"
 ) -> DemoResult:
     """Demo 2: Filtered property search with specific criteria.
@@ -79,10 +79,11 @@ async def demo_property_filter(
     try:
         # Create and execute search
         # Note: search_properties only accepts query and size, not filters
+        # We search for more results to increase chances of finding matches after filtering
         query = f"{property_type.value} in {city} between ${min_price:,.0f} and ${max_price:,.0f}"
         request = PropertySearchRequest(
             query=query,
-            size=10,
+            size=30,  # Increased to get more results for client-side filtering
             search_type=SearchType.HYBRID
         )
         response = await client.search_properties(request)

@@ -1,27 +1,26 @@
 """
-Custom exceptions for property indexer.
-Provides typed error handling with error codes.
+Custom exceptions for Elasticsearch indexing operations.
 """
 
 from typing import Optional, Any
 from .enums import ErrorCode
 
 
-class PropertyIndexerError(Exception):
-    """Base exception for property indexer errors."""
+class ElasticsearchIndexError(Exception):
+    """Base exception for Elasticsearch index operations."""
     
     def __init__(
         self,
-        message: str,
         error_code: Optional[ErrorCode] = None,
+        message: str = "",
         details: Optional[Any] = None
     ):
         """
         Initialize the exception.
         
         Args:
-            message: Error message.
             error_code: Error code from ErrorCode enum.
+            message: Error message.
             details: Additional error details.
         """
         super().__init__(message)
@@ -36,31 +35,31 @@ class PropertyIndexerError(Exception):
         return self.message
 
 
-class IndexCreationError(PropertyIndexerError):
-    """Raised when index creation fails."""
+class IndexCreationError(ElasticsearchIndexError):
+    """Exception raised when index creation fails."""
     pass
 
 
-class BulkIndexingError(PropertyIndexerError):
-    """Raised when bulk indexing operations fail."""
+class IndexMappingError(ElasticsearchIndexError):
+    """Exception raised when mapping operations fail."""
     pass
 
 
-class ConnectionError(PropertyIndexerError):
-    """Raised when connection to Elasticsearch fails."""
+class DocumentIndexError(ElasticsearchIndexError):
+    """Exception raised when document indexing fails."""
     pass
 
 
-class ValidationError(PropertyIndexerError):
-    """Raised when data validation fails."""
+class BulkIndexError(ElasticsearchIndexError):
+    """Exception raised when bulk indexing operations fail."""
     pass
 
 
-class ConfigurationError(PropertyIndexerError):
-    """Raised when configuration is invalid."""
+class IndexNotFoundError(ElasticsearchIndexError):
+    """Exception raised when an index is not found."""
     pass
 
 
-class ElasticsearchIndexError(PropertyIndexerError):
-    """Raised when Elasticsearch index operations fail."""
+class IndexAlreadyExistsError(ElasticsearchIndexError):
+    """Exception raised when trying to create an index that already exists."""
     pass

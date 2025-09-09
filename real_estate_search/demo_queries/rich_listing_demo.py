@@ -20,7 +20,8 @@ from rich.layout import Layout
 from rich.align import Align
 
 from .models import DemoQueryResult
-from .rich_listing_models import PropertyModel, NeighborhoodModel, WikipediaArticleModel
+from .rich_listing_models import NeighborhoodModel
+from ..models import PropertyListing, WikipediaArticle
 from ..html_generators import PropertyListingHTMLGenerator
 
 # ===== ELASTICSEARCH DEMO CONFIGURATION =====
@@ -43,14 +44,14 @@ def format_date(date_value: Optional[str]) -> str:
     return date_value if date_value else "N/A"
 
 
-def create_property_header(property_model: PropertyModel) -> Panel:
+def create_property_header(property_model: PropertyListing) -> Panel:
     """Create the main property header panel."""
     # Get formatted address from model
-    full_address = property_model.get_full_address()
+    full_address = property_model.address.full_address
     
     # Property type and price from model
-    prop_type = property_model.property_type.title()
-    price = property_model.format_price()
+    prop_type = property_model.display_property_type
+    price = property_model.display_price
     
     # Create header text
     header = Text()
@@ -67,7 +68,7 @@ def create_property_header(property_model: PropertyModel) -> Panel:
     )
 
 
-def create_property_details_table(property_model: PropertyModel) -> Table:
+def create_property_details_table(property_model: PropertyListing) -> Table:
     """Create a table with property details."""
     table = Table(
         title="Property Details",
@@ -86,10 +87,10 @@ def create_property_details_table(property_model: PropertyModel) -> Table:
         ("Square Feet", f"{property_model.square_feet:,}" if property_model.square_feet else "N/A"),
         ("Year Built", f"{property_model.year_built}" if property_model.year_built else "N/A"),
         ("Lot Size", f"{property_model.lot_size:,} sqft" if property_model.lot_size else "N/A"),
-        ("Price/SqFt", format_price(property_model.price_per_sqft)),
+        ("Price/SqFt", f"${property_model.price_per_sqft:,.0f}" if property_model.price_per_sqft else "N/A"),
         ("Days on Market", f"{property_model.days_on_market}" if property_model.days_on_market else "N/A"),
-        ("Listing Date", property_model.format_listing_date()),
-        ("Status", property_model.status.title()),
+        ("Listing Date", property_model.listing_date_display),
+        ("Status", property_model.status.replace("_", " ").title()),
     ]
     
     for feature, value in details:
@@ -97,12 +98,12 @@ def create_property_details_table(property_model: PropertyModel) -> Table:
     
     # Add parking if available
     if property_model.parking:
-        table.add_row("Parking", property_model.get_parking_display())
+        table.add_row("Parking", property_model.parking_display)
     
     return table
 
 
-def create_features_panel(property_model: PropertyModel) -> Panel:
+def create_features_panel(property_model: PropertyListing) -> Panel:
     """Create a panel showing property features and amenities."""
     content = ""
     
@@ -112,13 +113,8 @@ def create_features_panel(property_model: PropertyModel) -> Panel:
         for feature in property_model.features[:10]:  # Limit to first 10
             content += f"  • {feature}\n"
     
-    # Amenities (guaranteed to be list by model)
-    if property_model.amenities:
-        if content:
-            content += "\n"
-        content += "[bold yellow]Amenities:[/bold yellow]\n"
-        for amenity in property_model.amenities[:10]:  # Limit to first 10
-            content += f"  • {amenity}\n"
+    # Note: amenities is aliased to features in PropertyListing model
+    # So we only use features field here
     
     if not content:
         content = "No special features listed"
@@ -197,7 +193,7 @@ def create_neighborhood_panel(neighborhood: Optional[NeighborhoodModel]) -> Pane
     )
 
 
-def create_wikipedia_panel(articles: List[WikipediaArticleModel]) -> Panel:
+def create_wikipedia_panel(articles: List[WikipediaArticle]) -> Panel:
     """Create a panel with Wikipedia article information."""
     if not articles:
         return Panel(
@@ -210,9 +206,9 @@ def create_wikipedia_panel(articles: List[WikipediaArticleModel]) -> Panel:
     
     for i, article in enumerate(articles[:3], 1):  # Limit to first 3
         title = article.title
-        summary = article.summary or ''
+        summary = article.short_summary or article.long_summary or ''
         confidence = article.confidence
-        relationship_type = article.relationship_type
+        relationship_type = article.relationship_type or 'related'
         
         # Article header
         content.append(f"{i}. {title}", style="bold cyan")
@@ -243,7 +239,7 @@ def create_wikipedia_panel(articles: List[WikipediaArticleModel]) -> Panel:
     )
 
 
-def create_description_panel(property_model: PropertyModel) -> Panel:
+def create_description_panel(property_model: PropertyListing) -> Panel:
     """Create a panel with the property description."""
     description = property_model.description or ''
     
@@ -317,11 +313,15 @@ def demo_rich_property_listing(
     property_data = response['hits']['hits'][0]['_source']
     
     # Create Pydantic model from ES data
-    property_model = PropertyModel(**property_data)
+    property_model = PropertyListing(**property_data)
     
-    # Extract neighborhood and wikipedia from model
-    neighborhood = property_model.neighborhood
-    wikipedia_articles = property_model.wikipedia_articles
+    # Extract neighborhood and wikipedia from the raw data (these are embedded in property_relationships index)
+    neighborhood_data = property_data.get('neighborhood')
+    wikipedia_data = property_data.get('wikipedia_articles', [])
+    
+    # Create models for neighborhood and wikipedia if they exist
+    neighborhood = NeighborhoodModel(**neighborhood_data) if neighborhood_data else None
+    wikipedia_articles = [WikipediaArticle(**w) for w in wikipedia_data] if wikipedia_data else []
     
     # Create the rich display
     console.print("\n")
@@ -386,9 +386,12 @@ def demo_rich_property_listing(
         border_style="yellow"
     ))
     
-    # Generate HTML file (convert model back to dict for HTML generator)
+    # Generate HTML file with complete data including wikipedia articles
     html_generator = PropertyListingHTMLGenerator(output_dir="real_estate_search/out_html")
-    html_content = html_generator.generate_html(property_model.model_dump())
+    property_data_for_html = property_model.model_dump()
+    property_data_for_html['wikipedia_articles'] = [article.model_dump() for article in wikipedia_articles]
+    property_data_for_html['neighborhood'] = neighborhood.model_dump() if neighborhood else None
+    html_content = html_generator.generate_html(property_data_for_html)
     
     # Save HTML file with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

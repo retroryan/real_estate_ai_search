@@ -135,7 +135,7 @@ async def demo_location_based_discovery(
             
             for idx, article in enumerate(wiki_response["articles"][:3], 1):
                 wiki_panel = Panel(
-                    f"{article.get('short_summary', 'No summary available')[:200]}...\n\n"
+                    f"{article.get('long_summary', 'No summary available')[:200]}...\n\n"
                     f"[dim]Topics: {', '.join(article.get('key_topics', [])[:5])}[/dim]",
                     title=f"[{idx}] {article['title']}",
                     border_style="blue"

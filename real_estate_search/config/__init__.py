@@ -11,6 +11,7 @@ from .config import (
     IndexingConfig,
     LoggingConfig,
     DataConfig,
+    DSPyConfig,
     Environment
 )
 
@@ -22,5 +23,6 @@ __all__ = [
     "IndexingConfig",
     "LoggingConfig",
     "DataConfig",
+    "DSPyConfig",
     "Environment"
 ]

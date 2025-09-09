@@ -132,7 +132,7 @@ class TestHybridSearchIntegration:
         
         # Mock embedding generation
         mock_vector = [0.1] * 1024
-        query = engine._build_rrf_query(params, mock_vector)
+        query = engine._build_rrf_query(params, mock_vector, params.query_text)
         
         # Verify RRF structure
         assert 'retriever' in query

@@ -77,14 +77,6 @@ class NeighborhoodStats(BaseModel):
     lifestyle_tags: List[str] = Field(default_factory=list, description="Lifestyle tags")
 
 
-class WikipediaArticle(BaseModel):
-    """Wikipedia article reference model"""
-    page_id: int = Field(..., description="Wikipedia page ID")
-    title: str = Field(..., description="Article title")
-    summary: Optional[str] = Field(None, description="Article summary")
-    article_type: str = Field("general", description="Type of article")
-    confidence: float = Field(0.0, description="Confidence score")
-    url: Optional[str] = Field(None, description="Wikipedia URL")
 
 
 class MarketInsight(BaseModel):

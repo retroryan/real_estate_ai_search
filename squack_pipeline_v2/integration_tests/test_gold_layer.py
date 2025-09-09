@@ -100,7 +100,7 @@ def test_gold_property_enrichment():
     
     # Verify business enrichments
     expected_enrichments = [
-        "status_field", "amenities_field", "search_tags_field",
+        "status_field", "search_tags_field",
         "enriched_description"
     ]
     for enrichment in expected_enrichments:
@@ -112,7 +112,7 @@ def test_gold_property_enrichment():
     
     # Check Gold enrichments
     assert "status" in column_names, "Should have status field"
-    assert "amenities" in column_names, "Should have amenities field"
+    assert "features" in column_names, "Should have features field"
     assert "search_tags" in column_names, "Should have search tags"
     assert "enriched_description" in column_names, "Should have enriched description"
     assert "embedding_text" in column_names, "Should have business-ready embedding text"
@@ -478,7 +478,7 @@ def test_medallion_architecture():
         
         # Check for specific business enrichments
         assert "status" in gold_columns, "Gold should have status field for ES"
-        assert "amenities" in gold_columns, "Gold should have amenities for ES"
+        assert "features" in gold_columns, "Gold should have features for ES"
         assert "search_tags" in gold_columns, "Gold should have search tags"
         assert "enriched_description" in gold_columns, "Gold should have enriched description"
         assert "embedding_text" in gold_columns, "Gold should have business-ready search text"

@@ -55,14 +55,53 @@ class RealEstateSearchClient(BaseModel):
             'size': params.get('size', 10)
         }
         
-        # Always use search_properties tool
-        response = await self.mcp_client.call_tool("search_properties", search_params)
+        # Always use search_properties_with_filters tool
+        response = await self.mcp_client.call_tool("search_properties_with_filters", search_params)
         
         if not response.success:
             raise Exception(f"Property search failed: {response.error}")
         
-        # Parse and validate response with Pydantic
-        return PropertySearchResponse(**response.data)
+        # Transform response from search_service format to demo format
+        response_data = response.data
+        
+        # The search_service returns 'results' but demos expect 'properties'
+        if "results" in response_data:
+            # Direct mapping - no need to create intermediate objects
+            properties = []
+            for result in response_data["results"]:
+                # Map result directly to expected format
+                property_dict = {
+                    "listing_id": result["listing_id"],
+                    "property_type": result["property_type"],
+                    "price": result["price"],
+                    "bedrooms": result["bedrooms"],
+                    "bathrooms": result["bathrooms"],
+                    "square_feet": result.get("square_feet"),
+                    "address": {
+                        "street": result["address"]["street"],
+                        "city": result["address"]["city"],
+                        "state": result["address"]["state"],
+                        "zip_code": result["address"]["zip_code"]
+                    },
+                    "description": result["description"],
+                    "features": result.get("features", []),
+                    "score": result["score"]
+                }
+                properties.append(property_dict)
+            
+            # Build response with mapped data
+            response_dict = {
+                "properties": properties,
+                "total_results": response_data.get("total_hits", 0),
+                "returned_results": len(properties),
+                "execution_time_ms": response_data.get("execution_time_ms", 0),
+                "query": params.get('query', ''),
+                "location_extracted": None
+            }
+            return PropertySearchResponse(**response_dict)
+        
+        # Already in correct format
+        return PropertySearchResponse(**response_data)
     
     async def search_wikipedia(self, request: WikipediaSearchRequest) -> WikipediaSearchResponse:
         """Search Wikipedia articles using the MCP server.
@@ -85,8 +124,27 @@ class RealEstateSearchClient(BaseModel):
         if not response.success:
             raise Exception(f"Wikipedia search failed: {response.error}")
         
-        # Parse and validate response with Pydantic
-        return WikipediaSearchResponse(**response.data)
+        # Transform response from search_service format to demo format
+        response_data = response.data
+        
+        # The search_service returns 'results' but demos expect 'articles'
+        # and 'total_hits' but demos expect 'total_results'
+        if "results" in response_data:
+            # Transform to expected format
+            articles = response_data.get("results", [])
+            transformed_response = {
+                "articles": articles,
+                "total_results": response_data.get("total_hits", 0),
+                "returned_results": len(articles),
+                "execution_time_ms": response_data.get("execution_time_ms", 0),
+                "query": params.get("query", ""),
+                "search_in": response_data.get("search_in", params.get("search_in", "full")),
+                "search_type": response_data.get("search_type", "hybrid")
+            }
+            return WikipediaSearchResponse(**transformed_response)
+        
+        # Already in correct format
+        return WikipediaSearchResponse(**response_data)
     
     async def search_wikipedia_by_location(
         self,
@@ -124,6 +182,8 @@ class RealEstateSearchClient(BaseModel):
         if not response.success:
             raise Exception(f"Location-based Wikipedia search failed: {response.error}")
         
+        # The server returns the response in the correct format already
+        # with 'articles', 'total_results', 'returned_results', and 'execution_time_ms'
         return response.data
     
     async def get_property_details(self, listing_id: str) -> Dict[str, Any]:
@@ -177,7 +237,7 @@ class RealEstateSearchClient(BaseModel):
         Args:
             query: Natural language property search query
             size: Number of results to return (1-50, default 10)
-            include_location_extraction: Include location extraction details
+            include_location_extraction: Include location extraction details (not used)
             
         Returns:
             Dictionary with hybrid search results and metadata
@@ -187,17 +247,50 @@ class RealEstateSearchClient(BaseModel):
         """
         params = {
             "query": query,
-            "size": size,
-            "include_location_extraction": include_location_extraction
+            "size": size
+            # include_location_extraction is not supported by the new API
         }
         
         # Call the MCP tool
-        response = await self.mcp_client.call_tool("search_properties", params)
+        response = await self.mcp_client.call_tool("search_properties_with_filters", params)
         
         if not response.success:
             raise Exception(f"Hybrid search failed: {response.error}")
         
-        return response.data
+        # Transform response from search_service format to hybrid format
+        response_data = response.data
+        
+        if "results" in response_data:
+            # Direct mapping without intermediate objects
+            properties = [{
+                "listing_id": result["listing_id"],
+                "property_type": result["property_type"],
+                "price": result["price"],
+                "bedrooms": result["bedrooms"],
+                "bathrooms": result["bathrooms"],
+                "square_feet": result.get("square_feet"),
+                "address": {
+                    "street": result["address"]["street"],
+                    "city": result["address"]["city"],
+                    "state": result["address"]["state"],
+                    "zip_code": result["address"]["zip_code"]
+                },
+                "description": result["description"],
+                "features": result.get("features", []),
+                "score": result["score"]
+            } for result in response_data["results"]]
+            
+            # Return transformed response
+            return {
+                "properties": properties,
+                "total_results": response_data.get("total_hits", 0),
+                "returned_results": len(properties),
+                "execution_time_ms": response_data.get("execution_time_ms", 0),
+                "query": query,
+                "location_extracted": None
+            }
+        
+        return response_data
     
     async def call_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Generic tool calling method for flexibility.

@@ -61,39 +61,6 @@ class MultiEntitySearchParams(BaseModel):
     size_per_index: int = Field(5, description="Results per index")
 
 
-class PropertyFeatures(BaseModel):
-    """Model for property features to ensure consistent structure."""
-    bedrooms: Optional[int] = Field(0, description="Number of bedrooms")
-    bathrooms: Optional[float] = Field(0, description="Number of bathrooms")
-    square_feet: Optional[int] = Field(0, description="Square footage")
-    
-    @classmethod
-    def from_result(cls, result: Dict[str, Any]) -> 'PropertyFeatures':
-        """Create PropertyFeatures from a result dict."""
-        features = result.get('features', {})
-        
-        # Try to extract from features dict or fall back to top-level
-        try:
-            # Try to use features as a dict
-            if features:
-                bedrooms = features.get('bedrooms', result.get('bedrooms', 0))
-                bathrooms = features.get('bathrooms', result.get('bathrooms', 0))
-                square_feet = features.get('square_feet', result.get('square_feet', 0))
-                return cls(
-                    bedrooms=bedrooms,
-                    bathrooms=bathrooms,
-                    square_feet=square_feet
-                )
-        except (AttributeError, TypeError):
-            # features is not dict-like, fall through to top-level
-            pass
-        
-        # Fall back to top-level fields
-        return cls(
-            bedrooms=result.get('bedrooms', 0),
-            bathrooms=result.get('bathrooms', 0),
-            square_feet=result.get('square_feet', 0)
-        )
 
 
 class DemoQueryResult(BaseModel):

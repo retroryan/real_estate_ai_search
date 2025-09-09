@@ -10,17 +10,15 @@ import logging
 from unittest.mock import Mock, patch, MagicMock
 from elasticsearch import Elasticsearch
 
-from real_estate_search.demo_queries.hybrid_search import (
+from real_estate_search.hybrid import (
     HybridSearchEngine,
     HybridSearchParams,
     HybridSearchResult,
-    SearchResult
-)
-from real_estate_search.demo_queries.location_understanding import (
+    SearchResult,
     LocationIntent,
-    LocationUnderstandingModule,
-    LocationFilterBuilder
+    LocationUnderstandingModule
 )
+from real_estate_search.hybrid.location import LocationFilterBuilder
 from real_estate_search.config import AppConfig
 
 logger = logging.getLogger(__name__)
@@ -89,7 +87,7 @@ class TestLocationHybridIntegration:
     @pytest.fixture
     def mock_config(self):
         """Create a mock configuration."""
-        with patch('real_estate_search.demo_queries.hybrid_search.AppConfig') as mock_config_class:
+        with patch('real_estate_search.hybrid.search_engine.AppConfig') as mock_config_class:
             mock_config = Mock(spec=AppConfig)
             mock_config.embedding = Mock()
             mock_config.embedding.api_key = 'test-key'
@@ -98,38 +96,44 @@ class TestLocationHybridIntegration:
     
     def test_direct_query_building(self):
         """Test that query building creates native Elasticsearch queries directly."""
-        with patch('real_estate_search.demo_queries.hybrid_search.QueryEmbeddingService') as mock_embedding:
-            mock_embedding_instance = Mock()
-            mock_embedding_instance.embed_query.return_value = [0.1] * 1024
-            mock_embedding.return_value = mock_embedding_instance
-            
-            engine = HybridSearchEngine(Mock(spec=Elasticsearch), Mock())
-            
-            # Test direct query building
-            params = HybridSearchParams(
-                query_text="modern home with pool",
-                size=10,
-                location_intent=LocationIntent(
-                    city="Park City",
-                    has_location=True,
-                    cleaned_query="modern home with pool",
-                    confidence=0.95
+        with patch('real_estate_search.hybrid.search_engine.QueryEmbeddingService') as mock_embedding:
+            with patch('real_estate_search.hybrid.search_engine.AppConfig') as mock_config:
+                mock_embedding_instance = Mock()
+                mock_embedding_instance.embed_query.return_value = [0.1] * 1024
+                mock_embedding.return_value = mock_embedding_instance
+                
+                mock_config_inst = Mock()
+                mock_config_inst.embedding = Mock()
+                mock_config_inst.embedding.api_key = 'test-key'
+                mock_config.load.return_value = mock_config_inst
+                
+                engine = HybridSearchEngine(Mock(spec=Elasticsearch))
+                
+                # Test direct query building
+                params = HybridSearchParams(
+                    query_text="modern home with pool",
+                    size=10,
+                    location_intent=LocationIntent(
+                        city="Park City",
+                        has_location=True,
+                        cleaned_query="modern home with pool",
+                        confidence=0.95
+                    )
                 )
-            )
-            
-            query_dict = engine._build_rrf_query(params, [0.1] * 1024, "modern home with pool")
-            
-            # Verify native Elasticsearch structure
-            assert "retriever" in query_dict
-            assert "rrf" in query_dict["retriever"]
-            assert "retrievers" in query_dict["retriever"]["rrf"]
-            assert len(query_dict["retriever"]["rrf"]["retrievers"]) == 2
-            assert query_dict["size"] == 10
-            assert "_source" in query_dict
+                
+                query_dict = engine._build_rrf_query(params, [0.1] * 1024, "modern home with pool")
+                
+                # Verify native Elasticsearch structure
+                assert "retriever" in query_dict
+                assert "rrf" in query_dict["retriever"]
+                assert "retrievers" in query_dict["retriever"]["rrf"]
+                assert len(query_dict["retriever"]["rrf"]["retrievers"]) == 2
+                assert query_dict["size"] == 10
+                assert "_source" in query_dict
     
     def test_search_with_location_extraction(self, mock_es_client, mock_config):
         """Test complete flow with location extraction."""
-        with patch('real_estate_search.demo_queries.hybrid_search.QueryEmbeddingService') as mock_embedding:
+        with patch('real_estate_search.hybrid.search_engine.QueryEmbeddingService') as mock_embedding:
             # Mock embedding service
             mock_embedding_instance = Mock()
             mock_embedding_instance.embed_query.return_value = [0.1] * 1024
@@ -171,7 +175,7 @@ class TestLocationHybridIntegration:
     
     def test_location_filters_applied_to_both_retrievers(self, mock_es_client, mock_config):
         """Test that location filters are applied to both text and vector retrievers."""
-        with patch('real_estate_search.demo_queries.hybrid_search.QueryEmbeddingService') as mock_embedding:
+        with patch('real_estate_search.hybrid.search_engine.QueryEmbeddingService') as mock_embedding:
             mock_embedding_instance = Mock()
             mock_embedding_instance.embed_query.return_value = [0.1] * 1024
             mock_embedding.return_value = mock_embedding_instance
@@ -213,7 +217,7 @@ class TestLocationHybridIntegration:
     
     def test_no_location_no_filters(self, mock_es_client, mock_config):
         """Test that no filters are applied when no location is detected."""
-        with patch('real_estate_search.demo_queries.hybrid_search.QueryEmbeddingService') as mock_embedding:
+        with patch('real_estate_search.hybrid.search_engine.QueryEmbeddingService') as mock_embedding:
             mock_embedding_instance = Mock()
             mock_embedding_instance.embed_query.return_value = [0.1] * 1024
             mock_embedding.return_value = mock_embedding_instance
@@ -267,19 +271,28 @@ class TestLocationHybridIntegration:
         
         filters = builder.build_filters(intent)
         
-        # Should have 4 filters
+        # Should have 4 filters (city uses match, others use term)
         assert len(filters) == 4
         
-        # Check each filter type
-        filter_types = {f['term'].get(list(f['term'].keys())[0]) for f in filters}
-        assert "Seattle" in filter_types
-        assert "Washington" in filter_types
-        assert "Capitol Hill" in filter_types
-        assert "98102" in filter_types
+        # Check city filter (uses match)
+        city_filter = next(f for f in filters if 'match' in f and 'address.city' in f.get('match', {}))
+        assert city_filter['match']['address.city'] == "Seattle"
+        
+        # Check state filter (uses term, converted to abbreviation)
+        state_filter = next(f for f in filters if 'term' in f and 'address.state' in f.get('term', {}))
+        assert state_filter['term']['address.state'] == "WA"  # Washington -> WA
+        
+        # Check neighborhood filter
+        neighborhood_filter = next(f for f in filters if 'term' in f and 'neighborhood.name.keyword' in f.get('term', {}))
+        assert neighborhood_filter['term']['neighborhood.name.keyword'] == "Capitol Hill"
+        
+        # Check zip filter
+        zip_filter = next(f for f in filters if 'term' in f and 'address.zip_code' in f.get('term', {}))
+        assert zip_filter['term']['address.zip_code'] == "98102"
     
     def test_cleaned_query_used_for_search(self, mock_es_client, mock_config):
         """Test that cleaned query is used for text and vector search."""
-        with patch('real_estate_search.demo_queries.hybrid_search.QueryEmbeddingService') as mock_embedding:
+        with patch('real_estate_search.hybrid.search_engine.QueryEmbeddingService') as mock_embedding:
             mock_embedding_instance = Mock()
             mock_embedding_instance.embed_query.return_value = [0.1] * 1024
             mock_embedding.return_value = mock_embedding_instance

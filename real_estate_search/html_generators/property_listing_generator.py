@@ -596,11 +596,10 @@ class PropertyListingHTMLGenerator(BaseHTMLGenerator):
         """
     
     def _generate_features_section(self, property_data: Dict[str, Any]) -> str:
-        """Generate features and amenities section."""
+        """Generate features section."""
         features = property_data.get('features', [])
-        amenities = property_data.get('amenities', [])
         
-        if not features and not amenities:
+        if not features:
             return ""
         
         all_items = []
@@ -614,20 +613,11 @@ class PropertyListingHTMLGenerator(BaseHTMLGenerator):
             </div>
             """)
         
-        # Add amenities
-        for amenity in amenities[:12]:
-            all_items.append(f"""
-            <div class="feature-item">
-                <i class="fas fa-star feature-icon"></i>
-                <span>{self.escape_html(amenity)}</span>
-            </div>
-            """)
-        
         return f"""
         <div class="section">
             <h2 class="section-title">
                 <i class="fas fa-list-check section-icon"></i>
-                Features & Amenities
+                Features
             </h2>
             <div class="features-grid">
                 {''.join(all_items)}
@@ -718,7 +708,9 @@ class PropertyListingHTMLGenerator(BaseHTMLGenerator):
         wiki_cards = []
         for article in articles[:6]:  # Limit to 6 articles
             title = article.get('title', 'Unknown Article')
-            summary = article.get('summary', '')[:200] + '...' if article.get('summary') else 'No summary available.'
+            # Use long_summary field from WikipediaArticle model
+            long_summary = article.get('long_summary', '')
+            summary = long_summary[:200] + '...' if long_summary else 'No summary available.'
             confidence = article.get('confidence', 0)
             relationship_type = article.get('relationship_type', 'related')
             url = article.get('url', '#')

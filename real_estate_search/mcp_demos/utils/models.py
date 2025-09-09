@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from ...models import WikipediaArticle
 
 
 class SearchType(str, Enum):
@@ -67,7 +68,7 @@ class Property(BaseModel):
 
 class PropertySearchResponse(BaseModel):
     """Property search response - matches server response exactly."""
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='allow')
     
     properties: List[Property]
     total_results: int
@@ -88,27 +89,6 @@ class WikipediaSearchRequest(BaseModel):
     categories: Optional[List[str]] = Field(default=None)
     size: int = Field(default=10, ge=1, le=50)
     search_type: SearchType = Field(default=SearchType.HYBRID)
-
-
-class WikipediaArticle(BaseModel):
-    """Wikipedia article model."""
-    model_config = ConfigDict(extra='allow')
-    
-    page_id: str
-    title: str
-    url: Optional[str] = None
-    short_summary: Optional[str] = None
-    long_summary: Optional[str] = None
-    categories: Optional[List[str]] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    score: Optional[float] = None
-    # Additional fields from server
-    entity_type: Optional[str] = None
-    short_summary: Optional[str] = None
-    long_summary: Optional[str] = None
-    key_topics: Optional[List[str]] = None
-    highlights: Optional[Dict[str, Any]] = None
 
 
 class WikipediaSearchResponse(BaseModel):

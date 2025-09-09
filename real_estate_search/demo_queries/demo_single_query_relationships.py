@@ -15,7 +15,10 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from .result_models import MixedEntityResult, PropertyResult, WikipediaArticle
+from .result_models import MixedEntityResult
+from ..models import WikipediaArticle
+from ..models import PropertyListing
+from ..converters import PropertyConverter
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
@@ -107,21 +110,12 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=1,
                 returned_hits=1,
-                property_results=[PropertyResult(
-                    listing_id=property_data.get('listing_id', ''),
-                    property_type=property_data.get('property_type', 'Unknown'),
-                    price=property_data.get('price', 0),
-                    bedrooms=property_data.get('bedrooms', 0),
-                    bathrooms=property_data.get('bathrooms', 0),
-                    square_feet=property_data.get('square_feet', 0),
-                    year_built=property_data.get('year_built'),
-                    address=property_data.get('address', {}),
-                    description=property_data.get('description', '')
-                )],
+                property_results=[PropertyConverter.from_elasticsearch(property_data)],
                 wikipedia_results=[WikipediaArticle(
                     page_id=str(a.get('page_id', '')),
                     title=a.get('title', ''),
-                    summary=a.get('summary', ''),
+                    long_summary=a.get('long_summary'),
+                    short_summary=a.get('short_summary'),
                     city=a.get('city'),
                     state=a.get('state'),
                     url=a.get('url')
@@ -193,17 +187,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyResult(
-                    listing_id=r.get('listing_id', ''),
-                    property_type=r.get('property_type', 'Unknown'),
-                    price=r.get('price', 0),
-                    bedrooms=r.get('bedrooms', 0),
-                    bathrooms=r.get('bathrooms', 0),
-                    square_feet=r.get('square_feet', 0),
-                    year_built=r.get('year_built'),
-                    address=r.get('address', {}),
-                    description=r.get('description', '')
-                ) for r in results],
+                property_results=PropertyConverter.from_elasticsearch_batch(results),
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -268,17 +252,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyResult(
-                    listing_id=r.get('listing_id', ''),
-                    property_type=r.get('property_type', 'Unknown'),
-                    price=r.get('price', 0),
-                    bedrooms=r.get('bedrooms', 0),
-                    bathrooms=r.get('bathrooms', 0),
-                    square_feet=r.get('square_feet', 0),
-                    year_built=r.get('year_built'),
-                    address=r.get('address', {}),
-                    description=r.get('description', '')
-                ) for r in results],
+                property_results=PropertyConverter.from_elasticsearch_batch(results),
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -370,19 +344,33 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> MixedEntityResult
     console.print(query_panel)
     
     if result1.property_results:
-        property = result1.property_results[0].__dict__
+        property = result1.property_results[0]
         
         # Create results table
         results_table = Table(title="Query Results", box=box.ROUNDED)
         results_table.add_column("Field", style="cyan")
         results_table.add_column("Value", style="white")
         
-        results_table.add_row("Property Address", property.get('address', {}).get('street', 'Unknown'))
-        results_table.add_row("City", f"{property.get('address', {}).get('city', 'N/A')}, {property.get('address', {}).get('state', 'N/A')}")
-        results_table.add_row("Price", f"${property.get('price', 0):,.0f}" if property.get('price') else 'N/A')
-        results_table.add_row("Bedrooms/Bathrooms", f"{property.get('bedrooms', 'N/A')} bed / {property.get('bathrooms', 'N/A')} bath")
-        results_table.add_row("Neighborhood", property.get('neighborhood', {}).get('name', 'N/A'))
-        results_table.add_row("Wikipedia Articles", str(len(property.get('wikipedia_articles', []))))
+        results_table.add_row("Property Address", property.address.street or 'Unknown')
+        results_table.add_row("City", f"{property.address.city or 'N/A'}, {property.address.state or 'N/A'}")
+        results_table.add_row("Price", f"${property.price:,.0f}" if property.price else 'N/A')
+        results_table.add_row("Bedrooms/Bathrooms", f"{property.bedrooms} bed / {property.bathrooms} bath")
+        
+        # Handle neighborhood - it might be embedded in extra fields from ES
+        neighborhood_name = 'N/A'
+        wikipedia_count = 0
+        
+        # Access any extra fields that might have been populated from ES
+        if hasattr(property, '__pydantic_extra__'):
+            extra = property.__pydantic_extra__ or {}
+            neighborhood = extra.get('neighborhood', {})
+            if isinstance(neighborhood, dict):
+                neighborhood_name = neighborhood.get('name', 'N/A')
+            wikipedia_articles = extra.get('wikipedia_articles', [])
+            wikipedia_count = len(wikipedia_articles)
+        
+        results_table.add_row("Neighborhood", neighborhood_name)
+        results_table.add_row("Wikipedia Articles", str(wikipedia_count))
         results_table.add_row("[green]Query Time[/green]", f"[green]{result1.execution_time_ms}ms[/green]")
         
         console.print(results_table)
@@ -478,33 +466,33 @@ retrieved with single queries - no JOINs or multiple lookups needed!""",
     )
     console.print(summary_panel)
     
-    # Return combined results
-    all_results = []
+    # Return combined results - keep as PropertyListing objects
+    all_property_results = []
     if result1.property_results:
-        all_results.extend([p.__dict__ for p in result1.property_results])
+        all_property_results.extend(result1.property_results)
     if result2.property_results:
-        all_results.extend([p.__dict__ for p in result2.property_results])
+        all_property_results.extend(result2.property_results)
     if result3.property_results:
-        all_results.extend([p.__dict__ for p in result3.property_results])
+        all_property_results.extend(result3.property_results)
+    
+    # Limit to 10 unique properties for display
+    seen_ids = set()
+    unique_properties = []
+    for prop in all_property_results:
+        if prop.listing_id not in seen_ids:
+            unique_properties.append(prop)
+            seen_ids.add(prop.listing_id)
+            if len(unique_properties) >= 10:
+                break
     
     return MixedEntityResult(
         query_name="Property Relationships via Denormalized Index",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
-        returned_hits=len(all_results),
-        property_results=[PropertyResult(
-            listing_id=r.get('listing_id', ''),
-            property_type=r.get('property_type', 'Unknown'),
-            price=r.get('price', 0),
-            bedrooms=r.get('bedrooms', 0),
-            bathrooms=r.get('bathrooms', 0),
-            square_feet=r.get('square_feet', 0),
-            year_built=r.get('year_built'),
-            address=r.get('address', {}),
-            description=r.get('description', '')
-        ) for r in all_results[:10] if 'listing_id' in r],
+        returned_hits=len(unique_properties),
+        property_results=unique_properties,
         wikipedia_results=[],
-        neighborhood_results=[],  # Limit to 10 for display
+        neighborhood_results=[],
         query_dsl={
             "description": "Denormalized index enables single-query retrieval",
             "comparison": {

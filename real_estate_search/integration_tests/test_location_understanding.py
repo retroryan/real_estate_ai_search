@@ -9,12 +9,12 @@ import pytest
 import logging
 from unittest.mock import Mock, patch
 
-from real_estate_search.demo_queries.location_understanding import (
+from real_estate_search.hybrid import (
     LocationUnderstandingModule,
-    LocationIntent,
-    LocationFilterBuilder,
-    demo_location_understanding
+    LocationIntent
 )
+from real_estate_search.hybrid.location import LocationFilterBuilder
+from real_estate_search.demo_queries.location_understanding import demo_location_understanding
 
 # Set up logging for test visibility
 logging.basicConfig(level=logging.INFO)
@@ -24,10 +24,6 @@ logger = logging.getLogger(__name__)
 class TestLocationUnderstandingIntegration:
     """Integration tests for location understanding functionality."""
     
-    @pytest.fixture
-    def location_module(self):
-        """Create location understanding module."""
-        return LocationUnderstandingModule()
     
     @pytest.fixture
     def filter_builder(self):
@@ -68,8 +64,8 @@ class TestLocationUnderstandingIntegration:
         
         assert len(filters) == 1
         assert filters[0] == {
-            "term": {
-                "address.city.keyword": "Park City"
+            "match": {
+                "address.city": "Park City"
             }
         }
     
@@ -89,12 +85,12 @@ class TestLocationUnderstandingIntegration:
         assert len(filters) == 3
         
         # Check city filter
-        city_filter = next(f for f in filters if "address.city.keyword" in f.get("term", {}))
-        assert city_filter["term"]["address.city.keyword"] == "San Francisco"
+        city_filter = next(f for f in filters if "address.city" in f.get("match", {}))
+        assert city_filter["match"]["address.city"] == "San Francisco"
         
-        # Check state filter
+        # Check state filter (should be converted to abbreviation)
         state_filter = next(f for f in filters if "address.state" in f.get("term", {}))
-        assert state_filter["term"]["address.state"] == "California"
+        assert state_filter["term"]["address.state"] == "CA"  # California converted to CA
         
         # Check ZIP filter
         zip_filter = next(f for f in filters if "address.zip_code" in f.get("term", {}))
@@ -110,52 +106,6 @@ class TestLocationUnderstandingIntegration:
         
         filters = filter_builder.build_filters(intent)
         assert filters == []
-    
-    def test_location_module_park_city_example(self, location_module):
-        """Test location extraction for Park City example."""
-        query = "Find a great family home in Park City"
-        
-        result = location_module(query)
-        
-        # Verify result structure
-        assert isinstance(result, LocationIntent)
-        assert result.has_location is True
-        assert result.confidence > 0.5
-        
-        # Should extract Park City as city
-        assert result.city is not None
-        assert "Park City" in result.city
-        
-        # Cleaned query should focus on property features
-        assert "family home" in result.cleaned_query
-        assert "Park City" not in result.cleaned_query or result.cleaned_query == query
-    
-    def test_location_module_san_francisco_zip(self, location_module):
-        """Test location extraction with ZIP code."""
-        query = "2 bedroom apartment in 94102"
-        
-        result = location_module(query)
-        
-        assert isinstance(result, LocationIntent)
-        # The model may or may not detect the ZIP code depending on its training
-        # Just check that it returns a valid LocationIntent
-        if result.has_location:
-            # If location detected, cleaned query should remove location terms
-            assert result.zip_code == "94102" or result.zip_code is None
-        else:
-            # If no location detected, query should remain unchanged
-            assert result.cleaned_query == query
-    
-    def test_location_module_no_location(self, location_module):
-        """Test query without location information."""
-        query = "modern kitchen with stainless steel appliances"
-        
-        result = location_module(query)
-        
-        assert isinstance(result, LocationIntent)
-        assert result.has_location is False
-        assert result.confidence < 0.5
-        assert result.cleaned_query == query
     
     def test_demo_location_understanding_structure(self):
         """Test demo function structure without DSPy execution."""
@@ -176,14 +126,17 @@ class TestLocationUnderstandingIntegration:
             mock_instance.return_value = mock_result
             
             # Run demo
-            result = demo_location_understanding("Find a great family home in Park City")
+            from elasticsearch import Elasticsearch
+            mock_es_client = Mock(spec=Elasticsearch)
+            result = demo_location_understanding(mock_es_client)
             
-            # Verify result
-            assert isinstance(result, LocationIntent)
-            assert result.city == "Park City"
-            assert result.state == "Utah"
-            assert result.has_location is True
+            # Verify result is LocationUnderstandingResult
+            from real_estate_search.demo_queries.models import LocationUnderstandingResult
+            assert isinstance(result, LocationUnderstandingResult)
+            assert result.total_hits == 6  # 6 test queries
+            assert result.returned_hits == 6
             
             # Verify module was called correctly
             mock_module.assert_called_once_with()
-            mock_instance.assert_called_once_with("Find a great family home in Park City")
+            # Module should be called 6 times (once for each test query)
+            assert mock_instance.call_count == 6

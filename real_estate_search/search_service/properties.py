@@ -213,7 +213,7 @@ class PropertySearchService(BaseSearchService):
             bool_query["bool"]["filter"].append({
                 "geo_distance": {
                     "distance": f"{request.geo_distance_km}km",
-                    "location": {
+                    "address.location": {
                         "lat": request.geo_location.lat,
                         "lon": request.geo_location.lon
                     }
@@ -241,7 +241,7 @@ class PropertySearchService(BaseSearchService):
             # Add sorting by distance
             query["sort"] = [{
                 "_geo_distance": {
-                    "location": {
+                    "address.location": {
                         "lat": request.geo_location.lat,
                         "lon": request.geo_location.lon
                     },
@@ -338,6 +338,33 @@ class PropertySearchService(BaseSearchService):
         
         return query
     
+    def _extract_address(self, address_data: Any) -> PropertyAddress:
+        """
+        Extract address from various data formats.
+        
+        Args:
+            address_data: Address data as dict or Address object
+            
+        Returns:
+            PropertyAddress for API response
+        """
+        # Handle dict format from Elasticsearch
+        if isinstance(address_data, dict):
+            return PropertyAddress(
+                street=address_data.get("street", ""),
+                city=address_data.get("city", ""),
+                state=address_data.get("state", ""),
+                zip_code=address_data.get("zip_code", "")
+            )
+        
+        # Handle Address object from PropertyListing
+        return PropertyAddress(
+            street=getattr(address_data, 'street', ''),
+            city=getattr(address_data, 'city', ''),
+            state=getattr(address_data, 'state', ''),
+            zip_code=getattr(address_data, 'zip_code', '')
+        )
+    
     def _transform_response(
         self,
         es_response: Dict[str, Any],
@@ -358,13 +385,8 @@ class PropertySearchService(BaseSearchService):
         for hit in es_response.get("hits", {}).get("hits", []):
             source = hit["_source"]
             
-            # Build address
-            address = PropertyAddress(
-                street=source.get("address", {}).get("street", ""),
-                city=source.get("address", {}).get("city", ""),
-                state=source.get("address", {}).get("state", ""),
-                zip_code=source.get("address", {}).get("zip_code", "")
-            )
+            # Extract address using dedicated method
+            address = self._extract_address(source.get("address", {}))
             
             # Build property result
             result = PropertyResult(
@@ -377,7 +399,7 @@ class PropertySearchService(BaseSearchService):
                 address=address,
                 description=source.get("description", ""),
                 features=source.get("features", []),
-                score=hit.get("_score", 0)
+                score=hit.get("_score") or 0.0
             )
             
             # Add distance if present (geo queries)

@@ -1,11 +1,17 @@
-"""MCP tool for hybrid property search."""
+"""MCP tool for natural language property search using hybrid search engine."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 from fastmcp import Context
+from elasticsearch import Elasticsearch
 
-from ..models.responses import PropertySearchResponse, Property, PropertyAddress
+from ...hybrid import HybridSearchEngine
+from ...search_service.models import (
+    PropertySearchResponse,
+    PropertyResult,
+    PropertyAddress,
+    SearchError
+)
 from ..utils.logging import get_request_logger
-from ...hybrid import HybridSearchEngine, HybridSearchParams
 
 
 async def search_properties_hybrid(
@@ -14,91 +20,117 @@ async def search_properties_hybrid(
     size: int = 10,
     include_location_extraction: bool = False
 ) -> Dict[str, Any]:
-    """Search for properties using hybrid search with location understanding.
+    """Search properties using natural language with AI understanding.
     
-    This tool combines semantic vector search, traditional text search, and geographic
-    filtering using Elasticsearch's native RRF (Reciprocal Rank Fusion). It automatically
-    extracts location information from natural language queries using DSPy.
+    This tool uses the HybridSearchEngine to:
+    - Extract location information from natural language queries
+    - Generate semantic embeddings for conceptual matching
+    - Combine text and vector search with RRF
+    - Apply location filters efficiently during search
     
     Args:
-        query: Natural language property search query (e.g., "luxury waterfront condo in San Francisco")
-        size: Number of results to return (1-50, default 10)  
-        include_location_extraction: Include location extraction details in response (default false)
+        query: Natural language search query
+        size: Number of results to return (1-100, default 10)
+        include_location_extraction: Include location extraction details in response
         
     Returns:
-        Dict containing HybridSearchResponse with property results and metadata
-        
-    Raises:
-        ValidationError: If input parameters are invalid
-        ValueError: If required services are not available
-        Exception: For other search execution errors
+        Search results with property details and optional location metadata
     """
-    # Get request ID safely
+    # Get request ID for logging
     request_id = getattr(context, 'request_id', "unknown")
     logger = get_request_logger(request_id)
-    logger.info(f"Hybrid property search: {query}")
+    logger.info(f"Natural language property search: {query}")
     
     try:
-        # Get hybrid search engine from context
-        hybrid_search_engine: HybridSearchEngine = context.get("hybrid_search_engine")
-        if not hybrid_search_engine:
-            raise ValueError("Hybrid search engine service not available")
+        # Get Elasticsearch client from context - note: this is the ElasticsearchClient wrapper
+        es_client_wrapper = context.get("es_client")
+        if not es_client_wrapper:
+            raise ValueError("Elasticsearch client not available")
         
-        # Execute hybrid search with location extraction
-        logger.info(f"Executing hybrid search: query='{query}', size={size}")
-        hybrid_result = hybrid_search_engine.search_with_location(query, size)
+        # Get the actual Elasticsearch client from the wrapper
+        es_client: Elasticsearch = es_client_wrapper.client
         
-        # Format properties for standard response
-        properties: List[Property] = []
-        for result in hybrid_result.results:
-            # Access property data from SearchResult object
-            prop_data = result.property_data
+        # Get config from context
+        config = context.get("config")
+        
+        # Initialize hybrid search engine (it will load its own AppConfig if config is None)
+        hybrid_engine = HybridSearchEngine(es_client, None)
+        
+        # Execute location-aware search
+        hybrid_result = hybrid_engine.search_with_location(
+            query=query,
+            size=min(size, 100)  # Cap at 100
+        )
+        
+        # Transform to PropertySearchResponse format
+        property_results = []
+        for search_result in hybrid_result.results:
+            # Extract property data
+            property_data = search_result.property_data
             
-            # Extract address components safely
-            address_data = prop_data.get('address', {})
+            # Build PropertyAddress
+            address_data = property_data.get("address", {})
             address = PropertyAddress(
-                street=address_data.get('street'),
-                city=address_data.get('city'),
-                state=address_data.get('state'),
-                zip_code=address_data.get('zip_code')
+                street=address_data.get("street", ""),
+                city=address_data.get("city", ""),
+                state=address_data.get("state", ""),
+                zip_code=address_data.get("zip_code", "")
             )
             
-            property_result = Property(
-                listing_id=result.listing_id,
-                property_type=prop_data.get('property_type'),
+            # Build PropertyResult
+            result = PropertyResult(
+                listing_id=property_data.get("listing_id", ""),
+                property_type=property_data.get("property_type", ""),
+                price=property_data.get("price", 0),
+                bedrooms=property_data.get("bedrooms", 0),
+                bathrooms=property_data.get("bathrooms", 0),
+                square_feet=property_data.get("square_feet", 0),
                 address=address,
-                price=prop_data.get('price'),
-                bedrooms=prop_data.get('bedrooms'),
-                bathrooms=prop_data.get('bathrooms'),
-                square_feet=prop_data.get('square_feet'),
-                description=prop_data.get('description', '')[:500] if prop_data.get('description') else None,
-                features=prop_data.get('features', []),
-                score=result.hybrid_score
+                description=property_data.get("description", ""),
+                features=property_data.get("features", []),
+                score=search_result.hybrid_score
             )
-            properties.append(property_result)
+            
+            property_results.append(result)
         
-        # Build location extraction if requested
-        location_extracted = None
+        # Build response
+        response = PropertySearchResponse(
+            results=property_results,
+            total_hits=hybrid_result.total_hits,
+            execution_time_ms=hybrid_result.execution_time_ms
+        )
+        
+        # Convert to dict for MCP response
+        response_dict = response.model_dump()
+        
+        # Add location extraction metadata if requested
         if include_location_extraction and hybrid_result.location_intent:
-            location_extracted = {
-                'city': hybrid_result.location_intent.city,
-                'state': hybrid_result.location_intent.state,
-                'has_location': hybrid_result.location_intent.has_location,
-                'cleaned_query': hybrid_result.location_intent.cleaned_query
+            location_intent = hybrid_result.location_intent
+            response_dict["location_extraction"] = {
+                "extracted": location_intent.has_location,
+                "city": location_intent.city,
+                "state": location_intent.state,
+                "neighborhood": location_intent.neighborhood,
+                "zip_code": location_intent.zip_code,
+                "cleaned_query": location_intent.cleaned_query,
+                "confidence": location_intent.confidence
             }
         
-        # Create standard response
-        response = PropertySearchResponse(
-            properties=properties,
-            total_results=hybrid_result.total_hits,
-            returned_results=len(properties),
-            execution_time_ms=hybrid_result.execution_time_ms,
-            query=query,
-            location_extracted=location_extracted
-        )
-        logger.info(f"Search completed successfully: {len(properties)} results in {hybrid_result.execution_time_ms}ms")
-        return response.model_dump()
+        # Add search metadata
+        response_dict["search_metadata"] = {
+            "search_type": "hybrid_with_location",
+            "rrf_used": True,
+            "location_extracted": hybrid_result.location_intent.has_location if hybrid_result.location_intent else False
+        }
+        
+        return response_dict
         
     except Exception as e:
-        logger.error(f"Hybrid property search failed: {e}")
-        raise
+        logger.error(f"Natural language property search failed: {e}")
+        # Return error in search_service format
+        error = SearchError(
+            error_type="SEARCH_FAILED",
+            message=str(e),
+            details={"query": query, "search_type": "hybrid_with_location"}
+        )
+        return {"error": error.model_dump()}

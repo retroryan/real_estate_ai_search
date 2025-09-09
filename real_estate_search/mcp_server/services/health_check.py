@@ -3,15 +3,24 @@
 import os
 from datetime import datetime
 from typing import Dict, Any, Literal
+from pydantic import BaseModel, Field
 
 from ..settings import MCPServerConfig
-from ..models.search import HealthCheckResponse
 from .elasticsearch_client import ElasticsearchClient
 from ..utils.logging import get_logger
 from ...indexer.enums import IndexName
 
 
 logger = get_logger(__name__)
+
+
+class HealthCheckResponse(BaseModel):
+    """Health check response model."""
+    
+    status: Literal["healthy", "degraded", "unhealthy"] = Field(description="Overall status")
+    timestamp: datetime = Field(description="Check timestamp")
+    services: Dict[str, Dict[str, Any]] = Field(description="Individual service statuses")
+    version: str = Field(description="Server version")
 
 
 class HealthCheckService:

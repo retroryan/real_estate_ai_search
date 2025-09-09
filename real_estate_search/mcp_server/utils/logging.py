@@ -74,8 +74,9 @@ def setup_logging(config: LoggingConfig) -> None:
     root_logger.addHandler(console_handler)
     
     # Add file handler if specified
-    if config.file_path:
-        file_path = Path(config.file_path)
+    file_path_attr = getattr(config, 'file_path', None)
+    if file_path_attr:
+        file_path = Path(file_path_attr)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         file_handler = logging.FileHandler(file_path)
@@ -90,7 +91,7 @@ def setup_logging(config: LoggingConfig) -> None:
     root_logger.info("Logging configured", extra={
         "level": config.level,
         "structured": config.structured,
-        "file_path": str(config.file_path) if config.file_path else None
+        "file_path": str(file_path_attr) if file_path_attr else None
     })
 
 

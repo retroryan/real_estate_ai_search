@@ -15,7 +15,6 @@ from ..demo_queries import (
     demo_semantic_search,
     demo_multi_entity_search,
     demo_wikipedia_search,
-    demo_wikipedia_fulltext,
     demo_wikipedia_location_search,
     demo_simplified_relationships,
     demo_natural_language_search,
@@ -36,6 +35,7 @@ from ..demo_queries import (
     demo_location_aware_neighborhood_character,
     demo_location_aware_search_showcase
 )
+from ..demo_queries.wikipedia import WikipediaDemoRunner
 from .models import DemoQuery, DemoExecutionResult
 
 
@@ -113,7 +113,7 @@ class DemoRunner:
                 number=9,
                 name="Wikipedia Full-Text Search",
                 description="Full-text search across Wikipedia articles",
-                query_function="demo_wikipedia_fulltext"
+                query_function="WikipediaDemoRunner.run_demo"
             ),
             10: DemoQuery(
                 number=10,
@@ -304,10 +304,10 @@ class DemoRunner:
                 return execution_result
             
             # Standard handling for demos that return single DemoQueryResult
-            # Extract query DSL if verbose
+            # Extract query DSL if verbose - all results have query_dsl field
             query_dsl = None
-            if verbose and hasattr(result, 'query'):
-                query_dsl = result.query
+            if verbose and result:
+                query_dsl = result.query_dsl
             
             # Create execution result
             execution_result = DemoExecutionResult(
@@ -351,7 +351,7 @@ class DemoRunner:
             6: demo_semantic_search,
             7: demo_multi_entity_search,
             8: demo_wikipedia_search,
-            9: demo_wikipedia_fulltext,
+            9: lambda es: WikipediaDemoRunner(es).run_demo(),
             10: demo_simplified_relationships,
             11: demo_natural_language_search,
             12: demo_natural_language_examples,

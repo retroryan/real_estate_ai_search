@@ -41,29 +41,10 @@ from typing import List, Dict, Any, Optional, Generator
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk, BulkIndexError
 from pydantic import BaseModel, Field
+from ..models.wikipedia import WikipediaArticle
 
 
-class WikipediaDocument(BaseModel):
-    """Represents a Wikipedia document in Elasticsearch."""
-    id: str
-    page_id: str
-    title: str
-    article_filename: Optional[str] = None
-    content_loaded: bool = False
-    full_content: Optional[str] = None
-    
-    @classmethod
-    def from_es_hit(cls, hit: Dict[str, Any]) -> 'WikipediaDocument':
-        """Create a WikipediaDocument from an Elasticsearch hit."""
-        source = hit['_source']
-        return cls(
-            id=hit['_id'],
-            page_id=source.get('page_id', ''),
-            title=source.get('title', ''),
-            article_filename=source.get('article_filename'),
-            content_loaded=source.get('content_loaded', False),
-            full_content=source.get('full_content')
-        )
+# WikipediaDocument replaced by WikipediaArticle from models/wikipedia.py
 
 
 class WikipediaEnrichmentConfig(BaseModel):
@@ -144,7 +125,7 @@ class WikipediaIndexer:
         self.logger = logging.getLogger(__name__)
         self.result = WikipediaEnrichmentResult()
     
-    def query_documents_needing_enrichment(self) -> Generator[WikipediaDocument, None, None]:
+    def query_documents_needing_enrichment(self) -> Generator[WikipediaArticle, None, None]:
         """
         Query Elasticsearch for Wikipedia documents needing enrichment.
         
@@ -153,7 +134,7 @@ class WikipediaIndexer:
         - content_loaded = false or missing (not yet enriched)
         
         Yields:
-            WikipediaDocument instances needing enrichment
+            WikipediaArticle instances needing enrichment
         """
         query = {
             "query": {
@@ -183,7 +164,9 @@ class WikipediaIndexer:
         while hits:
             for hit in hits:
                 self.result.total_documents_scanned += 1
-                doc = WikipediaDocument.from_es_hit(hit)
+                # Create WikipediaArticle from the hit
+                source = hit['_source']
+                doc = WikipediaArticle.from_elasticsearch(hit)
                 if not doc.content_loaded and doc.article_filename:
                     self.result.documents_needing_enrichment += 1
                     yield doc
@@ -199,12 +182,12 @@ class WikipediaIndexer:
         # Clear scroll
         self.es.clear_scroll(scroll_id=scroll_id)
     
-    def load_html_content(self, doc: WikipediaDocument) -> Optional[str]:
+    def load_html_content(self, doc: WikipediaArticle) -> Optional[str]:
         """
         Load HTML content from disk for a Wikipedia document.
         
         Args:
-            doc: WikipediaDocument with article_filename
+            doc: WikipediaArticle with article_filename
             
         Returns:
             HTML content as string, or None if file not found
@@ -227,7 +210,7 @@ class WikipediaIndexer:
             self.result.errors.append(f"Read error for {file_path}: {str(e)}")
             return None
     
-    def prepare_bulk_actions(self, documents: List[WikipediaDocument]) -> List[Dict[str, Any]]:
+    def prepare_bulk_actions(self, documents: List[WikipediaArticle]) -> List[Dict[str, Any]]:
         """
         Prepare bulk update actions for Elasticsearch.
         
@@ -238,7 +221,7 @@ class WikipediaIndexer:
         3. Set metadata fields (content_loaded, content_loaded_at, content_length)
         
         Args:
-            documents: List of WikipediaDocument instances with HTML content
+            documents: List of WikipediaArticle instances with HTML content
             
         Returns:
             List of bulk update actions for Elasticsearch
@@ -263,7 +246,7 @@ class WikipediaIndexer:
         
         return actions
     
-    def process_batch(self, batch: List[WikipediaDocument]) -> int:
+    def process_batch(self, batch: List[WikipediaArticle]) -> int:
         """
         Process a batch of documents through the enrichment pipeline.
         
@@ -278,7 +261,7 @@ class WikipediaIndexer:
            - Metadata setting
         
         Args:
-            batch: List of WikipediaDocument instances
+            batch: List of WikipediaArticle instances
             
         Returns:
             Number of successfully processed documents

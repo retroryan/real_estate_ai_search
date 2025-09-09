@@ -268,25 +268,35 @@ class DemoCommand(BaseCommand):
             query_func = self.demo_runner._get_demo_function(self.args.demo_number)
             
             try:
-                # Wrap the ES client to capture queries
-                from ..demo_queries.query_capture import wrap_es_client_for_demo
-                wrapped_client = wrap_es_client_for_demo(self.es_client.client, self.args.demo_number)
+                # Execute the demo with the actual Elasticsearch client
+                full_result = query_func(self.es_client.client)
                 
-                # Execute the demo with the wrapped client
-                full_result = query_func(wrapped_client)
+                # Handle demos that return a list of results (demo 12 and 27)
+                if self.args.demo_number in [12, 27]:
+                    # These demos handle their own display internally
+                    # Just check if we got results
+                    if full_result:
+                        return OperationStatus(
+                            operation="demo",
+                            success=True,
+                            message=f"Demo {self.args.demo_number} executed successfully"
+                        )
+                    else:
+                        return OperationStatus(
+                            operation="demo",
+                            success=False,
+                            message=f"Demo {self.args.demo_number} returned no results"
+                        )
+                else:
+                    # All other demo results inherit from BaseQueryResult and have display method
+                    if full_result:
+                        print(full_result.display(verbose=self.args.verbose))
                 
-                # Save the query summary
-                wrapped_client.save_summary()
-                
-                # Print the result display if it has one
-                if hasattr(full_result, 'display'):
-                    print(full_result.display(verbose=self.args.verbose))
-                
-                return OperationStatus(
-                    operation="demo",
-                    success=True,
-                    message=f"Demo {self.args.demo_number} executed successfully"
-                )
+                    return OperationStatus(
+                        operation="demo",
+                        success=True,
+                        message=f"Demo {self.args.demo_number} executed successfully"
+                    )
             except Exception as e:
                 print(f"✗ Error executing demo: {str(e)}")
                 return OperationStatus(

@@ -8,19 +8,22 @@ ELASTICSEARCH AGGREGATIONS OVERVIEW:
 - Can be nested for complex multi-dimensional analysis
 """
 
-from typing import Dict, Any, List
-from elasticsearch import Elasticsearch
 import logging
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
+from typing import Dict, Any, List
+
+from elasticsearch import Elasticsearch
 from rich import box
 from rich.columns import Columns
-from rich.progress import Progress, BarColumn, TextColumn
+from rich.console import Console
 from rich.layout import Layout
+from rich.panel import Panel
+from rich.progress import Progress, BarColumn, TextColumn
+from rich.table import Table
+from rich.text import Text
 
-from .result_models import AggregationSearchResult, PropertyResult
+from .result_models import AggregationSearchResult
+from ..converters import PropertyConverter
+from ..models import PropertyListing
 
 logger = logging.getLogger(__name__)
 
@@ -319,20 +322,8 @@ def demo_price_distribution(
         # DISPLAY RESULTS (separated from query logic)
         display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
-        # Convert raw property dicts to PropertyResult objects
-        top_properties = []
-        for prop in property_results:
-            top_properties.append(PropertyResult(
-                listing_id=prop.get('listing_id', ''),
-                property_type=prop.get('property_type', 'Unknown'),
-                price=prop.get('price', 0),
-                bedrooms=prop.get('bedrooms', 0),
-                bathrooms=prop.get('bathrooms', 0),
-                square_feet=prop.get('square_feet', 0),
-                year_built=prop.get('year_built'),
-                address=prop.get('address', {}),
-                description=prop.get('description', '')
-            ))
+        # Convert raw property dicts to PropertyListing objects using converter
+        top_properties = PropertyConverter.from_elasticsearch_batch(property_results)
         
         return AggregationSearchResult(
             query_name=f"Demo 5: Price Distribution Analysis",

@@ -89,7 +89,6 @@ class FieldName(StrEnum):
     # Description and features
     DESCRIPTION = "description"
     FEATURES = "features"
-    AMENITIES = "amenities"
     
     # Status and dates
     STATUS = "status"
@@ -139,7 +138,6 @@ class AggregationType(StrEnum):
     BEDROOM_COUNTS = "bedroom_counts"
     BATHROOM_COUNTS = "bathroom_counts"
     FEATURES = "features"
-    AMENITIES = "amenities"
     PRICE_STATS = "price_stats"
     SQFT_STATS = "sqft_stats"
     STATUS_DISTRIBUTION = "status_distribution"

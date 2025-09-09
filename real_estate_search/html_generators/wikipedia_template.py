@@ -486,10 +486,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                             <div class="highlight-text">{{ highlight.to_html() | safe }}</div>
                             {% endfor %}
                         </div>
-                        {% elif doc.summary %}
+                        {% elif doc.long_summary %}
                         <div class="highlights">
                             <div class="highlight-title">Summary</div>
-                            <div class="highlight-text">{{ doc.summary }}</div>
+                            <div class="highlight-text">{{ doc.long_summary }}</div>
                         </div>
                         {% endif %}
                     </div>

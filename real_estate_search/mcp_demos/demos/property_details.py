@@ -83,12 +83,7 @@ async def demo_property_details_deep_dive(
                 addr_tree.add(f"State: {addr.get('state', 'N/A')}")
                 addr_tree.add(f"ZIP: {addr.get('zip_code', 'N/A')}")
             
-            # Features & Amenities
-            if property_data.get("amenities"):
-                amenities = tree.add("[cyan]Amenities[/cyan]")
-                for amenity in property_data["amenities"][:10]:
-                    amenities.add(f"✓ {amenity}")
-            
+            # Features
             if property_data.get("features"):
                 features = tree.add("[cyan]Features[/cyan]")
                 for feature in property_data["features"][:10]:

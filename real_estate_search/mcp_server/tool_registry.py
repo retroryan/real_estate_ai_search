@@ -5,13 +5,7 @@ from fastmcp import FastMCP
 import logging
 
 from .utils.context import ToolContext
-from .utils.responses import (
-    create_property_error_response,
-    create_wikipedia_error_response,
-    create_details_error_response
-)
-from .utils.tool_wrapper import with_error_handling
-from .tools import property_tools, wikipedia_tools, hybrid_search_tool
+from .tools import property_tools, wikipedia_tools, hybrid_search_tool, neighborhood_tools
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +33,7 @@ class ToolRegistry:
         self._register_property_search_tools(server)
         self._register_property_detail_tools(server)
         self._register_wikipedia_tools(server)
+        self._register_neighborhood_tools(server)
         self._register_hybrid_search_tool(server)
         self._register_health_check_tool(server)
         
@@ -51,12 +46,6 @@ class ToolRegistry:
             name="search_properties_with_filters",
             description="Search properties when you have SPECIFIC filter requirements (price, bedrooms, location).",
             tags={"property", "search", "filters", "real_estate"}
-        )
-        @with_error_handling(
-            tool_name="search_properties_with_filters",
-            error_response_factory=lambda error, **kwargs: create_property_error_response(
-                error, kwargs.get("query", ""), kwargs.get("search_type", "hybrid")
-            )
         )
         async def search_properties_with_filters(
             query: str,
@@ -94,12 +83,6 @@ class ToolRegistry:
             description="Get detailed information for a specific property by its listing ID.",
             tags={"property", "details", "real_estate"}
         )
-        @with_error_handling(
-            tool_name="get_property_details",
-            error_response_factory=lambda error, **kwargs: create_details_error_response(
-                error, kwargs.get("listing_id", "")
-            )
-        )
         async def get_property_details(listing_id: str) -> Dict[str, Any]:
             """Get detailed information for a specific property."""
             context = ToolContext.from_server(server)
@@ -112,12 +95,6 @@ class ToolRegistry:
             name="get_rich_property_details",
             description="Get comprehensive property listing with embedded neighborhood and Wikipedia data.",
             tags={"property", "details", "enriched", "real_estate"}
-        )
-        @with_error_handling(
-            tool_name="get_rich_property_details",
-            error_response_factory=lambda error, **kwargs: create_details_error_response(
-                error, kwargs.get("listing_id", "")
-            )
         )
         async def get_rich_property_details(
             listing_id: str,
@@ -142,12 +119,6 @@ class ToolRegistry:
             name="search_wikipedia",
             description="Search Wikipedia for general information about any topic or location.",
             tags={"wikipedia", "search", "knowledge"}
-        )
-        @with_error_handling(
-            tool_name="search_wikipedia",
-            error_response_factory=lambda error, **kwargs: create_wikipedia_error_response(
-                error, kwargs.get("query"), kwargs.get("city")
-            )
         )
         async def search_wikipedia(
             query: str,
@@ -176,12 +147,6 @@ class ToolRegistry:
             description="Find Wikipedia articles about a SPECIFIC CITY or neighborhood.",
             tags={"wikipedia", "location", "city", "neighborhood"}
         )
-        @with_error_handling(
-            tool_name="search_wikipedia_by_location",
-            error_response_factory=lambda error, **kwargs: create_wikipedia_error_response(
-                error, city=kwargs.get("city")
-            )
-        )
         async def search_wikipedia_by_location(
             city: str,
             state: Optional[str] = None,
@@ -197,6 +162,70 @@ class ToolRegistry:
                 query=query,
                 size=size
             )
+        
+        @self.app.tool(
+            name="get_wikipedia_article",
+            description="Get complete Wikipedia article details by page ID.",
+            tags={"wikipedia", "article", "details"}
+        )
+        async def get_wikipedia_article(page_id: str) -> Dict[str, Any]:
+            """Get complete Wikipedia article details by page ID."""
+            context = ToolContext.from_server(server)
+            return await wikipedia_tools.get_wikipedia_article(
+                context,
+                page_id=page_id
+            )
+    
+    def _register_neighborhood_tools(self, server):
+        """Register neighborhood search tools."""
+        
+        @self.app.tool(
+            name="search_neighborhoods",
+            description="Search for neighborhoods and related information using Wikipedia data.",
+            tags={"neighborhood", "search", "wikipedia", "location"}
+        )
+        async def search_neighborhoods(
+            query: Optional[str] = None,
+            city: Optional[str] = None,
+            state: Optional[str] = None,
+            include_statistics: bool = False,
+            include_related_properties: bool = False,
+            include_related_wikipedia: bool = False,
+            size: int = 10
+        ) -> Dict[str, Any]:
+            """Search for neighborhoods and related information."""
+            context = ToolContext.from_server(server)
+            return await neighborhood_tools.search_neighborhoods(
+                context,
+                query=query,
+                city=city,
+                state=state,
+                include_statistics=include_statistics,
+                include_related_properties=include_related_properties,
+                include_related_wikipedia=include_related_wikipedia,
+                size=size
+            )
+        
+        @self.app.tool(
+            name="search_neighborhoods_by_location",
+            description="Search for neighborhoods in a specific city with property statistics.",
+            tags={"neighborhood", "location", "statistics", "city"}
+        )
+        async def search_neighborhoods_by_location(
+            city: str,
+            state: Optional[str] = None,
+            include_statistics: bool = True,
+            size: int = 10
+        ) -> Dict[str, Any]:
+            """Search for neighborhoods in a specific city."""
+            context = ToolContext.from_server(server)
+            return await neighborhood_tools.search_neighborhoods_by_location(
+                context,
+                city=city,
+                state=state,
+                include_statistics=include_statistics,
+                size=size
+            )
     
     def _register_hybrid_search_tool(self, server):
         """Register the main hybrid search tool."""
@@ -205,12 +234,6 @@ class ToolRegistry:
             name="search_properties",
             description="PREFERRED: Search properties using natural language queries with AI understanding.",
             tags={"property", "search", "hybrid", "ai", "real_estate", "preferred"}
-        )
-        @with_error_handling(
-            tool_name="search_properties",
-            error_response_factory=lambda error, **kwargs: create_property_error_response(
-                error, kwargs.get("query", ""), "hybrid"
-            )
         )
         async def search_properties(
             query: str,
@@ -234,7 +257,6 @@ class ToolRegistry:
             description="Check the health status of all system components.",
             tags={"system", "health", "monitoring"}
         )
-        @with_error_handling(tool_name="health_check")
         async def health_check() -> Dict[str, Any]:
             """Check the health status of all system components."""
             if not server.health_check_service:

@@ -154,9 +154,8 @@ async def demo_wikipedia_search(
             
             for article in response.articles[:5]:
                 categories = ", ".join(article.categories[:2]) if article.categories else "N/A"
-                # Try long_summary first, then short_summary
-                display_summary = getattr(article, 'long_summary', None) or getattr(article, 'short_summary', None)
-                summary = display_summary[:100] + "..." if display_summary else "N/A"
+                # Access long_summary directly
+                summary = article.long_summary[:100] + "..." if article.long_summary else "N/A"
                 
                 table.add_row(
                     article.title,
