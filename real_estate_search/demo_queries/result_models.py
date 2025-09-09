@@ -3,6 +3,7 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from abc import ABC, abstractmethod
+from real_estate_search.models import PropertyListing, WikipediaArticle
 
 
 class BaseQueryResult(BaseModel):
@@ -45,23 +46,11 @@ class BaseQueryResult(BaseModel):
         console.print(f"⏱️  Execution Time: {self.execution_time_ms}ms | 📊 Total Hits: {self.total_hits} | 📄 Returned: {self.returned_hits}", style="cyan")
 
 
-class PropertyResult(BaseModel):
-    """Individual property result."""
-    listing_id: str = Field(..., description="Property listing ID")
-    property_type: str = Field(..., description="Type of property")
-    price: float = Field(..., description="Property price")
-    bedrooms: int = Field(..., description="Number of bedrooms")
-    bathrooms: float = Field(..., description="Number of bathrooms")
-    square_feet: int = Field(..., description="Square footage")
-    year_built: Optional[int] = Field(None, description="Year built")
-    address: Dict[str, Any] = Field(..., description="Property address")
-    description: str = Field(..., description="Property description")
-    score: Optional[float] = Field(None, description="Search relevance score")
 
 
 class PropertySearchResult(BaseQueryResult):
     """Result for property searches."""
-    results: List[PropertyResult] = Field(..., description="Property search results")
+    results: List[PropertyListing] = Field(..., description="Property search results")
     
     def display(self, verbose: bool = False) -> str:
         """Format property results for display."""
@@ -98,20 +87,13 @@ class PropertySearchResult(BaseQueryResult):
             
             for idx, result in enumerate(self.results[:5], 1):
                 property_text = Text()
-                property_text.append(f"{result.property_type}\n", style="bold")
+                property_text.append(f"{result.display_property_type}\n", style="bold")
                 property_text.append(f"{result.bedrooms}bd/{result.bathrooms}ba • {result.square_feet:,} sqft\n", style="cyan")
                 property_text.append(f"Built {result.year_built if result.year_built else 'N/A'}", style="dim")
                 
-                location_parts = []
-                if result.address.get('street'):
-                    location_parts.append(result.address['street'])
-                if result.address.get('city'):
-                    location_parts.append(result.address['city'])
-                if result.address.get('state'):
-                    location_parts.append(result.address['state'])
-                location = '\n'.join(location_parts) if location_parts else 'N/A'
+                location = result.address.full_address
                 
-                price_text = f"${result.price:,.0f}"
+                price_text = result.display_price
                 
                 description = result.description
                 if len(description) > 100:
@@ -136,16 +118,6 @@ class PropertySearchResult(BaseQueryResult):
         string_buffer.close()
         return output
 
-
-class WikipediaArticle(BaseModel):
-    """Individual Wikipedia article result."""
-    page_id: str = Field(..., description="Wikipedia page ID")
-    title: str = Field(..., description="Article title")
-    summary: str = Field(..., description="Article summary")
-    city: Optional[str] = Field(None, description="Associated city")
-    state: Optional[str] = Field(None, description="Associated state")
-    url: Optional[str] = Field(None, description="Wikipedia URL")
-    score: Optional[float] = Field(None, description="Search relevance score")
 
 
 class WikipediaSearchResult(BaseQueryResult):
@@ -220,7 +192,7 @@ class AggregationBucket(BaseModel):
 class AggregationSearchResult(BaseQueryResult):
     """Result for aggregation queries."""
     aggregations: Dict[str, Any] = Field(..., description="Aggregation results")
-    top_properties: List[PropertyResult] = Field(default_factory=list, description="Sample properties if included")
+    top_properties: List[PropertyListing] = Field(default_factory=list, description="Sample properties if included")
     
     def display(self, verbose: bool = False) -> str:
         """Format aggregation results for display."""
@@ -297,7 +269,7 @@ class AggregationSearchResult(BaseQueryResult):
 
 class MixedEntityResult(BaseQueryResult):
     """Result for multi-entity searches."""
-    property_results: List[PropertyResult] = Field(default_factory=list, description="Property results")
+    property_results: List[PropertyListing] = Field(default_factory=list, description="Property results")
     wikipedia_results: List[WikipediaArticle] = Field(default_factory=list, description="Wikipedia results")
     neighborhood_results: List[Dict[str, Any]] = Field(default_factory=list, description="Neighborhood results")
     

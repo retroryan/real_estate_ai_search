@@ -10,7 +10,8 @@ import time
 from typing import Dict, Any, List, Optional
 from elasticsearch import Elasticsearch
 
-from .result_models import WikipediaSearchResult, WikipediaArticle
+from .result_models import WikipediaSearchResult
+from ..models import WikipediaArticle
 from ..hybrid.location import LocationUnderstandingModule, LocationFilterBuilder
 
 logger = logging.getLogger(__name__)

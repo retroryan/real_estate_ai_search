@@ -8,7 +8,8 @@ All formatting for user display happens here, not in models.
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
-from real_estate_search.demo_queries.es_models import ESProperty, ESNeighborhood, ESWikipedia
+from real_estate_search.models import PropertyListing
+from real_estate_search.demo_queries.es_models import ESNeighborhood, ESWikipedia
 
 
 class PropertyDisplayFormatter:
@@ -46,69 +47,37 @@ class PropertyDisplayFormatter:
             return f"${price:.2f}"
     
     @staticmethod
-    def format_address(property: ESProperty) -> str:
+    def format_address(property: PropertyListing) -> str:
         """Format address for display."""
-        if property.address:
-            parts = []
-            if property.address.street:
-                parts.append(property.address.street)
-            if property.address.city and property.address.state:
-                parts.append(f"{property.address.city}, {property.address.state}")
-            elif property.address.city:
-                parts.append(property.address.city)
-            elif property.address.state:
-                parts.append(property.address.state)
-            return " ".join(parts)
-        return "Address not available"
+        # Use the address property's full_address method
+        return property.address.full_address
     
     @staticmethod
-    def format_summary(property: ESProperty) -> str:
+    def format_summary(property: PropertyListing) -> str:
         """Format property summary line."""
-        parts = []
-        
-        # Bedrooms/Bathrooms
-        if property.bedrooms or property.bathrooms:
-            bed_bath = []
-            if property.bedrooms:
-                bed_bath.append(f"{property.bedrooms}bd")
-            if property.bathrooms:
-                # Format bathrooms to show .5 as fraction
-                bath_int = int(property.bathrooms)
-                if property.bathrooms % 1 == 0.5:
-                    bed_bath.append(f"{bath_int}.5ba")
-                else:
-                    bed_bath.append(f"{bath_int}ba")
-            parts.append("/".join(bed_bath))
-        
-        # Square feet
-        if property.square_feet:
-            parts.append(f"{property.square_feet:,} sqft")
-        
-        # Property type
-        parts.append(PropertyDisplayFormatter.format_property_type(property.property_type))
-        
-        return " | ".join(parts)
+        # Use the property's computed summary property
+        return property.summary
     
     @staticmethod
-    def format_for_display(property: ESProperty) -> Dict[str, Any]:
+    def format_for_display(property: PropertyListing) -> Dict[str, Any]:
         """Format complete property for display."""
         return {
             "listing_id": property.listing_id,
-            "address": PropertyDisplayFormatter.format_address(property),
-            "price": PropertyDisplayFormatter.format_price(property.price),
-            "summary": PropertyDisplayFormatter.format_summary(property),
-            "property_type": PropertyDisplayFormatter.format_property_type(property.property_type),
+            "address": property.address.full_address,
+            "price": property.display_price,
+            "summary": property.summary,
+            "property_type": property.display_property_type,
             "features": property.features,  # Already a list of amenities
             "description": property.description
         }
     
     @staticmethod
-    def format_list_item(property: ESProperty, index: int, score: Optional[float] = None) -> str:
+    def format_list_item(property: PropertyListing, index: int, score: Optional[float] = None) -> str:
         """Format property as a list item for display."""
-        lines = [f"{index}. {PropertyDisplayFormatter.format_address(property)}"]
+        lines = [f"{index}. {property.address.full_address}"]
         
         # Price and summary on second line
-        price_line = f"   {PropertyDisplayFormatter.format_price(property.price)} | {PropertyDisplayFormatter.format_summary(property)}"
+        price_line = f"   {property.display_price} | {property.summary}"
         lines.append(price_line)
         
         # Optional score

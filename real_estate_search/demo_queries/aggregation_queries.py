@@ -20,7 +20,8 @@ from rich.columns import Columns
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.layout import Layout
 
-from .result_models import AggregationSearchResult, PropertyResult
+from .result_models import AggregationSearchResult
+from ..models import PropertyListing
 
 logger = logging.getLogger(__name__)
 
@@ -319,20 +320,10 @@ def demo_price_distribution(
         # DISPLAY RESULTS (separated from query logic)
         display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
-        # Convert raw property dicts to PropertyResult objects
+        # Convert raw property dicts to PropertyListing objects
         top_properties = []
         for prop in property_results:
-            top_properties.append(PropertyResult(
-                listing_id=prop.get('listing_id', ''),
-                property_type=prop.get('property_type', 'Unknown'),
-                price=prop.get('price', 0),
-                bedrooms=prop.get('bedrooms', 0),
-                bathrooms=prop.get('bathrooms', 0),
-                square_feet=prop.get('square_feet', 0),
-                year_built=prop.get('year_built'),
-                address=prop.get('address', {}),
-                description=prop.get('description', '')
-            ))
+            top_properties.append(PropertyListing(**prop))
         
         return AggregationSearchResult(
             query_name=f"Demo 5: Price Distribution Analysis",

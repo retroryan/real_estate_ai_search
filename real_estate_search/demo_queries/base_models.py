@@ -207,70 +207,6 @@ class PropertyFeatures(BaseModel):
         return None
 
 
-class PropertyListing(BaseModel):
-    """Complete property listing model."""
-    listing_id: str = Field(..., description="Unique listing identifier")
-    property_type: Optional[PropertyType] = Field(None, description="Type of property")
-    status: Optional[str] = Field("active", description="Listing status")
-    
-    # Location
-    address: Address = Field(..., description="Property address")
-    neighborhood_id: Optional[str] = Field(None, description="Associated neighborhood")
-    school_district: Optional[str] = Field(None, description="School district")
-    
-    # Pricing
-    price: Optional[float] = Field(None, ge=0, description="Listing price")
-    price_per_sqft: Optional[float] = Field(None, ge=0, description="Price per square foot")
-    hoa_fee: Optional[float] = Field(None, ge=0, description="HOA monthly fee")
-    tax_annual: Optional[float] = Field(None, ge=0, description="Annual property tax")
-    
-    # Features
-    features: Optional[PropertyFeatures] = Field(None, description="Property features")
-    amenities: List[str] = Field(default_factory=list, description="List of amenities")
-    
-    # Descriptions
-    title: Optional[str] = Field(None, max_length=200, description="Listing title")
-    description: Optional[str] = Field(None, description="Full description")
-    highlights: List[str] = Field(default_factory=list, description="Key highlights")
-    
-    # Dates
-    list_date: Optional[datetime] = Field(None, description="Date listed")
-    last_sold_date: Optional[datetime] = Field(None, description="Last sale date")
-    last_sold_price: Optional[float] = Field(None, ge=0, description="Last sale price")
-    
-    # Media
-    photo_count: Optional[int] = Field(None, ge=0, description="Number of photos")
-    virtual_tour_url: Optional[str] = Field(None, description="Virtual tour URL")
-    
-    # Scoring and metadata
-    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
-    highlights: Optional[Dict[str, List[str]]] = Field(None, alias="_highlights", description="Search highlights")
-    
-    model_config = ConfigDict(extra="ignore", use_enum_values=True, populate_by_name=True)
-    
-    @computed_field  # type: ignore
-    @property
-    def display_price(self) -> str:
-        """Format price for display."""
-        if self.price:
-            return f"${self.price:,.0f}"
-        return "Price not available"
-    
-    @computed_field  # type: ignore
-    @property
-    def summary(self) -> str:
-        """Generate property summary."""
-        parts = []
-        if self.features:
-            if self.features.bedrooms:
-                parts.append(f"{self.features.bedrooms} bed")
-            if self.features.bathrooms:
-                parts.append(f"{self.features.bathrooms} bath")
-            if self.features.square_feet:
-                parts.append(f"{self.features.square_feet:,} sqft")
-        if self.property_type:
-            parts.append(str(self.property_type))
-        return " | ".join(parts) if parts else "Property details not available"
 
 
 # ============================================================================
@@ -350,46 +286,6 @@ class Neighborhood(BaseModel):
         return f"{self.name}, {self.city}"
 
 
-# ============================================================================
-# WIKIPEDIA MODELS
-# ============================================================================
-
-class WikipediaArticle(BaseModel):
-    """Wikipedia article model."""
-    page_id: str = Field(..., description="Wikipedia page ID")
-    title: str = Field(..., description="Article title")
-    url: Optional[str] = Field(None, description="Article URL")
-    
-    # Content
-    summary: Optional[str] = Field(None, description="Article summary")
-    content: Optional[str] = Field(None, description="Article content")
-    full_content: Optional[str] = Field(None, description="Full HTML content")
-    content_length: Optional[int] = Field(None, ge=0, description="Content length")
-    
-    # Location relevance
-    city: Optional[str] = Field(None, description="Associated city")
-    state: Optional[str] = Field(None, description="Associated state")
-    relevance_score: Optional[float] = Field(None, ge=0, le=100, description="Location relevance")
-    
-    # Classification
-    categories: List[str] = Field(default_factory=list, description="Wikipedia categories")
-    topics: List[str] = Field(default_factory=list, description="Article topics")
-    content_category: Optional[str] = Field(None, description="Content category")
-    
-    # Metadata
-    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
-    relationship: Optional[str] = Field(None, alias="_relationship", description="Relationship to parent entity")
-    confidence: Optional[float] = Field(None, alias="_confidence", ge=0, le=1, description="Relationship confidence")
-    
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    
-    @computed_field  # type: ignore
-    @property
-    def location_string(self) -> str:
-        """Get location as string."""
-        if self.city and self.state:
-            return f"{self.city}, {self.state}"
-        return self.city or self.state or "Location unknown"
 
 
 # ============================================================================
@@ -591,55 +487,3 @@ class BoolQuery(BaseModel):
             query["bool"]["minimum_should_match"] = self.minimum_should_match
             
         return query
-
-
-# ============================================================================
-# DEMO RESULT MODELS
-# ============================================================================
-
-T = TypeVar('T')
-
-
-class TypedDemoResult(BaseModel, Generic[T]):
-    """Type-safe demo query result."""
-    query_name: str = Field(..., description="Name of the demo query")
-    query_description: str = Field(..., description="What this query demonstrates")
-    
-    # Timing
-    execution_time_ms: int = Field(0, ge=0, description="Query execution time")
-    
-    # Results
-    total_hits: int = Field(0, ge=0, description="Total matching documents")
-    returned_hits: int = Field(0, ge=0, description="Number of returned documents")
-    entities: List[T] = Field(default_factory=list, description="Typed result entities")
-    
-    # Aggregations
-    aggregations: Optional[List[AggregationResult]] = Field(None, description="Aggregation results")
-    
-    # Query details
-    query_dsl: Dict[str, Any] = Field(default_factory=dict, description="Query DSL used")
-    explanation: Optional[str] = Field(None, description="Explanation of results")
-    
-    # Metadata
-    index_used: Optional[str] = Field(None, description="Elasticsearch index queried")
-    
-    model_config = ConfigDict(extra="ignore")
-    
-    @computed_field  # type: ignore
-    @property
-    def success(self) -> bool:
-        """Check if query was successful."""
-        return self.total_hits > 0 or self.aggregations is not None
-    
-    def to_legacy_format(self) -> Dict[str, Any]:
-        """Convert to legacy dictionary format for backward compatibility."""
-        return {
-            "query_name": self.query_name,
-            "execution_time_ms": self.execution_time_ms,
-            "total_hits": self.total_hits,
-            "returned_hits": self.returned_hits,
-            "results": [entity.model_dump(exclude_none=True) for entity in self.entities],
-            "aggregations": self.aggregations,
-            "query_dsl": self.query_dsl,
-            "explanation": self.explanation
-        }

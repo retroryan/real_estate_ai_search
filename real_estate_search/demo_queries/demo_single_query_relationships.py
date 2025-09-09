@@ -15,7 +15,9 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from .result_models import MixedEntityResult, PropertyResult, WikipediaArticle
+from .result_models import MixedEntityResult
+from ..models import WikipediaArticle
+from ..models import PropertyListing
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
@@ -107,17 +109,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=1,
                 returned_hits=1,
-                property_results=[PropertyResult(
-                    listing_id=property_data.get('listing_id', ''),
-                    property_type=property_data.get('property_type', 'Unknown'),
-                    price=property_data.get('price', 0),
-                    bedrooms=property_data.get('bedrooms', 0),
-                    bathrooms=property_data.get('bathrooms', 0),
-                    square_feet=property_data.get('square_feet', 0),
-                    year_built=property_data.get('year_built'),
-                    address=property_data.get('address', {}),
-                    description=property_data.get('description', '')
-                )],
+                property_results=[PropertyListing(**property_data)],
                 wikipedia_results=[WikipediaArticle(
                     page_id=str(a.get('page_id', '')),
                     title=a.get('title', ''),
@@ -193,17 +185,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyResult(
-                    listing_id=r.get('listing_id', ''),
-                    property_type=r.get('property_type', 'Unknown'),
-                    price=r.get('price', 0),
-                    bedrooms=r.get('bedrooms', 0),
-                    bathrooms=r.get('bathrooms', 0),
-                    square_feet=r.get('square_feet', 0),
-                    year_built=r.get('year_built'),
-                    address=r.get('address', {}),
-                    description=r.get('description', '')
-                ) for r in results],
+                property_results=[PropertyListing(**r) for r in results],
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -268,17 +250,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyResult(
-                    listing_id=r.get('listing_id', ''),
-                    property_type=r.get('property_type', 'Unknown'),
-                    price=r.get('price', 0),
-                    bedrooms=r.get('bedrooms', 0),
-                    bathrooms=r.get('bathrooms', 0),
-                    square_feet=r.get('square_feet', 0),
-                    year_built=r.get('year_built'),
-                    address=r.get('address', {}),
-                    description=r.get('description', '')
-                ) for r in results],
+                property_results=[PropertyListing(**r) for r in results],
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -492,17 +464,7 @@ retrieved with single queries - no JOINs or multiple lookups needed!""",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
         returned_hits=len(all_results),
-        property_results=[PropertyResult(
-            listing_id=r.get('listing_id', ''),
-            property_type=r.get('property_type', 'Unknown'),
-            price=r.get('price', 0),
-            bedrooms=r.get('bedrooms', 0),
-            bathrooms=r.get('bathrooms', 0),
-            square_feet=r.get('square_feet', 0),
-            year_built=r.get('year_built'),
-            address=r.get('address', {}),
-            description=r.get('description', '')
-        ) for r in all_results[:10] if 'listing_id' in r],
+        property_results=[PropertyListing(**r) for r in all_results[:10] if 'listing_id' in r],
         wikipedia_results=[],
         neighborhood_results=[],  # Limit to 10 for display
         query_dsl={

@@ -17,7 +17,8 @@ from rich import box
 from rich.text import Text
 from rich.columns import Columns
 
-from .result_models import PropertySearchResult, PropertyResult
+from .result_models import PropertySearchResult
+from ..models import PropertyListing
 from .models import DemoQueryResult
 from ..embeddings import QueryEmbeddingService, EmbeddingConfig
 from ..embeddings.exceptions import (
@@ -103,30 +104,20 @@ def get_embedding_service(config: Optional[AppConfig] = None):
             service.close()
 
 
-def convert_to_property_results(raw_results: List[Dict[str, Any]]) -> List[PropertyResult]:
+def convert_to_property_results(raw_results: List[Dict[str, Any]]) -> List[PropertyListing]:
     """
-    Convert raw Elasticsearch results to PropertyResult objects.
+    Convert raw Elasticsearch results to PropertyListing objects.
     
     Args:
         raw_results: List of raw result dictionaries from Elasticsearch
         
     Returns:
-        List of PropertyResult objects
+        List of PropertyListing objects
     """
     property_results = []
     for result in raw_results:
-        property_results.append(PropertyResult(
-            listing_id=result.get('listing_id', ''),
-            property_type=result.get('property_type', 'Unknown'),
-            price=result.get('price', 0),
-            bedrooms=result.get('bedrooms', 0),
-            bathrooms=result.get('bathrooms', 0),
-            square_feet=result.get('square_feet', 0),
-            year_built=result.get('year_built'),
-            address=result.get('address', {}),
-            description=result.get('description', ''),
-            score=result.get('_score')
-        ))
+        # Pass the whole result dict to PropertyListing, it will handle field mapping
+        property_results.append(PropertyListing(**result))
     return property_results
 
 
@@ -643,10 +634,11 @@ def display_natural_language_results(result: PropertySearchResult):
     display_semantic_search_explanation()
 
 
-def display_property_match_panel(prop: PropertyResult, index: int, query_text: str):
+def display_property_match_panel(prop: PropertyListing, index: int, query_text: str):
     """Display a single property match with insights."""
-    address = prop.address if hasattr(prop, 'address') else {}
-    desc = prop.description if hasattr(prop, 'description') else 'No description available'
+    # PropertyListing always has these fields
+    address = prop.address
+    desc = prop.description or 'No description available'
     
     # Generate match insights
     insights = generate_match_insights(query_text, desc, prop)
@@ -671,7 +663,7 @@ def display_property_match_panel(prop: PropertyResult, index: int, query_text: s
     console.print(panel)
 
 
-def generate_match_insights(query_text: str, description: str, prop: PropertyResult) -> List[str]:
+def generate_match_insights(query_text: str, description: str, prop: PropertyListing) -> List[str]:
     """Generate insights about why a property matches the query."""
     insights = []
     query_lower = query_text.lower()
@@ -747,16 +739,16 @@ def display_natural_language_examples_results(results: List[PropertySearchResult
     display_examples_summary(results)
 
 
-def format_property_summary(prop: PropertyResult, index: int) -> str:
+def format_property_summary(prop: PropertyListing, index: int) -> str:
     """Format a property summary for display."""
-    address = prop.address if hasattr(prop, 'address') else {}
-    desc = prop.description if hasattr(prop, 'description') else 'No description available'
-    street = address.get('street', 'Unknown') if isinstance(address, dict) else 'Unknown'
+    # PropertyListing always has these fields - use the model's properties
+    desc = prop.description or 'No description available'
+    street = prop.address.street or 'Unknown'
     
     summary = f"[bold]{index}. {street}[/bold]\n"
-    summary += f"   [green]${prop.price:,.0f}[/green] • " if hasattr(prop, 'price') and prop.price else "   [green]$N/A[/green] • "
-    summary += f"{prop.bedrooms if hasattr(prop, 'bedrooms') else 'N/A'} bed / {prop.bathrooms if hasattr(prop, 'bathrooms') else 'N/A'} bath • "
-    summary += f"[cyan]Score: {prop.score:.3f}[/cyan]\n" if hasattr(prop, 'score') and prop.score else "[cyan]Score: 0.000[/cyan]\n"
+    summary += f"   [green]{prop.display_price}[/green] • "
+    summary += f"{prop.bedrooms or 'N/A'} bed / {prop.bathrooms or 'N/A'} bath • "
+    summary += f"[cyan]Score: {prop.score:.3f}[/cyan]\n" if prop.score else "[cyan]Score: 0.000[/cyan]\n"
     summary += f"   [dim]{desc}[/dim]\n\n"
     
     return summary
