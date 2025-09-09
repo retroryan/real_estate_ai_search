@@ -271,8 +271,8 @@ class DemoCommand(BaseCommand):
                 # Execute the demo with the actual Elasticsearch client
                 full_result = query_func(self.es_client.client)
                 
-                # Print the result display if it has one
-                if hasattr(full_result, 'display'):
+                # All demo results inherit from BaseQueryResult and have display method
+                if full_result:
                     print(full_result.display(verbose=self.args.verbose))
                 
                 return OperationStatus(

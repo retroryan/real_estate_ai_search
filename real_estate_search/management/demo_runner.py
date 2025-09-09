@@ -304,10 +304,10 @@ class DemoRunner:
                 return execution_result
             
             # Standard handling for demos that return single DemoQueryResult
-            # Extract query DSL if verbose
+            # Extract query DSL if verbose - all results have query_dsl field
             query_dsl = None
-            if verbose and hasattr(result, 'query'):
-                query_dsl = result.query
+            if verbose and result:
+                query_dsl = result.query_dsl
             
             # Create execution result
             execution_result = DemoExecutionResult(

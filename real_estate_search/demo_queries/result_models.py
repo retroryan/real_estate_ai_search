@@ -157,7 +157,7 @@ class WikipediaSearchResult(BaseQueryResult):
             for result in self.results[:10]:
                 location = f"{result.city or 'N/A'}, {result.state or 'N/A'}"
                 
-                summary = result.summary
+                summary = result.long_summary or ''
                 if len(summary) > 150:
                     summary = summary[:147] + "..."
                 
@@ -209,9 +209,9 @@ class AggregationSearchResult(BaseQueryResult):
         self._display_header(console)
         
         # Display aggregations (custom per aggregation type)
-        if self.aggregations:
-            console.print(f"\n📊 AGGREGATION RESULTS:", style="bold magenta")
-            # Aggregation display would be customized based on the specific aggregation
+        # Note: Aggregation display is handled by the specific demo functions
+        # (e.g., display_neighborhood_stats, display_price_distribution)
+        # to avoid duplicate output
             
         # Display sample properties if included
         if self.top_properties:

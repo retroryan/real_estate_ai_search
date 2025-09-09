@@ -206,7 +206,7 @@ def create_wikipedia_panel(articles: List[WikipediaArticle]) -> Panel:
     
     for i, article in enumerate(articles[:3], 1):  # Limit to first 3
         title = article.title
-        summary = article.summary or ''
+        summary = article.short_summary or article.long_summary or ''
         confidence = article.confidence
         relationship_type = article.relationship_type or 'related'
         
@@ -386,9 +386,12 @@ def demo_rich_property_listing(
         border_style="yellow"
     ))
     
-    # Generate HTML file (convert model back to dict for HTML generator)
+    # Generate HTML file with complete data including wikipedia articles
     html_generator = PropertyListingHTMLGenerator(output_dir="real_estate_search/out_html")
-    html_content = html_generator.generate_html(property_model.model_dump())
+    property_data_for_html = property_model.model_dump()
+    property_data_for_html['wikipedia_articles'] = [article.model_dump() for article in wikipedia_articles]
+    property_data_for_html['neighborhood'] = neighborhood.model_dump() if neighborhood else None
+    html_content = html_generator.generate_html(property_data_for_html)
     
     # Save HTML file with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

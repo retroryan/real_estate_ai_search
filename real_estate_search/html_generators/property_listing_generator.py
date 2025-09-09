@@ -708,7 +708,9 @@ class PropertyListingHTMLGenerator(BaseHTMLGenerator):
         wiki_cards = []
         for article in articles[:6]:  # Limit to 6 articles
             title = article.get('title', 'Unknown Article')
-            summary = article.get('summary', '')[:200] + '...' if article.get('summary') else 'No summary available.'
+            # Use long_summary field from WikipediaArticle model
+            long_summary = article.get('long_summary', '')
+            summary = long_summary[:200] + '...' if long_summary else 'No summary available.'
             confidence = article.get('confidence', 0)
             relationship_type = article.get('relationship_type', 'related')
             url = article.get('url', '#')

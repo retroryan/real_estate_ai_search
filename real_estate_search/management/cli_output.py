@@ -232,7 +232,8 @@ class CLIOutput:
         if not demo_result.success:
             print(f"✗ Error executing demo: {demo_result.error}")
         else:
-            if full_result and hasattr(full_result, 'display'):
+            if full_result:
+                # All demo results inherit from BaseQueryResult and have display method
                 print(full_result.display(verbose=verbose))
             else:
                 print(f"✓ Demo executed successfully")

@@ -17,8 +17,8 @@ class WikipediaQueryBuilder:
         self.default_fields = ["full_content", "title^2", "short_summary", "long_summary"]
         self.source_fields = [
             "page_id", "title", "city", "state", 
-            "categories", "content", "content_length", 
-            "short_summary", "url"
+            "categories", "content_length", 
+            "short_summary", "long_summary", "url"
         ]
     
     def create_highlight_config(self) -> Dict[str, Any]:

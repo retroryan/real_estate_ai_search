@@ -7,14 +7,12 @@ managing the indexing pipeline, document processing, and bulk operations.
 
 from .wikipedia_indexer import (
     WikipediaIndexer,
-    WikipediaDocument,
     WikipediaEnrichmentConfig,
     WikipediaEnrichmentResult
 )
 
 __all__ = [
     'WikipediaIndexer',
-    'WikipediaDocument', 
     'WikipediaEnrichmentConfig',
     'WikipediaEnrichmentResult'
 ]

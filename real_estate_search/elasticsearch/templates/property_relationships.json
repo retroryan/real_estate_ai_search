@@ -184,7 +184,11 @@
           "index": false,
           "doc_values": false
         },
-        "summary": {
+        "short_summary": {
+          "type": "text",
+          "analyzer": "english"
+        },
+        "long_summary": {
           "type": "text",
           "analyzer": "english"
         },

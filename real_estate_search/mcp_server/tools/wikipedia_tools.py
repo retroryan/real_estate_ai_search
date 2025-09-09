@@ -213,7 +213,7 @@ async def search_wikipedia_by_location(
             article_data = {
                 "page_id": article.page_id,
                 "title": article.title,
-                "short_summary": article.summary[:300] if article.summary else "",
+                "short_summary": (article.short_summary or article.long_summary or '')[:300],
                 "location_match": {
                     "city": None,  # These fields aren't in WikipediaResult
                     "state": None,

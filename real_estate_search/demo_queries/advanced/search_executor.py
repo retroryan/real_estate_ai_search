@@ -254,25 +254,15 @@ class AdvancedSearchExecutor:
                 if 'highlight' in hit:
                     source['_highlights'] = hit['highlight']
                 
-                # Extract summary
-                summary = source.get('short_summary', '').strip()
-                if not summary:
-                    summary = source.get('long_summary', '').strip()
-                if not summary and source.get('full_content'):
-                    content = source['full_content']
-                    lines = content.split('\n')
-                    for i, line in enumerate(lines):
-                        if i > 0 and line.strip() and line.strip() != source.get('title', ''):
-                            summary = ' '.join(line.split())[:250]
-                            break
-                
                 results.append(WikipediaArticle(
                     page_id=str(source.get('page_id', hit.get('_id', ''))),
                     title=source.get('title', ''),
-                    summary=summary if summary else 'No summary available',
+                    short_summary=source.get('short_summary', ''),
+                    long_summary=source.get('long_summary', ''),
                     city=source.get('city'),
                     state=source.get('state'),
-                    url=source.get('url')
+                    url=source.get('url'),
+                    score=hit.get('_score')
                 ))
             
             return WikipediaResponse(

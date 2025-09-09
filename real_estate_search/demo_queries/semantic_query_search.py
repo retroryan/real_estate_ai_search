@@ -355,7 +355,7 @@ def demo_natural_language_search(
 def demo_natural_language_examples(
     es_client: Elasticsearch,
     config: Optional[AppConfig] = None
-) -> List[PropertySearchResult]:
+) -> PropertySearchResult:
     """
     Run multiple natural language search examples.
     
@@ -367,9 +367,22 @@ def demo_natural_language_examples(
         config: Application configuration
         
     Returns:
-        List of PropertySearchResult objects, one for each example query
+        PropertySearchResult containing all example query results
     """
-    demo_results = []
+    # Early return if no examples configured
+    if not EXAMPLE_QUERIES:
+        return create_error_result(
+            query_name="Natural Language Examples",
+            query_description="Multiple natural language queries",
+            error_message="No example queries configured"
+        )
+    
+    all_properties = []
+    total_execution_time = 0
+    total_hits_sum = 0
+    query_descriptions = []
+    successful_queries = 0
+    failed_queries = 0
     
     try:
         with get_embedding_service(config) as embedding_service:
@@ -394,41 +407,81 @@ def demo_natural_language_examples(
                     total_time_ms = embedding_time_ms + search_time_ms
                     property_results = convert_to_property_results(raw_results)
                     
-                    demo_results.append(PropertySearchResult(
-                        query_name=f"Example {i}: {query_description}",
-                        query_description=f"Natural language search: '{query_text}'",
-                        execution_time_ms=int(total_time_ms),
-                        total_hits=total_hits,
-                        returned_hits=len(property_results),
-                        results=property_results,
-                        query_dsl=es_query,
-                        es_features=[
-                            f"Query {i} of {len(EXAMPLE_QUERIES)}: {query_description}",
-                            f"Execution time: {total_time_ms:.1f}ms",
-                            "KNN search with 1024-dimensional embeddings",
-                            "Semantic understanding of natural language"
-                        ],
-                        indexes_used=[
-                            "properties index with pre-computed embeddings",
-                            f"Found {total_hits} semantically similar properties"
-                        ]
-                    ))
+                    # Collect results
+                    all_properties.extend(property_results)
+                    total_execution_time += total_time_ms
+                    total_hits_sum += total_hits
+                    query_descriptions.append(f"{i}. {query_description}: '{query_text}'")
+                    successful_queries += 1
+                    
+                    # Display individual query results
+                    console.print(f"\n[bold cyan]Example {i}: {query_description}[/bold cyan]")
+                    console.print(f"Query: [yellow]{query_text}[/yellow]")
+                    console.print(f"Found: {total_hits} properties • Time: {total_time_ms:.1f}ms")
+                    
+                    if property_results:
+                        console.print("[bold]Top 3 Matches:[/bold]")
+                        for j, prop in enumerate(property_results[:3], 1):
+                            console.print(format_property_summary(prop, j))
+                    
+                    # Add match explanation
+                    match_explanation = MATCH_EXPLANATIONS.get(i, "")
+                    if match_explanation:
+                        console.print(f"[bold yellow]Why these match:[/bold yellow] {match_explanation}\n")
                     
                 except Exception as e:
                     logger.error(f"Failed to process query {i}: {e}")
-                    demo_results.append(create_error_result(
-                        query_name=f"Example {i}: {query_description}",
-                        query_description=f"Natural language search: '{query_text}'",
-                        error_message=f"Query processing failed: {str(e)}"
-                    ))
+                    query_descriptions.append(f"{i}. {query_description}: ERROR - {str(e)}")
+                    failed_queries += 1
+                    console.print(f"\n[red]Example {i} failed: {str(e)}[/red]")
                     
     except Exception as e:
         logger.error(f"Failed to initialize embedding service: {e}")
-        return []
+        return create_error_result(
+            query_name="Natural Language Examples",
+            query_description="Multiple natural language queries",
+            error_message=f"Embedding service initialization failed: {str(e)}"
+        )
     
-    # Display rich formatted results for all examples
-    display_natural_language_examples_results(demo_results)
-    return demo_results
+    # Check if any queries succeeded
+    if successful_queries == 0:
+        return create_error_result(
+            query_name="Natural Language Examples",
+            query_description="Multiple natural language queries",
+            error_message=f"All {len(EXAMPLE_QUERIES)} queries failed"
+        )
+    
+    # Display summary
+    display_examples_summary_stats(successful_queries, total_execution_time, total_hits_sum)
+    
+    # Calculate average time safely
+    avg_time = total_execution_time / successful_queries if successful_queries > 0 else 0
+    
+    # Build description string
+    description = "Demonstration of " + "; ".join(query_descriptions) if query_descriptions else "No queries executed"
+    
+    # Return combined result
+    return PropertySearchResult(
+        query_name="Natural Language Search Examples",
+        query_description=description,
+        execution_time_ms=int(total_execution_time),
+        total_hits=total_hits_sum,
+        returned_hits=len(all_properties),
+        results=all_properties[:10],  # Limit to first 10 for display
+        query_dsl={"multiple_queries": f"Executed {successful_queries} of {len(EXAMPLE_QUERIES)} semantic searches"},
+        es_features=[
+            f"Executed {successful_queries} natural language queries successfully",
+            f"Failed queries: {failed_queries}" if failed_queries > 0 else "All queries succeeded",
+            f"Total execution time: {total_execution_time:.1f}ms",
+            f"Average time per query: {avg_time:.1f}ms" if successful_queries > 0 else "No successful queries",
+            "KNN search with 1024-dimensional embeddings",
+            "Semantic understanding across multiple query types"
+        ],
+        indexes_used=[
+            "properties index with pre-computed embeddings",
+            f"Total properties found across all queries: {total_hits_sum}"
+        ]
+    )
 
 
 def demo_semantic_vs_keyword_comparison(
@@ -696,44 +749,6 @@ def display_semantic_search_explanation():
     console.print(explanation)
 
 
-def display_natural_language_examples_results(results: List[PropertySearchResult]):
-    """Display natural language examples with rich formatting."""
-    
-    if not results:
-        console.print("[yellow]No results to display[/yellow]")
-        return
-    
-    console.print("\n[bold cyan]Natural Language Query Examples[/bold cyan]")
-    console.print("=" * 70)
-    
-    for idx, result in enumerate(results, 1):
-        # Extract query text from the description
-        query_text = result.query_description.split("'")[1] if "'" in result.query_description else result.query_description
-        
-        # Create a panel for each example
-        panel_content = f"[cyan]Query:[/cyan] [yellow]{query_text}[/yellow]\n"
-        panel_content += f"[green]Found:[/green] {result.total_hits} properties\n"
-        panel_content += f"[yellow]Time:[/yellow] {result.execution_time_ms}ms\n\n"
-        
-        if result.results:
-            panel_content += "[bold]Top 3 Matches:[/bold]\n\n"
-            for i, prop in enumerate(result.results[:TOP_MATCH_DISPLAY_COUNT], 1):
-                panel_content += format_property_summary(prop, i)
-        
-        # Add match explanation
-        match_explanation = MATCH_EXPLANATIONS.get(idx, "")
-        if match_explanation:
-            panel_content += f"\n[bold yellow]Why these match:[/bold yellow] {match_explanation}"
-        
-        panel = Panel(
-            panel_content.strip(),
-            title=f"[bold]Example {idx}: {result.query_name.split(': ')[1] if ': ' in result.query_name else result.query_name}[/bold]",
-            border_style="cyan"
-        )
-        console.print(panel)
-    
-    # Summary
-    display_examples_summary(results)
 
 
 def format_property_summary(prop: PropertyListing, index: int) -> str:
@@ -751,16 +766,13 @@ def format_property_summary(prop: PropertyListing, index: int) -> str:
     return summary
 
 
-def display_examples_summary(results: List[PropertySearchResult]):
-    """Display summary of example results."""
-    total_time = sum(r.execution_time_ms for r in results)
-    total_found = sum(r.total_hits for r in results)
-    
+def display_examples_summary_stats(num_queries: int, total_time: float, total_found: int):
+    """Display summary statistics for example queries."""
     summary = Panel(
-        f"[green]✓ Completed {len(results)} natural language searches[/green]\n"
-        f"[yellow]Total execution time: {total_time}ms[/yellow]\n"
+        f"[green]✓ Completed {num_queries} natural language searches[/green]\n"
+        f"[yellow]Total execution time: {total_time:.0f}ms[/yellow]\n"
         f"[cyan]Total properties found: {total_found}[/cyan]\n"
-        f"[magenta]Average time per query: {total_time/len(results):.1f}ms[/magenta]",
+        f"[magenta]Average time per query: {total_time/num_queries:.1f}ms[/magenta]",
         title="[bold green]Summary[/bold green]",
         border_style="green"
     )

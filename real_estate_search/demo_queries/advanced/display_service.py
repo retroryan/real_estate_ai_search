@@ -282,9 +282,10 @@ class AdvancedDisplayService:
                 article_info.append(f"📖 {result.title}\n", style="bold white")
                 article_info.append(f"📍 {result.city or 'N/A'}, {result.state or 'N/A'}\n", style="green")
                 
-                # Format summary
+                # Format summary - use long_summary
+                summary = result.long_summary or ''
                 summary_text = Text(
-                    result.summary[:250] + "..." if len(result.summary) > 250 else result.summary,
+                    summary[:250] + "..." if len(summary) > 250 else summary,
                     style="bright_blue"
                 )
                 

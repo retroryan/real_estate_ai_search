@@ -184,7 +184,8 @@ class WikipediaDemoRunner:
                     wikipedia_articles.append(WikipediaArticle(
                         page_id=str(doc.page_id) if doc.page_id else '',
                         title=doc.title,
-                        summary=doc.content or doc.short_summary or '',
+                        long_summary=doc.long_summary or '',
+                        short_summary=doc.short_summary or '',
                         city=doc.city,
                         state=doc.state,
                         url=doc.url,
