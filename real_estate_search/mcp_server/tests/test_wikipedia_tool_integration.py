@@ -5,7 +5,8 @@ This test MUST fail initially as we haven't updated the implementation yet.
 
 import pytest
 from unittest.mock import Mock
-from real_estate_search.search_service.models import WikipediaSearchRequest, WikipediaSearchResponse, WikipediaResult, WikipediaSearchType
+from real_estate_search.search_service.models import WikipediaSearchRequest, WikipediaSearchResponse, WikipediaSearchType
+from real_estate_search.models.wikipedia import WikipediaArticle
 from real_estate_search.search_service.wikipedia import WikipediaSearchService
 
 
@@ -24,11 +25,11 @@ async def test_wikipedia_tool_uses_search_service_directly():
     mock_wikipedia_service = Mock(spec=WikipediaSearchService)
     mock_response = WikipediaSearchResponse(
         results=[
-            WikipediaResult(
+            WikipediaArticle(
                 page_id="2139218",
                 title="San Francisco",
                 url="https://en.wikipedia.org/wiki/San_Francisco",
-                summary="San Francisco is a city in California",
+                long_summary="San Francisco is a city in California",
                 categories=["Cities in California"],
                 content_length=25000,
                 score=0.89

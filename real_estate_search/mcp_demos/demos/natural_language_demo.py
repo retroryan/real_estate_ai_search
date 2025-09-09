@@ -40,11 +40,11 @@ async def demo_natural_language_semantic_search(
     try:
         # Call the natural language search tool
         response = await client.call_tool(
-            "natural_language_search_tool",
+            "search_properties",
             {
                 "query": query,
-                "search_type": "semantic",
-                "size": 8
+                "size": 8,
+                "include_location_extraction": True
             }
         )
 
@@ -121,11 +121,11 @@ async def demo_natural_language_examples():
     try:
         # Call the examples search
         response = await client.call_tool(
-            "natural_language_search_tool",
+            "search_properties",
             {
-                "query": "examples",  # This will be ignored for examples mode
-                "search_type": "examples",
-                "size": 3
+                "query": "modern home with pool",  # Example query
+                "size": 3,
+                "include_location_extraction": True
             }
         )
 
@@ -193,11 +193,11 @@ async def demo_semantic_vs_keyword_comparison(
     try:
         # Call the comparison search
         response = await client.call_tool(
-            "natural_language_search_tool",
+            "search_properties",
             {
                 "query": query,
-                "search_type": "comparison", 
-                "size": 5
+                "size": 5,
+                "include_location_extraction": True
             }
         )
 

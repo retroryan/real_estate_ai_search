@@ -8,19 +8,21 @@ ELASTICSEARCH AGGREGATIONS OVERVIEW:
 - Can be nested for complex multi-dimensional analysis
 """
 
-from typing import Dict, Any, List
-from elasticsearch import Elasticsearch
 import logging
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
+from typing import Dict, Any, List
+
+from elasticsearch import Elasticsearch
 from rich import box
 from rich.columns import Columns
-from rich.progress import Progress, BarColumn, TextColumn
+from rich.console import Console
 from rich.layout import Layout
+from rich.panel import Panel
+from rich.progress import Progress, BarColumn, TextColumn
+from rich.table import Table
+from rich.text import Text
 
 from .result_models import AggregationSearchResult
+from ..converters import PropertyConverter
 from ..models import PropertyListing
 
 logger = logging.getLogger(__name__)
@@ -321,7 +323,6 @@ def demo_price_distribution(
         display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
         # Convert raw property dicts to PropertyListing objects using converter
-        from ..converters import PropertyConverter
         top_properties = PropertyConverter.from_elasticsearch_batch(property_results)
         
         return AggregationSearchResult(

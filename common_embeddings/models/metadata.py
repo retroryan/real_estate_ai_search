@@ -5,7 +5,7 @@ These models extend the base metadata from common with
 embedding-specific fields for correlation and tracking.
 """
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer
 from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
@@ -35,10 +35,7 @@ class PropertyMetadata(BaseMetadata):
     price: Optional[float] = Field(None, description="Property price")
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
+        use_enum_values=True
     )
 
 
@@ -55,10 +52,7 @@ class NeighborhoodMetadata(BaseMetadata):
     state: Optional[str] = Field(None, description="State name")
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
+        use_enum_values=True
     )
 
 
@@ -86,10 +80,7 @@ class WikipediaMetadata(BaseMetadata):
     chunk_end_position: Optional[int] = Field(None, description="Ending character position in original text")
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
+        use_enum_values=True
     )
 
 
@@ -130,6 +121,11 @@ class EmbeddingContextMetadata(BaseModel):
     embedding_version: str = "1.0"
     text_hash: str
     generation_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    @field_serializer('generation_timestamp')
+    def serialize_datetime(self, dt: datetime) -> str:
+        """Serialize datetime fields to ISO format."""
+        return dt.isoformat()
 
 
 class ProcessingMetadata(BaseModel):

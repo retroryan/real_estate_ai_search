@@ -62,7 +62,7 @@ class TestWikipediaDemoRunner:
             city="San Francisco",
             state="California",
             categories=["Cities in California", "San Francisco Bay Area"],
-            content="San Francisco is a city in California.",
+            full_content="San Francisco is a city in California.",
             content_length=40,
             page_id="wiki-sf-001",
             url="https://en.wikipedia.org/wiki/San_Francisco"

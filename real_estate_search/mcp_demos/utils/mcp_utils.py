@@ -126,7 +126,7 @@ class MCPClientWrapper:
         Returns:
             True if healthy, False otherwise
         """
-        response = await self.call_tool("health_check_tool")
+        response = await self.call_tool("health_check")
         return response.success and response.data and response.data.get("status") == "healthy"
 
 

@@ -15,6 +15,7 @@ class ToolContext:
     embedding_service: Optional[Any] = None
     property_search_service: Optional[Any] = None
     wikipedia_search_service: Optional[Any] = None
+    neighborhood_search_service: Optional[Any] = None
     health_check_service: Optional[Any] = None
     hybrid_search_engine: Optional[Any] = None
     
@@ -45,6 +46,7 @@ class ToolContext:
             "embedding_service": self.embedding_service,
             "property_search_service": self.property_search_service,
             "wikipedia_search_service": self.wikipedia_search_service,
+            "neighborhood_search_service": self.neighborhood_search_service,
             "health_check_service": self.health_check_service,
             "hybrid_search_engine": self.hybrid_search_engine,
             "request_id": self.request_id
@@ -66,6 +68,7 @@ class ToolContext:
             embedding_service=server.embedding_service,
             property_search_service=server.property_search_service,
             wikipedia_search_service=server.wikipedia_search_service,
+            neighborhood_search_service=server.neighborhood_search_service,
             health_check_service=server.health_check_service,
-            hybrid_search_engine=server.hybrid_search_engine
+            hybrid_search_engine=None  # Not initialized by server, created on demand
         )

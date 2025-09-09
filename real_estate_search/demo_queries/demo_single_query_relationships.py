@@ -114,7 +114,8 @@ class SimplifiedRelationshipDemo:
                 wikipedia_results=[WikipediaArticle(
                     page_id=str(a.get('page_id', '')),
                     title=a.get('title', ''),
-                    summary=a.get('summary', ''),
+                    long_summary=a.get('long_summary'),
+                    short_summary=a.get('short_summary'),
                     city=a.get('city'),
                     state=a.get('state'),
                     url=a.get('url')

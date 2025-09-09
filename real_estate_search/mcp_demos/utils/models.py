@@ -68,7 +68,7 @@ class Property(BaseModel):
 
 class PropertySearchResponse(BaseModel):
     """Property search response - matches server response exactly."""
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='allow')
     
     properties: List[Property]
     total_results: int

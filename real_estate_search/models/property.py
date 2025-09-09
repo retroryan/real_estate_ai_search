@@ -7,7 +7,7 @@ sole source of truth for property data throughout the application.
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
+from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field, field_serializer
 
 from .address import Address
 from .enums import PropertyType, PropertyStatus, ParkingType
@@ -95,10 +95,12 @@ class PropertyListing(BaseModel):
         populate_by_name=True,
         use_enum_values=True,
         extra="allow",  # Allow extra fields from Elasticsearch
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
     )
+    
+    @field_serializer('list_date', 'last_sold_date', 'embedded_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime fields to ISO format."""
+        return dt.isoformat() if dt else None
     
     # === Validators ===
     

@@ -10,9 +10,9 @@ from .base import BaseSearchService
 from .models import (
     WikipediaSearchRequest,
     WikipediaSearchResponse,
-    WikipediaSearchType,
-    WikipediaResult
+    WikipediaSearchType
 )
+from ..models.wikipedia import WikipediaArticle
 
 logger = logging.getLogger(__name__)
 
@@ -288,8 +288,8 @@ class WikipediaSearchService(BaseSearchService):
         # Add source filtering based on search type
         if request.search_type == WikipediaSearchType.FULL_TEXT:
             query["_source"] = [
-                "page_id", "title", "url", "summary", 
-                "categories", "content_length"
+                "page_id", "title", "url", "long_summary", "short_summary",
+                "categories", "key_topics", "content_length"
             ]
         elif request.search_type == WikipediaSearchType.CHUNKS:
             query["_source"] = [
@@ -298,8 +298,8 @@ class WikipediaSearchService(BaseSearchService):
             ]
         elif request.search_type == WikipediaSearchType.SUMMARIES:
             query["_source"] = [
-                "page_id", "title", "url", "summary",
-                "categories"
+                "page_id", "title", "url", "long_summary", "short_summary",
+                "categories", "key_topics"
             ]
         
         return query
@@ -324,27 +324,21 @@ class WikipediaSearchService(BaseSearchService):
         for hit in es_response.get("hits", {}).get("hits", []):
             source = hit["_source"]
             
-            # Build Wikipedia result
-            result = WikipediaResult(
+            # Build Wikipedia article
+            result = WikipediaArticle(
                 page_id=source.get("page_id", ""),
                 title=source.get("title", ""),
-                url=source.get("url", ""),
-                summary=source.get("summary", ""),
+                url=source.get("url"),
+                long_summary=source.get("long_summary"),
+                short_summary=source.get("short_summary"),
                 categories=source.get("categories", []),
-                content_length=source.get("content_length", 0),
+                key_topics=source.get("key_topics", []),
+                content_length=source.get("content_length"),
                 score=hit.get("_score", 0)
             )
             
-            # Add chunk ID if searching chunks
-            if request.search_type == WikipediaSearchType.CHUNKS:
-                result.chunk_id = source.get("chunk_id")
-            
-            # Add highlights if present
-            if request.include_highlights and "highlight" in hit:
-                highlights = []
-                for field, snippets in hit["highlight"].items():
-                    highlights.extend(snippets)
-                result.highlights = highlights
+            # Note: chunk_id and highlights are not stored in WikipediaArticle model
+            # These are search-specific fields that could be added if needed
             
             results.append(result)
         

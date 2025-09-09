@@ -182,20 +182,8 @@ class RealEstateSearchClient(BaseModel):
         if not response.success:
             raise Exception(f"Location-based Wikipedia search failed: {response.error}")
         
-        # Transform response to expected format
-        response_data = response.data
-        
-        # The search_service returns different format, transform it
-        if "results" in response_data and "articles" not in response_data:
-            articles = response_data.get("results", [])
-            transformed_response = {
-                "articles": articles,
-                "total_results": response_data.get("total_hits", 0),
-                "returned_results": len(articles),
-                "execution_time_ms": response_data.get("execution_time_ms", 0)
-            }
-            return transformed_response
-        
+        # The server returns the response in the correct format already
+        # with 'articles', 'total_results', 'returned_results', and 'execution_time_ms'
         return response.data
     
     async def get_property_details(self, listing_id: str) -> Dict[str, Any]:

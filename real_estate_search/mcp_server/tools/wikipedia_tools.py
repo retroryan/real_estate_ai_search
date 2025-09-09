@@ -209,19 +209,19 @@ async def search_wikipedia_by_location(
         # Format response focusing on location relevance
         articles = []
         for article in response.results:
-            # WikipediaResult is a Pydantic model, access attributes directly
+            # WikipediaArticle is a Pydantic model, access attributes directly
             article_data = {
                 "page_id": article.page_id,
                 "title": article.title,
-                "short_summary": (article.short_summary or article.long_summary or '')[:300],
+                "long_summary": article.long_summary[:300] if article.long_summary else '',
                 "location_match": {
-                    "city": None,  # These fields aren't in WikipediaResult
-                    "state": None,
-                    "coordinates": None
+                    "city": article.city,
+                    "state": article.state,
+                    "coordinates": None  # Would need lat/lon from article if available
                 },
-                "key_topics": [],  # Not in WikipediaResult
+                "key_topics": article.key_topics,
                 "score": article.score,
-                "highlights": article.highlights if article.highlights else []
+                "highlights": []  # Highlights were removed from WikipediaArticle
             }
             articles.append(article_data)
         

@@ -38,7 +38,7 @@ async def run_all_demos():
         ("Wikipedia Location Context", lambda: demo_wikipedia_location_context("Oakland", "CA")),
         ("Location-Based Discovery", lambda: demo_location_based_discovery("Oakland", "CA")),
         ("Multi-Entity Search", lambda: demo_multi_entity_search("downtown")),
-        ("Property Details Deep Dive", lambda: demo_property_details_deep_dive("luxury")),
+        ("Property Details Deep Dive", lambda: demo_property_details_deep_dive()),
         ("Search Comparison", lambda: demo_semantic_vs_text_comparison("garden")),
         ("Natural Language Semantic Search", lambda: demo_natural_language_semantic_search("cozy family home near good schools")),
         ("Natural Language Examples", lambda: demo_natural_language_examples()),

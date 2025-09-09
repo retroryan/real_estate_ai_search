@@ -184,7 +184,8 @@ class AdvancedSearchExecutor:
                     wikipedia_results.append(WikipediaArticle(
                         page_id=str(source.get('page_id', '')),
                         title=source.get('title', ''),
-                        summary=source.get('short_summary', source.get('long_summary', '')),
+                        short_summary=source.get('short_summary'),
+                        long_summary=source.get('long_summary'),
                         city=source.get('city'),
                         state=source.get('state'),
                         url=source.get('url')

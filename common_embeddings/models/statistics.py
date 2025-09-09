@@ -6,7 +6,7 @@ Clean, type-safe models for system statistics and performance metrics.
 
 from typing import Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 from .enums import EntityType, EmbeddingProvider
 from .enums import ChunkingMethod
@@ -29,11 +29,12 @@ class CollectionInfo(BaseModel):
     created_at: Optional[datetime] = Field(None, description="Collection creation time")
     version: Optional[str] = Field(None, description="Collection version")
     
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
-    )
+    model_config = ConfigDict()
+    
+    @field_serializer('created_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime fields to ISO format."""
+        return dt.isoformat() if dt else None
 
 
 class PipelineStatistics(BaseModel):
@@ -103,11 +104,12 @@ class BatchProcessorStatistics(BaseModel):
     processing_time_seconds: Optional[float] = Field(None, ge=0.0, description="Total processing time")
     items_per_second: Optional[float] = Field(None, ge=0.0, description="Processing rate")
     
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
-    )
+    model_config = ConfigDict()
+    
+    @field_serializer('timestamp')
+    def serialize_datetime(self, dt: datetime) -> str:
+        """Serialize datetime fields to ISO format."""
+        return dt.isoformat()
     
     @property
     def success_rate_percentage(self) -> float:
@@ -136,8 +138,9 @@ class SystemStatistics(BaseModel):
     # Timestamps
     generated_at: datetime = Field(default_factory=datetime.now, description="Statistics generation time")
     
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat()
-        }
-    )
+    model_config = ConfigDict()
+    
+    @field_serializer('generated_at')
+    def serialize_datetime(self, dt: datetime) -> str:
+        """Serialize datetime fields to ISO format."""
+        return dt.isoformat()

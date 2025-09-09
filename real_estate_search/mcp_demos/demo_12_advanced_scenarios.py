@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Demo 12: Advanced Search Scenarios and Edge Cases
+Demo 12: Complex Search Scenarios
 
-This demo tests the robustness and advanced capabilities of the hybrid search
-using clean Pydantic models and FastMCP client patterns. Includes parameter 
-validation, edge cases, error handling, and performance analysis.
+This demo tests complex query handling capabilities of the hybrid search
+using clean Pydantic models and FastMCP client patterns.
 """
 
 import asyncio
@@ -24,17 +23,16 @@ from real_estate_search.mcp_demos.base_demo import BaseMCPDemo, ProgressTracking
 from real_estate_search.mcp_demos.models.hybrid_search import (
     HybridSearchRequest,
     DemoExecutionResult,
-    ValidationTestCase,
-    EdgeCaseTest
+    ValidationTestCase
 )
 
 
 class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
-    """Demo showcasing advanced scenarios, validation, and edge cases."""
+    """Demo showcasing complex search scenarios."""
     
     def __init__(self):
         super().__init__(
-            demo_name="Advanced Search Scenarios and Edge Cases",
+            demo_name="Complex Search Scenarios",
             demo_number=12
         )
     
@@ -108,68 +106,6 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
             }
         ]
     
-    def get_edge_test_cases(self) -> List[EdgeCaseTest]:
-        """Get edge case test scenarios."""
-        return [
-            EdgeCaseTest(
-                name="Modern Oakland Apartment",
-                query="Modern apartment in Oakland",
-                expected_location="Oakland",
-                expected_behavior="Should extract Oakland location correctly"
-            ),
-            EdgeCaseTest(
-                name="Investment Property Generic",
-                query="investment property with rental income",
-                expected_location=None,
-                expected_behavior="Should handle queries without location"
-            ),
-            EdgeCaseTest(
-                name="Luxury Features Only",
-                query="luxury waterfront condo with amazing views",
-                expected_location=None,
-                expected_behavior="Should return results without location filtering"
-            ),
-            EdgeCaseTest(
-                name="Minimal Query",
-                query="home",
-                expected_location=None,
-                expected_behavior="Should return broad results for minimal queries"
-            ),
-            EdgeCaseTest(
-                name="Bay Area Reference",
-                query="properties in the Bay Area California",
-                expected_location="Bay Area",
-                expected_behavior="Should handle vague regional terms"
-            ),
-        ]
-    
-    def display_validation_results(self, test_cases: List[ValidationTestCase], results: List[Dict]) -> None:
-        """Display parameter validation test results."""
-        table = Table(
-            title="Parameter Validation Tests",
-            show_header=True,
-            header_style="bold magenta"
-        )
-        table.add_column("Test", style="cyan", min_width=20)
-        table.add_column("Expected", justify="center", style="yellow", min_width=10)
-        table.add_column("Actual", justify="center", style="green", min_width=15)
-        table.add_column("Status", justify="center", style="blue", min_width=8)
-        
-        for test_case, result in zip(test_cases, results):
-            expected = "FAIL" if test_case.should_fail else "PASS"
-            
-            if result["error"]:
-                actual = f"FAIL ({result['error_type']})"
-                status = "✅" if test_case.should_fail else "❌"
-            else:
-                hits = result.get("hits", 0)
-                actual = f"PASS ({hits})"
-                status = "❌" if test_case.should_fail else "✅"
-            
-            table.add_row(test_case.name, expected, actual, status)
-        
-        self.console.print(table)
-    
     def display_complex_query_summary(self, query_name: str, query_text: str, response, execution_time: float) -> None:
         """Display detailed summary for a complex query result."""
         # Get metadata directly from response
@@ -223,83 +159,15 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
                 
                 if j < len(response.properties):
                     self.console.print("")  # Add spacing between properties
-    def display_edge_case_results(self, edge_cases: List[EdgeCaseTest], results: List[Dict]) -> None:
-        """Display edge case test results."""
-        table = Table(
-            title="Edge Case Test Results",
-            show_header=True,
-            header_style="bold magenta"
-        )
-        table.add_column("Test Case", style="cyan", min_width=18)
-        table.add_column("Status", justify="center", style="green", min_width=8)
-        table.add_column("Results", justify="center", style="blue", min_width=8)
-        table.add_column("Time (ms)", justify="center", style="yellow", min_width=10)
-        table.add_column("Location", justify="center", style="magenta", min_width=10)
-        
-        for edge_case, result in zip(edge_cases, results):
-            if result["error"]:
-                table.add_row(edge_case.name, "❌", "ERROR", "N/A", "❌")
-            else:
-                response_data = result["response"]
-                # Get metadata directly from response_data
-                has_location = (response_data.location_extracted and 
-                              response_data.location_extracted.get('has_location')) if response_data.location_extracted else False
-                
-                table.add_row(
-                    edge_case.name,
-                    "✅",
-                    str(response_data.returned_results),
-                    f"{response_data.execution_time_ms}",
-                    "✅" if has_location else "❌"
-                )
-        
-        self.console.print(table)
-    
     async def run_demo_queries(self) -> DemoExecutionResult:
         """Execute the advanced scenarios demo."""
-        self.display_demo_header("Tests robustness, validation, and advanced query handling")
+        self.display_demo_header("Tests complex query scenarios")
         
         start_time = time.time()
         total_queries = 0
         successful_queries = 0
         
-        # 1. Parameter Validation Tests
-        self.console.print(Panel.fit(
-            "[bold yellow]🧪 Testing Parameter Validation & Edge Cases[/bold yellow]",
-            border_style="yellow"
-        ))
-        
-        validation_cases = self.get_validation_test_cases()
-        validation_results = []
-        
-        for test_case in validation_cases:
-            total_queries += 1
-            try:
-                # Try to create request - this will validate parameters
-                if test_case.should_fail:
-                    try:
-                        request = HybridSearchRequest(**test_case.params)
-                        # If no validation error, try the actual request
-                        response = await self.execute_hybrid_search(request)
-                        validation_results.append({"error": None, "hits": len(response.properties), "error_type": None})
-                    except ValidationError as e:
-                        validation_results.append({"error": str(e), "error_type": "ValidationError"})
-                        successful_queries += 1  # Expected validation failure
-                else:
-                    request = HybridSearchRequest(**test_case.params)
-                    response = await self.execute_hybrid_search(request)
-                    validation_results.append({"error": None, "hits": len(response.properties), "error_type": None})
-                    successful_queries += 1
-                    
-            except Exception as e:
-                error_type = type(e).__name__
-                validation_results.append({"error": str(e), "error_type": error_type})
-                if test_case.should_fail:
-                    successful_queries += 1  # Expected failure
-        
-        self.display_validation_results(validation_cases, validation_results)
-        
-        # 2. Complex Query Tests
+        # Complex Query Tests
         self.console.print(f"\n{Panel.fit('[bold yellow]🔍 Testing Complex Query Scenarios[/bold yellow]', border_style='yellow')}")
         
         complex_queries = self.get_complex_queries()
@@ -332,30 +200,6 @@ class AdvancedScenariosDemo(BaseMCPDemo, ProgressTrackingMixin):
                     self.console.print(f"[red]❌ Query failed: {e}[/red]")
                 
                 progress.update(task, advance=1)
-        
-        # 3. Edge Case Tests
-        self.console.print(f"\n{Panel.fit('[bold yellow]🎯 Testing Edge Cases & Unusual Scenarios[/bold yellow]', border_style='yellow')}")
-        
-        edge_cases = self.get_edge_test_cases()
-        edge_results = []
-        
-        for edge_case in edge_cases:
-            total_queries += 1
-            try:
-                request = HybridSearchRequest(
-                    query=edge_case.query,
-                    size=5,
-                    include_location_extraction=True
-                )
-                
-                response = await self.execute_hybrid_search(request)
-                edge_results.append({"error": None, "response": response})
-                successful_queries += 1
-                
-            except Exception as e:
-                edge_results.append({"error": str(e), "response": None})
-        
-        self.display_edge_case_results(edge_cases, edge_results)
         
         end_time = time.time()
         total_time = (end_time - start_time) * 1000

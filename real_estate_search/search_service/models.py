@@ -6,6 +6,8 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
+from ..models.wikipedia import WikipediaArticle
+
 
 class SearchError(BaseModel):
     """Error response model."""
@@ -194,24 +196,10 @@ class WikipediaSearchRequest(BaseModel):
     from_offset: int = Field(default=0, ge=0, description="Pagination offset")
 
 
-class WikipediaResult(BaseModel):
-    """Individual Wikipedia search result."""
-    
-    page_id: str = Field(description="Wikipedia page ID")
-    title: str = Field(description="Article title")
-    url: str = Field(description="Wikipedia URL")
-    summary: str = Field(description="Article summary")
-    categories: List[str] = Field(description="Article categories")
-    content_length: int = Field(description="Content length in characters")
-    score: float = Field(description="Search relevance score")
-    highlights: Optional[List[str]] = Field(default=None, description="Highlighted content fragments")
-    chunk_id: Optional[str] = Field(default=None, description="Chunk ID if searching chunks")
-
-
 class WikipediaSearchResponse(BaseModel):
     """Response model for Wikipedia search."""
     
-    results: List[WikipediaResult] = Field(description="Search results")
+    results: List[WikipediaArticle] = Field(description="Search results")
     total_hits: int = Field(description="Total number of matching articles")
     execution_time_ms: int = Field(description="Query execution time in milliseconds")
     search_type: WikipediaSearchType = Field(description="Type of search performed")
