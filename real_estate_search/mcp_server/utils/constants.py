@@ -17,7 +17,6 @@ class ElasticsearchFields:
     LISTING_ID: Final[str] = "listing_id"
     DESCRIPTION: Final[str] = "description"
     FEATURES: Final[str] = "features"
-    AMENITIES: Final[str] = "amenities"
     SEARCH_TAGS: Final[str] = "search_tags"
     EMBEDDING: Final[str] = "embedding"
     

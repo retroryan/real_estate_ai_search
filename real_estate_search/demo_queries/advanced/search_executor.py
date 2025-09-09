@@ -187,8 +187,7 @@ class AdvancedSearchExecutor:
                         summary=source.get('short_summary', source.get('long_summary', '')),
                         city=source.get('city'),
                         state=source.get('state'),
-                        url=source.get('url'),
-                        score=hit['_score']
+                        url=source.get('url')
                     ))
                 elif discrimination.entity_type == 'neighborhood':
                     neighborhood_results.append(source)
@@ -273,8 +272,7 @@ class AdvancedSearchExecutor:
                     summary=summary if summary else 'No summary available',
                     city=source.get('city'),
                     state=source.get('state'),
-                    url=source.get('url'),
-                    score=hit['_score']
+                    url=source.get('url')
                 ))
             
             return WikipediaResponse(

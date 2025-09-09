@@ -111,9 +111,6 @@ class PropertyGoldEnricher(GoldEnricher):
             -- Status field (required by ES queries)
             'active' AS status,
             
-            -- Amenities field (required by ES queries)
-            s.features AS amenities,
-            
             -- Search tags (required by ES queries)
             LIST_VALUE(
                 s.property_type,
@@ -152,7 +149,6 @@ class PropertyGoldEnricher(GoldEnricher):
         # Track enrichments applied
         self.enrichments_applied.extend([
             "status_field",
-            "amenities_field", 
             "search_tags_field",
             "enriched_description",
             "geographic_hierarchy_via_neighborhood"

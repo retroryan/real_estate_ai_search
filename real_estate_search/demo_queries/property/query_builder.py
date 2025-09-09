@@ -42,7 +42,7 @@ class PropertyQueryBuilder:
                 "query": query_text,
                 "fields": [
                     "description^2",      # Primary content field
-                    "amenities^1.5",      # Important features
+                    "features^1.5",       # Important features
                     "address.street",     # Location context
                     "address.city",       # City search
                 ],
@@ -60,7 +60,7 @@ class PropertyQueryBuilder:
             source=SourceFilter(includes=[  # Only return needed fields
                 "listing_id", "property_type", "price", 
                 "bedrooms", "bathrooms", "square_feet",
-                "address", "description", "amenities"
+                "address", "description", "features"
             ])
         )
         
@@ -68,7 +68,7 @@ class PropertyQueryBuilder:
             request.highlight = {
                 "fields": {
                     "description": {"fragment_size": 150},
-                    "amenities": {"fragment_size": 100}
+                    "features": {"fragment_size": 100}
                 },
                 "pre_tags": ["<em>"],
                 "post_tags": ["</em>"]
@@ -125,7 +125,7 @@ class PropertyQueryBuilder:
         if amenities:
             # Each amenity must exist
             for amenity in amenities:
-                filters.append({"match": {"amenities": amenity}})
+                filters.append({"match": {"features": amenity}})
         
         # Use match_all if no filters (returns everything)
         if filters:

@@ -381,7 +381,6 @@ class TestPropertyEndpoints:
         
         # Check optional enrichment fields
         assert "features" in data
-        assert "amenities" in data
         
         print(f"✅ Property details test passed for ID: {TEST_PROPERTY_ID}")
     
@@ -488,7 +487,7 @@ class TestFacetsAndStats:
         possible_facets = [
             "price_ranges", "price_stats", "property_types",
             "cities", "neighborhoods", "bedroom_counts",
-            "bathroom_counts", "features", "amenities",
+            "bathroom_counts", "features",
             "poi_categories", "location_quality", "cultural_features"
         ]
         

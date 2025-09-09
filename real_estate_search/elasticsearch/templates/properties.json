@@ -92,10 +92,6 @@
       "type": "keyword",
       "normalizer": "lowercase_normalizer"
     },
-    "amenities": {
-      "type": "keyword",
-      "normalizer": "lowercase_normalizer"
-    },
     "status": {
       "type": "keyword"
     },

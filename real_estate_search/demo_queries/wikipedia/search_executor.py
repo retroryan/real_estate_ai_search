@@ -11,9 +11,9 @@ from elasticsearch import Elasticsearch
 from .models import (
     SearchQuery,
     SearchResult,
-    SearchHit,
-    WikipediaDocument
+    SearchHit
 )
+from ...models.wikipedia import WikipediaArticle
 from .query_builder import WikipediaQueryBuilder
 
 
@@ -88,8 +88,8 @@ class WikipediaSearchExecutor:
         # Process individual hits
         hits = []
         for hit in response['hits']['hits']:
-            # Create WikipediaDocument from source
-            document = WikipediaDocument(**hit['_source'])
+            # Create WikipediaArticle from source
+            document = WikipediaArticle(**hit['_source'])
             
             # Extract highlights
             highlights = {}
@@ -134,7 +134,7 @@ class WikipediaSearchExecutor:
         self,
         page_id: str,
         index: str = "wikipedia"
-    ) -> Optional[WikipediaDocument]:
+    ) -> Optional[WikipediaArticle]:
         """Fetch a single document by its ID.
         
         Args:
@@ -142,7 +142,7 @@ class WikipediaSearchExecutor:
             index: Elasticsearch index name
             
         Returns:
-            WikipediaDocument if found, None otherwise
+            WikipediaArticle if found, None otherwise
         """
         try:
             response = self.es_client.get(
@@ -152,7 +152,7 @@ class WikipediaSearchExecutor:
             )
             
             if response and '_source' in response:
-                return WikipediaDocument(**response['_source'])
+                return WikipediaArticle(**response['_source'])
             return None
             
         except Exception:
@@ -162,7 +162,7 @@ class WikipediaSearchExecutor:
         self,
         page_ids: List[str],
         index: str = "wikipedia"
-    ) -> Dict[str, WikipediaDocument]:
+    ) -> Dict[str, WikipediaArticle]:
         """Fetch multiple documents by their IDs.
         
         Args:
@@ -170,7 +170,7 @@ class WikipediaSearchExecutor:
             index: Elasticsearch index name
             
         Returns:
-            Dictionary mapping page_id to WikipediaDocument
+            Dictionary mapping page_id to WikipediaArticle
         """
         documents = {}
         

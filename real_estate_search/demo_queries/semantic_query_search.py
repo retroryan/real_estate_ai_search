@@ -42,7 +42,7 @@ TOP_MATCH_DISPLAY_COUNT = 3
 # Property fields to retrieve
 PROPERTY_FIELDS = [
     "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-    "square_feet", "address", "description", "features", "amenities", "year_built"
+    "square_feet", "address", "description", "features", "year_built"
 ]
 
 BASIC_PROPERTY_FIELDS = [

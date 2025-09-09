@@ -6,7 +6,6 @@ with Elasticsearch, generating reports, and exporting documents.
 """
 
 from .models import (
-    WikipediaDocument,
     SearchQuery,
     SearchResult,
     SearchHit,
@@ -18,6 +17,7 @@ from .models import (
     TopDocument,
     HighlightConfig
 )
+from ...models.wikipedia import WikipediaArticle
 from .demo_runner import WikipediaDemoRunner
 from .query_builder import WikipediaQueryBuilder
 from .search_executor import WikipediaSearchExecutor
@@ -28,7 +28,7 @@ from .statistics_service import WikipediaStatisticsService
 
 __all__ = [
     # Models
-    'WikipediaDocument',
+    'WikipediaArticle',
     'SearchQuery',
     'SearchResult',
     'SearchHit',

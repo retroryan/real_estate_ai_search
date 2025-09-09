@@ -62,7 +62,7 @@ class PropertyListing(BaseModel):
     # === Descriptions and Features ===
     title: Optional[str] = Field(default=None, max_length=200, description="Listing title")
     description: str = Field(default="", description="Full property description")
-    features: List[str] = Field(default_factory=list, description="Property features/amenities", alias="amenities")
+    features: List[str] = Field(default_factory=list, description="Property features/amenities")
     highlights: List[str] = Field(default_factory=list, description="Key highlights")
     
     # === Dates and Timeline ===

@@ -54,14 +54,3 @@ class NeighborhoodModel(BaseModel):
         return v
 
 
-class WikipediaArticleModel(BaseModel):
-    """Wikipedia article information."""
-    page_id: str = Field(...)
-    title: str = Field(...)
-    url: Optional[str] = Field(default=None)
-    summary: Optional[str] = Field(default=None)
-    city: Optional[str] = Field(default=None)
-    state: Optional[str] = Field(default=None)
-    relationship_type: str = Field(default="related")
-    confidence: float = Field(default=0.0)
-    relevance_score: Optional[float] = Field(default=None)

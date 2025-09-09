@@ -11,9 +11,9 @@ from elasticsearch import Elasticsearch
 from .models import (
     ArticleExport,
     ArticleExportResult,
-    WikipediaDocument,
     SearchResult
 )
+from ...models.wikipedia import WikipediaArticle
 
 
 class WikipediaArticleExporter:

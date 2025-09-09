@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 from real_estate_search.models import PropertyListing
-from real_estate_search.demo_queries.es_models import ESNeighborhood, ESWikipedia
+from real_estate_search.demo_queries.es_models import ESNeighborhood
 
 
 class PropertyDisplayFormatter:
@@ -122,38 +122,6 @@ class NeighborhoodDisplayFormatter:
             "stats": NeighborhoodDisplayFormatter.format_stats(neighborhood),
             "amenities": neighborhood.amenities
         }
-
-
-class WikipediaDisplayFormatter:
-    """Format Wikipedia data for user display."""
-    
-    @staticmethod
-    def format_title(article: ESWikipedia) -> str:
-        """Format article title with location if available."""
-        if article.city and article.state:
-            return f"{article.title} ({article.city}, {article.state})"
-        elif article.city:
-            return f"{article.title} ({article.city})"
-        return article.title
-    
-    @staticmethod
-    def format_summary(article: ESWikipedia, max_length: int = 200) -> str:
-        """Format article summary for display."""
-        summary = article.short_summary or article.long_summary or ""
-        if len(summary) > max_length:
-            return summary[:max_length-3] + "..."
-        return summary
-    
-    @staticmethod
-    def format_for_display(article: ESWikipedia) -> Dict[str, Any]:
-        """Format complete article for display."""
-        return {
-            "title": WikipediaDisplayFormatter.format_title(article),
-            "summary": WikipediaDisplayFormatter.format_summary(article),
-            "categories": article.categories[:3] if article.categories else [],
-            "url": article.url
-        }
-
 
 class PriceBucketData(BaseModel):
     """Model for price bucket data with proper validation."""

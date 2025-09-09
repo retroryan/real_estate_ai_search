@@ -291,7 +291,6 @@ class TestAdvancedSearchExecutor:
                             },
                             "description": "Nice condo",
                             "features": ["parking", "gym"],
-                            "amenities": ["pool"],
                             "listing_type": "sale"
                         }
                     }
@@ -343,7 +342,6 @@ class TestAdvancedSearchExecutor:
                             },
                             "description": "Beautiful house",
                             "features": ["garage"],
-                            "amenities": [],
                             "listing_type": "sale"
                         }
                     },

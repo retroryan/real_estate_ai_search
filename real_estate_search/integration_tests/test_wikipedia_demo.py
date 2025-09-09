@@ -23,7 +23,7 @@ from real_estate_search.demo_queries.wikipedia import (
     SearchQuery,
     SearchResult,
     SearchHit,
-    WikipediaDocument,
+    WikipediaArticle,
     SearchStatistics,
     TopDocument,
     ArticleExportResult,
@@ -57,7 +57,7 @@ class TestWikipediaDemoRunner:
     @pytest.fixture
     def sample_wikipedia_document(self):
         """Create a sample Wikipedia document."""
-        return WikipediaDocument(
+        return WikipediaArticle(
             title="San Francisco",
             city="San Francisco",
             state="California",

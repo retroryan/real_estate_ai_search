@@ -18,9 +18,9 @@ from .models import (
     SearchResult,
     SearchHit,
     SearchStatistics,
-    ArticleExportResult,
-    WikipediaDocument
+    ArticleExportResult
 )
+from ...models.wikipedia import WikipediaArticle
 
 
 class WikipediaDisplayService:

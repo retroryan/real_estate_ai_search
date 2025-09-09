@@ -24,8 +24,6 @@ class WikipediaArticle(BaseModel):
     # Location relevance
     city: Optional[str] = Field(None, description="Associated city")
     state: Optional[str] = Field(None, description="Associated state")
-    # TODO: Fix relevance_score to ensure values are properly normalized to 0-100 range
-    # Currently getting values > 100 from the pipeline which causes validation errors
     relevance_score: Optional[float] = Field(None, description="Location relevance")
     
     # Classification
@@ -33,12 +31,11 @@ class WikipediaArticle(BaseModel):
     topics: List[str] = Field(default_factory=list, description="Article topics")
     content_category: Optional[str] = Field(None, description="Content category")
     
-    # Metadata
-    score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
-    relationship: Optional[str] = Field(None, alias="_relationship", description="Relationship to parent entity")
-    confidence: Optional[float] = Field(None, alias="_confidence", ge=0, le=1, description="Relationship confidence")
+    # Relationship fields (from property_relationships index)
+    relationship_type: Optional[str] = Field(None, description="Relationship to parent entity")
+    confidence: Optional[float] = Field(None, ge=0, le=1, description="Relationship confidence")
     
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore")
     
     @computed_field  # type: ignore
     @property

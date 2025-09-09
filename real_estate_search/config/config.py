@@ -272,12 +272,6 @@ class SearchConfig(BaseModel):
         le=10.0,
         description="Features field boost factor"
     )
-    boost_amenities: float = Field(
-        default=1.5,
-        ge=0.0,
-        le=10.0,
-        description="Amenities field boost factor"
-    )
     boost_location: float = Field(
         default=1.8,
         ge=0.0,
@@ -292,7 +286,6 @@ class SearchConfig(BaseModel):
         return {
             "description": self.boost_description,
             "features": self.boost_features,
-            "amenities": self.boost_amenities,
             "location": self.boost_location
         }
 

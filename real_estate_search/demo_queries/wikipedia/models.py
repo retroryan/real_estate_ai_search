@@ -7,32 +7,10 @@ ensuring strong typing and validation across module boundaries.
 
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
+from ...models.wikipedia import WikipediaArticle
 
 
-class WikipediaDocument(BaseModel):
-    """Model for Wikipedia document from Elasticsearch."""
-    title: str = Field(..., description="Article title")
-    city: Optional[str] = Field(None, description="City location")
-    state: Optional[str] = Field(None, description="State location")
-    categories: List[str] = Field(default_factory=list, description="Article categories")
-    full_content: Optional[str] = Field(None, description="Full article content")
-    content: Optional[str] = Field(None, description="Content summary")
-    content_length: Optional[int] = Field(None, description="Content length")
-    page_id: Optional[str] = Field(None, description="Wikipedia page ID")
-    url: Optional[str] = Field(None, description="Wikipedia URL")
-    short_summary: Optional[str] = Field(None, description="Short summary")
-    long_summary: Optional[str] = Field(None, description="Long summary")
-    
-    @field_validator('categories', mode='before')
-    @classmethod
-    def ensure_categories_list(cls, v):
-        """Ensure categories is always a list."""
-        if v is None:
-            return []
-        try:
-            return list(v)
-        except (TypeError, ValueError):
-            return [v] if v else []
+# WikipediaDocument is now replaced by WikipediaArticle from models.wikipedia
 
 
 class SearchQuery(BaseModel):
@@ -63,7 +41,7 @@ class HighlightConfig(BaseModel):
 
 class SearchHit(BaseModel):
     """Model for individual search result hit."""
-    document: WikipediaDocument = Field(..., description="Document data")
+    document: WikipediaArticle = Field(..., description="Document data")
     score: float = Field(..., description="Relevance score")
     highlights: Dict[str, List[str]] = Field(default_factory=dict, description="Highlighted fragments")
     

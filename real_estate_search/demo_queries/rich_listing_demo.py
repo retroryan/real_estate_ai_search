@@ -20,8 +20,8 @@ from rich.layout import Layout
 from rich.align import Align
 
 from .models import DemoQueryResult
-from .rich_listing_models import NeighborhoodModel, WikipediaArticleModel
-from ..models import PropertyListing
+from .rich_listing_models import NeighborhoodModel
+from ..models import PropertyListing, WikipediaArticle
 from ..html_generators import PropertyListingHTMLGenerator
 
 # ===== ELASTICSEARCH DEMO CONFIGURATION =====
@@ -113,13 +113,8 @@ def create_features_panel(property_model: PropertyListing) -> Panel:
         for feature in property_model.features[:10]:  # Limit to first 10
             content += f"  • {feature}\n"
     
-    # Amenities (guaranteed to be list by model)
-    if property_model.amenities:
-        if content:
-            content += "\n"
-        content += "[bold yellow]Amenities:[/bold yellow]\n"
-        for amenity in property_model.amenities[:10]:  # Limit to first 10
-            content += f"  • {amenity}\n"
+    # Note: amenities is aliased to features in PropertyListing model
+    # So we only use features field here
     
     if not content:
         content = "No special features listed"
@@ -198,7 +193,7 @@ def create_neighborhood_panel(neighborhood: Optional[NeighborhoodModel]) -> Pane
     )
 
 
-def create_wikipedia_panel(articles: List[WikipediaArticleModel]) -> Panel:
+def create_wikipedia_panel(articles: List[WikipediaArticle]) -> Panel:
     """Create a panel with Wikipedia article information."""
     if not articles:
         return Panel(
@@ -213,7 +208,7 @@ def create_wikipedia_panel(articles: List[WikipediaArticleModel]) -> Panel:
         title = article.title
         summary = article.summary or ''
         confidence = article.confidence
-        relationship_type = article.relationship_type
+        relationship_type = article.relationship_type or 'related'
         
         # Article header
         content.append(f"{i}. {title}", style="bold cyan")
@@ -326,7 +321,7 @@ def demo_rich_property_listing(
     
     # Create models for neighborhood and wikipedia if they exist
     neighborhood = NeighborhoodModel(**neighborhood_data) if neighborhood_data else None
-    wikipedia_articles = [WikipediaArticleModel(**w) for w in wikipedia_data] if wikipedia_data else []
+    wikipedia_articles = [WikipediaArticle(**w) for w in wikipedia_data] if wikipedia_data else []
     
     # Create the rich display
     console.print("\n")

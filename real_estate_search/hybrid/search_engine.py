@@ -263,7 +263,7 @@ class HybridSearchEngine:
             "size": params.size,
             "_source": [
                 "listing_id", "property_type", "price", "bedrooms", "bathrooms",
-                "square_feet", "address", "description", "features", "amenities",
+                "square_feet", "address", "description", "features",
                 "neighborhood"
             ]
         }

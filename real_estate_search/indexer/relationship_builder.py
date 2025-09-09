@@ -61,7 +61,6 @@ class RelationshipDocument(BaseModel):
     address: Optional[Dict[str, Any]] = Field(default=None, description="Property address")
     description: Optional[str] = Field(default=None, description="Property description")
     features: List[str] = Field(default_factory=list, description="Property features")
-    amenities: List[str] = Field(default_factory=list, description="Property amenities")
     status: Optional[str] = Field(default=None, description="Listing status")
     listing_date: Optional[str] = Field(default=None, description="Listing date")
     days_on_market: Optional[int] = Field(default=None, description="Days on market")
@@ -408,7 +407,7 @@ class PropertyRelationshipBuilder:
                         "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
                         "city": article_data.get("city"),
                         "state": article_data.get("state"),
-                        "relationship": "primary",
+                        "relationship_type": "primary",
                         "confidence": primary.get("confidence", 0.9),
                         "relevance_score": article_data.get("relevance_score")
                     })
@@ -426,7 +425,7 @@ class PropertyRelationshipBuilder:
                             "summary": article_data.get("summary") or article_data.get("short_summary") or article_data.get("long_summary"),
                             "city": article_data.get("city"),
                             "state": article_data.get("state"),
-                            "relationship": wiki_ref.get("relationship", "related"),
+                            "relationship_type": wiki_ref.get("relationship", "related"),
                             "confidence": wiki_ref.get("confidence", 0.8),
                             "relevance_score": article_data.get("relevance_score")
                         })
@@ -449,7 +448,6 @@ class PropertyRelationshipBuilder:
             "address": "address",
             "description": "description",
             "features": "features",
-            "amenities": "amenities",
             "status": "status",
             "listing_date": "listing_date",
             "days_on_market": "days_on_market",

@@ -52,7 +52,7 @@ def mock_es_client():
                             "zip": "94110"
                         },
                         "description": "Modern home with pool and stunning views",
-                        "amenities": ["pool", "garage", "garden"]
+                        "features": ["pool", "garage", "garden"]
                     }
                 },
                 {
@@ -74,7 +74,7 @@ def mock_es_client():
                             "zip": "94103"
                         },
                         "description": "Modern condo with pool access",
-                        "amenities": ["pool", "gym", "concierge"]
+                        "features": ["pool", "gym", "concierge"]
                     }
                 }
             ]
