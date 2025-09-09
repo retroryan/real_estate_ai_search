@@ -268,15 +268,8 @@ class DemoCommand(BaseCommand):
             query_func = self.demo_runner._get_demo_function(self.args.demo_number)
             
             try:
-                # Wrap the ES client to capture queries
-                from ..demo_queries.query_capture import wrap_es_client_for_demo
-                wrapped_client = wrap_es_client_for_demo(self.es_client.client, self.args.demo_number)
-                
-                # Execute the demo with the wrapped client
-                full_result = query_func(wrapped_client)
-                
-                # Save the query summary
-                wrapped_client.save_summary()
+                # Execute the demo with the actual Elasticsearch client
+                full_result = query_func(self.es_client.client)
                 
                 # Print the result display if it has one
                 if hasattr(full_result, 'display'):

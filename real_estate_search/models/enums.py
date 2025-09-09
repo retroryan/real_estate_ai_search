@@ -55,9 +55,35 @@ class PropertyStatus(str, Enum):
 class ParkingType(str, Enum):
     """Types of parking."""
     GARAGE = "garage"
+    SINGLE_GARAGE = "single_garage"
+    MULTI_CAR_GARAGE = "multi_car_garage"
     CARPORT = "carport"
     DRIVEWAY = "driveway"
     STREET = "street"
     COVERED = "covered"
     UNCOVERED = "uncovered"
     NONE = "none"
+    
+    @classmethod
+    def _missing_(cls, value):
+        """Handle case variations and unknown values."""
+        if value:
+            # Try case-insensitive match with underscore/hyphen variations
+            value_lower = str(value).lower()
+            for member in cls:
+                if member.value.lower() == value_lower:
+                    return member
+            # Handle common aliases
+            aliases = {
+                "single-garage": cls.SINGLE_GARAGE,
+                "multi-car-garage": cls.MULTI_CAR_GARAGE,
+                "multi_car_garage": cls.MULTI_CAR_GARAGE,
+                "2-car-garage": cls.MULTI_CAR_GARAGE,
+                "3-car-garage": cls.MULTI_CAR_GARAGE,
+                "attached-garage": cls.GARAGE,
+                "detached-garage": cls.GARAGE,
+            }
+            if value_lower in aliases:
+                return aliases[value_lower]
+        # Default to NONE for unknown types
+        return cls.NONE

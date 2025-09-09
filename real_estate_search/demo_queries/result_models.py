@@ -237,13 +237,14 @@ class AggregationSearchResult(BaseQueryResult):
                 property_text.append(f"{result.bedrooms}bd/{result.bathrooms}ba • {result.square_feet:,} sqft\n", style="cyan")
                 property_text.append(f"Built {result.year_built if result.year_built else 'N/A'}", style="dim")
                 
+                # Use Address model's properties directly (it's always an Address object now)
                 location_parts = []
-                if result.address.get('street'):
-                    location_parts.append(result.address['street'])
-                if result.address.get('city'):
-                    location_parts.append(result.address['city'])
-                if result.address.get('state'):
-                    location_parts.append(result.address['state'])
+                if result.address.street:
+                    location_parts.append(result.address.street)
+                if result.address.city:
+                    location_parts.append(result.address.city)
+                if result.address.state:
+                    location_parts.append(result.address.state)
                 location = '\n'.join(location_parts) if location_parts else 'N/A'
                 
                 price_text = f"${result.price:,.0f}"
@@ -308,10 +309,10 @@ class MixedEntityResult(BaseQueryResult):
                 property_text = f"{result.property_type} - {result.bedrooms}bd/{result.bathrooms}ba"
                 
                 location_parts = []
-                if result.address.get('city'):
-                    location_parts.append(result.address['city'])
-                if result.address.get('state'):
-                    location_parts.append(result.address['state'])
+                if result.address.city:
+                    location_parts.append(result.address.city)
+                if result.address.state:
+                    location_parts.append(result.address.state)
                 location = ', '.join(location_parts) if location_parts else 'N/A'
                 
                 table.add_row(

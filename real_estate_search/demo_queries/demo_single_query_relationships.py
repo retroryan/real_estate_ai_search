@@ -18,6 +18,7 @@ from rich import box
 from .result_models import MixedEntityResult
 from ..models import WikipediaArticle
 from ..models import PropertyListing
+from ..converters import PropertyConverter
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=1,
                 returned_hits=1,
-                property_results=[PropertyListing(**property_data)],
+                property_results=[PropertyConverter.from_elasticsearch(property_data)],
                 wikipedia_results=[WikipediaArticle(
                     page_id=str(a.get('page_id', '')),
                     title=a.get('title', ''),
@@ -185,7 +186,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyListing(**r) for r in results],
+                property_results=PropertyConverter.from_elasticsearch_batch(results),
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -250,7 +251,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=[PropertyListing(**r) for r in results],
+                property_results=PropertyConverter.from_elasticsearch_batch(results),
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -464,7 +465,7 @@ retrieved with single queries - no JOINs or multiple lookups needed!""",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
         returned_hits=len(all_results),
-        property_results=[PropertyListing(**r) for r in all_results[:10] if 'listing_id' in r],
+        property_results=PropertyConverter.from_elasticsearch_batch([r for r in all_results[:10] if 'listing_id' in r]),
         wikipedia_results=[],
         neighborhood_results=[],  # Limit to 10 for display
         query_dsl={

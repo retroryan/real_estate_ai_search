@@ -114,11 +114,8 @@ def convert_to_property_results(raw_results: List[Dict[str, Any]]) -> List[Prope
     Returns:
         List of PropertyListing objects
     """
-    property_results = []
-    for result in raw_results:
-        # Pass the whole result dict to PropertyListing, it will handle field mapping
-        property_results.append(PropertyListing(**result))
-    return property_results
+    from ..converters import PropertyConverter
+    return PropertyConverter.from_elasticsearch_batch(raw_results)
 
 
 def build_knn_query(

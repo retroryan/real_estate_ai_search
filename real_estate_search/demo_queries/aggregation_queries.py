@@ -320,10 +320,9 @@ def demo_price_distribution(
         # DISPLAY RESULTS (separated from query logic)
         display_price_distribution(response, histogram_results, interval, min_price, max_price)
         
-        # Convert raw property dicts to PropertyListing objects
-        top_properties = []
-        for prop in property_results:
-            top_properties.append(PropertyListing(**prop))
+        # Convert raw property dicts to PropertyListing objects using converter
+        from ..converters import PropertyConverter
+        top_properties = PropertyConverter.from_elasticsearch_batch(property_results)
         
         return AggregationSearchResult(
             query_name=f"Demo 5: Price Distribution Analysis",

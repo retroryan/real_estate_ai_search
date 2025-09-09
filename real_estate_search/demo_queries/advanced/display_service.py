@@ -87,7 +87,7 @@ class AdvancedDisplayService:
             for i, result in enumerate(response.results, 1):
                 # Format address
                 addr = result.address
-                address_str = f"{addr.get('street', 'N/A')}, {addr.get('city', 'N/A')}"
+                address_str = f"{addr.street or 'N/A'}, {addr.city or 'N/A'}"
                 
                 # Format price
                 price_str = f"${result.price:,.0f}" if result.price else "N/A"
@@ -161,7 +161,7 @@ class AdvancedDisplayService:
             
             for result in response.property_results[:5]:
                 addr = result.address
-                address_str = f"{addr.get('street', 'N/A')}, {addr.get('city', 'N/A')}"
+                address_str = f"{addr.street}, {addr.city}"
                 price_str = f"${result.price:,.0f}" if result.price else "N/A"
                 
                 prop_table.add_row(

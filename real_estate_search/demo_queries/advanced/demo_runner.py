@@ -61,7 +61,7 @@ class AdvancedDemoRunner:
             # Get random property if not specified
             reference = self.executor.get_random_property()
             if reference:
-                reference_property_id = reference.property_id
+                reference_property_id = reference.listing_id
         
         if not reference:
             # Return empty result if no reference found
