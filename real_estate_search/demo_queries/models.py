@@ -5,64 +5,6 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 
 
-class PropertySearchParams(BaseModel):
-    """Parameters for property search queries."""
-    model_config = ConfigDict(populate_by_name=True)
-    
-    query_text: str = Field(..., description="Search query text")
-    size: int = Field(10, description="Number of results to return")
-    from_: int = Field(0, description="Offset for pagination", alias="from")
-
-
-class PropertyFilterParams(BaseModel):
-    """Parameters for property filter queries."""
-    property_type: Optional[str] = Field(None, description="Property type (condo, single-family, etc)")
-    min_bedrooms: Optional[int] = Field(None, description="Minimum number of bedrooms")
-    max_bedrooms: Optional[int] = Field(None, description="Maximum number of bedrooms")
-    min_bathrooms: Optional[float] = Field(None, description="Minimum number of bathrooms")
-    min_price: Optional[float] = Field(None, description="Minimum price")
-    max_price: Optional[float] = Field(None, description="Maximum price")
-    min_square_feet: Optional[int] = Field(None, description="Minimum square feet")
-    max_square_feet: Optional[int] = Field(None, description="Maximum square feet")
-    cities: Optional[List[str]] = Field(None, description="List of cities to filter")
-    features: Optional[List[str]] = Field(None, description="Required features")
-    size: int = Field(10, description="Number of results")
-    
-
-class GeoSearchParams(BaseModel):
-    """Parameters for geographic search."""
-    latitude: float = Field(..., description="Center latitude")
-    longitude: float = Field(..., description="Center longitude")
-    distance: str = Field("5km", description="Search radius (e.g., '5km', '10mi')")
-    size: int = Field(10, description="Number of results")
-
-
-class AggregationParams(BaseModel):
-    """Parameters for aggregation queries."""
-    field: str = Field(..., description="Field to aggregate on")
-    size: int = Field(20, description="Number of buckets to return")
-    include_stats: bool = Field(True, description="Include statistical aggregations")
-
-
-class SemanticSearchParams(BaseModel):
-    """Parameters for semantic similarity search."""
-    embedding_vector: Optional[List[float]] = Field(None, description="Embedding vector for similarity")
-    query_text: Optional[str] = Field(None, description="Text to generate embedding from")
-    min_score: float = Field(0.7, description="Minimum similarity score")
-    size: int = Field(10, description="Number of results")
-
-
-class MultiEntitySearchParams(BaseModel):
-    """Parameters for multi-entity search."""
-    query_text: str = Field(..., description="Search query text")
-    include_properties: bool = Field(True, description="Include property results")
-    include_neighborhoods: bool = Field(True, description="Include neighborhood results")
-    include_wikipedia: bool = Field(True, description="Include Wikipedia results")
-    size_per_index: int = Field(5, description="Results per index")
-
-
-
-
 class DemoQueryResult(BaseModel):
     """Standard result format for demo queries."""
     query_name: str = Field(..., description="Name of the demo query")
@@ -75,9 +17,13 @@ class DemoQueryResult(BaseModel):
     query_dsl: Dict[str, Any] = Field(..., description="The actual Elasticsearch query used")
     es_features: Optional[List[str]] = Field(None, description="Elasticsearch features demonstrated")
     indexes_used: Optional[List[str]] = Field(None, description="Indexes queried")
+    display_format: str = Field("standard", description="Display format to use: 'standard' or 'location'")
     
     def display(self, verbose: bool = False) -> str:
         """Format results for display with top 5 results in a table."""
+        # Use location display format if specified
+        if self.display_format == "location":
+            return self.display_location_understanding(verbose=verbose)
         import json
         from rich.console import Console
         from rich.table import Table
@@ -283,11 +229,3 @@ class DemoQueryResult(BaseModel):
         string_buffer.close()
         
         return output
-
-
-class LocationUnderstandingResult(DemoQueryResult):
-    """Specialized result class for location understanding demos."""
-    
-    def display(self, verbose: bool = False) -> str:
-        """Use the specialized location understanding display."""
-        return self.display_location_understanding(verbose=verbose)

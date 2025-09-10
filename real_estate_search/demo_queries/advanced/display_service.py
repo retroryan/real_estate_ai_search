@@ -13,11 +13,13 @@ from rich.text import Text
 from rich import box
 import logging
 
+from ..property.models import PropertySearchResult
 from ..result_models import (
-    PropertySearchResult, WikipediaSearchResult, MixedEntityResult,
+    WikipediaSearchResult, MixedEntityResult,
     WikipediaArticle
 )
 from ...models.property import PropertyListing
+from ..property.common_property_display import PropertyTableDisplay, PropertyDisplayConfig
 from .search_executor import (
     SemanticSearchResponse, MultiEntityResponse, WikipediaResponse
 )
@@ -31,6 +33,7 @@ class AdvancedDisplayService:
     def __init__(self):
         """Initialize the display service."""
         self.console = Console()
+        self.table_display = PropertyTableDisplay(self.console)
     
     def display_semantic_results(
         self,
@@ -71,50 +74,21 @@ class AdvancedDisplayService:
             ))
         
         if response.results:
-            # Create similarity results table
-            table = Table(
-                title=f"[bold green]Found {len(response.results)} Similar Properties[/bold green]",
-                box=box.ROUNDED,
-                show_header=True,
-                header_style="bold cyan",
-                show_lines=True
+            # Use common display with semantic configuration
+            config = PropertyDisplayConfig(
+                table_title=f"Found {len(response.results)} Similar Properties",
+                show_description=True,
+                show_score=True,
+                show_details=True,
+                score_label="Similarity %"
             )
-            table.add_column("#", style="dim", width=4)
-            table.add_column("Score", style="magenta", justify="right", width=8)
-            table.add_column("Property Details", style="cyan", width=50)
-            table.add_column("Description", style="bright_blue", width=60)
             
-            for i, result in enumerate(response.results, 1):
-                # Format address
-                addr = result.address
-                address_str = f"{addr.street or 'N/A'}, {addr.city or 'N/A'}"
-                
-                # Format price
-                price_str = f"${result.price:,.0f}" if result.price else "N/A"
-                
-                # Format size
-                size_str = f"{result.bedrooms}bd/{result.bathrooms}ba | {result.square_feet:,}sqft"
-                
-                # Format property details
-                property_details = Text()
-                property_details.append(f"📍 {address_str}\n", style="cyan")
-                property_details.append(f"💰 {price_str} ", style="green")
-                property_details.append(f"• {result.property_type.title()}\n", style="yellow")
-                property_details.append(f"🏠 {size_str}", style="blue")
-                
-                # Format description
-                description = result.description
-                desc_text = Text(description[:200] + "..." if len(description) > 200 else description, style="bright_blue")
-                
-                # Add to table
-                table.add_row(
-                    str(i),
-                    f"{result.score:.2f}" if result.score else "N/A",
-                    property_details,
-                    desc_text
-                )
-            
-            self.console.print(table)
+            self.table_display.display_properties(
+                properties=response.results,
+                config=config,
+                total_hits=len(response.results),
+                execution_time_ms=response.execution_time_ms
+            )
             
             # Show AI insights
             self.console.print(Panel(
@@ -148,30 +122,21 @@ class AdvancedDisplayService:
         
         # Display properties
         if response.property_results:
-            prop_table = Table(
-                title="[bold]🏠 Properties[/bold]",
-                box=box.SIMPLE,
-                show_header=True,
-                header_style="cyan"
+            # Use common display for property results
+            config = PropertyDisplayConfig(
+                table_title="🏠 Properties",
+                show_description=False,
+                show_score=True,
+                show_details=True,
+                score_label="Score"
             )
-            prop_table.add_column("Score", style="magenta", justify="right", width=8)
-            prop_table.add_column("Address", style="cyan")
-            prop_table.add_column("Price", style="green", justify="right")
-            prop_table.add_column("Type", style="yellow")
             
-            for result in response.property_results[:5]:
-                addr = result.address
-                address_str = f"{addr.street}, {addr.city}"
-                price_str = f"${result.price:,.0f}" if result.price else "N/A"
-                
-                prop_table.add_row(
-                    f"{result.score:.2f}" if result.score else "N/A",
-                    address_str,
-                    price_str,
-                    result.property_type.title()
-                )
-            
-            self.console.print(prop_table)
+            self.table_display.display_properties(
+                properties=response.property_results,
+                config=config,
+                total_hits=len(response.property_results),
+                execution_time_ms=None
+            )
         
         # Display neighborhoods (if any)
         if response.neighborhood_results:

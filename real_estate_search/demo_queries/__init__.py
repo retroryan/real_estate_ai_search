@@ -5,7 +5,7 @@ from .property import (
     demo_property_filter,
     demo_geo_search
 )
-from .aggregation_queries import (
+from .aggregation import (
     demo_neighborhood_stats,
     demo_price_distribution
 )
@@ -17,12 +17,12 @@ from .advanced import (
 from .wikipedia import WikipediaDemoRunner
 from .wikipedia_location_search import demo_wikipedia_location_search
 from .demo_single_query_relationships import demo_simplified_relationships
-from .semantic_query_search import (
+from .semantic import (
     demo_natural_language_search,
     demo_natural_language_examples,
     demo_semantic_vs_keyword_comparison
 )
-from .rich_listing_demo import demo_rich_property_listing
+from .rich import demo_rich_property_listing
 from .hybrid_search import demo_hybrid_search
 from .location_understanding import demo_location_understanding
 from .location_aware_demos import (

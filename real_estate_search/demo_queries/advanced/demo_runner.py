@@ -9,8 +9,9 @@ from typing import Optional, List
 from elasticsearch import Elasticsearch
 import logging
 
+from ..property.models import PropertySearchResult
 from ..result_models import (
-    PropertySearchResult, WikipediaSearchResult, MixedEntityResult
+    WikipediaSearchResult, MixedEntityResult
 )
 from .semantic_search import SemanticSearchBuilder
 from .multi_entity_search import MultiEntitySearchBuilder
@@ -274,7 +275,6 @@ class AdvancedDemoRunner:
         )
 
 
-# Public API functions for backward compatibility
 def demo_semantic_search(
     es_client: Elasticsearch,
     reference_property_id: Optional[str] = None,

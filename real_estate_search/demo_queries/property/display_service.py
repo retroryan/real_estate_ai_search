@@ -13,9 +13,11 @@ from rich.text import Text
 from rich import box
 import logging
 
-from ..result_models import PropertySearchResult, AggregationSearchResult
+from .models import PropertySearchResult
+from ..result_models import AggregationSearchResult
 from ...models import PropertyListing
 from ..display_formatter import PropertyDisplayFormatter
+from .common_property_display import PropertyTableDisplay, PropertyDisplayConfig
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ class PropertyDisplayService:
     
     def __init__(self, console: Optional[Console] = None):
         self.console = console if console is not None else Console()
+        self.table_display = PropertyTableDisplay(self.console)
     
     def display_search_criteria(
         self,
@@ -90,44 +93,21 @@ class PropertyDisplayService:
             border_style="cyan"
         ))
         
-        if result.total_hits == 0:
-            self.console.print(Panel(
-                "[red]No properties found matching your search.[/red]",
-                border_style="red"
-            ))
-            return
-        
-        # Results table
-        table = Table(
-            title=f"[bold green]Found {result.total_hits} Properties[/bold green]",
-            box=box.ROUNDED,
-            show_header=True,
-            header_style="bold cyan"
+        # Use common display with basic configuration
+        config = PropertyDisplayConfig(
+            table_title=f"Found {result.total_hits} Properties",
+            show_description=False,  # Basic search doesn't show description
+            show_score=True,
+            show_details=True,
+            score_label="Score"
         )
-        table.add_column("#", style="dim", width=3)
-        table.add_column("Address", style="cyan", width=30)
-        table.add_column("Price", style="green", justify="right")
-        table.add_column("Details", style="yellow")
-        table.add_column("Score", style="magenta", justify="right")
         
-        for i, prop in enumerate(result.results[:10], 1):
-            address = prop.address.full_address
-            price = prop.display_price
-            details = prop.summary
-            score = f"{prop.score:.2f}" if prop.score else "N/A"
-            
-            table.add_row(str(i), address, price, details, score)
-        
-        self.console.print(table)
-        
-        # Statistics
-        self.console.print(Panel(
-            f"[green]✓[/green] Query executed in [bold]{result.execution_time_ms}ms[/bold]\n"
-            f"[green]✓[/green] Total hits: [bold]{result.total_hits}[/bold]\n"
-            f"[green]✓[/green] Results shown: [bold]{len(result.results)}[/bold]",
-            title="[bold]Search Statistics[/bold]",
-            border_style="green"
-        ))
+        self.table_display.display_properties(
+            properties=result.results,
+            config=config,
+            total_hits=result.total_hits,
+            execution_time_ms=result.execution_time_ms
+        )
     
     def display_filtered_search_results(
         self,
@@ -139,55 +119,21 @@ class PropertyDisplayService:
         Args:
             result: PropertySearchResult to display
         """
-        if result.total_hits > 0:
-            # Create property cards layout
-            table = Table(
-                title=f"[bold green]Found {result.total_hits} Matching Properties[/bold green]",
-                box=box.ROUNDED,
-                show_header=True,
-                header_style="bold cyan",
-                width=120
-            )
-            table.add_column("#", style="dim", width=3)
-            table.add_column("Address", style="cyan", width=35)
-            table.add_column("Price", style="green", justify="right", width=12)
-            table.add_column("Beds/Baths", style="yellow", justify="center", width=10)
-            table.add_column("Sq Ft", style="blue", justify="right", width=10)
-            table.add_column("Type", style="magenta", width=15)
-            
-            for i, prop in enumerate(result.results[:15], 1):
-                address = prop.address.full_address
-                price = f"${prop.price:,.0f}"
-                beds_baths = f"{prop.bedrooms}/{prop.bathrooms}"
-                sq_ft = f"{prop.square_feet:,}" if prop.square_feet else "N/A"
-                prop_type = PropertyDisplayFormatter.format_property_type(prop.property_type)
-                
-                table.add_row(
-                    str(i),
-                    address,
-                    price,
-                    beds_baths,
-                    sq_ft,
-                    prop_type
-                )
-            
-            self.console.print(table)
-            
-            # Summary stats
-            self.console.print(Panel(
-                f"[green]✓[/green] Filters applied successfully\n"
-                f"[green]✓[/green] Query time: [bold]{result.execution_time_ms}ms[/bold]\n"
-                f"[green]✓[/green] Total matches: [bold]{result.total_hits}[/bold]\n"
-                f"[green]✓[/green] Showing: [bold]{len(result.results)}[/bold] properties",
-                title="[bold]Filter Results[/bold]",
-                border_style="green"
-            ))
-        else:
-            self.console.print(Panel(
-                "[red]No properties found matching your filters.[/red]\n"
-                "[yellow]Try adjusting your criteria for more results.[/yellow]",
-                border_style="red"
-            ))
+        # Use common display with filtered configuration
+        config = PropertyDisplayConfig(
+            table_title=f"Found {result.total_hits} Matching Properties",
+            show_description=False,  # Filtered search doesn't show description
+            show_score=False,  # Filtered search doesn't show score
+            show_details=True,
+            score_label="Score"
+        )
+        
+        self.table_display.display_properties(
+            properties=result.results,
+            config=config,
+            total_hits=result.total_hits,
+            execution_time_ms=result.execution_time_ms
+        )
     
     def display_geo_search_results(
         self,
@@ -201,51 +147,28 @@ class PropertyDisplayService:
             result: PropertySearchResult to display
             radius_km: Search radius for display
         """
+        # Use common display with geo configuration
+        config = PropertyDisplayConfig(
+            table_title=f"Found {result.total_hits} Properties Within {radius_km}km",
+            show_description=False,  # Geo search doesn't show description
+            show_score=True,
+            show_details=True,
+            score_label="Distance (km)"
+        )
+        
+        self.table_display.display_properties(
+            properties=result.results,
+            config=config,
+            total_hits=result.total_hits,
+            execution_time_ms=result.execution_time_ms
+        )
+        
+        # Additional geo-specific information
         if result.total_hits > 0:
-            # Create distance-sorted table
-            table = Table(
-                title=f"[bold green]Found {result.total_hits} Properties Within {radius_km}km[/bold green]",
-                box=box.ROUNDED,
-                show_header=True,
-                header_style="bold cyan"
-            )
-            table.add_column("#", style="dim", width=3)
-            table.add_column("Distance", style="magenta", justify="right", width=10)
-            table.add_column("Address", style="cyan", width=35)
-            table.add_column("Price", style="green", justify="right")
-            table.add_column("Details", style="yellow")
-            
-            for i, prop in enumerate(result.results[:15], 1):
-                address = prop.address.full_address
-                price = f"${prop.price:,.0f}"
-                details = f"{prop.bedrooms} bed, {prop.bathrooms} bath"
-                # Note: Distance would need to be added to PropertyResult model
-                distance_str = "N/A"
-                
-                table.add_row(
-                    str(i),
-                    distance_str,
-                    address,
-                    price,
-                    details
-                )
-            
-            self.console.print(table)
-            
-            # Show map visualization hint
             self.console.print(Panel(
-                f"[green]✓[/green] Found [bold]{result.total_hits}[/bold] properties within [bold]{radius_km}km[/bold]\n"
-                f"[green]✓[/green] Query time: [bold]{result.execution_time_ms}ms[/bold]\n"
-                f"[green]✓[/green] Results sorted by distance from center\n"
                 f"[dim]💡 Tip: Properties are sorted from nearest to farthest[/dim]",
                 title="[bold]📍 Location Search Results[/bold]",
                 border_style="green"
-            ))
-        else:
-            self.console.print(Panel(
-                f"[red]No properties found within {radius_km}km of the specified location.[/red]\n"
-                "[yellow]Try increasing the search radius or adjusting the price limit.[/yellow]",
-                border_style="red"
             ))
     
     def display_aggregation_results(

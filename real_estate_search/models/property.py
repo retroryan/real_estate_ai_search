@@ -5,12 +5,15 @@ This is the single, authoritative PropertyListing model that serves as the
 sole source of truth for property data throughout the application.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field, field_serializer
 
 from .address import Address
 from .enums import PropertyType, PropertyStatus, ParkingType
+
+logger = logging.getLogger(__name__)
 
 
 class Parking(BaseModel):
@@ -235,22 +238,229 @@ class PropertyListing(BaseModel):
         return doc
     
     @classmethod
-    def from_elasticsearch(cls, source: Dict[str, Any], score: Optional[float] = None) -> "PropertyListing":
-        """Create from Elasticsearch document."""
-        # Add score if provided
-        if score is not None:
-            source['_score'] = score
+    def from_elasticsearch(cls, data: Dict[str, Any]) -> "PropertyListing":
+        """
+        Create PropertyListing from single Elasticsearch document.
         
-        # Handle date conversions
-        for date_field in ['list_date', 'last_sold_date', 'embedded_at']:
-            if date_field in source and source[date_field]:
+        This method handles ONLY single documents, not full ES responses.
+        For full responses, use from_elasticsearch_response().
+        
+        Args:
+            data: Single document dict from Elasticsearch _source or hit
+            
+        Returns:
+            PropertyListing instance
+        """
+        # Single document - normalize and return PropertyListing
+        source = data.copy()
+        
+        # Apply all transformations
+        source = cls._convert_nested_objects(source)
+        source = cls._normalize_enums(source)
+        source = cls._handle_search_metadata(source)
+        source = cls._convert_dates(source)
+        
+        return cls(**source)
+    
+    @classmethod
+    def from_elasticsearch_response(cls, response: Dict[str, Any]) -> List["PropertyListing"]:
+        """
+        Extract and convert properties from full Elasticsearch response.
+        
+        Args:
+            response: Full Elasticsearch response with hits
+            
+        Returns:
+            List of PropertyListing instances
+        """
+        properties = []
+        
+        if 'hits' in response and 'hits' in response['hits']:
+            for hit in response['hits']['hits']:
+                source = hit.get('_source', {})
+                
+                # Add Elasticsearch metadata
+                source['_id'] = hit.get('_id')
+                source['_score'] = hit.get('_score')
+                
+                # Add highlights if present
+                if 'highlight' in hit:
+                    source['highlights'] = hit['highlight']
+                
+                # Add sort values if present (for geo queries)
+                if 'sort' in hit:
+                    source['_sort'] = hit['sort']
+                    if len(hit['sort']) > 0:
+                        try:
+                            # Try to use as numeric value for distance
+                            source['distance_km'] = float(hit['sort'][0])
+                        except (TypeError, ValueError):
+                            pass
+                
+                # Convert to PropertyListing
                 try:
-                    # Try to parse as ISO format string
-                    source[date_field] = datetime.fromisoformat(
-                        str(source[date_field]).replace('Z', '+00:00')
+                    property_model = cls.from_elasticsearch(source)
+                    properties.append(property_model)
+                except Exception as e:
+                    # Log error but continue processing other results
+                    logger.warning(f"Failed to convert property: {e}")
+                    continue
+        
+        return properties
+    
+    @staticmethod
+    def _convert_nested_objects(data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convert nested objects from Elasticsearch to their Pydantic models.
+        
+        Elasticsearch always returns dicts for nested objects, not Pydantic models.
+        """
+        # Convert address - ES returns dict or None
+        if 'address' in data and data['address']:
+            data['address'] = Address(**data['address'])
+        else:
+            # Provide default address if missing or None
+            data['address'] = Address()
+        
+        # Convert parking - ES returns dict or None
+        if 'parking' in data and data['parking']:
+            parking_data = data['parking'].copy()
+            # Normalize parking type if present
+            if 'type' in parking_data and parking_data['type']:
+                parking_type_str = str(parking_data['type']).lower()
+                try:
+                    parking_data['type'] = ParkingType(parking_type_str)
+                except ValueError:
+                    # If not a valid enum value, default to NONE
+                    parking_data['type'] = ParkingType.NONE
+            data['parking'] = Parking(**parking_data)
+        else:
+            # Provide default parking if missing
+            data['parking'] = Parking()
+        
+        return data
+    
+    @staticmethod
+    def _normalize_enums(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize enum fields to their proper types."""
+        # Convert property_type
+        if 'property_type' in data:
+            data['property_type'] = PropertyListing._normalize_property_type(data['property_type'])
+        
+        # Convert status
+        if 'status' in data:
+            data['status'] = PropertyListing._normalize_status(data['status'])
+        else:
+            data['status'] = PropertyStatus.ACTIVE
+        
+        return data
+    
+    @staticmethod
+    def _handle_search_metadata(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle search-related metadata fields."""
+        # Handle highlights field - map to search_highlights
+        if 'highlights' in data:
+            data['search_highlights'] = data.pop('highlights')
+        
+        # Other metadata fields (_id, _score, _sort, distance_km) are preserved as-is
+        return data
+    
+    @staticmethod
+    def _convert_dates(data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convert date strings from Elasticsearch to datetime objects.
+        
+        Args:
+            data: Dictionary with potential date fields
+            
+        Returns:
+            Dictionary with converted date fields
+        """
+        date_fields = ['list_date', 'last_sold_date', 'embedded_at']
+        
+        for field in date_fields:
+            if field in data and data[field]:
+                try:
+                    # Parse ISO format string from Elasticsearch
+                    data[field] = datetime.fromisoformat(
+                        str(data[field]).replace('Z', '+00:00')
                     )
                 except (ValueError, AttributeError, TypeError):
                     # Keep original value if not parseable
                     pass
         
-        return cls(**source)
+        return data
+    
+    @staticmethod
+    def _normalize_property_type(type_value: str) -> PropertyType:
+        """
+        Normalize property type string from Elasticsearch to PropertyType enum.
+        
+        Args:
+            type_value: String value from Elasticsearch
+            
+        Returns:
+            PropertyType enum value
+        """
+        if not type_value:
+            return PropertyType.OTHER
+            
+        # Normalize string: lowercase, replace separators with underscore
+        normalized = str(type_value).lower().replace('-', '_').replace(' ', '_')
+        
+        # Comprehensive mapping of variations
+        type_mapping = {
+            'single_family': PropertyType.SINGLE_FAMILY,
+            'singlefamily': PropertyType.SINGLE_FAMILY,
+            'single': PropertyType.SINGLE_FAMILY,
+            'condo': PropertyType.CONDO,
+            'condominium': PropertyType.CONDO,
+            'townhome': PropertyType.TOWNHOUSE,
+            'townhouse': PropertyType.TOWNHOUSE,
+            'town_home': PropertyType.TOWNHOUSE,
+            'town_house': PropertyType.TOWNHOUSE,
+            'multi_family': PropertyType.MULTI_FAMILY,
+            'multifamily': PropertyType.MULTI_FAMILY,
+            'multi': PropertyType.MULTI_FAMILY,
+            'apartment': PropertyType.APARTMENT,
+            'apt': PropertyType.APARTMENT,
+            'land': PropertyType.LAND,
+            'lot': PropertyType.LAND,
+            'other': PropertyType.OTHER,
+        }
+        
+        return type_mapping.get(normalized, PropertyType.OTHER)
+    
+    @staticmethod
+    def _normalize_status(status_value: str) -> PropertyStatus:
+        """
+        Normalize status string from Elasticsearch to PropertyStatus enum.
+        
+        Args:
+            status_value: String value from Elasticsearch
+            
+        Returns:
+            PropertyStatus enum value
+        """
+        if not status_value:
+            return PropertyStatus.ACTIVE
+            
+        # Normalize string: lowercase, replace separators with underscore
+        normalized = str(status_value).lower().replace('-', '_').replace(' ', '_')
+        
+        # Comprehensive mapping of variations
+        status_mapping = {
+            'active': PropertyStatus.ACTIVE,
+            'for_sale': PropertyStatus.ACTIVE,
+            'available': PropertyStatus.ACTIVE,
+            'pending': PropertyStatus.PENDING,
+            'under_contract': PropertyStatus.PENDING,
+            'sold': PropertyStatus.SOLD,
+            'closed': PropertyStatus.SOLD,
+            'off_market': PropertyStatus.OFF_MARKET,
+            'offmarket': PropertyStatus.OFF_MARKET,
+            'withdrawn': PropertyStatus.OFF_MARKET,
+            'expired': PropertyStatus.OFF_MARKET,
+        }
+        
+        return status_mapping.get(normalized, PropertyStatus.ACTIVE)

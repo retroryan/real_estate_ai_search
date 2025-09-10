@@ -8,17 +8,22 @@ These requirements apply to ALL code changes and MUST be followed exactly. No ex
 
 #### Core Principles
 
-1. **FOLLOW REQUIREMENTS EXACTLY**
+1. **NO PERFORMANCE TESTING OR BENCHMARKING**
+   - Do not add any performance comparison, performance testing, benchmarking, or query optimization
+   - Focus on functionality, not performance metrics
+   - No timing comparisons or speed tests
+
+2. **FOLLOW REQUIREMENTS EXACTLY**
    - Implement only what is explicitly requested
    - Do not add features or functionality beyond the documented requirements
    - Always fix the core issue, not symptoms
 
-2. **ATOMIC UPDATES ONLY**
+3. **ATOMIC UPDATES ONLY**
    - All occurrences must be changed in a single, complete update
    - Change everything or change nothing
    - No partial updates allowed
 
-3. **NO MIGRATION STRATEGIES**
+4. **NO MIGRATION STRATEGIES**
    - No temporary compatibility periods
    - No rollback plans
    - No backwards compatibility layers
@@ -26,73 +31,73 @@ These requirements apply to ALL code changes and MUST be followed exactly. No ex
 
 #### Implementation Standards
 
-4. **CLEAN CODE PRACTICES**
+5. **CLEAN CODE PRACTICES**
    - Simple, direct replacements only
    - No code duplication to handle multiple patterns
    - No abstraction layers for compatibility
    - Use modules and maintain clean code structure
 
-5. **NO LEGACY CODE PRESERVATION**
+6. **NO LEGACY CODE PRESERVATION**
    - Do not comment out old code "just in case"
    - Do not create backup copies of old implementations
    - Remove old code completely when replacing
 
-6. **NAMING CONVENTIONS**
+7. **NAMING CONVENTIONS**
    - Do not suffix class names with "Enhanced", "Improved", or version numbers
    - Update existing classes directly (e.g., update `PropertyIndex`, not create `ImprovedPropertyIndex`)
    - Never name components after phases or steps from proposal documents (no `test_phase_2_bronze_layer.py`)
 
 #### Technical Requirements
 
-7. **TYPE SYSTEM RULES**
+8. **TYPE SYSTEM RULES**
    - ALWAYS use Pydantic for data models
    - Never use `hasattr()` for type checking
    - Never use `isinstance()` for type checking
    - No Union types - if you need a Union, re-evaluate the core design
    - No variable casting or type aliases
 
-8. **DATA HANDLING**
+9. **DATA HANDLING**
    - Never generate mocks or sample data when actual results are missing
    - Investigate why data is missing and fix the root cause
    - Ask for clarification if data sources are unclear
 
-9. **ERROR HANDLING**
+10. **ERROR HANDLING**
    - If something doesn't work, fix the core issue
    - Do not hack around problems with mocks
    - Do not create workarounds - address the root cause
 
-10. **COMMUNICATION**
+11. **COMMUNICATION**
     - If there are questions or uncertainties, ASK before proceeding
     - Document only what was explicitly requested
     - Provide clear feedback when requirements conflict with best practices
 
 #### SOLID Principles (MANDATORY)
 
-11. **SINGLE RESPONSIBILITY PRINCIPLE (SRP)**
+12. **SINGLE RESPONSIBILITY PRINCIPLE (SRP)**
     - Each class should have only ONE reason to change
     - Each module should do ONE thing well
     - Split large classes into smaller, focused components
     - If a class has "and" in its description, it needs to be split
 
-12. **OPEN/CLOSED PRINCIPLE (OCP)**
+13. **OPEN/CLOSED PRINCIPLE (OCP)**
     - Classes should be open for extension but closed for modification
     - Use dependency injection and interfaces
     - Add new functionality through new classes, not by modifying existing ones
     - Prefer composition over inheritance
 
-13. **LISKOV SUBSTITUTION PRINCIPLE (LSP)**
+14. **LISKOV SUBSTITUTION PRINCIPLE (LSP)**
     - Derived classes must be substitutable for their base classes
     - Subclasses should not weaken preconditions or strengthen postconditions
     - If you need to check the type of an object, you're violating LSP
     - All implementations of an interface must be interchangeable
 
-14. **INTERFACE SEGREGATION PRINCIPLE (ISP)**
+15. **INTERFACE SEGREGATION PRINCIPLE (ISP)**
     - Clients should not be forced to depend on interfaces they don't use
     - Create small, focused interfaces rather than large, general ones
     - Better to have many specific interfaces than one general interface
     - If an implementation has empty methods, the interface is too broad
 
-15. **DEPENDENCY INVERSION PRINCIPLE (DIP) - USE ONLY WHEN REQUESTED**
+16. **DEPENDENCY INVERSION PRINCIPLE (DIP) - USE ONLY WHEN REQUESTED**
     - **IMPORTANT: This is a demo project - prefer simplicity over DIP**
     - Only implement DIP when explicitly requested or absolutely necessary
     - For most cases, direct dependencies are fine and preferred
@@ -105,19 +110,19 @@ These requirements apply to ALL code changes and MUST be followed exactly. No ex
 
 #### Testing Requirements
 
-16. **INTEGRATION TESTS ARE PRIMARY**
+17. **INTEGRATION TESTS ARE PRIMARY**
     - Integration tests are MORE valuable than unit tests
     - Always write integration tests for new features
     - Test real interactions between components, not mocked behavior
     - Integration tests should cover the actual use cases
 
-17. **TEST COVERAGE PRIORITIES**
+18. **TEST COVERAGE PRIORITIES**
     - First priority: Integration tests that test actual workflows
     - Second priority: Integration tests for critical paths
     - Third priority: Unit tests for complex business logic only
     - Never write unit tests just for coverage metrics
 
-18. **TEST IMPLEMENTATION RULES**
+19. **TEST IMPLEMENTATION RULES**
     - Tests must use real dependencies when possible (databases, APIs)
     - Only mock external services that are expensive or unreliable
     - Test the behavior, not the implementation

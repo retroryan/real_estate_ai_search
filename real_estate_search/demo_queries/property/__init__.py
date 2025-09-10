@@ -5,6 +5,7 @@ Property search module with clean separation of concerns.
 from .query_builder import PropertyQueryBuilder
 from .search_executor import PropertySearchExecutor
 from .display_service import PropertyDisplayService
+from .models import PropertySearchResult
 from .demo_runner import (
     PropertyDemoRunner,
     demo_basic_property_search,
@@ -23,6 +24,7 @@ __all__ = [
     'PropertySearchExecutor',
     'PropertyDisplayService',
     'PropertyDemoRunner',
+    'PropertySearchResult',
     
     # Demo functions
     'demo_basic_property_search',

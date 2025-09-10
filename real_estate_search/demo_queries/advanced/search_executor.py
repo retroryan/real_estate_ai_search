@@ -10,8 +10,9 @@ from pydantic import BaseModel, Field
 from elasticsearch import Elasticsearch
 import logging
 
+from ..property.models import PropertySearchResult
 from ..result_models import (
-    PropertySearchResult, WikipediaSearchResult, MixedEntityResult,
+    WikipediaSearchResult, MixedEntityResult,
     WikipediaArticle
 )
 from ...models import PropertyListing
@@ -116,7 +117,7 @@ class AdvancedSearchExecutor:
                 # Include similarity score
                 source['_similarity_score'] = hit['_score']
                 
-                results.append(PropertyListing(**source))
+                results.append(PropertyListing.from_elasticsearch(source))
             
             return SemanticSearchResponse(
                 results=results,
@@ -179,7 +180,7 @@ class AdvancedSearchExecutor:
                 
                 # Process by entity type
                 if discrimination.entity_type == 'property':
-                    property_results.append(PropertyListing(**source))
+                    property_results.append(PropertyListing.from_elasticsearch(source))
                 elif discrimination.entity_type == 'wikipedia':
                     wikipedia_results.append(WikipediaArticle(
                         page_id=str(source.get('page_id', '')),
@@ -348,8 +349,10 @@ class AdvancedSearchExecutor:
             
             # Set the listing_id to match the document ID
             source['listing_id'] = property_id
+            # Include score in source data
+            source['_score'] = hit.get('_score')
             
-            return PropertyListing.from_elasticsearch(source, score=hit.get('_score'))
+            return PropertyListing.from_elasticsearch(source)
             
         except Exception as e:
             logger.error(f"Error getting random property: {e}")

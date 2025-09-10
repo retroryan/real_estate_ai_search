@@ -11,7 +11,8 @@ import logging
 from pydantic import BaseModel
 
 from ..base_models import SearchRequest, SearchResponse
-from ..result_models import PropertySearchResult, AggregationSearchResult
+from .models import PropertySearchResult
+from ..result_models import AggregationSearchResult
 from ..display_formatter import PropertyDisplayFormatter
 from ...models import PropertyListing
 
@@ -74,7 +75,7 @@ class PropertySearchExecutor(BaseModel):
                 source_data = hit.source.copy()
                 if hit.score is not None:
                     source_data['_score'] = hit.score
-                results.append(PropertyListing(**source_data))
+                results.append(PropertyListing.from_elasticsearch(source_data))
             except Exception as e:
                 logger.warning(f"Failed to parse property result: {e}")
                 continue

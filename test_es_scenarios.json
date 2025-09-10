@@ -1,0 +1,217 @@
+{
+  "simple_hit": {
+    "_index": "properties",
+    "_id": "test-1",
+    "_score": 0.95,
+    "_source": {
+      "listing_id": "test-1",
+      "price": 500000,
+      "property_type": "condo",
+      "bedrooms": 2,
+      "bathrooms": 1.5,
+      "square_feet": 1200,
+      "address": {
+        "street": "123 Test St",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip_code": "94102",
+        "location": {
+          "lat": 37.7749,
+          "lon": -122.4194
+        }
+      }
+    }
+  },
+  "hit_with_highlights": {
+    "_index": "properties",
+    "_id": "test-2",
+    "_score": 0.89,
+    "_source": {
+      "listing_id": "test-2",
+      "price": 750000,
+      "property_type": "single-family",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "square_feet": 1800,
+      "address": {
+        "street": "456 Demo Ave",
+        "city": "Oakland",
+        "state": "CA",
+        "zip_code": "94612"
+      },
+      "description": "Beautiful home with modern kitchen"
+    },
+    "highlight": {
+      "description": [
+        "Beautiful home with <em>modern kitchen</em>"
+      ],
+      "features": [
+        "<em>Modern</em> appliances",
+        "Updated <em>kitchen</em>"
+      ]
+    }
+  },
+  "hit_with_geo_sort": {
+    "_index": "properties",
+    "_id": "test-3",
+    "_score": null,
+    "_source": {
+      "listing_id": "test-3",
+      "price": 1200000,
+      "property_type": "townhouse",
+      "bedrooms": 4,
+      "bathrooms": 3.5,
+      "square_feet": 2400,
+      "address": {
+        "city": "San Francisco"
+      }
+    },
+    "sort": [
+      2.456
+    ]
+  },
+  "minimal_source": {
+    "_index": "properties",
+    "_id": "test-4",
+    "_source": {
+      "listing_id": "test-4",
+      "price": 300000,
+      "property_type": "apartment"
+    }
+  },
+  "with_null_values": {
+    "_index": "properties",
+    "_id": "test-5",
+    "_source": {
+      "listing_id": "test-5",
+      "price": 450000,
+      "property_type": "condo",
+      "bedrooms": null,
+      "bathrooms": null,
+      "square_feet": 0,
+      "address": null,
+      "parking": null,
+      "list_date": null
+    }
+  },
+  "with_date_strings": {
+    "_index": "properties",
+    "_id": "test-6",
+    "_source": {
+      "listing_id": "test-6",
+      "price": 650000,
+      "property_type": "single_family",
+      "listing_date": "2024-01-15T10:30:00Z",
+      "last_sold_date": "2020-06-20T14:45:00.000Z",
+      "embedded_at": "2024-03-01T08:00:00+00:00"
+    }
+  },
+  "with_embeddings": {
+    "_index": "properties",
+    "_id": "test-7",
+    "_source": {
+      "listing_id": "test-7",
+      "price": 850000,
+      "property_type": "townhome",
+      "embedding": [
+        0.1,
+        -0.2,
+        0.3,
+        0.4,
+        -0.5
+      ],
+      "embedding_model": "voyage-3",
+      "embedding_dimension": 1024
+    }
+  },
+  "full_response": {
+    "took": 15,
+    "timed_out": false,
+    "_shards": {
+      "total": 1,
+      "successful": 1,
+      "skipped": 0,
+      "failed": 0
+    },
+    "hits": {
+      "total": {
+        "value": 3,
+        "relation": "eq"
+      },
+      "max_score": 0.95,
+      "hits": [
+        {
+          "_index": "properties",
+          "_id": "resp-1",
+          "_score": 0.95,
+          "_source": {
+            "listing_id": "resp-1",
+            "price": 600000,
+            "property_type": "condo"
+          }
+        },
+        {
+          "_index": "properties",
+          "_id": "resp-2",
+          "_score": 0.82,
+          "_source": {
+            "listing_id": "resp-2",
+            "price": 720000,
+            "property_type": "single-family",
+            "bedrooms": 3
+          },
+          "highlight": {
+            "description": [
+              "<em>Spacious</em> family home"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "empty_response": {
+    "took": 5,
+    "timed_out": false,
+    "hits": {
+      "total": {
+        "value": 0,
+        "relation": "eq"
+      },
+      "max_score": null,
+      "hits": []
+    }
+  },
+  "malformed_property_types": {
+    "_index": "properties",
+    "_id": "test-8",
+    "_source": {
+      "listing_id": "test-8",
+      "price": 550000,
+      "property_type": "SINGLE FAMILY",
+      "status": "FOR_SALE",
+      "parking": {
+        "spaces": 2,
+        "type": "DOUBLE GARAGE"
+      }
+    }
+  },
+  "aggregation_response": {
+    "took": 10,
+    "hits": {
+      "total": {
+        "value": 100,
+        "relation": "eq"
+      },
+      "hits": []
+    },
+    "aggregations": {
+      "price_stats": {
+        "count": 100,
+        "min": 200000,
+        "max": 2000000,
+        "avg": 750000,
+        "sum": 75000000
+      }
+    }
+  }
+}

@@ -31,6 +31,7 @@ from rich import box
 from .models import DemoQueryResult
 from .demo_utils import format_demo_header
 from .display_formatter import PropertyDisplayFormatter
+from .property.common_property_display import PropertyTableDisplay, PropertyDisplayConfig
 from ..hybrid import HybridSearchEngine
 
 logger = logging.getLogger(__name__)
@@ -79,90 +80,6 @@ class LocationAwareDisplayFormatter:
         return score_text
     
     @staticmethod
-    def create_location_results_table(results: List[Dict[str, Any]], query: str) -> Table:
-        """Create rich table for location-aware search results - showing top 5."""
-        table = Table(
-            title=f"🏠 Top 5 Properties - Location-Aware Hybrid Search: '{query}'",
-            box=box.DOUBLE_EDGE,
-            title_style="bold cyan",
-            show_header=True,
-            header_style="bold magenta",
-            expand=True,
-            padding=(0, 1)
-        )
-        
-        # Define columns with better widths
-        table.add_column("#", style="dim", width=3, justify="center")
-        table.add_column("Property Details", style="white", width=45)
-        table.add_column("Location", style="blue", width=30)
-        table.add_column("Price", style="green bold", justify="right", width=15)
-        table.add_column("Description", style="yellow", width=50)
-        table.add_column("Score", style="cyan bold", width=12, justify="center")
-        
-        # Add rows - only top 5
-        for idx, result in enumerate(results[:5], 1):
-            # Property info with better formatting
-            property_type = PropertyDisplayFormatter.format_property_type(result.get('property_type', ''))
-            bedrooms = result.get('bedrooms', 0)
-            bathrooms = result.get('bathrooms', 0)
-            sqft = result.get('square_feet', 0)
-            year_built = result.get('year_built', 'N/A')
-            
-            property_info = Text()
-            property_info.append(f"{property_type}\n", style="bold white")
-            property_info.append(f"🛏️  {bedrooms} bed | 🚿 {bathrooms} bath\n", style="cyan")
-            property_info.append(f"📐 {sqft:,} sqft | 🏗️  Built {year_built}", style="dim")
-            
-            # Enhanced location info
-            address = result.get('address', {})
-            location_parts = []
-            if address.get('street'):
-                location_parts.append(f"📍 {address['street']}")
-            if address.get('city'):
-                location_parts.append(f"🏙️  {address['city']}")
-            if address.get('state'):
-                location_parts.append(f"{address['state']}")
-            if address.get('zip'):
-                location_parts.append(f"📮 {address['zip']}")
-            
-            neighborhood = result.get('neighborhood', {})
-            if neighborhood.get('name'):
-                location_parts.append(f"\n🏘️  {neighborhood['name']}")
-                
-            location_text = Text("\n".join(location_parts), style="blue")
-            
-            # Price with better formatting
-            price = result.get('price', 0)
-            price_formatted = Text()
-            price_formatted.append("💰 ", style="green")
-            price_formatted.append(PropertyDisplayFormatter.format_price(price), style="bold green")
-            
-            # Property description (truncated if too long)
-            description = result.get('description', 'No description available')
-            if len(description) > 150:
-                description = description[:147] + "..."
-            description_text = Text(description, style="italic")
-            
-            # Hybrid score with visual
-            score = result.get('_hybrid_score', 0)
-            score_bar_length = int(score * 5) if score <= 1.0 else 5
-            score_text = Text()
-            score_text.append(f"{score:.3f}\n", style="bold cyan")
-            score_text.append("⭐" * score_bar_length, style="yellow")
-            score_text.append("☆" * (5 - score_bar_length), style="dim")
-            
-            table.add_row(
-                str(idx),
-                property_info,
-                location_text,
-                price_formatted,
-                description_text,
-                score_text
-            )
-        
-        return table
-    
-    @staticmethod
     def create_location_features_panel(example: "LocationAwareSearchExample") -> Panel:
         """Create panel showing location understanding features."""
         content = Text()
@@ -192,6 +109,9 @@ class LocationAwareDisplayFormatter:
         if console is None:
             console = Console()
         
+        # Create table display instance
+        table_display = PropertyTableDisplay(console)
+        
         # Header
         console.print(f"\n{'='*80}", style="cyan")
         console.print(f"🌍 LOCATION-AWARE HYBRID SEARCH", style="bold cyan", justify="center")
@@ -213,12 +133,33 @@ class LocationAwareDisplayFormatter:
         # Location understanding features
         console.print(LocationAwareDisplayFormatter.create_location_features_panel(example))
         
-        # Results table
+        # Results table using common display
         if result.results:
-            table = LocationAwareDisplayFormatter.create_location_results_table(
-                result.results, example.query
+            # Convert results to PropertyListing objects if needed
+            from ...models import PropertyListing
+            properties = []
+            for r in result.results[:10]:  # Only display 10 results
+                if isinstance(r, PropertyListing):
+                    properties.append(r)
+                elif isinstance(r, dict):
+                    # Convert dict to PropertyListing
+                    properties.append(PropertyListing(**r))
+            
+            # Configure for location-aware display
+            config = PropertyDisplayConfig(
+                table_title=f"🏠 Location-Aware Hybrid Search: '{example.query}'",
+                show_description=True,
+                show_score=True,
+                show_details=True,
+                score_label="Hybrid Score"
             )
-            console.print(table)
+            
+            table_display.display_properties(
+                properties=properties,
+                config=config,
+                total_hits=result.total_hits,
+                execution_time_ms=result.execution_time_ms
+            )
         else:
             console.print("📭 No results found", style="yellow")
 

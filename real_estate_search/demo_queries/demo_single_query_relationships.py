@@ -18,7 +18,6 @@ from rich import box
 from .result_models import MixedEntityResult
 from ..models import WikipediaArticle
 from ..models import PropertyListing
-from ..converters import PropertyConverter
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
@@ -110,7 +109,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=1,
                 returned_hits=1,
-                property_results=[PropertyConverter.from_elasticsearch(property_data)],
+                property_results=[PropertyListing.from_elasticsearch(property_data)],
                 wikipedia_results=[WikipediaArticle(
                     page_id=str(a.get('page_id', '')),
                     title=a.get('title', ''),
@@ -187,7 +186,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=PropertyConverter.from_elasticsearch_batch(results),
+                property_results=[PropertyListing.from_elasticsearch(r) for r in results],
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
@@ -252,7 +251,7 @@ class SimplifiedRelationshipDemo:
                 execution_time_ms=execution_time,
                 total_hits=response['hits']['total']['value'],
                 returned_hits=len(results),
-                property_results=PropertyConverter.from_elasticsearch_batch(results),
+                property_results=[PropertyListing.from_elasticsearch(r) for r in results],
                 wikipedia_results=[],
                 neighborhood_results=[],
                 query_dsl=query
