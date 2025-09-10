@@ -58,6 +58,8 @@ class BaseQueryResult(BaseModel):
 class WikipediaSearchResult(BaseQueryResult):
     """Result for Wikipedia searches."""
     results: List[WikipediaArticle] = Field(..., description="Wikipedia article results")
+    exported_articles: List[Dict[str, Any]] = Field(default_factory=list, description="Exported article information")
+    html_report_path: Optional[str] = Field(None, description="Path to HTML report if generated")
     
     def display(self, verbose: bool = False) -> str:
         """Format Wikipedia results for display."""
@@ -70,10 +72,36 @@ class WikipediaSearchResult(BaseQueryResult):
         string_buffer = StringIO()
         console = Console(file=string_buffer, force_terminal=True, width=150)
         
+        # Standard header with query info FIRST
         self._display_header(console)
         
+        # Context Display (Demo-specific) - Full-text search overview AFTER header
+        if "Full-Text Search" in self.query_name:
+            console.print("\n[bold]🔍 Full-Text Search Overview:[/bold]")
+            console.print("This demo showcases Wikipedia full-text search after HTML enrichment:")
+            console.print()
+            console.print("• Searches across complete Wikipedia article content")
+            console.print("• Demonstrates various query patterns and operators")
+            console.print("• Shows highlighted relevant content from articles")
+            console.print("=" * 60)
+        
+        # Export info if available (after context, before results)
+        if self.exported_articles and len(self.exported_articles) > 0:
+            console.print(f"\n📥 Exporting Wikipedia articles to real_estate_search/out_html/")
+            console.print("-" * 60)
+            for article in self.exported_articles:
+                console.print(f"✅ Exported: {article['title'][:50]} ({article['file_size_kb']:.1f} KB)")
+            console.print(f"\n✅ Successfully exported {len(self.exported_articles)} articles")
+        
+        # HTML report info if available
+        if self.html_report_path:
+            console.print(f"\n📄 HTML results saved to: {self.html_report_path}")
+            console.print(f"   Open in browser: file://{self.html_report_path}")
+            console.print(f"\n📂 HTML report opened in browser: {self.html_report_path}")
+        
+        # Results Display
         if self.results and len(self.results) > 0:
-            console.print(f"\n📚 TOP WIKIPEDIA ARTICLES:", style="bold magenta")
+            console.print(f"\n[bold magenta]📚 TOP WIKIPEDIA ARTICLES:[/bold magenta]")
             
             table = Table(
                 box=box.ROUNDED,
@@ -89,7 +117,7 @@ class WikipediaSearchResult(BaseQueryResult):
             table.add_column("Location", style="green", width=25)
             table.add_column("Summary", style="bright_blue", overflow="fold", width=50)
             
-            for result in self.results[:10]:
+            for result in self.results[:5]:  # Limit to 5 for cleaner display
                 location = f"{result.city or 'N/A'}, {result.state or 'N/A'}"
                 
                 summary = result.long_summary or ''
@@ -143,10 +171,8 @@ class AggregationSearchResult(BaseQueryResult):
         
         self._display_header(console)
         
-        # Display aggregations (custom per aggregation type)
-        # Note: Aggregation display is handled by the specific demo functions
-        # (e.g., display_neighborhood_stats, display_price_distribution)
-        # to avoid duplicate output
+        # Display aggregations based on query type
+        self._display_aggregations(console)
             
         # Display sample properties if included
         if self.top_properties:
@@ -201,6 +227,120 @@ class AggregationSearchResult(BaseQueryResult):
         output = string_buffer.getvalue()
         string_buffer.close()
         return output
+    
+    def _display_aggregations(self, console) -> None:
+        """Display aggregations based on the type of aggregation query."""
+        from rich.table import Table
+        from rich import box
+        
+        # Check if this is a neighborhood statistics query (Demo 4)
+        if 'by_neighborhood' in self.aggregations and 'buckets' in self.aggregations['by_neighborhood']:
+            self._display_neighborhood_stats(console)
+        # Check if this is a price distribution query (Demo 5)
+        elif 'price_histogram' in self.aggregations and 'buckets' in self.aggregations['price_histogram']:
+            self._display_price_distribution(console)
+    
+    def _display_neighborhood_stats(self, console) -> None:
+        """Display neighborhood statistics table."""
+        from rich.table import Table
+        from rich import box
+        
+        buckets = self.aggregations['by_neighborhood']['buckets']
+        if not buckets:
+            return
+        
+        # Create neighborhood stats table
+        table = Table(
+            title="Neighborhood Property Statistics",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        
+        # Add columns
+        table.add_column("Neighborhood", style="cyan", width=22)
+        table.add_column("Properties", style="yellow", justify="right", width=10)
+        table.add_column("Avg Price", style="green", justify="right", width=10)
+        table.add_column("Price Range", style="blue", justify="right", width=10)
+        table.add_column("Avg Beds", style="magenta", justify="right", width=8)
+        table.add_column("Avg SqFt", style="yellow", justify="right", width=10)
+        table.add_column("$/SqFt", style="green", justify="right", width=8)
+        
+        # Add rows
+        for bucket in buckets[:20]:  # Limit to top 20
+            neighborhood_id = bucket['key']
+            doc_count = bucket['doc_count']
+            
+            # Extract stats from sub-aggregations
+            avg_price = bucket.get('avg_price', {}).get('value', 0)
+            min_price = bucket.get('min_price', {}).get('value', 0)
+            max_price = bucket.get('max_price', {}).get('value', 0)
+            avg_bedrooms = bucket.get('avg_bedrooms', {}).get('value', 0)
+            avg_sqft = bucket.get('avg_square_feet', {}).get('value', 0)
+            
+            # Calculate price per sqft
+            price_per_sqft = avg_price / avg_sqft if avg_sqft > 0 else 0
+            
+            # Format price range
+            price_range = f"${min_price/1000:.0f}k-${max_price/1000:.0f}k"
+            
+            table.add_row(
+                neighborhood_id,
+                str(doc_count),
+                f"${avg_price:,.0f}",
+                price_range,
+                f"{avg_bedrooms:.1f}",
+                f"{avg_sqft:,.0f}",
+                f"${price_per_sqft:.2f}"
+            )
+        
+        console.print(table)
+    
+    def _display_price_distribution(self, console) -> None:
+        """Display price distribution histogram."""
+        buckets = self.aggregations['price_histogram']['buckets']
+        if not buckets:
+            return
+        
+        console.print("\n[bold]Price Distribution Histogram:[/bold]")
+        
+        # Find max count for scaling
+        max_count = max(b['doc_count'] for b in buckets) if buckets else 1
+        
+        # Display histogram
+        for bucket in buckets[:20]:  # Limit to 20 buckets
+            key = bucket['key']
+            count = bucket['doc_count']
+            
+            # Calculate bar width
+            bar_width = int((count / max_count) * 50) if max_count > 0 else 0
+            bar = "█" * bar_width
+            
+            # Format price label
+            price_label = f"${key/1000:.0f}k-${(key+100000)/1000:.0f}k"
+            
+            # Print histogram row with green bars
+            console.print(f"  {price_label:>15} │ [green]{bar}[/green] {count}")
+        
+        # Display percentiles if available
+        if 'price_percentiles' in self.aggregations:
+            percentiles = self.aggregations['price_percentiles'].get('values', {})
+            if percentiles:
+                console.print("\nPrice Percentiles:", style="bold")
+                for percentile, value in percentiles.items():
+                    console.print(f"  {percentile}th percentile: ${value:,.0f}", style="yellow")
+        
+        # Display property type stats if available
+        if 'by_property_type_stats' in self.aggregations:
+            type_buckets = self.aggregations['by_property_type_stats'].get('buckets', [])
+            if type_buckets:
+                console.print("\nStatistics by Property Type:", style="bold")
+                for type_bucket in type_buckets[:5]:
+                    prop_type = type_bucket['key'].title() if type_bucket['key'] else "Unknown"
+                    count = type_bucket['doc_count']
+                    stats = type_bucket.get('price_stats', {})
+                    avg_price = stats.get('avg', 0)
+                    console.print(f"  {prop_type}: {count} properties, Avg: ${avg_price:,.0f}", style="cyan")
 
 
 class MixedEntityResult(BaseQueryResult):
@@ -221,7 +361,19 @@ class MixedEntityResult(BaseQueryResult):
         string_buffer = StringIO()
         console = Console(file=string_buffer, force_terminal=True, width=150)
         
+        # Standard header with query info FIRST
         self._display_header(console)
+        
+        # Context Display for Demo 10 - Denormalized Index Architecture
+        if "Property Relationships" in self.query_name:
+            console.print("\n[bold]📊 Denormalized Index Architecture:[/bold]")
+            console.print("This demo shows property relationships using a denormalized index:")
+            console.print()
+            console.print("• Single query retrieves property, neighborhood, and Wikipedia data")
+            console.print("• All related data pre-joined at index time for optimal performance")
+            console.print("• Demonstrates production-ready pattern for read-heavy applications")
+            console.print("• Trades storage space for dramatic query performance gains")
+            console.print("=" * 60)
         
         # Display properties
         if self.property_results:

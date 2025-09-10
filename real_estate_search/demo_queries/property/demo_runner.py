@@ -46,20 +46,14 @@ class PropertyDemoRunner:
         Returns:
             PropertySearchResult with search results
         """
-        # Display search criteria
-        self.display_service.display_search_criteria(
-            title="🔍 Basic Property Search",
-            criteria={"query": query_text}
-        )
-        
         # Build query
         request = PropertyQueryBuilder.basic_search(query_text)
         
         # Execute search
         result = self.executor.execute_basic_search(request, query_text)
         
-        # Display results
-        self.display_service.display_basic_search_results(result)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         return result
     
@@ -84,17 +78,6 @@ class PropertyDemoRunner:
         Returns:
             PropertySearchResult with filtered properties
         """
-        # Display search criteria
-        self.display_service.display_search_criteria(
-            title="🔍 Filtered Property Search",
-            criteria={
-                "property_type": property_type,
-                "price_range": {"min": min_price, "max": max_price},
-                "bedrooms": min_bedrooms,
-                "bathrooms": min_bathrooms
-            }
-        )
-        
         # Build query
         request = PropertyQueryBuilder.filtered_search(
             property_type=property_type,
@@ -110,8 +93,8 @@ class PropertyDemoRunner:
         # Execute search
         result = self.executor.execute_filtered_search(request, filters_desc)
         
-        # Display results
-        self.display_service.display_filtered_search_results(result)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         return result
     
@@ -134,19 +117,6 @@ class PropertyDemoRunner:
         Returns:
             PropertySearchResult with nearby properties
         """
-        # Display search criteria
-        criteria = {
-            "location": {"lat": center_lat, "lon": center_lon},
-            "radius": radius_km
-        }
-        if max_price:
-            criteria["price_range"] = {"min": 0, "max": max_price}
-        
-        self.display_service.display_search_criteria(
-            title="🗺️  Geo-Distance Property Search",
-            criteria=criteria
-        )
-        
         # Build query
         request = PropertyQueryBuilder.geo_search(
             center_lat=center_lat,
@@ -160,8 +130,8 @@ class PropertyDemoRunner:
             request, center_lat, center_lon, radius_km
         )
         
-        # Display results
-        self.display_service.display_geo_search_results(result, radius_km)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         return result
     

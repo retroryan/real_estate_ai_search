@@ -62,12 +62,12 @@ def demo_neighborhood_stats(
         # Extract global statistics
         global_stats = result_processor.extract_global_stats(response)
         
-        # Display results
-        display_service.display_neighborhood_stats(response, results, size)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         # Create result object
         return AggregationSearchResult(
-            query_name="Demo 4: Neighborhood Statistics Aggregation",
+            query_name="Demo 4: Neighborhood Statistics",
             query_description=(
                 f"Aggregates property data by neighborhood showing average prices, "
                 f"counts, and breakdowns for top {size} neighborhoods"
@@ -163,14 +163,8 @@ def demo_price_distribution(
         # Convert raw property dicts to PropertyListing objects
         top_properties = [PropertyListing.from_elasticsearch(prop) for prop in property_results]
         
-        # Display results
-        display_service.display_price_distribution(
-            response, 
-            histogram_results, 
-            interval, 
-            min_price, 
-            max_price
-        )
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         # Create result object
         total_hits = response['hits']['total']['value'] if 'hits' in response else 0

@@ -100,7 +100,7 @@ class PropertySearchExecutor(BaseModel):
         
         if not response:
             return PropertySearchResult(
-                query_name="Basic Property Search",
+                query_name=f"Demo 1: Basic Property Search - '{query_text}'",
                 execution_time_ms=exec_time,
                 total_hits=0,
                 returned_hits=0,
@@ -111,7 +111,7 @@ class PropertySearchExecutor(BaseModel):
         results = self.process_results(response)
         
         return PropertySearchResult(
-            query_name=f"Basic Property Search: '{query_text}'",
+            query_name=f"Demo 1: Basic Property Search - '{query_text}'",
             query_description=f"Full-text search for '{query_text}' across property descriptions, amenities, and addresses with fuzzy matching to handle typos",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
@@ -151,7 +151,7 @@ class PropertySearchExecutor(BaseModel):
         
         if not response:
             return PropertySearchResult(
-                query_name="Filtered Property Search",
+                query_name="Demo 2: Filtered Property Search",
                 execution_time_ms=exec_time,
                 total_hits=0,
                 returned_hits=0,
@@ -162,7 +162,7 @@ class PropertySearchExecutor(BaseModel):
         results = self.process_results(response)
         
         return PropertySearchResult(
-            query_name="Filtered Property Search",
+            query_name="Demo 2: Filtered Property Search",
             query_description=filters_desc,
             execution_time_ms=exec_time,
             total_hits=response.total_hits,
@@ -206,7 +206,7 @@ class PropertySearchExecutor(BaseModel):
         
         if not response:
             return PropertySearchResult(
-                query_name="Geo-Distance Property Search",
+                query_name="Demo 3: Geo-Distance Property Search",
                 execution_time_ms=exec_time,
                 total_hits=0,
                 returned_hits=0,
@@ -217,7 +217,7 @@ class PropertySearchExecutor(BaseModel):
         results = self.process_results(response)
         
         return PropertySearchResult(
-            query_name="Geo-Distance Property Search",
+            query_name="Demo 3: Geo-Distance Property Search",
             query_description=f"Find properties within {radius_km}km radius of coordinates ({center_lat:.4f}, {center_lon:.4f}) with optional price filtering",
             execution_time_ms=exec_time,
             total_hits=response.total_hits,

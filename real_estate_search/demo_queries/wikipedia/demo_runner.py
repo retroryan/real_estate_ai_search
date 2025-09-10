@@ -18,7 +18,6 @@ from .models import (
 )
 from .query_builder import WikipediaQueryBuilder
 from .search_executor import WikipediaSearchExecutor
-from .display_service import WikipediaDisplayService
 from .html_service import WikipediaHtmlService
 from .article_exporter import WikipediaArticleExporter
 from .statistics_service import WikipediaStatisticsService
@@ -43,7 +42,6 @@ class WikipediaDemoRunner:
         # Initialize all service modules
         self.query_builder = WikipediaQueryBuilder()
         self.search_executor = WikipediaSearchExecutor(es_client)
-        self.display_service = WikipediaDisplayService()
         self.html_service = WikipediaHtmlService(self.config.output_directory)
         self.article_exporter = WikipediaArticleExporter(
             es_client,
@@ -57,8 +55,7 @@ class WikipediaDemoRunner:
         Returns:
             WikipediaSearchResult with query results and metrics
         """
-        # Display header
-        self.display_service.display_header()
+        # Don't display header - let commands.py handle all display
         
         # Get demonstration queries
         queries = self.query_builder.get_demo_queries()
@@ -69,9 +66,7 @@ class WikipediaDemoRunner:
         # Calculate statistics
         statistics = self.statistics_service.calculate_statistics(search_results)
         
-        # Display statistics
-        self.display_service.display_statistics(statistics)
-        self.display_service.display_top_documents(statistics)
+        # Don't display statistics - result object contains all data
         
         # Export top articles
         unique_page_ids = self.article_exporter.get_unique_page_ids_from_results(search_results)
@@ -80,8 +75,7 @@ class WikipediaDemoRunner:
             max_articles=self.config.max_export_articles
         )
         
-        # Display export results
-        self.display_service.display_export_results(export_result)
+        # Don't display export results - result object contains all data
         
         # Generate HTML report
         exported_articles_map = self.article_exporter.create_export_mapping(export_result)
@@ -95,15 +89,14 @@ class WikipediaDemoRunner:
         if html_path and self.config.open_html_report:
             self.html_service.open_in_browser(html_path)
         
-        # Display completion message
-        self.display_service.display_completion_message()
+        # Don't display completion message - let commands.py handle display
         
         # Create return result
         return self._create_demo_result(
             search_results=search_results,
             statistics=statistics,
             html_path=html_path,
-            exported_count=len(export_result.exported_articles)
+            export_result=export_result
         )
     
     def _execute_searches_with_progress(self, queries):
@@ -118,42 +111,12 @@ class WikipediaDemoRunner:
         search_results = []
         total_queries = len(queries)
         
-        if self.config.show_progress:
-            with self.display_service.create_progress_context(
-                total_queries,
-                "Executing search queries..."
-            ) as progress:
-                task = progress.add_task(
-                    "[cyan]Executing search queries...",
-                    total=total_queries
-                )
-                
-                for idx, query in enumerate(queries, 1):
-                    # Display query info
-                    self.display_service.display_query_info(
-                        idx, total_queries,
-                        query.title, query.description
-                    )
-                    
-                    # Execute search
-                    result = self.search_executor.execute_query(query)
-                    search_results.append(result)
-                    
-                    # Display results
-                    self.display_service.display_search_results(result)
-                    
-                    # Update progress
-                    progress.update(task, advance=1)
-        else:
-            # Execute without progress tracking
-            for idx, query in enumerate(queries, 1):
-                self.display_service.display_query_info(
-                    idx, total_queries,
-                    query.title, query.description
-                )
-                result = self.search_executor.execute_query(query)
-                search_results.append(result)
-                self.display_service.display_search_results(result)
+        # Execute searches without display
+        for idx, query in enumerate(queries, 1):
+            # Execute search
+            result = self.search_executor.execute_query(query)
+            search_results.append(result)
+            # Don't display results - result object contains all data
         
         return search_results
     
@@ -162,7 +125,7 @@ class WikipediaDemoRunner:
         search_results,
         statistics,
         html_path,
-        exported_count
+        export_result
     ) -> WikipediaSearchResult:
         """Create the final demo result object.
         
@@ -200,6 +163,16 @@ class WikipediaDemoRunner:
                 first_result.query
             )
         
+        # Convert exported articles to dict format for result
+        exported_articles_data = []
+        if export_result and export_result.exported_articles:
+            for article in export_result.exported_articles[:10]:  # Limit to 10 for display
+                exported_articles_data.append({
+                    'title': article.title,
+                    'file_size_kb': article.file_size_kb,
+                    'filename': article.filename
+                })
+        
         return WikipediaSearchResult(
             query_name="Demo 9: Wikipedia Full-Text Search",
             query_description=(
@@ -212,6 +185,8 @@ class WikipediaDemoRunner:
             returned_hits=len(wikipedia_articles),
             query_dsl=sample_query,
             results=wikipedia_articles,
+            exported_articles=exported_articles_data,
+            html_report_path=str(html_path) if html_path else None,
             es_features=[
                 "Full-Text Search - Searching across 100MB+ of text content",
                 "Match Queries - Basic full-text search with OR operator",

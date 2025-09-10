@@ -65,13 +65,12 @@ class WikipediaHtmlService:
                 query_results=query_results
             )
             
-            print(f"\n📄 HTML results saved to: {html_path}")
-            print(f"   Open in browser: file://{html_path.absolute()}")
+            # HTML report generated - path returned for display
             
             return str(html_path)
             
         except Exception as e:
-            print(f"\n⚠️  Could not generate HTML output: {str(e)}")
+            # Could not generate HTML output
             return None
     
     def _transform_results_for_html(
@@ -150,12 +149,11 @@ class WikipediaHtmlService:
             else:
                 return False
             
-            print(f"\n📂 HTML report opened in browser: {html_path}")
+            # HTML report opened in browser
             return True
             
         except Exception as e:
-            print(f"\n📂 HTML report saved to: {html_path}")
-            print(f"   (Unable to auto-open: {e})")
+            # Unable to auto-open HTML report
             return False
     
     def create_summary_html(

@@ -17,7 +17,6 @@ from .semantic_search import SemanticSearchBuilder
 from .multi_entity_search import MultiEntitySearchBuilder
 from .wikipedia_search import WikipediaSearchBuilder
 from .search_executor import AdvancedSearchExecutor
-from .display_service import AdvancedDisplayService
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,6 @@ class AdvancedDemoRunner:
         self.multi_builder = MultiEntitySearchBuilder()
         self.wiki_builder = WikipediaSearchBuilder()
         self.executor = AdvancedSearchExecutor(es_client)
-        self.display = AdvancedDisplayService()
     
     def run_semantic_search(
         self,
@@ -86,8 +84,8 @@ class AdvancedDemoRunner:
         # Execute search
         response = self.executor.execute_semantic(search_request, reference)
         
-        # Display results
-        self.display.display_semantic_results(response, reference)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         # Format query name with reference info
         addr = reference.address
@@ -144,8 +142,8 @@ class AdvancedDemoRunner:
         # Execute search
         response = self.executor.execute_multi_entity(search_request)
         
-        # Display results
-        self.display.display_multi_entity_results(response, query_text)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         # Return formatted result
         return MixedEntityResult(
@@ -204,8 +202,8 @@ class AdvancedDemoRunner:
         # Execute search
         response = self.executor.execute_wikipedia(search_request)
         
-        # Display results
-        self.display.display_wikipedia_results(response, city, state, topics)
+        # Don't display anything here - let commands.py handle all display
+        # The result object contains everything needed for display
         
         # Additional searches for neighborhood associations
         if city:
@@ -229,7 +227,8 @@ class AdvancedDemoRunner:
                             'neighborhood_names': [],  # Would need to be added to model
                             'neighborhood_ids': []
                         })
-                    self.display.display_neighborhood_associations(articles, city, state)
+                    # Don't display - result object contains all data
+                    pass
             except Exception as e:
                 logger.error(f"Error searching for neighborhood associations: {e}")
             
@@ -251,9 +250,17 @@ class AdvancedDemoRunner:
                 logger.error(f"Error searching for Temescal: {e}")
         
         # Return formatted result
+        # Build descriptive text based on what we're searching for
+        if topics:
+            search_desc = f"Searches Wikipedia articles about {', '.join(topics)} in {city}, {state}"
+            filter_desc = f"Filtering for articles in {city}, {state} about {', '.join(topics)}"
+        else:
+            search_desc = f"Searches all Wikipedia articles in {city}, {state} with geographic filtering"
+            filter_desc = f"Filtering for all articles with location data in {city}, {state}"
+        
         return WikipediaSearchResult(
             query_name=f"Demo 8: Wikipedia Location & Topic Search",
-            query_description=f"Searches Wikipedia articles about {', '.join(topics or [])} in {city}, {state}, demonstrating complex filtering and boosting strategies",
+            query_description=f"{search_desc}, demonstrating complex filtering and boosting strategies",
             execution_time_ms=response.execution_time_ms,
             total_hits=response.total_hits,
             returned_hits=len(response.results),
@@ -270,7 +277,7 @@ class AdvancedDemoRunner:
             ],
             indexes_used=[
                 "wikipedia index - Curated Wikipedia articles with location data",
-                f"Filtering for articles in {city}, {state} about {', '.join(topics or [])}"
+                filter_desc
             ]
         )
 

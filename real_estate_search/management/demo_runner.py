@@ -383,20 +383,8 @@ class DemoRunner:
             Dictionary of demo number to special description
         """
         descriptions = {
-            9: """🔍 Full-Text Search Overview:
-This demo showcases Wikipedia full-text search after HTML enrichment:
-
-• Searches across complete Wikipedia article content
-• Demonstrates various query patterns and operators
-• Shows highlighted relevant content from articles""",
-            
-            10: """📊 Denormalized Index Architecture:
-This demo shows property relationships using a denormalized index:
-
-• Single query retrieves property, neighborhood, and Wikipedia data
-• All related data pre-joined at index time for optimal performance
-• Demonstrates production-ready pattern for read-heavy applications
-• Trades storage space for dramatic query performance gains""",
+            # Demo 9's overview is now handled in WikipediaSearchResult.display()
+            # Demo 10's overview is now handled in MixedEntityResult.display()
             
             11: """🤖 Natural Language Semantic Search:
 This demo uses AI embeddings to understand natural language queries:

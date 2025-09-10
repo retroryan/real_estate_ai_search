@@ -254,8 +254,10 @@ class DemoCommand(BaseCommand):
                 )
             
             # Print header and special description FIRST
-            print(f"\nRunning Demo {self.args.demo_number}: {self.demo_runner.demo_registry[self.args.demo_number].name}")
-            print("=" * 60)
+            # For Demos 1-10, skip this header since Demo Query Section will show it
+            if self.args.demo_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+                print(f"\nRunning Demo {self.args.demo_number}: {self.demo_runner.demo_registry[self.args.demo_number].name}")
+                print("=" * 60)
             
             # Get and print special description if available
             special_descriptions = self.demo_runner.get_demo_descriptions()
@@ -290,7 +292,50 @@ class DemoCommand(BaseCommand):
                 else:
                     # All other demo results inherit from BaseQueryResult and have display method
                     if full_result:
-                        print(full_result.display(verbose=self.args.verbose))
+                        # For Demo 2, we need special handling to insert filter criteria between sections
+                        if self.args.demo_number == 2:
+                            # First, display the Demo Query Section only (not the results)
+                            # We'll need to temporarily modify the result to not show properties
+                            original_results = full_result.results
+                            full_result.results = []  # Temporarily clear results to only show Demo Query Section
+                            print(full_result.display(verbose=self.args.verbose))
+                            full_result.results = original_results  # Restore results
+                            
+                            # Now display filter criteria AFTER Demo Query Section
+                            from ..demo_queries.property import PropertyDemoRunner
+                            runner = PropertyDemoRunner(self.es_client.client)
+                            
+                            # Display filter criteria with result count
+                            total_results = full_result.total_hits
+                            runner.display_service.display_search_criteria(
+                                title=f"🔍 Filtered Property Search - Found {total_results} Properties",
+                                criteria={
+                                    "property_type": "single-family",
+                                    "price_range": {"min": 300000, "max": 800000},
+                                    "bedrooms": 3,
+                                    "bathrooms": 2.0
+                                }
+                            )
+                            
+                            # Finally, display the results table
+                            from ..demo_queries.property.common_property_display import PropertyTableDisplay
+                            property_display = PropertyTableDisplay()
+                            from ..demo_queries.property.common_property_display import PropertyDisplayConfig
+                            config = PropertyDisplayConfig(
+                                show_description=True,
+                                show_score=False,
+                                show_details=True,
+                                table_title="",  # No title, we already have the filter criteria above
+                                max_results=5
+                            )
+                            print("\n🏠 TOP 5 PROPERTY RESULTS:")
+                            property_display.display_properties(
+                                properties=full_result.results[:5],
+                                config=config
+                            )
+                        else:
+                            # For all other demos, display normally
+                            print(full_result.display(verbose=self.args.verbose))
                 
                     return OperationStatus(
                         operation="demo",

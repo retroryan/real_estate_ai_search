@@ -10,10 +10,6 @@ import logging
 import time
 from typing import Dict, Any, List
 from elasticsearch import Elasticsearch
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich import box
 
 from .result_models import MixedEntityResult
 from ..models import WikipediaArticle
@@ -21,7 +17,6 @@ from ..models import PropertyListing
 from ..indexer.enums import IndexName
 
 logger = logging.getLogger(__name__)
-console = Console()
 
 
 class SimplifiedRelationshipDemo:
@@ -60,12 +55,13 @@ class SimplifiedRelationshipDemo:
             query = {
                 "query": {
                     "term": {
-                        "listing_id.keyword": property_id
+                        "listing_id": property_id
                     }
-                }
+                },
+                "size": 1
             }
         else:
-            # Random property
+            # Random property selection
             query = {
                 "query": {
                     "function_score": {
@@ -76,8 +72,8 @@ class SimplifiedRelationshipDemo:
                 "size": 1
             }
         
-        # ONE query gets everything!
         try:
+            # Single query retrieves everything!
             response = self.es_client.search(
                 index=IndexName.PROPERTY_RELATIONSHIPS,
                 body=query
@@ -125,9 +121,9 @@ class SimplifiedRelationshipDemo:
                     "query": query,
                     "execution_time_ms": execution_time,
                     "data_retrieved": {
-                        "property": "Complete property data",
+                        "property": "Full property data",
                         "neighborhood": "Embedded neighborhood data",
-                        "wikipedia_articles": f"{len(wikipedia_articles)} articles"
+                        "wikipedia": f"{len(wikipedia_articles)} related articles"
                     }
                 }
             )
@@ -156,7 +152,7 @@ class SimplifiedRelationshipDemo:
             neighborhood_name: Neighborhood to search
             
         Returns:
-            All properties with full context
+            Properties in the neighborhood
         """
         start_time = time.time()
         
@@ -217,7 +213,7 @@ class SimplifiedRelationshipDemo:
             state: State code
             
         Returns:
-            Properties with complete context
+            Properties in the location with full context
         """
         start_time = time.time()
         
@@ -271,30 +267,6 @@ class SimplifiedRelationshipDemo:
             )
 
 
-def display_denormalized_structure(es_client: Elasticsearch):
-    """
-    Display the structure of the denormalized index.
-    
-    Shows how data from multiple indices is combined into a single document.
-    """
-    console.print("\n[bold cyan]Denormalized Index Structure[/bold cyan]")
-    console.print("=" * 70)
-    
-    # Show index structure
-    console.print("\n[bold]The property_relationships index combines:[/bold]")
-    console.print("• Property data (from properties index)")
-    console.print("• Neighborhood data (from neighborhoods index)")
-    console.print("• Wikipedia articles (from wikipedia index)")
-    console.print("\nThis enables single-query retrieval of all related data.\n")
-    
-    console.print("\n[bold yellow]Key Benefits:[/bold yellow]")
-    console.print("• Single query retrieves all data")
-    console.print("• No JOIN operations required")
-    console.print("• Optimized for read performance")
-    console.print("• Simplified application logic")
-    console.print("• Consistent data snapshot")
-
-
 def demo_simplified_relationships(es_client: Elasticsearch) -> MixedEntityResult:
     """
     Main demo entry point showing simplified relationship queries.
@@ -303,245 +275,69 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> MixedEntityResult
         es_client: Elasticsearch client
         
     Returns:
-        DemoQueryResult with comparison data
+        MixedEntityResult with demonstration results
     """
-    console.print("\n[bold cyan]Demo 10: Property Relationships via Denormalized Index[/bold cyan]")
-    console.print("=" * 70)
-    
-    # First show the index structure
-    display_denormalized_structure(es_client)
-    
-    # Then run actual demo
+    # Run actual demo
     demo = SimplifiedRelationshipDemo(es_client)
     
-    console.print("\n[bold cyan]Running Denormalized Index Queries[/bold cyan]")
-    console.print("=" * 70)
-    
     # Demo 1: Single property with full context
-    console.print("\n[bold]Query 1: Random Property with Full Context[/bold]")
     result1 = demo.demo_single_query_property()
     
-    # Display query
-    query_panel = Panel(
-        f"""[cyan]Query Type:[/cyan] Single document retrieval
-[cyan]Index:[/cyan] property_relationships  
-[cyan]Method:[/cyan] Random selection with function_score
-
-[yellow]Elasticsearch Query:[/yellow]
-{{
-  "query": {{
-    "function_score": {{
-      "query": {{"match_all": {{}}}},
-      "random_score": {{"seed": 42}}
-    }}
-  }},
-  "size": 1
-}}""",
-        title="[bold cyan]Query[/bold cyan]",
-        border_style="cyan"
-    )
-    console.print(query_panel)
-    
-    if result1.property_results:
-        property = result1.property_results[0]
-        
-        # Create results table
-        results_table = Table(title="Query Results", box=box.ROUNDED)
-        results_table.add_column("Field", style="cyan")
-        results_table.add_column("Value", style="white")
-        
-        results_table.add_row("Property Address", property.address.street or 'Unknown')
-        results_table.add_row("City", f"{property.address.city or 'N/A'}, {property.address.state or 'N/A'}")
-        results_table.add_row("Price", f"${property.price:,.0f}" if property.price else 'N/A')
-        results_table.add_row("Bedrooms/Bathrooms", f"{property.bedrooms} bed / {property.bathrooms} bath")
-        
-        # Handle neighborhood - it might be embedded in extra fields from ES
-        neighborhood_name = 'N/A'
-        wikipedia_count = 0
-        
-        # Access any extra fields that might have been populated from ES
-        if hasattr(property, '__pydantic_extra__'):
-            extra = property.__pydantic_extra__ or {}
-            neighborhood = extra.get('neighborhood', {})
-            if isinstance(neighborhood, dict):
-                neighborhood_name = neighborhood.get('name', 'N/A')
-            wikipedia_articles = extra.get('wikipedia_articles', [])
-            wikipedia_count = len(wikipedia_articles)
-        
-        results_table.add_row("Neighborhood", neighborhood_name)
-        results_table.add_row("Wikipedia Articles", str(wikipedia_count))
-        results_table.add_row("[green]Query Time[/green]", f"[green]{result1.execution_time_ms}ms[/green]")
-        
-        console.print(results_table)
-    else:
-        console.print(f"[yellow]No data in index yet - run data pipeline to populate[/yellow]")
-        console.print(f"[green]Query Time: {result1.execution_time_ms}ms[/green]")
-    
     # Demo 2: Neighborhood search
-    console.print("\n[bold]Query 2: Neighborhood Properties Search[/bold]")
     result2 = demo.demo_neighborhood_properties_simplified("Pacific Heights")
     
-    query_panel2 = Panel(
-        f"""[cyan]Query Type:[/cyan] Neighborhood filtering
-[cyan]Index:[/cyan] property_relationships
-[cyan]Target:[/cyan] Pacific Heights
-
-[yellow]Elasticsearch Query:[/yellow]
-{{
-  "query": {{
-    "match": {{
-      "neighborhood.name": "Pacific Heights"
-    }}
-  }},
-  "size": 10
-}}""",
-        title="[bold cyan]Query[/bold cyan]",
-        border_style="cyan"
-    )
-    console.print(query_panel2)
-    
-    results_panel2 = Panel(
-        f"""[cyan]Properties Found:[/cyan] {result2.total_hits}
-[cyan]Results Returned:[/cyan] {min(result2.returned_hits, 10)}
-[green]Query Time:[/green] {result2.execution_time_ms}ms""",
-        title="[bold]Results Summary[/bold]",
-        border_style="green"
-    )
-    console.print(results_panel2)
-    
     # Demo 3: Location search
-    console.print("\n[bold]Query 3: Location-Based Search[/bold]")
     result3 = demo.demo_location_search_simplified("Oakland", "CA")
-    
-    query_panel3 = Panel(
-        f"""[cyan]Query Type:[/cyan] Location filtering with price sort
-[cyan]Index:[/cyan] property_relationships
-[cyan]Location:[/cyan] Oakland, CA
-
-[yellow]Elasticsearch Query:[/yellow]
-{{
-  "query": {{
-    "bool": {{
-      "filter": [
-        {{"term": {{"address.city": "oakland"}}}},
-        {{"term": {{"address.state": "CA"}}}}
-      ]
-    }}
-  }},
-  "size": 5,
-  "sort": [{{"price": {{"order": "desc"}}}}]
-}}""",
-        title="[bold cyan]Query[/bold cyan]",
-        border_style="cyan"
-    )
-    console.print(query_panel3)
-    
-    results_panel3 = Panel(
-        f"""[cyan]Properties Found:[/cyan] {result3.total_hits}
-[cyan]Results Returned:[/cyan] {min(result3.returned_hits, 5)}
-[green]Query Time:[/green] {result3.execution_time_ms}ms""",
-        title="[bold]Results Summary[/bold]",
-        border_style="green"
-    )
-    console.print(results_panel3)
     
     total_time = result1.execution_time_ms + result2.execution_time_ms + result3.execution_time_ms
     
-    # Final summary
-    console.print("\n" + "=" * 70)
-    summary_panel = Panel(
-        f"""[green]✓ Denormalized index demo complete![/green]
-
-[yellow]Performance Summary:[/yellow]
-• Total queries executed: 3
-• Total query time: {total_time}ms
-• Average query time: {total_time/3:.1f}ms
-
-[cyan]Key Achievement:[/cyan]
-All property data, neighborhood information, and Wikipedia articles
-retrieved with single queries - no JOINs or multiple lookups needed!""",
-        title="[bold green]Demo Complete[/bold green]",
-        border_style="green"
-    )
-    console.print(summary_panel)
-    
-    # Return combined results - keep as PropertyListing objects
-    all_property_results = []
-    if result1.property_results:
-        all_property_results.extend(result1.property_results)
-    if result2.property_results:
-        all_property_results.extend(result2.property_results)
-    if result3.property_results:
-        all_property_results.extend(result3.property_results)
-    
-    # Limit to 10 unique properties for display
-    seen_ids = set()
+    # Combine results - removing duplicates
     unique_properties = []
-    for prop in all_property_results:
-        if prop.listing_id not in seen_ids:
-            unique_properties.append(prop)
-            seen_ids.add(prop.listing_id)
-            if len(unique_properties) >= 10:
-                break
+    seen_ids = set()
+    
+    for result in [result1, result2, result3]:
+        for prop in result.property_results:
+            if prop.listing_id not in seen_ids:
+                unique_properties.append(prop)
+                seen_ids.add(prop.listing_id)
+                if len(unique_properties) >= 10:
+                    break
     
     return MixedEntityResult(
-        query_name="Property Relationships via Denormalized Index",
+        query_name="Demo 10: Property Relationships via Denormalized Index",
+        query_description="Demonstrates single-query retrieval using denormalized index structure for optimal read performance",
         execution_time_ms=total_time,
         total_hits=result1.total_hits + result2.total_hits + result3.total_hits,
         returned_hits=len(unique_properties),
         property_results=unique_properties,
-        wikipedia_results=[],
-        neighborhood_results=[],
+        wikipedia_results=result1.wikipedia_results[:5] if result1.wikipedia_results else [],
+        neighborhood_results=result1.neighborhood_results,
         query_dsl={
             "description": "Denormalized index enables single-query retrieval",
             "comparison": {
                 "before": "3-6 queries, 200+ lines of code",
                 "after": "1 query, ~20 lines of code",
-                "performance": "Single-query retrieval"
-            }
-        }
+                "performance": f"Total time for 3 operations: {total_time}ms"
+            },
+            "benefits": [
+                "Single query retrieves all related data",
+                "No JOIN operations required",
+                "Optimized for read performance",
+                "Simplified application logic",
+                "Consistent data snapshot"
+            ]
+        },
+        es_features=[
+            "Denormalized Index - All related data in single document",
+            "Embedded Documents - Neighborhood and Wikipedia data included",
+            "Single Query Retrieval - No additional lookups needed",
+            "Filter Context - Efficient non-scoring queries",
+            "Term Queries - Exact matching on fields",
+            "Function Score - Random property selection"
+        ],
+        indexes_used=[
+            "property_relationships index - Denormalized property data",
+            "Contains embedded neighborhood and Wikipedia data",
+            "Optimized for read-heavy workloads"
+        ]
     )
-
-
-def main():
-    """Standalone entry point for the simplified demo."""
-    from ..config import AppConfig
-    from ..infrastructure.elasticsearch_client import ElasticsearchClientFactory
-    
-    console.print("\n[bold cyan]Simplified Property Relationships Demo[/bold cyan]")
-    console.print("=" * 70)
-    
-    # Load configuration
-    try:
-        config = AppConfig.from_yaml("real_estate_search/config.yaml")
-    except Exception as e:
-        console.print(f"[red]Error loading config: {e}[/red]")
-        return
-    
-    # Create Elasticsearch client
-    try:
-        client_factory = ElasticsearchClientFactory(config.elasticsearch)
-        es_client = client_factory.create_client()
-    except Exception as e:
-        console.print(f"[red]Failed to create Elasticsearch client: {e}[/red]")
-        return
-    
-    # Check connection
-    if not es_client.ping():
-        console.print("[red]Cannot connect to Elasticsearch[/red]")
-        return
-    
-    console.print("[green]✓ Connected to Elasticsearch[/green]")
-    
-    # Check if property_relationships index exists
-    if not es_client.indices.exists(index=IndexName.PROPERTY_RELATIONSHIPS):
-        console.print("[yellow]Warning: property_relationships index does not exist[/yellow]")
-        console.print("[yellow]Run the data pipeline with relationship building enabled[/yellow]")
-        return
-    
-    # Run the demo
-    demo_simplified_relationships(es_client)
-
-
-if __name__ == "__main__":
-    main()

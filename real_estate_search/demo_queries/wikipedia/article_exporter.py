@@ -57,8 +57,7 @@ class WikipediaArticleExporter:
         # Limit to max_articles
         page_ids_to_export = page_ids[:max_articles]
         
-        print(f"\n📥 Exporting Wikipedia articles to {self.output_directory}/")
-        print("-" * 60)
+        # Export articles without display - display handled by result object
         
         for page_id in page_ids_to_export:
             export = self._export_single_article(page_id, index)
@@ -66,12 +65,12 @@ class WikipediaArticleExporter:
             if export:
                 exported_articles.append(export)
                 total_size_kb += export.file_size_kb
-                print(f"✅ Exported: {export.title[:50]} ({export.file_size_kb:.1f} KB)")
+                # Successfully exported
             else:
                 failed_exports.append(page_id)
-                print(f"❌ Failed to export article with ID: {page_id}")
+                # Failed to export
         
-        print(f"\n✅ Successfully exported {len(exported_articles)} articles")
+        # Export complete
         
         return ArticleExportResult(
             exported_articles=exported_articles,
@@ -144,7 +143,7 @@ class WikipediaArticleExporter:
             )
             
         except Exception as e:
-            print(f"   Error exporting article {page_id}: {str(e)}")
+            # Error occurred during export
             return None
     
     def _generate_filename(self, title: str, page_id: str) -> str:
