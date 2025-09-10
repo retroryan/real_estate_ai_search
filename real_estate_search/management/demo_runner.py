@@ -275,7 +275,7 @@ class DemoRunner:
             
             # Handle demos that return a list of results
             if demo_number in [12, 27]:
-                # demo_natural_language_examples and demo_location_aware_search_showcase return List[DemoQueryResult]
+                # demo_natural_language_examples and demo_location_aware_search_showcase return List of results
                 if not result:  # Empty list means initialization failed
                     return DemoExecutionResult(
                         demo_number=demo_number,
@@ -303,7 +303,7 @@ class DemoRunner:
                 self.logger.info(f"Successfully executed {len(result)} examples for demo {demo_number}")
                 return execution_result
             
-            # Standard handling for demos that return single DemoQueryResult
+            # Standard handling for demos that return single result object
             # Extract query DSL if verbose - all results have query_dsl field
             query_dsl = None
             if verbose and result:

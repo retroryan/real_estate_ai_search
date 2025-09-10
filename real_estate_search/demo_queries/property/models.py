@@ -1,7 +1,7 @@
 """Property search result model."""
 
 import json
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from io import StringIO
 from rich.console import Console
@@ -14,6 +14,7 @@ from .common_property_display import PropertyTableDisplay, PropertyDisplayConfig
 class PropertySearchResult(BaseQueryResult):
     """Result for property searches."""
     results: List[PropertyListing] = Field(..., description="Property search results")
+    display_config: Optional[PropertyDisplayConfig] = Field(None, description="Optional display configuration")
     
     def display(self, verbose: bool = False) -> str:
         """Format property results for display using common display utilities."""
@@ -29,15 +30,20 @@ class PropertySearchResult(BaseQueryResult):
             display_properties = self.results[:5]
             console.print(f"\n🏠 TOP {len(display_properties)} PROPERTY RESULTS:", style="bold magenta")
             
-            # Configure display
-            config = PropertyDisplayConfig(
-                show_description=True,
-                show_score=any(r.score for r in display_properties),
-                show_details=True,
-                score_label="Score",
-                table_title="",  # Empty to avoid duplicate title
-                max_results=5
-            )
+            # Use provided config or create default
+            if self.display_config:
+                config = self.display_config
+            else:
+                # Check for hybrid scores
+                show_hybrid = any(r.hybrid_score is not None for r in display_properties)
+                config = PropertyDisplayConfig(
+                    show_description=True,
+                    show_score=any(r.score for r in display_properties) or show_hybrid,
+                    show_details=True,
+                    score_label="Hybrid Score" if show_hybrid else "Score",
+                    table_title="",  # Empty to avoid duplicate title
+                    max_results=5
+                )
             
             # Create PropertyTableDisplay with the console buffer
             property_display = PropertyTableDisplay(console)

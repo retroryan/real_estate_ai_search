@@ -17,7 +17,8 @@ Components:
 """
 
 from .search_engine import HybridSearchEngine
-from .models import HybridSearchParams, HybridSearchResult, SearchResult, LocationIntent
+from .models import HybridSearchParams, HybridSearchResult, SearchResult
+from real_estate_search.models.location import LocationIntent
 from .location import LocationUnderstandingModule, LocationFilterBuilder
 from .query_builder import RRFQueryBuilder
 from .search_executor import SearchExecutor

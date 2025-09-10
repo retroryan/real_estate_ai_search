@@ -24,7 +24,7 @@ def demo_rich_property_listing(es_client, listing_id=None):
         listing_id: Optional specific listing ID to display
         
     Returns:
-        DemoQueryResult with search results
+        PropertySearchResult with search results
     """
     runner = RichListingDemoRunner(es_client)
     return runner.run_rich_listing(listing_id=listing_id)

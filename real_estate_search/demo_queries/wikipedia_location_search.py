@@ -13,7 +13,8 @@ from elasticsearch import Elasticsearch
 
 from .result_models import WikipediaSearchResult
 from ..models import WikipediaArticle
-from ..hybrid.location import LocationUnderstandingModule, LocationIntent
+from ..hybrid.location import LocationUnderstandingModule
+from ..models.location import LocationIntent
 
 logger = logging.getLogger(__name__)
 

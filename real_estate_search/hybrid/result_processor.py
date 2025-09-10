@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
 from .models import SearchResult, HybridSearchResult, LocationIntent
+from real_estate_search.models import PropertyListing
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,9 @@ class ResultProcessor:
     
     def _extract_results(self, response: Dict[str, Any]) -> List[SearchResult]:
         """
-        Extract individual search results from response.
+        Extract search results from Elasticsearch response.
+        
+        Clean, direct conversion from Elasticsearch hits to SearchResult objects.
         
         Args:
             response: Elasticsearch response
@@ -86,34 +89,39 @@ class ResultProcessor:
         Returns:
             List of SearchResult objects
         """
-        results = []
-        
         hits = response.get('hits', {}).get('hits', [])
-        for hit in hits:
-            result = self._create_search_result(hit)
-            results.append(result)
+        results = [self._create_search_result(hit) for hit in hits]
         
         logger.debug(f"Extracted {len(results)} search results")
         return results
     
     def _create_search_result(self, hit: Dict[str, Any]) -> SearchResult:
         """
-        Create a SearchResult from an Elasticsearch hit.
+        Create SearchResult directly from Elasticsearch hit.
+        
+        Clean conversion without intermediate steps or data mutation.
         
         Args:
-            hit: Single Elasticsearch hit
+            hit: Complete Elasticsearch hit
             
         Returns:
-            SearchResult object
+            SearchResult with property data and scoring
         """
-        source = hit.get('_source', {})
+        # Direct conversion using proper method
+        property_listing = PropertyListing.from_elasticsearch_hit(hit)
+        
+        # Extract score from hit (not from property)
+        score = hit.get('_score', 0.0)
+        
+        # Set hybrid_score on the PropertyListing since RRF provides a combined score
+        property_listing.hybrid_score = score
         
         return SearchResult(
-            listing_id=source.get('listing_id', ''),
-            hybrid_score=hit.get('_score', 0.0),
-            text_score=None,  # RRF combines scores
-            vector_score=None,  # Individual scores not available
-            property_data=source
+            listing_id=property_listing.listing_id,
+            hybrid_score=score,
+            text_score=None,  # RRF combines scores internally
+            vector_score=None,  # Individual scores not available with RRF
+            property_data=property_listing
         )
     
     def _build_metadata(

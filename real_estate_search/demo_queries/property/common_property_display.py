@@ -163,7 +163,9 @@ class PropertyTableDisplay:
         
         # Score (optional)
         if config.show_score:
-            score_str = self._format_score(prop.score)
+            # Use hybrid_score if available, otherwise use regular score
+            score_value = prop.hybrid_score if prop.hybrid_score is not None else prop.score
+            score_str = self._format_score(score_value)
             row_data.append(score_str)
         
         # Description (optional)

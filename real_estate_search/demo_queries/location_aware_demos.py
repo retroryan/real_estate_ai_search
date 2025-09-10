@@ -28,7 +28,7 @@ from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
 
-from .models import DemoQueryResult
+from .property.models import PropertySearchResult
 from .demo_utils import format_demo_header
 from .display_formatter import PropertyDisplayFormatter
 from .property.common_property_display import PropertyTableDisplay, PropertyDisplayConfig
@@ -101,7 +101,7 @@ class LocationAwareDisplayFormatter:
     
     @staticmethod
     def display_location_demo_results(
-        result: DemoQueryResult,
+        result: PropertySearchResult,
         example: "LocationAwareSearchExample",
         console: Console = None
     ) -> None:
@@ -135,15 +135,9 @@ class LocationAwareDisplayFormatter:
         
         # Results table using common display
         if result.results:
-            # Convert results to PropertyListing objects if needed
-            from ...models import PropertyListing
-            properties = []
-            for r in result.results[:10]:  # Only display 10 results
-                if isinstance(r, PropertyListing):
-                    properties.append(r)
-                elif isinstance(r, dict):
-                    # Convert dict to PropertyListing
-                    properties.append(PropertyListing(**r))
+            # PropertySearchResult already contains PropertyListing objects
+            # No conversion needed - just use them directly
+            properties = result.results[:10]  # Only display 10 results
             
             # Configure for location-aware display
             config = PropertyDisplayConfig(
@@ -240,7 +234,7 @@ LOCATION_SEARCH_EXAMPLES: List[LocationAwareSearchExample] = [
 def demo_location_aware_waterfront_luxury(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Luxury waterfront properties with city-specific filtering.
     
@@ -254,7 +248,7 @@ def demo_location_aware_waterfront_luxury(
 def demo_location_aware_family_schools(
     es_client: Elasticsearch, 
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Family-oriented search with school proximity considerations.
     
@@ -268,7 +262,7 @@ def demo_location_aware_family_schools(
 def demo_location_aware_urban_modern(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Urban neighborhood search with modern architectural preferences.
     
@@ -282,7 +276,7 @@ def demo_location_aware_urban_modern(
 def demo_location_aware_recreation_mountain(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Recreation-focused property search with mountain access.
     
@@ -296,7 +290,7 @@ def demo_location_aware_recreation_mountain(
 def demo_location_aware_historic_urban(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Historic property search in urban neighborhoods.
     
@@ -310,7 +304,7 @@ def demo_location_aware_historic_urban(
 def demo_location_aware_beach_proximity(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Beach property search with proximity requirements.
     
@@ -324,7 +318,7 @@ def demo_location_aware_beach_proximity(
 def demo_location_aware_investment_market(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Investment property search with market-specific targeting.
     
@@ -338,7 +332,7 @@ def demo_location_aware_investment_market(
 def demo_location_aware_luxury_urban_views(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Luxury urban property search emphasizing premium views.
     
@@ -352,7 +346,7 @@ def demo_location_aware_luxury_urban_views(
 def demo_location_aware_suburban_architecture(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Architectural style search in suburban markets.
     
@@ -366,7 +360,7 @@ def demo_location_aware_suburban_architecture(
 def demo_location_aware_neighborhood_character(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Neighborhood character search with architectural details.
     
@@ -381,7 +375,7 @@ def _execute_location_demo(
     es_client: Elasticsearch,
     example: LocationAwareSearchExample,
     size: int
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Execute a location-aware demo search.
     
@@ -420,7 +414,7 @@ def _execute_location_demo(
         size: Number of results to return
         
     Returns:
-        DemoQueryResult with location-aware search results
+        PropertySearchResult with location-aware search results
     """
     logger.info(f"Executing location-aware demo: '{example.query}'")
     
@@ -435,13 +429,13 @@ def _execute_location_demo(
         # 3. Applies filters DURING search (not after) for both text and vector
         result = engine.search_with_location(example.query, size)
         
-        # Convert to demo format
-        demo_results = []
-        for search_result in result.results:
-            demo_result = search_result.property_data.copy()
-            demo_result['_hybrid_score'] = search_result.hybrid_score
-            demo_result['_location_aware'] = True
-            demo_results.append(demo_result)
+        # Extract PropertyListing objects and preserve hybrid scores
+        property_results = []
+        for sr in result.results:
+            prop = sr.property_data
+            # Preserve the hybrid score from SearchResult
+            prop.hybrid_score = sr.hybrid_score
+            property_results.append(prop)
         
         # Build comprehensive query DSL representation
         query_dsl = {
@@ -467,13 +461,13 @@ def _execute_location_demo(
         es_features.extend(example.location_features)
         es_features.extend(example.property_features)
         
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name=f"Location-Aware Hybrid: '{example.query}'",
             query_description=example.description,
             execution_time_ms=result.execution_time_ms,
             total_hits=result.total_hits,
-            returned_hits=len(demo_results),
-            results=demo_results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=query_dsl,
             es_features=es_features,
             indexes_used=[
@@ -491,7 +485,7 @@ def demo_location_aware_search_showcase(
     es_client: Elasticsearch,
     show_all_examples: bool = False,
     size: int = 5
-) -> List[DemoQueryResult]:
+) -> List[PropertySearchResult]:
     """
     Showcase multiple location-aware search examples.
     
@@ -504,7 +498,7 @@ def demo_location_aware_search_showcase(
         size: Number of results per demo
         
     Returns:
-        List of DemoQueryResult objects
+        List of PropertySearchResult objects
     """
     logger.info(f"Running location-aware search showcase (show_all={show_all_examples})")
     
@@ -552,12 +546,12 @@ def demo_location_aware_search_showcase(
                 if hasattr(result, 'results') and result.results:
                     top_results = []
                     for prop in result.results[:3]:
-                        address = prop.get('address', {})
+                        # result.results already contains PropertyListing objects
                         top_results.append({
-                            'street': address.get('street', 'Unknown'),
-                            'city': address.get('city', 'Unknown'),
-                            'price': prop.get('price', 0),
-                            'type': prop.get('property_type', 'Unknown')
+                            'street': prop.address.street if prop.address else 'Unknown',
+                            'city': prop.address.city if prop.address else 'Unknown',
+                            'price': prop.price,
+                            'type': prop.property_type
                         })
                     
                     showcase_data.append({

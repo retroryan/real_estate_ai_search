@@ -4,17 +4,8 @@ Pydantic models for hybrid search functionality.
 
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
-
-
-class LocationIntent(BaseModel):
-    """Extracted location intent from natural language query."""
-    city: Optional[str] = Field(None, description="Extracted city name")
-    state: Optional[str] = Field(None, description="Extracted state name")
-    neighborhood: Optional[str] = Field(None, description="Extracted neighborhood name")
-    zip_code: Optional[str] = Field(None, description="Extracted ZIP code")
-    has_location: bool = Field(False, description="Whether location was found in query")
-    cleaned_query: str = Field(..., description="Query with location terms removed")
-    confidence: float = Field(0.0, description="Confidence score for extraction")
+from real_estate_search.models import PropertyListing
+from real_estate_search.models.location import LocationIntent
 
 
 class HybridSearchParams(BaseModel):
@@ -34,7 +25,7 @@ class SearchResult(BaseModel):
     hybrid_score: float = Field(..., description="Combined RRF score")
     text_score: Optional[float] = Field(None, description="Text search score")
     vector_score: Optional[float] = Field(None, description="Vector search score")
-    property_data: Dict[str, Any] = Field(..., description="Property information")
+    property_data: PropertyListing = Field(..., description="Property information")
 
 
 class HybridSearchResult(BaseModel):

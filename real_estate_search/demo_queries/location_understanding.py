@@ -7,13 +7,14 @@ import time
 from typing import Dict, Any, List
 from elasticsearch import Elasticsearch
 
-from .models import DemoQueryResult
-from ..hybrid import LocationUnderstandingModule, LocationIntent
+from .result_models import LocationExtractionResult
+from ..hybrid import LocationUnderstandingModule
+from ..models.location import LocationIntent
 
 logger = logging.getLogger(__name__)
 
 
-def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
+def demo_location_understanding(es_client: Elasticsearch) -> LocationExtractionResult:
     """
     Demo: Extract location information from natural language queries.
     
@@ -29,7 +30,7 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
         es_client: Elasticsearch client (not used in this demo)
         
     Returns:
-        DemoQueryResult with location extraction examples
+        LocationExtractionResult with location extraction examples
     """
     # Example queries using actual cities in our data
     # Includes various location formats: city only, city+state, abbreviated states
@@ -49,11 +50,12 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
     module = LocationUnderstandingModule()
     
     start_time = time.time()
-    results = []
+    results: List[LocationIntent] = []
     
     # Extract location intent for each query
     for query in test_queries:
         try:
+            # DO NOT CHANGE - THIS IS DSPY BEST PRACTICE!!!!
             # Call module as callable, not forward() directly
             result = module(query)
             
@@ -63,33 +65,25 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
             logger.info(f"  Has Location: {result.has_location}")
             logger.info(f"  Cleaned Query: '{result.cleaned_query}'")
             
-            results.append({
-                "query": query,
-                "city": result.city,
-                "state": result.state,
-                "has_location": result.has_location,
-                "cleaned_query": result.cleaned_query,
-                "confidence": result.confidence
-            })
+            # Store the Pydantic model directly
+            results.append(result)
             
         except Exception as e:
             logger.error(f"Location understanding failed for '{query}': {e}")
-            results.append({
-                "query": query,
-                "error": str(e)
-            })
+            # Create LocationIntent with defaults for errors
+            results.append(LocationIntent(cleaned_query=query))
     
     execution_time = int((time.time() - start_time) * 1000)
     
-    # Return DemoQueryResult with location display format
-    return DemoQueryResult(
+    # Return LocationExtractionResult
+    return LocationExtractionResult(
         query_name="Location Understanding Demo",
         query_description="Extract location information from natural language queries using DSPy",
         total_hits=len(test_queries),
-        returned_hits=len([r for r in results if "error" not in r]),
+        returned_hits=len([r for r in results if r.has_location]),
         execution_time_ms=execution_time,
         results=results,
+        queries=test_queries,
         query_dsl={"demo": "location_extraction", "examples": len(test_queries)},
-        es_features=["DSPy location extraction", "Natural language understanding", "City/State parsing"],
-        display_format="location"
+        es_features=["DSPy location extraction", "Natural language understanding", "City/State parsing"]
     )

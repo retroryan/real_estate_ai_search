@@ -14,7 +14,7 @@ from .models import RichListingDisplayConfig
 from .query_builder import RichListingQueryBuilder
 from .search_executor import RichListingSearchExecutor
 from .display_service import RichListingDisplayService
-from real_estate_search.demo_queries.models import DemoQueryResult
+from real_estate_search.demo_queries.property.models import PropertySearchResult
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class RichListingDemoRunner:
     def run_rich_listing(
         self,
         listing_id: Optional[str] = None
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Run a rich property listing demo.
         
@@ -65,7 +65,7 @@ class RichListingDemoRunner:
             listing_id: Optional specific listing ID to display
             
         Returns:
-            DemoQueryResult with the listing data
+            PropertySearchResult with the listing data
         """
         # Use provided ID or default
         target_listing_id = listing_id or DEFAULT_DEMO_PROPERTY_ID
@@ -107,7 +107,7 @@ class RichListingDemoRunner:
         max_price: Optional[float] = None,
         min_bedrooms: Optional[int] = None,
         size: Optional[int] = None
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Run a search with filters and display results.
         
@@ -122,7 +122,7 @@ class RichListingDemoRunner:
             size: Number of results
             
         Returns:
-            DemoQueryResult with search results
+            PropertySearchResult with search results
         """
         logger.info(f"Running rich listing search: {query_text}")
         
@@ -146,24 +146,19 @@ class RichListingDemoRunner:
         # Display search summary
         self.display_service.display_search_summary(search_result)
         
-        # Convert to demo result
-        results_data = []
+        # Extract PropertyListing objects directly
+        property_results = []
         for listing in search_result.listings:
-            property_data = listing.property_data.model_dump()
-            property_data['neighborhood'] = listing.neighborhood.model_dump() if listing.neighborhood else None
-            property_data['wikipedia_articles'] = [
-                article.model_dump() for article in listing.wikipedia_articles
-            ]
-            results_data.append(property_data)
+            # Use the property_data which should be a PropertyListing
+            property_results.append(listing.property_data)
         
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name="Rich Property Search",
             total_hits=search_result.total_hits,
             returned_hits=search_result.returned_hits,
             execution_time_ms=search_result.execution_time_ms,
-            results=results_data,
-            query_dsl=search_result.query_dsl,
-            aggregations=search_result.aggregations
+            results=property_results,
+            query_dsl=search_result.query_dsl
         )
     
     def _create_demo_result(
@@ -171,7 +166,7 @@ class RichListingDemoRunner:
         listing,
         search_result,
         listing_id: str
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Create a DemoQueryResult from the search results.
         
@@ -181,39 +176,25 @@ class RichListingDemoRunner:
             listing_id: The requested listing ID
             
         Returns:
-            DemoQueryResult for the demo system
+            PropertySearchResult for the demo system
         """
-        # Prepare the result data
-        property_data = listing.property_data.model_dump()
-        property_data['neighborhood'] = listing.neighborhood.model_dump() if listing.neighborhood else None
-        property_data['wikipedia_articles'] = [
-            article.model_dump() for article in listing.wikipedia_articles
-        ]
+        # Use the PropertyListing directly
+        property_listing = listing.property_data
         
-        # Create aggregations showing data sources
-        aggregations = {
-            "data_sources": {
-                "property": 1,
-                "neighborhood": 1 if listing.neighborhood else 0,
-                "wikipedia_articles": len(listing.wikipedia_articles)
-            }
-        }
-        
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name="Rich Property Listing (Single Query)",
             total_hits=search_result.total_hits,
             returned_hits=search_result.returned_hits,
             execution_time_ms=search_result.execution_time_ms,
-            results=[property_data],
-            query_dsl=search_result.query_dsl,
-            aggregations=aggregations
+            results=[property_listing],
+            query_dsl=search_result.query_dsl
         )
     
     def _create_empty_result(
         self,
         listing_id: str,
         execution_time_ms: int
-    ) -> DemoQueryResult:
+    ) -> PropertySearchResult:
         """
         Create an empty result when no listing is found.
         
@@ -224,7 +205,7 @@ class RichListingDemoRunner:
         Returns:
             Empty DemoQueryResult
         """
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name="Rich Property Listing",
             total_hits=0,
             returned_hits=0,

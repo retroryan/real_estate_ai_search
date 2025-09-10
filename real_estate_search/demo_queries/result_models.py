@@ -3,7 +3,13 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from abc import ABC, abstractmethod
+from rich.console import Console
+from rich.table import Table
+from rich import box
+from io import StringIO
+import json
 from real_estate_search.models import PropertyListing, WikipediaArticle
+from real_estate_search.models.location import LocationIntent
 
 
 class BaseQueryResult(BaseModel):
@@ -249,6 +255,73 @@ class MixedEntityResult(BaseQueryResult):
                     property_text,
                     location,
                     f"${result.price:,.0f}"
+                )
+            
+            console.print(table)
+        
+        if verbose:
+            console.print(f"\n{'-'*40}", style="dim")
+            console.print("Query DSL:", style="bold cyan")
+            console.print(f"{'-'*40}", style="dim")
+            console.print(json.dumps(self.query_dsl, indent=2), style="green")
+        
+        output = string_buffer.getvalue()
+        string_buffer.close()
+        return output
+
+class LocationExtractionResult(BaseQueryResult):
+    """Result for location understanding queries."""
+    results: List[LocationIntent] = Field(..., description="Location extraction results")
+    queries: List[str] = Field(..., description="Original queries that were processed")
+    
+    def display(self, verbose: bool = False) -> str:
+        """Format location understanding results for display."""
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=True, width=150)
+        
+        # Display header
+        self._display_header(console)
+        
+        # Display location extraction results
+        if self.results and len(self.results) > 0:
+            console.print(f"\n🗺️  LOCATION EXTRACTION RESULTS:", style="bold magenta")
+            
+            table = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold magenta",
+                expand=False,
+                padding=(0, 1)
+            )
+            
+            # Add columns for location results
+            table.add_column("#", style="dim", width=3, justify="center")
+            table.add_column("Query", style="white", width=40)
+            table.add_column("City", style="blue", width=20)
+            table.add_column("State", style="green", width=15)
+            table.add_column("Has Location", style="cyan", width=12, justify="center")
+            table.add_column("Cleaned Query", style="yellow", width=30)
+            
+            # Add results
+            for idx, (result, query) in enumerate(zip(self.results[:10], self.queries[:10]), 1):  # Show up to 10 location results
+                city = result.city or 'N/A'
+                state = result.state or 'N/A'
+                has_location = "✅" if result.has_location else "❌"
+                cleaned_query = result.cleaned_query or 'N/A'
+                
+                # Truncate long text
+                if len(query) > 35:
+                    query = query[:32] + "..."
+                if len(cleaned_query) > 25:
+                    cleaned_query = cleaned_query[:22] + "..."
+                
+                table.add_row(
+                    str(idx),
+                    query,
+                    city,
+                    state, 
+                    has_location,
+                    cleaned_query
                 )
             
             console.print(table)

@@ -87,6 +87,7 @@ class PropertyListing(BaseModel):
     
     # === Search Result Metadata ===
     score: Optional[float] = Field(default=None, alias="_score", description="Search relevance score")
+    hybrid_score: Optional[float] = Field(default=None, alias="_hybrid_score", description="Hybrid search RRF score")
     distance_km: Optional[float] = Field(default=None, description="Distance from search center")
     search_highlights: Optional[Dict[str, List[str]]] = Field(
         default=None, 
@@ -270,6 +271,44 @@ class PropertyListing(BaseModel):
         source = cls._convert_dates(source)
         
         return cls(**source)
+    
+    @classmethod
+    def from_elasticsearch_hit(cls, hit: Dict[str, Any]) -> "PropertyListing":
+        """
+        Create PropertyListing from Elasticsearch hit with metadata.
+        
+        Clean extraction of property data from Elasticsearch hit including
+        score, highlights, and geo distance without modifying source data.
+        
+        Args:
+            hit: Complete Elasticsearch hit with _source, _score, etc.
+            
+        Returns:
+            PropertyListing instance with search metadata
+        """
+        # Extract source data
+        source_data = hit.get('_source', {})
+        
+        # Build property data with search metadata
+        property_data = {
+            **source_data,
+            '_score': hit.get('_score'),
+            '_id': hit.get('_id')
+        }
+        
+        # Add highlights if present
+        if 'highlight' in hit:
+            property_data['highlights'] = hit['highlight']
+        
+        # Add geo distance if present in sort
+        if 'sort' in hit and hit['sort']:
+            try:
+                property_data['distance_km'] = float(hit['sort'][0])
+            except (TypeError, ValueError, IndexError):
+                pass
+        
+        # Use existing from_elasticsearch for transformations
+        return cls.from_elasticsearch(property_data)
     
     @classmethod
     def from_elasticsearch_response(cls, response: Dict[str, Any]) -> List["PropertyListing"]:

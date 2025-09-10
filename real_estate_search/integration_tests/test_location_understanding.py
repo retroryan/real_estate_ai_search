@@ -130,10 +130,9 @@ class TestLocationUnderstandingIntegration:
             mock_es_client = Mock(spec=Elasticsearch)
             result = demo_location_understanding(mock_es_client)
             
-            # Verify result is DemoQueryResult with location display format
-            from real_estate_search.demo_queries.models import DemoQueryResult
-            assert isinstance(result, DemoQueryResult)
-            assert result.display_format == "location"
+            # Verify result is LocationExtractionResult
+            from real_estate_search.demo_queries.result_models import LocationExtractionResult
+            assert isinstance(result, LocationExtractionResult)
             assert result.total_hits == 6  # 6 test queries
             assert result.returned_hits == 6
             

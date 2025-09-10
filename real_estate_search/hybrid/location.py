@@ -11,7 +11,7 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 
 from real_estate_search.config import AppConfig
-from .models import LocationIntent
+from real_estate_search.models.location import LocationIntent
 
 logger = logging.getLogger(__name__)
 

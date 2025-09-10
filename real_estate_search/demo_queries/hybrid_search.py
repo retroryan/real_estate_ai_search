@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any
 from elasticsearch import Elasticsearch
 
-from .models import DemoQueryResult
+from .property.models import PropertySearchResult
 from ..hybrid import HybridSearchEngine, HybridSearchParams
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def demo_hybrid_search(
     es_client: Elasticsearch,
     query: str = "modern kitchen with stainless steel appliances",
     size: int = 10
-) -> DemoQueryResult:
+) -> PropertySearchResult:
     """
     Demo: Hybrid search combining vector and text search with RRF.
     
@@ -29,7 +29,7 @@ def demo_hybrid_search(
         size: Number of results to return
         
     Returns:
-        DemoQueryResult with hybrid search results
+        PropertySearchResult with hybrid search results
     """
     logger.info(f"Running hybrid search demo for query: '{query}'")
     
@@ -48,12 +48,9 @@ def demo_hybrid_search(
     try:
         result = engine.search(params)
         
-        # Convert to DemoQueryResult format
-        demo_results = []
-        for search_result in result.results:
-            demo_result = search_result.property_data.copy()
-            demo_result['_hybrid_score'] = search_result.hybrid_score
-            demo_results.append(demo_result)
+        # Extract PropertyListing objects directly
+        # hybrid_score is already preserved in PropertyListing from ResultProcessor
+        property_results = [sr.property_data for sr in result.results]
         
         # Build query DSL for display
         query_dsl = {
@@ -66,13 +63,13 @@ def demo_hybrid_search(
             }
         }
         
-        return DemoQueryResult(
+        return PropertySearchResult(
             query_name=f"Hybrid Search: '{query}'",
             query_description=f"Combines semantic vector search with text search using RRF for query: '{query}'",
             execution_time_ms=result.execution_time_ms,
             total_hits=result.total_hits,
-            returned_hits=len(demo_results),
-            results=demo_results,
+            returned_hits=len(property_results),
+            results=property_results,
             query_dsl=query_dsl,
             es_features=[
                 "RRF (Reciprocal Rank Fusion) - Native Elasticsearch fusion algorithm",
