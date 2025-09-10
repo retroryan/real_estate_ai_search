@@ -21,7 +21,7 @@ from ...models.wikipedia import WikipediaArticle
 from .demo_runner import WikipediaDemoRunner
 from .query_builder import WikipediaQueryBuilder
 from .search_executor import WikipediaSearchExecutor
-from .display_service import WikipediaDisplayService
+# WikipediaDisplayService removed - using result model display methods
 from .html_service import WikipediaHtmlService
 from .article_exporter import WikipediaArticleExporter
 from .statistics_service import WikipediaStatisticsService
@@ -44,7 +44,6 @@ __all__ = [
     'WikipediaDemoRunner',
     'WikipediaQueryBuilder',
     'WikipediaSearchExecutor',
-    'WikipediaDisplayService',
     'WikipediaHtmlService',
     'WikipediaArticleExporter',
     'WikipediaStatisticsService'

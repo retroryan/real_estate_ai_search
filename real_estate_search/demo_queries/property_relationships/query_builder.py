@@ -1,34 +1,29 @@
 """
-Query builder for rich listing searches.
+Query builder for property relationships searches.
 
 This module constructs Elasticsearch queries for the property_relationships index,
 which contains denormalized property data with embedded neighborhood and Wikipedia information.
 """
 
+import logging
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field, field_validator
+
+from ..demo_config import demo_config
+from ...indexer.enums import IndexName
+
+logger = logging.getLogger(__name__)
 
 
-class RichListingQueryBuilder(BaseModel):
+class PropertyRelationshipsQueryBuilder:
     """
-    Builds Elasticsearch queries for rich listing searches.
+    Builds Elasticsearch queries for property relationships searches.
     
     This class constructs queries specifically for the property_relationships
     index, which contains denormalized data with embedded related information.
     """
     
-    index_name: str = Field(default="property_relationships", description="Target index name")
-    default_size: int = Field(default=10, ge=1, le=100, description="Default result size")
-    
-    @field_validator('index_name')
-    @classmethod
-    def validate_index_name(cls, v):
-        """Ensure index name is valid."""
-        if not v:
-            return "property_relationships"
-        return v
-    
-    def build_listing_query(self, listing_id: str) -> Dict[str, Any]:
+    @staticmethod
+    def build_listing_query(listing_id: str) -> Dict[str, Any]:
         """
         Build a term query to retrieve a specific listing by ID.
         
@@ -54,8 +49,8 @@ class RichListingQueryBuilder(BaseModel):
             ]
         }
     
+    @staticmethod
     def build_search_query(
-        self,
         query_text: Optional[str] = None,
         city: Optional[str] = None,
         state: Optional[str] = None,
@@ -167,7 +162,7 @@ class RichListingQueryBuilder(BaseModel):
         
         return {
             "query": query,
-            "size": size or self.default_size,
+            "size": size or 10,
             "_source": True,
             "sort": [
                 {"_score": "desc"},
@@ -175,8 +170,8 @@ class RichListingQueryBuilder(BaseModel):
             ]
         }
     
+    @staticmethod
     def build_aggregation_query(
-        self,
         aggregation_type: str = "data_sources"
     ) -> Dict[str, Any]:
         """
@@ -269,7 +264,8 @@ class RichListingQueryBuilder(BaseModel):
             "aggs": aggregations
         }
     
-    def validate_query(self, query_dsl: Dict[str, Any]) -> bool:
+    @staticmethod
+    def validate_query(query_dsl: Dict[str, Any]) -> bool:
         """
         Validate that a query DSL is properly structured.
         
@@ -297,7 +293,8 @@ class RichListingQueryBuilder(BaseModel):
         
         return True
     
-    def add_highlighting(self, query_dsl: Dict[str, Any]) -> Dict[str, Any]:
+    @staticmethod
+    def add_highlighting(query_dsl: Dict[str, Any]) -> Dict[str, Any]:
         """
         Add highlighting configuration to a query.
         
@@ -320,7 +317,8 @@ class RichListingQueryBuilder(BaseModel):
         }
         return query_dsl
     
-    def build_default_query(self) -> Dict[str, Any]:
+    @staticmethod
+    def build_default_query() -> Dict[str, Any]:
         """
         Build a default query to retrieve recent listings.
         
@@ -331,7 +329,7 @@ class RichListingQueryBuilder(BaseModel):
             "query": {
                 "match_all": {}
             },
-            "size": self.default_size,
+            "size": 10,
             "_source": True,
             "sort": [
                 {"listing_date": "desc"},

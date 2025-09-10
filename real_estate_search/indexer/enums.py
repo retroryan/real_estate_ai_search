@@ -81,7 +81,7 @@ class FieldName(StrEnum):
     
     # Neighborhood fields
     NEIGHBORHOOD = "neighborhood"
-    NEIGHBORHOOD_ID = "neighborhood.neighborhood_id"
+    NEIGHBORHOOD_ID = "neighborhood_id"
     NEIGHBORHOOD_NAME = "neighborhood.name"
     NEIGHBORHOOD_WALKABILITY = "neighborhood.walkability_score"
     NEIGHBORHOOD_SCHOOL_RATING = "neighborhood.school_rating"

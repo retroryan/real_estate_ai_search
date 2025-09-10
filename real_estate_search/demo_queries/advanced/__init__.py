@@ -24,7 +24,7 @@ from .demo_runner import (
     demo_multi_entity_search,
     demo_wikipedia_search
 )
-from .display_service import AdvancedDisplayService
+# AdvancedDisplayService removed - using result model display methods
 
 __all__ = [
     # Models
@@ -40,7 +40,6 @@ __all__ = [
     # Executor and Services
     'AdvancedSearchExecutor',
     'AdvancedDemoRunner',
-    'AdvancedDisplayService',
     # Demo functions
     'demo_semantic_search',
     'demo_multi_entity_search',

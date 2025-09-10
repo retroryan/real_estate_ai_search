@@ -7,8 +7,13 @@ no Elasticsearch client dependencies.
 """
 
 from typing import Dict, Any, Optional, List
+import logging
 
 from ..base_models import SearchRequest, SourceFilter
+from ..demo_config import demo_config
+from ...indexer.enums import FieldName
+
+logger = logging.getLogger(__name__)
 
 
 class PropertyQueryBuilder:
@@ -214,6 +219,274 @@ class PropertyQueryBuilder:
             size=size,
             sort=sort,
         )
+    
+    # ==================== AGGREGATION QUERIES ====================
+    
+    @staticmethod
+    def neighborhood_stats_aggregation(size: int = None) -> Dict[str, Any]:
+        """
+        Build neighborhood statistics aggregation query.
+        
+        Creates a terms aggregation grouped by neighborhood with multiple
+        metric sub-aggregations for each bucket.
+        
+        Args:
+            size: Maximum number of neighborhoods to return (uses config default if None)
+            
+        Returns:
+            Elasticsearch query dictionary with aggregations
+        """
+        if size is None:
+            size = demo_config.aggregation_defaults.neighborhood_size
+            
+        return {
+            "size": 0,  # Don't return documents, only aggregations
+            
+            "aggs": {
+                # Bucket aggregation: Groups documents by neighborhood
+                "by_neighborhood": {
+                    "terms": {
+                        "field": FieldName.NEIGHBORHOOD_ID,
+                        "size": size,
+                        "order": {"property_count": "desc"}  # Most properties first
+                    },
+                    
+                    # Sub-aggregations for each neighborhood bucket
+                    "aggs": {
+                        "property_count": {
+                            "value_count": {"field": FieldName.LISTING_ID}
+                        },
+                        "avg_price": {
+                            "avg": {"field": FieldName.PRICE}
+                        },
+                        "min_price": {
+                            "min": {"field": FieldName.PRICE}
+                        },
+                        "max_price": {
+                            "max": {"field": FieldName.PRICE}
+                        },
+                        "avg_bedrooms": {
+                            "avg": {"field": FieldName.BEDROOMS}
+                        },
+                        "avg_square_feet": {
+                            "avg": {"field": FieldName.SQUARE_FEET}
+                        },
+                        "price_per_sqft": {
+                            "avg": {"field": FieldName.PRICE_PER_SQFT}
+                        },
+                        # Nested bucket aggregation for property types
+                        "property_types": {
+                            "terms": {
+                                "field": FieldName.PROPERTY_TYPE,
+                                "size": demo_config.aggregation_defaults.max_buckets
+                            }
+                        }
+                    }
+                },
+                
+                # Global metrics across all documents
+                "total_properties": {
+                    "value_count": {"field": FieldName.LISTING_ID}
+                },
+                "overall_avg_price": {
+                    "avg": {"field": FieldName.PRICE}
+                }
+            }
+        }
+    
+    @staticmethod
+    def price_distribution_aggregation(
+        interval: int = None,
+        min_price: float = None,
+        max_price: float = None
+    ) -> Dict[str, Any]:
+        """
+        Build price distribution histogram query.
+        
+        Creates a histogram aggregation for price ranges with percentiles
+        and property type breakdowns.
+        
+        Args:
+            interval: Bucket width for histogram (uses config default if None)
+            min_price: Minimum price for range filter (uses config default if None)
+            max_price: Maximum price for range filter (uses config default if None)
+            
+        Returns:
+            Elasticsearch query dictionary with histogram aggregations
+        """
+        if interval is None:
+            interval = demo_config.aggregation_defaults.price_interval
+        if min_price is None:
+            min_price = demo_config.aggregation_defaults.min_price
+        if max_price is None:
+            max_price = demo_config.aggregation_defaults.max_price
+            
+        return {
+            "size": demo_config.aggregation_defaults.top_properties_count,  # Return top properties
+            
+            # Sort by price descending to show most expensive
+            "sort": [
+                {"price": {"order": "desc"}}
+            ],
+            
+            # Filter documents before aggregating
+            "query": {
+                "range": {
+                    "price": {
+                        "gte": min_price,
+                        "lte": max_price
+                    }
+                }
+            },
+            
+            "aggs": {
+                # Histogram aggregation for price ranges
+                "price_histogram": {
+                    "histogram": {
+                        "field": FieldName.PRICE,
+                        "interval": interval,
+                        "min_doc_count": 1,  # Omit empty buckets
+                        "extended_bounds": {
+                            "min": min_price,
+                            "max": max_price
+                        }
+                    },
+                    
+                    # Sub-aggregations per price bucket
+                    "aggs": {
+                        "by_property_type": {
+                            "terms": {
+                                "field": FieldName.PROPERTY_TYPE,
+                                "size": demo_config.aggregation_defaults.max_buckets
+                            }
+                        },
+                        "stats": {
+                            "stats": {"field": FieldName.PRICE}
+                        }
+                    }
+                },
+                
+                # Percentiles for statistical distribution
+                "price_percentiles": {
+                    "percentiles": {
+                        "field": FieldName.PRICE,
+                        "percents": demo_config.aggregation_defaults.percentiles
+                    }
+                },
+                
+                # Statistics per property type
+                "by_property_type_stats": {
+                    "terms": {
+                        "field": FieldName.PROPERTY_TYPE,
+                        "size": demo_config.aggregation_defaults.max_buckets
+                    },
+                    "aggs": {
+                        "price_stats": {
+                            "stats": {"field": FieldName.PRICE}
+                        },
+                        "price_percentiles": {
+                            "percentiles": {
+                                "field": FieldName.PRICE,
+                                "percents": [50]  # Just median
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+    # ==================== SEMANTIC QUERIES ====================
+    
+    @staticmethod
+    def knn_semantic_search(
+        query_vector: List[float], 
+        size: int = None,
+        fields: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Build a KNN query for semantic search.
+        
+        Args:
+            query_vector: The embedding vector for the query
+            size: Number of results to return (uses config default if None)
+            fields: Fields to retrieve (defaults to basic property fields)
+            
+        Returns:
+            Elasticsearch query dictionary
+        """
+        if size is None:
+            size = demo_config.advanced_defaults.semantic_similarity_size
+            
+        if fields is None:
+            fields = [
+                "listing_id", "property_type", "price", 
+                "bedrooms", "bathrooms", "square_feet",
+                "address", "description", "features"
+            ]
+            
+        knn_num_candidates_multiplier = 10  # Default multiplier
+        
+        query = {
+            "knn": {
+                "field": "embedding",
+                "query_vector": query_vector,
+                "k": size,
+                "num_candidates": min(100, size * knn_num_candidates_multiplier)
+            },
+            "size": size,
+            "_source": fields
+        }
+        
+        logger.debug(f"Built KNN query for {size} results with {len(query_vector)}-dim vector")
+        return query
+    
+    @staticmethod
+    def keyword_search(
+        query_text: str,
+        size: int = None,
+        fields: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Build a keyword-based multi-match query.
+        
+        Args:
+            query_text: The text query
+            size: Number of results to return (uses config default if None)
+            fields: Fields to retrieve (defaults to basic property fields)
+            
+        Returns:
+            Elasticsearch query dictionary
+        """
+        if size is None:
+            size = demo_config.advanced_defaults.semantic_similarity_size
+            
+        if fields is None:
+            fields = [
+                "listing_id", "property_type", "price", 
+                "bedrooms", "bathrooms", "square_feet",
+                "address", "description", "features"
+            ]
+            
+        query = {
+            "query": {
+                "multi_match": {
+                    "query": query_text,
+                    "fields": [
+                        "description^2",
+                        "features^1.5",
+                        "address.street",
+                        "address.city",
+                    ],
+                    "type": "best_fields",
+                    "fuzziness": "AUTO"
+                }
+            },
+            "size": size,
+            "_source": fields
+        }
+        
+        logger.debug(f"Built keyword query for '{query_text}' with size {size}")
+        return query
     
     @staticmethod
     def price_range_with_stats(

@@ -4,8 +4,8 @@ Property search module with clean separation of concerns.
 
 from .query_builder import PropertyQueryBuilder
 from .search_executor import PropertySearchExecutor
-from .display_service import PropertyDisplayService
 from .models import PropertySearchResult
+# PropertyDisplayService removed - using result model display methods
 from .demo_runner import (
     PropertyDemoRunner,
     demo_basic_property_search,
@@ -22,7 +22,6 @@ __all__ = [
     # Core classes
     'PropertyQueryBuilder',
     'PropertySearchExecutor',
-    'PropertyDisplayService',
     'PropertyDemoRunner',
     'PropertySearchResult',
     

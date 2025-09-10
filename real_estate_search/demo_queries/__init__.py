@@ -22,7 +22,7 @@ from .semantic import (
     demo_natural_language_examples,
     demo_semantic_vs_keyword_comparison
 )
-from .rich import demo_rich_property_listing
+from .demo_single_query_relationships import demo_simplified_relationships as demo_rich_property_listing
 from .hybrid_search import demo_hybrid_search
 from .location_understanding import demo_location_understanding
 from .location_aware_demos import (

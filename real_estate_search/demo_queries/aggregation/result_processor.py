@@ -8,7 +8,7 @@ structured data suitable for display or further analysis.
 from typing import Dict, Any, List, Optional
 import logging
 
-from .constants import DEFAULT_PRICE_INTERVAL
+from ..demo_config import demo_config
 from .models import (
     NeighborhoodStats,
     PriceRangeStats,
@@ -73,7 +73,7 @@ class AggregationResultProcessor:
     @staticmethod
     def process_price_distribution(
         response: Dict[str, Any], 
-        interval: int = DEFAULT_PRICE_INTERVAL
+        interval: int = None
     ) -> List[PriceRangeStats]:
         """
         Process price distribution histogram results from Elasticsearch.
@@ -83,11 +83,14 @@ class AggregationResultProcessor:
         
         Args:
             response: Raw Elasticsearch response with histogram aggregations
-            interval: Bucket width used in histogram
+            interval: Bucket width used in histogram (uses config default if None)
             
         Returns:
             List of PriceRangeStats objects
         """
+        if interval is None:
+            interval = demo_config.aggregation_defaults.price_interval
+            
         results = []
         
         try:

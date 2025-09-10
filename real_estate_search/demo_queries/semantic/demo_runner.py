@@ -7,7 +7,6 @@ Orchestrates semantic search demonstrations using the modular services.
 from typing import Optional
 import logging
 from elasticsearch import Elasticsearch
-from rich.console import Console
 
 from ...config import AppConfig
 from ...embeddings.exceptions import (
@@ -19,18 +18,16 @@ from ..property.models import PropertySearchResult
 from .constants import (
     DEFAULT_QUERY,
     DEFAULT_SIZE,
-    BASIC_PROPERTY_FIELDS,
     EXAMPLE_QUERIES,
     MATCH_EXPLANATIONS
 )
 from .embedding_service import get_embedding_service
-from .query_builder import SemanticQueryBuilder
+from ..property.query_builder import PropertyQueryBuilder
 from .search_executor import SearchExecutor
-from .display_service import SemanticDisplayService
+# SemanticDisplayService removed - using result model display methods
 
 
 logger = logging.getLogger(__name__)
-console = Console()
 
 
 def demo_natural_language_search(
@@ -62,8 +59,7 @@ def demo_natural_language_search(
     
     # Initialize services
     executor = SearchExecutor(es_client)
-    query_builder = SemanticQueryBuilder()
-    display_service = SemanticDisplayService()
+    query_builder = PropertyQueryBuilder()
     
     # Generate query embedding
     embedding_time_ms = 0
@@ -81,7 +77,7 @@ def demo_natural_language_search(
         )
     
     # Build and execute KNN query
-    es_query = query_builder.build_knn_query(query_embedding, size)
+    es_query = query_builder.knn_semantic_search(query_embedding, size)
     
     try:
         raw_results, total_hits, search_time_ms = executor.execute_search(
@@ -119,8 +115,6 @@ def demo_natural_language_search(
             }
         )
         
-        # Display rich formatted results
-        display_service.display_natural_language_results(result)
         return result
         
     except Exception as e:
@@ -152,8 +146,7 @@ def demo_natural_language_examples(
     """
     # Initialize services
     executor = SearchExecutor(es_client)
-    query_builder = SemanticQueryBuilder()
-    display_service = SemanticDisplayService()
+    query_builder = PropertyQueryBuilder()
     
     # Early return if no examples configured
     if not EXAMPLE_QUERIES:
@@ -178,10 +171,9 @@ def demo_natural_language_examples(
                     query_embedding, embedding_time_ms = embedding_service.generate_query_embedding(query_text)
                     
                     # Build and execute query
-                    es_query = query_builder.build_knn_query(
+                    es_query = query_builder.knn_semantic_search(
                         query_embedding, 
-                        size=5, 
-                        fields=BASIC_PROPERTY_FIELDS
+                        size=5
                     )
                     
                     raw_results, total_hits, search_time_ms = executor.execute_search(
@@ -198,26 +190,13 @@ def demo_natural_language_examples(
                     query_descriptions.append(f"{i}. {query_description}: '{query_text}'")
                     successful_queries += 1
                     
-                    # Display individual query results
-                    console.print(f"\n[bold cyan]Example {i}: {query_description}[/bold cyan]")
-                    console.print(f"Query: [yellow]{query_text}[/yellow]")
-                    console.print(f"Found: {total_hits} properties • Time: {total_time_ms:.1f}ms")
-                    
-                    if property_results:
-                        console.print("[bold]Top 3 Matches:[/bold]")
-                        for j, prop in enumerate(property_results[:3], 1):
-                            console.print(display_service.format_property_summary(prop, j))
-                    
-                    # Add match explanation
-                    match_explanation = MATCH_EXPLANATIONS.get(i, "")
-                    if match_explanation:
-                        console.print(f"[bold yellow]Why these match:[/bold yellow] {match_explanation}\n")
+                    # Note: Display is handled by commands.py, not here
                     
                 except Exception as e:
                     logger.error(f"Failed to process query {i}: {e}")
                     query_descriptions.append(f"{i}. {query_description}: ERROR - {str(e)}")
                     failed_queries += 1
-                    console.print(f"\n[red]Example {i} failed: {str(e)}[/red]")
+                    # Error already logged above, no console display needed
                     
     except Exception as e:
         logger.error(f"Failed to initialize embedding service: {e}")
@@ -235,8 +214,7 @@ def demo_natural_language_examples(
             error_message=f"All {len(EXAMPLE_QUERIES)} queries failed"
         )
     
-    # Display summary
-    display_service.display_examples_summary_stats(successful_queries, total_execution_time, total_hits_sum)
+    # Note: Display is handled by commands.py, not here
     
     # Calculate average time safely
     avg_time = total_execution_time / successful_queries if successful_queries > 0 else 0
@@ -291,8 +269,7 @@ def demo_semantic_vs_keyword_comparison(
     """
     # Initialize services
     executor = SearchExecutor(es_client)
-    query_builder = SemanticQueryBuilder()
-    display_service = SemanticDisplayService()
+    query_builder = PropertyQueryBuilder()
     
     # Run semantic search
     semantic_results = []
@@ -303,7 +280,7 @@ def demo_semantic_vs_keyword_comparison(
         with get_embedding_service(config) as embedding_service:
             query_embedding, embedding_time = embedding_service.generate_query_embedding(query)
             
-            semantic_query = query_builder.build_knn_query(query_embedding, size)
+            semantic_query = query_builder.knn_semantic_search(query_embedding, size)
             raw_results, semantic_hits, search_time = executor.execute_search(
                 semantic_query, "properties"
             )
@@ -314,7 +291,7 @@ def demo_semantic_vs_keyword_comparison(
         logger.error(f"Semantic search failed: {e}")
     
     # Run keyword search
-    keyword_query = query_builder.build_keyword_query(query, size)
+    keyword_query = query_builder.keyword_search(query, size)
     keyword_results = []
     keyword_hits = 0
     keyword_time = 0
@@ -414,6 +391,4 @@ def demo_semantic_vs_keyword_comparison(
         aggregations=comparison_results
     )
     
-    # Display rich formatted comparison
-    display_service.display_semantic_vs_keyword_comparison(result, query, comparison_results)
     return result
