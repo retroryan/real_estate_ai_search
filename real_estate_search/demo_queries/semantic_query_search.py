@@ -355,7 +355,7 @@ def demo_natural_language_search(
 def demo_natural_language_examples(
     es_client: Elasticsearch,
     config: Optional[AppConfig] = None
-) -> PropertySearchResult:
+) -> List[DemoQueryResult]:
     """
     Run multiple natural language search examples.
     
@@ -367,16 +367,21 @@ def demo_natural_language_examples(
         config: Application configuration
         
     Returns:
-        PropertySearchResult containing all example query results
+        List[DemoQueryResult] containing individual query results
     """
     # Early return if no examples configured
     if not EXAMPLE_QUERIES:
-        return create_error_result(
-            query_name="Natural Language Examples",
-            query_description="Multiple natural language queries",
-            error_message="No example queries configured"
-        )
+        console.print("[red]No example queries configured[/red]")
+        return []
     
+    # Display header for the examples demo
+    console.print("\n" + "=" * 80)
+    console.print("🔍 NATURAL LANGUAGE SEARCH EXAMPLES")
+    console.print("=" * 80)
+    console.print("Demonstrating semantic understanding with AI embeddings")
+    console.print("Multiple example queries showing various search patterns\n")
+    
+    demo_results = []
     all_properties = []
     total_execution_time = 0
     total_hits_sum = 0
@@ -429,6 +434,18 @@ def demo_natural_language_examples(
                     if match_explanation:
                         console.print(f"[bold yellow]Why these match:[/bold yellow] {match_explanation}\n")
                     
+                    # Create DemoQueryResult for this individual query
+                    individual_result = DemoQueryResult(
+                        query_name=f"Example {i}: {query_description}",
+                        query_description=query_text,
+                        execution_time_ms=int(total_time_ms),
+                        total_hits=total_hits,
+                        returned_hits=len(property_results),
+                        results=[prop.model_dump() for prop in property_results],
+                        query_dsl=es_query
+                    )
+                    demo_results.append(individual_result)
+                    
                 except Exception as e:
                     logger.error(f"Failed to process query {i}: {e}")
                     query_descriptions.append(f"{i}. {query_description}: ERROR - {str(e)}")
@@ -437,51 +454,19 @@ def demo_natural_language_examples(
                     
     except Exception as e:
         logger.error(f"Failed to initialize embedding service: {e}")
-        return create_error_result(
-            query_name="Natural Language Examples",
-            query_description="Multiple natural language queries",
-            error_message=f"Embedding service initialization failed: {str(e)}"
-        )
+        console.print(f"[red]Failed to initialize embedding service: {str(e)}[/red]")
+        return []
     
     # Check if any queries succeeded
     if successful_queries == 0:
-        return create_error_result(
-            query_name="Natural Language Examples",
-            query_description="Multiple natural language queries",
-            error_message=f"All {len(EXAMPLE_QUERIES)} queries failed"
-        )
+        console.print(f"[red]All {len(EXAMPLE_QUERIES)} queries failed[/red]")
+        return []
     
     # Display summary
     display_examples_summary_stats(successful_queries, total_execution_time, total_hits_sum)
     
-    # Calculate average time safely
-    avg_time = total_execution_time / successful_queries if successful_queries > 0 else 0
-    
-    # Build description string
-    description = "Demonstration of " + "; ".join(query_descriptions) if query_descriptions else "No queries executed"
-    
-    # Return combined result
-    return PropertySearchResult(
-        query_name="Natural Language Search Examples",
-        query_description=description,
-        execution_time_ms=int(total_execution_time),
-        total_hits=total_hits_sum,
-        returned_hits=len(all_properties),
-        results=all_properties[:10],  # Limit to first 10 for display
-        query_dsl={"multiple_queries": f"Executed {successful_queries} of {len(EXAMPLE_QUERIES)} semantic searches"},
-        es_features=[
-            f"Executed {successful_queries} natural language queries successfully",
-            f"Failed queries: {failed_queries}" if failed_queries > 0 else "All queries succeeded",
-            f"Total execution time: {total_execution_time:.1f}ms",
-            f"Average time per query: {avg_time:.1f}ms" if successful_queries > 0 else "No successful queries",
-            "KNN search with 1024-dimensional embeddings",
-            "Semantic understanding across multiple query types"
-        ],
-        indexes_used=[
-            "properties index with pre-computed embeddings",
-            f"Total properties found across all queries: {total_hits_sum}"
-        ]
-    )
+    # Return the list of individual demo results
+    return demo_results
 
 
 def demo_semantic_vs_keyword_comparison(

@@ -253,9 +253,13 @@ class DemoCommand(BaseCommand):
                     message="No demo number specified"
                 )
             
-            # Print header and special description FIRST
-            print(f"\nRunning Demo {self.args.demo_number}: {self.demo_runner.demo_registry[self.args.demo_number].name}")
-            print("=" * 60)
+            # For demos 1-3, PropertyDemoRunner handles all display, so skip the header
+            demos_with_own_display = {1, 2, 3}  # These use PropertyDemoRunner
+            
+            if self.args.demo_number not in demos_with_own_display:
+                # Print header and special description FIRST
+                print(f"\nRunning Demo {self.args.demo_number}: {self.demo_runner.demo_registry[self.args.demo_number].name}")
+                print("=" * 60)
             
             # Get and print special description if available
             special_descriptions = self.demo_runner.get_demo_descriptions()

@@ -104,7 +104,8 @@ class PropertySearchExecutor(BaseModel):
                 total_hits=0,
                 returned_hits=0,
                 results=[],
-                query_dsl=request.to_dict()
+                query_dsl=request.to_dict(),
+                already_displayed=True
             )
         
         results = self.process_results(response)
@@ -128,7 +129,8 @@ class PropertySearchExecutor(BaseModel):
                 "properties index: 420 real estate listings",
                 "Fields searched: description, amenities, address.street, address.city, neighborhood_id"
             ],
-            explanation=f"Searched for '{query_text}' across description, amenities, and address fields with fuzzy matching"
+            explanation=f"Searched for '{query_text}' across description, amenities, and address fields with fuzzy matching",
+            already_displayed=True  # Mark as displayed since PropertyDisplayService shows it
         )
     
     def execute_filtered_search(
@@ -155,7 +157,8 @@ class PropertySearchExecutor(BaseModel):
                 total_hits=0,
                 returned_hits=0,
                 results=[],
-                query_dsl=request.to_dict()
+                query_dsl=request.to_dict(),
+                already_displayed=True
             )
         
         results = self.process_results(response)
@@ -179,7 +182,8 @@ class PropertySearchExecutor(BaseModel):
                 "properties index: 420 real estate listings",
                 "Filtered fields: property_type, price, bedrooms, bathrooms"
             ],
-            explanation=filters_desc
+            explanation=filters_desc,
+            already_displayed=True  # Mark as displayed since PropertyDisplayService shows it
         )
     
     def execute_geo_search(
@@ -210,7 +214,8 @@ class PropertySearchExecutor(BaseModel):
                 total_hits=0,
                 returned_hits=0,
                 results=[],
-                query_dsl=request.to_dict()
+                query_dsl=request.to_dict(),
+                already_displayed=True
             )
         
         results = self.process_results(response)
@@ -235,7 +240,8 @@ class PropertySearchExecutor(BaseModel):
                 "Geo field: address.location (lat/lon pairs)",
                 f"Search area: {radius_km}km radius in San Francisco area"
             ],
-            explanation=f"Properties within {radius_km}km of ({center_lat}, {center_lon})"
+            explanation=f"Properties within {radius_km}km of ({center_lat}, {center_lon})",
+            already_displayed=True  # Mark as displayed since PropertyDisplayService shows it
         )
     
     def execute_price_range_with_stats(

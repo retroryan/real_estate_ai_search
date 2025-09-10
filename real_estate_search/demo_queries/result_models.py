@@ -51,9 +51,41 @@ class BaseQueryResult(BaseModel):
 class PropertySearchResult(BaseQueryResult):
     """Result for property searches."""
     results: List[PropertyListing] = Field(..., description="Property search results")
+    already_displayed: bool = Field(False, description="Whether results have already been displayed")
     
     def display(self, verbose: bool = False) -> str:
         """Format property results for display."""
+        # If already displayed by PropertyDisplayService, show minimal output
+        if self.already_displayed:
+            import json
+            from rich.console import Console
+            from io import StringIO
+            
+            string_buffer = StringIO()
+            console = Console(file=string_buffer, force_terminal=True, width=150)
+            
+            # Only show the technical details section without repeating the query name
+            if self.es_features:
+                console.print(f"\n📊 ELASTICSEARCH FEATURES:", style="bold green")
+                for feature in self.es_features:
+                    console.print(f"   • {feature}", style="green")
+            
+            if self.indexes_used:
+                console.print(f"\n📁 INDEXES & DOCUMENTS:", style="bold blue")
+                for index_info in self.indexes_used:
+                    console.print(f"   • {index_info}", style="blue")
+            
+            if verbose:
+                console.print(f"\n{'-'*40}", style="dim")
+                console.print("Query DSL:", style="bold cyan")
+                console.print(f"{'-'*40}", style="dim")
+                console.print(json.dumps(self.query_dsl, indent=2), style="green")
+            
+            output = string_buffer.getvalue()
+            string_buffer.close()
+            return output
+        
+        # Normal display if not already shown
         import json
         from rich.console import Console
         from rich.table import Table
@@ -193,9 +225,15 @@ class AggregationSearchResult(BaseQueryResult):
     """Result for aggregation queries."""
     aggregations: Dict[str, Any] = Field(..., description="Aggregation results")
     top_properties: List[PropertyListing] = Field(default_factory=list, description="Sample properties if included")
+    already_displayed: bool = Field(False, description="Whether results have already been displayed")
     
     def display(self, verbose: bool = False) -> str:
         """Format aggregation results for display."""
+        # If already displayed by the aggregation display functions, show minimal output
+        if self.already_displayed:
+            return self.display_aggregation_metadata(verbose)
+        
+        # Otherwise show full display
         import json
         from rich.console import Console
         from rich.table import Table
@@ -256,6 +294,40 @@ class AggregationSearchResult(BaseQueryResult):
                 table.add_row(str(idx), property_text, location, price_text, description)
             
             console.print(table)
+        
+        if verbose:
+            console.print(f"\n{'-'*40}", style="dim")
+            console.print("Query DSL:", style="bold cyan")
+            console.print(f"{'-'*40}", style="dim")
+            console.print(json.dumps(self.query_dsl, indent=2), style="green")
+        
+        output = string_buffer.getvalue()
+        string_buffer.close()
+        return output
+    
+    def display_aggregation_metadata(self, verbose: bool = False) -> str:
+        """Display only the metadata for aggregation results (no duplicate data)."""
+        import json
+        from rich.console import Console
+        from io import StringIO
+        
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=True, width=150)
+        
+        # Only show the technical details, not the query name again
+        
+        if self.es_features:
+            console.print(f"\n📊 ELASTICSEARCH FEATURES:", style="bold green")
+            for feature in self.es_features:
+                console.print(f"   • {feature}", style="green")
+        
+        if self.indexes_used:
+            console.print(f"\n📁 INDEXES & DOCUMENTS:", style="bold blue")
+            for index_info in self.indexes_used:
+                console.print(f"   • {index_info}", style="blue")
+        
+        console.print(f"\n{'─'*80}", style="dim")
+        console.print(f"⏱️  Execution Time: {self.execution_time_ms}ms | 📊 Total Hits: {self.total_hits} | 📄 Returned: {self.returned_hits}", style="cyan")
         
         if verbose:
             console.print(f"\n{'-'*40}", style="dim")

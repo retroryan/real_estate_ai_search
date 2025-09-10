@@ -142,7 +142,7 @@ def demo_neighborhood_stats(
         display_neighborhood_stats(response, results, size)
         
         return AggregationSearchResult(
-            query_name="Demo 4: Neighborhood Statistics Aggregation",
+            query_name="Neighborhood Statistics Aggregation",
             query_description=f"Aggregates property data by neighborhood showing average prices, counts, and breakdowns for top {size} neighborhoods",
             execution_time_ms=response.get('took', 0),
             total_hits=response['aggregations']['total_properties']['value'] if 'aggregations' in response else 0,
@@ -161,7 +161,8 @@ def demo_neighborhood_stats(
             indexes_used=[
                 "properties index - Real estate property listings",
                 f"Returns statistics for top {size} neighborhoods by property count"
-            ]
+            ],
+            already_displayed=True  # Mark as displayed since display_neighborhood_stats shows it
         )
     except Exception as e:
         logger.error(f"Error in neighborhood stats aggregation: {e}")
