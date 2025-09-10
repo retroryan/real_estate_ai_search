@@ -2,7 +2,7 @@
 
 import json
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from io import StringIO
 from rich.console import Console
 

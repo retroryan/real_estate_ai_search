@@ -8,6 +8,7 @@ coordinating between query building, search execution, and display.
 from typing import Optional
 from elasticsearch import Elasticsearch
 import logging
+from rich.panel import Panel
 
 from .models import RichListingDisplayConfig
 from .query_builder import RichListingQueryBuilder

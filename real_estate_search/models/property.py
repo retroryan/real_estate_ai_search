@@ -8,7 +8,7 @@ sole source of truth for property data throughout the application.
 import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator, computed_field, field_serializer
 
 from .address import Address
 from .enums import PropertyType, PropertyStatus, ParkingType
@@ -107,16 +107,20 @@ class PropertyListing(BaseModel):
     
     # === Validators ===
     
-    @field_validator('price_per_sqft', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def calculate_price_per_sqft(cls, v, values):
+    def calculate_price_per_sqft_if_missing(cls, data):
         """Calculate price per sqft if not provided."""
-        if v is None or v == 0:
-            price = values.data.get('price', 0)
-            sqft = values.data.get('square_feet', 0)
-            if price > 0 and sqft > 0:
-                return price / sqft
-        return v or 0.0
+        if isinstance(data, dict):
+            price_per_sqft = data.get('price_per_sqft')
+            if price_per_sqft is None or price_per_sqft == 0:
+                price = data.get('price', 0)
+                sqft = data.get('square_feet', 0)
+                if price > 0 and sqft > 0:
+                    data['price_per_sqft'] = price / sqft
+                else:
+                    data['price_per_sqft'] = 0.0
+        return data
     
     @field_validator('listing_date', mode='before')
     @classmethod
@@ -134,8 +138,13 @@ class PropertyListing(BaseModel):
     @computed_field
     @property
     def display_price(self) -> str:
-        """Format price for display."""
-        return f"${self.price/1000000:.1f}M"
+        """Format price for display with appropriate scale."""
+        if self.price >= 1000000:
+            return f"${self.price/1000000:.1f}M"
+        elif self.price >= 1000:
+            return f"${self.price/1000:.0f}K"
+        else:
+            return f"${self.price:,.0f}"
     
     @computed_field
     @property

@@ -429,8 +429,8 @@ class TestPropertyListingFromElasticsearch:
         assert property_listing.summary == '4bd/2.5ba | 2,500 sqft | Single Family'
         assert property_listing.parking_display == '2 garage spaces'
         assert property_listing.rooms_total == 6
-        # price_per_sqft defaults to 0.0 when not provided
-        assert property_listing.price_per_sqft == 0.0
+        # price_per_sqft calculated from price/square_feet when not provided
+        assert property_listing.price_per_sqft == 600.0
     
     def test_error_handling_in_batch_conversion(self):
         """Test that batch conversion continues despite individual errors."""
@@ -504,9 +504,8 @@ class TestPropertyListingFromElasticsearch:
         }
         
         property_listing = PropertyListing.from_elasticsearch(es_doc)
-        # The validator doesn't trigger since default is 0.0, not None
-        # Accept current behavior - price_per_sqft defaults to 0.0
-        assert property_listing.price_per_sqft == 0.0  # Default value
+        # The validator calculates price_per_sqft from price/square_feet when not provided
+        assert property_listing.price_per_sqft == 500.0  # Calculated: 1000000/2000
         
         # Test with explicit price_per_sqft
         es_doc['price_per_sqft'] = 600.0
