@@ -4,7 +4,7 @@ Tests for base search service.
 
 import pytest
 from unittest.mock import Mock
-from elasticsearch import Elasticsearch
+from ..elasticsearch_compat import Elasticsearch
 from elasticsearch.exceptions import TransportError
 from ..base import BaseSearchService
 from ..models import SearchError

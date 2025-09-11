@@ -4,7 +4,7 @@ Tests for Wikipedia search service.
 
 import pytest
 from unittest.mock import Mock
-from elasticsearch import Elasticsearch
+from ..elasticsearch_compat import Elasticsearch
 
 from ..wikipedia import WikipediaSearchService
 from ..models import (

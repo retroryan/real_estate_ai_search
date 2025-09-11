@@ -4,7 +4,7 @@ Tests for property search service.
 
 import pytest
 from unittest.mock import Mock
-from elasticsearch import Elasticsearch
+from ..elasticsearch_compat import Elasticsearch
 
 from ..properties import PropertySearchService
 from ..models import (

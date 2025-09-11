@@ -1,7 +1,7 @@
 """MCP tools for property search."""
 
 from typing import Dict, Any, Optional, List
-from fastmcp import Context
+from ..fastmcp_compat import Context
 
 from ...search_service.models import PropertySearchRequest, PropertyFilter
 from ...search_service.properties import PropertySearchService

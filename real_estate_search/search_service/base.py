@@ -3,11 +3,13 @@ Base search service class for all entity-specific search services.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import datetime
-from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import TransportError
 from .models import SearchError
+from .elasticsearch_compat import Elasticsearch, TransportError
+
+if TYPE_CHECKING:
+    pass
 
 logger = logging.getLogger(__name__)
 
