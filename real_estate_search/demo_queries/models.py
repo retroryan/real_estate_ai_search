@@ -75,6 +75,7 @@ class DemoQueryResult(BaseModel):
     query_dsl: Dict[str, Any] = Field(..., description="The actual Elasticsearch query used")
     es_features: Optional[List[str]] = Field(None, description="Elasticsearch features demonstrated")
     indexes_used: Optional[List[str]] = Field(None, description="Indexes queried")
+    location_intent: Optional[Dict[str, Any]] = Field(None, description="Extracted location information from query")
     
     def display(self, verbose: bool = False) -> str:
         """Format results for display with top 5 results in a table."""

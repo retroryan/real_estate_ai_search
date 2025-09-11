@@ -440,7 +440,8 @@ def _execute_location_demo(
             indexes_used=[
                 "properties index - Real estate listings with embeddings and location fields",
                 "Location-aware RRF fusion of text, vector, and geographic search strategies"
-            ]
+            ],
+            location_intent=result.location_intent.model_dump() if result.location_intent else None
         )
         
     except Exception as e:
@@ -530,16 +531,16 @@ def demo_location_aware_search_showcase(
                         'total_hits': result.total_hits,
                         'execution_time_ms': result.execution_time_ms,
                         'top_results': top_results,
-                        'location_extracted': getattr(result, 'location_intent', {})
+                        'location_extracted': result.location_intent if result.location_intent else {}
                     })
                 else:
                     showcase_data.append({
                         'query': example.query,
                         'description': example.description,
                         'total_hits': 0,
-                        'execution_time_ms': 0,
+                        'execution_time_ms': result.execution_time_ms if result else 0,
                         'top_results': [],
-                        'location_extracted': {}
+                        'location_extracted': result.location_intent if result and result.location_intent else {}
                     })
                     
                 progress.advance(task)
@@ -583,7 +584,12 @@ def demo_location_aware_search_showcase(
                 loc = data['location_extracted']
                 city = loc.get('city', '')
                 state = loc.get('state', '')
-                location = f"{city}, {state}" if state else city
+                if city and state:
+                    location = f"{city}, {state}"
+                elif city:
+                    location = city
+                elif state:
+                    location = state
             
             summary_table.add_row(
                 str(i),

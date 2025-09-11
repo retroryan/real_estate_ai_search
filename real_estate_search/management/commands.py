@@ -275,8 +275,8 @@ class DemoCommand(BaseCommand):
                 # Execute the demo with the actual Elasticsearch client
                 full_result = query_func(self.es_client.client)
                 
-                # Handle demos that return a list of results (demo 12 and 27)
-                if self.args.demo_number in [12, 27]:
+                # Handle demos that return a list of results (demo 8, 12, 15, and 27)
+                if self.args.demo_number in [8, 12, 15, 27]:
                     # These demos handle their own display internally
                     # Just check if we got results
                     if full_result:
