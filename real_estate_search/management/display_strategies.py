@@ -21,6 +21,7 @@ from ..models import PropertyListing, WikipediaArticle
 from ..models.results.location_aware import LocationAwareSearchResult
 from ..models.results.location import LocationUnderstandingResult
 from ..models.results.wikipedia import WikipediaSearchResult
+from ..models.results.hybrid import HybridSearchResult
 
 
 class DisplayStrategy(ABC):
@@ -237,20 +238,38 @@ class WikipediaDisplay(RichConsoleDisplay):
     
     def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
         """Display Wikipedia search results with article formatting."""
-        # WikipediaDisplay is only used for Wikipedia demos
-        # which always have results field with WikipediaArticle objects
-        if result.results:
-            # Create a rich table for articles
-            table = self._create_articles_table(result.results[:5])
-            self.console.print(table)
-            
-            # Show remaining count if there are more
-            if len(result.results) > 5:
-                remaining = len(result.results) - 5
-                self.console.print(f"\n[dim]... and {remaining} more articles[/dim]")
+        # First show the query information
+        query_info = Text()
         
-        # Always show base display as well for stats
-        super().display_result(result, verbose)
+        # Extract query without the "Wikipedia Location Search: " prefix
+        query_text = result.query_name.replace("Wikipedia Location Search: ", "")
+        query_info.append("Search Query: ", style="bold yellow")
+        query_info.append(f"{query_text}\n")
+        
+        if result.query_description:
+            query_info.append("Description: ", style="yellow")
+            query_info.append(f"{result.query_description}\n")
+        
+        query_info.append("Total hits: ", style="yellow")
+        query_info.append(f"{result.total_hits}\n")
+        query_info.append("Returned: ", style="yellow")
+        query_info.append(f"{result.returned_hits}\n")
+        query_info.append("Execution time: ", style="yellow")
+        query_info.append(f"{result.execution_time_ms}ms\n")
+        
+        self.console.print(query_info)
+        
+        # Then show the articles table
+        if result.results:
+            self.console.print("")  # Add spacing
+            table = self._create_articles_table(result.results)
+            self.console.print(table)
+        
+        # Show verbose features if requested
+        if verbose and result.es_features:
+            self.console.print("\nElasticsearch Features:")
+            for feature in result.es_features:
+                self.console.print(f"  - {feature}")
     
     def _create_articles_table(self, articles: List[WikipediaArticle]) -> Table:
         """Create a rich table for Wikipedia articles."""
@@ -262,13 +281,14 @@ class WikipediaDisplay(RichConsoleDisplay):
         )
         
         table.add_column("#", style="yellow", width=3)
-        table.add_column("Title", style="bright_cyan")
+        table.add_column("Title", style="bright_cyan", width=40)
         table.add_column("Summary", style="white")
         
-        for i, article in enumerate(articles, 1):
+        # Show all articles up to 10
+        for i, article in enumerate(articles[:10], 1):
             summary = article.short_summary or article.long_summary or ""
-            if len(summary) > 100:
-                summary = summary[:97] + "..."
+            if len(summary) > 120:
+                summary = summary[:117] + "..."
             
             table.add_row(
                 str(i),
@@ -341,11 +361,93 @@ class LocationUnderstandingDisplay(RichConsoleDisplay):
     """
     
     def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
-        """Display location understanding results."""
-        # LocationUnderstandingDisplay is only used for Demo 11
-        # Just use the result's own display method
-        output = result.display(verbose=verbose)
-        self.console.print(output)
+        """Display location understanding results with enhanced formatting."""
+        # Display query processing info
+        query_panel = self._create_query_info_panel(result)
+        self.console.print(query_panel)
+        
+        # Display results table
+        if result.results:
+            table = self._create_extraction_table(result.results)
+            self.console.print(table)
+        
+        # Show verbose features if requested
+        if verbose and result.es_features:
+            self.console.print("\n[bold]DSPy Features:[/bold]")
+            for feature in result.es_features:
+                self.console.print(f"  • {feature}")
+    
+    def _create_query_info_panel(self, result: BaseQueryResult) -> Panel:
+        """Create panel showing query processing information."""
+        info_text = Text()
+        info_text.append("🔍 Query Processing Information\n\n", style="bold cyan")
+        info_text.append("Execution Time: ", style="yellow")
+        info_text.append(f"{result.execution_time_ms}ms\n")
+        info_text.append("Total Queries: ", style="yellow")
+        info_text.append(f"{result.total_hits}\n")
+        info_text.append("Successfully Processed: ", style="yellow")
+        info_text.append(f"{result.returned_hits}\n")
+        
+        return Panel(
+            info_text,
+            title="[bold green]📊 Processing Statistics[/bold green]",
+            border_style="green",
+            box=box.ROUNDED,
+            padding=(1, 2)
+        )
+    
+    def _create_extraction_table(self, results: List[dict]) -> Table:
+        """Create a rich table for location extraction results."""
+        table = Table(
+            title="[bold cyan]📍 Location Extraction Results[/bold cyan]",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan"
+        )
+        
+        table.add_column("Query", style="yellow", width=42)
+        table.add_column("City", style="cyan", width=15)
+        table.add_column("State", style="cyan", width=10)
+        table.add_column("Cleaned Query", style="white", width=25)
+        table.add_column("Confidence", style="magenta", justify="right", width=12)
+        
+        for result in results:
+            if "error" in result:
+                table.add_row(
+                    result['query'][:45],
+                    "[red]Error[/red]",
+                    "[red]Error[/red]",
+                    result.get('error', '')[:30],
+                    "-"
+                )
+            else:
+                # Format state to show "CA" or "-" instead of "None"
+                state = result.get('state')
+                state_display = state if state and state != 'None' else "-"
+                
+                # Format city
+                city = result.get('city', '-')
+                city_display = city if city and city != 'None' else "-"
+                
+                # Format confidence with color coding
+                confidence = result.get('confidence', 0)
+                if confidence >= 0.9:
+                    conf_style = "[green]"
+                elif confidence >= 0.7:
+                    conf_style = "[yellow]"
+                else:
+                    conf_style = "[red]"
+                conf_display = f"{conf_style}{confidence:.2f}[/]"
+                
+                table.add_row(
+                    result['query'][:45],
+                    city_display,
+                    state_display,
+                    result.get('cleaned_query', '')[:30],
+                    conf_display
+                )
+        
+        return table
 
 
 class NaturalLanguageDisplay(RichConsoleDisplay):
@@ -376,6 +478,108 @@ class NaturalLanguageDisplay(RichConsoleDisplay):
         self.console.print(output)
 
 
+class HybridDisplay(DisplayStrategy):
+    """
+    Display for hybrid search demos combining vector and text search.
+    
+    Shows RRF fusion results with proper formatting.
+    """
+    
+    def display_header(self, demo_name: str, demo_number: int, description: Optional[str] = None) -> None:
+        """Display header for hybrid search demos."""
+        header_text = Text()
+        header_text.append(f"Demo {demo_number}: ", style="bold cyan")
+        header_text.append(demo_name, style="bold yellow")
+        
+        self.console.print("\n")
+        self.console.print(Panel(
+            header_text,
+            title="[bold magenta]🚀 Hybrid Search Demo[/bold magenta]",
+            border_style="bright_blue",
+            box=box.DOUBLE,
+            padding=(1, 2)
+        ))
+        
+        if description:
+            self.console.print(Panel(
+                description,
+                title="[bold green]📝 Description[/bold green]",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(1, 2)
+            ))
+    
+    def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
+        """Display hybrid search results with proper formatting."""
+        # Extract query from the query_name
+        query_text = result.query_name.replace("Hybrid Search: ", "").strip("'")
+        
+        # Display query information header
+        self.console.print("\n" + "=" * 60)
+        self.console.print(f"Hybrid Search: '{query_text}'")
+        self.console.print("=" * 60)
+        
+        # Display results summary
+        self.console.print(f"\n[bold cyan]Found {result.total_hits} matching properties[/bold cyan]")
+        self.console.print(f"[dim]Query executed in {result.execution_time_ms}ms[/dim]\n")
+        
+        # Create results table
+        if result.results:
+            table = Table(
+                title="[bold green]Search Results (Vector + Text with RRF Fusion)[/bold green]",
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan"
+            )
+            
+            table.add_column("#", style="dim", width=3)
+            table.add_column("Address", style="cyan", width=35)
+            table.add_column("Price", style="green", justify="right", width=12)
+            table.add_column("Details", style="yellow", width=25)
+            table.add_column("Hybrid Score", style="magenta", justify="right", width=12)
+            
+            for i, prop in enumerate(result.results[:10], 1):
+                # Extract property details from result
+                address = prop.get('address', {})
+                if isinstance(address, dict):
+                    address_str = f"{address.get('street', '')} {address.get('city', '')}"
+                else:
+                    address_str = str(address)
+                
+                price = prop.get('price', 0)
+                price_str = f"${price:,.0f}" if price else "N/A"
+                
+                bedrooms = prop.get('bedrooms', 0)
+                bathrooms = prop.get('bathrooms', 0)
+                details = f"{bedrooms} bed, {bathrooms} bath"
+                
+                # Get hybrid score if available
+                hybrid_score = prop.get('_hybrid_score', 0)
+                score_str = f"{hybrid_score:.4f}" if hybrid_score else "N/A"
+                
+                table.add_row(str(i), address_str.strip(), price_str, details, score_str)
+            
+            self.console.print(table)
+        
+        # Display ES features if in verbose mode
+        if verbose and result.es_features:
+            self.console.print("\n[bold]Elasticsearch Features Used:[/bold]")
+            for feature in result.es_features:
+                self.console.print(f"  • {feature}")
+    
+    def display_error(self, error: Exception) -> None:
+        """Display an error with rich formatting."""
+        error_text = Text()
+        error_text.append("✗ Error executing hybrid search: ", style="bold red")
+        error_text.append(str(error), style="red")
+        
+        self.console.print(Panel(
+            error_text,
+            border_style="red",
+            box=box.ROUNDED
+        ))
+
+
 # Factory function to get the appropriate display strategy
 def get_display_strategy(strategy_type: str) -> DisplayStrategy:
     """
@@ -398,7 +602,8 @@ def get_display_strategy(strategy_type: str) -> DisplayStrategy:
         'location_understanding': LocationUnderstandingDisplay,
         'wikipedia': WikipediaDisplay,
         'aggregation': AggregationDisplay,
-        'natural_language': NaturalLanguageDisplay
+        'natural_language': NaturalLanguageDisplay,
+        'hybrid': HybridDisplay
     }
     
     strategy_class = strategies.get(strategy_type)

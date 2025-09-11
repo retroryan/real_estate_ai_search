@@ -74,6 +74,11 @@ class PropertySearchExecutor(BaseModel):
                 source_data = hit.source.copy()
                 if hit.score is not None:
                     source_data['_score'] = hit.score
+                # Add distance if available (from geo_distance sort)
+                # Elasticsearch returns sort values as a list when sorting by geo_distance
+                sort_values = getattr(hit, 'sort', None)
+                if sort_values and len(sort_values) > 0:
+                    source_data['_distance_km'] = sort_values[0]
                 results.append(PropertyListing(**source_data))
             except Exception as e:
                 logger.warning(f"Failed to parse property result: {e}")

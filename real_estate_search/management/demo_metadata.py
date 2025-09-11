@@ -116,7 +116,8 @@ DEMO_METADATA_REGISTRY = {
         description="Full-text search in Wikipedia articles",
         category=DemoCategory.WIKIPEDIA,
         query_function="run_wikipedia_demo",
-        display_strategy_type="wikipedia"
+        display_strategy_type="wikipedia",
+        handles_own_display=True
     ),
     7: DemoMetadata(
         number=7,
@@ -149,7 +150,7 @@ DEMO_METADATA_REGISTRY = {
         description="Combined vector and keyword search with reciprocal rank fusion",
         category=DemoCategory.HYBRID,
         query_function="demo_hybrid_search_with_rrf",
-        display_strategy_type="rich"
+        display_strategy_type="hybrid"
     ),
     11: DemoMetadata(
         number=11,

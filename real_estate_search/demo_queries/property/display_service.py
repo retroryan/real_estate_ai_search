@@ -219,8 +219,12 @@ class PropertyDisplayService:
                 address = prop.address.full_address
                 price = f"${prop.price:,.0f}"
                 details = f"{prop.bedrooms} bed, {prop.bathrooms} bath"
-                # Note: Distance would need to be added to PropertyResult model
-                distance_str = "N/A"
+                # Get distance from _distance_km field if available
+                distance_km = getattr(prop, '_distance_km', None)
+                if distance_km is not None:
+                    distance_str = f"{distance_km:.2f} km"
+                else:
+                    distance_str = "N/A"
                 
                 table.add_row(
                     str(i),
