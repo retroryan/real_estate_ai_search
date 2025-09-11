@@ -4,7 +4,7 @@ Property search service implementation.
 
 import logging
 from typing import Dict, Any, List, Optional
-from elasticsearch import Elasticsearch
+from .elasticsearch_compat import Elasticsearch
 
 from .base import BaseSearchService
 from .models import (

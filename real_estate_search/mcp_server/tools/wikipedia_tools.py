@@ -1,7 +1,7 @@
 """MCP tools for Wikipedia search."""
 
 from typing import Dict, Any, Optional, List
-from fastmcp import Context
+from ..fastmcp_compat import Context
 
 from ...search_service.models import WikipediaSearchRequest, WikipediaSearchType
 from ...search_service.wikipedia import WikipediaSearchService

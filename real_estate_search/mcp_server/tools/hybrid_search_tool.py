@@ -1,8 +1,8 @@
 """MCP tool for natural language property search using hybrid search engine."""
 
 from typing import Dict, Any
-from fastmcp import Context
-from elasticsearch import Elasticsearch
+from ..fastmcp_compat import Context
+from ...search_service.elasticsearch_compat import Elasticsearch
 
 from ...hybrid import HybridSearchEngine
 from ...search_service.models import (

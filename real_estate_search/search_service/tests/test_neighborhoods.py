@@ -4,7 +4,7 @@ Tests for neighborhood search service.
 
 import pytest
 from unittest.mock import Mock
-from elasticsearch import Elasticsearch
+from ..elasticsearch_compat import Elasticsearch
 
 from ..neighborhoods import NeighborhoodSearchService
 from ..models import (

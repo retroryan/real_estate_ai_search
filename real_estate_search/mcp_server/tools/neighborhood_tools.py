@@ -1,7 +1,7 @@
 """MCP tools for neighborhood search."""
 
 from typing import Dict, Any, Optional
-from fastmcp import Context
+from ..fastmcp_compat import Context
 
 from ...search_service.models import NeighborhoodSearchRequest
 from ...search_service.neighborhoods import NeighborhoodSearchService

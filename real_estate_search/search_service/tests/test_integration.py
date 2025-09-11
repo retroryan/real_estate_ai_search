@@ -4,7 +4,7 @@ Integration tests for search service layer.
 
 import pytest
 from unittest.mock import Mock
-from elasticsearch import Elasticsearch
+from ..elasticsearch_compat import Elasticsearch
 
 from ..base import BaseSearchService
 from ..properties import PropertySearchService
