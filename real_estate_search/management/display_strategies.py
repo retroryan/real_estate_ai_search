@@ -186,11 +186,11 @@ class LocationAwareDisplay(RichConsoleDisplay):
     
     def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
         """Display location-aware search results with special formatting."""
-        if isinstance(result, LocationAwareSearchResult):
-            # Display location extraction info
-            if result.location_intent:
-                location_panel = self._create_location_panel(result.location_intent)
-                self.console.print(location_panel)
+        # LocationAwareDisplay is only used for location-aware demos
+        # which always have location_intent field
+        if result.location_intent:
+            location_panel = self._create_location_panel(result.location_intent)
+            self.console.print(location_panel)
         
         # Use parent class for standard display
         super().display_result(result, verbose)
@@ -237,7 +237,9 @@ class WikipediaDisplay(RichConsoleDisplay):
     
     def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
         """Display Wikipedia search results with article formatting."""
-        if isinstance(result, WikipediaSearchResult) and result.results:
+        # WikipediaDisplay is only used for Wikipedia demos
+        # which always have results field with WikipediaArticle objects
+        if result.results:
             # Create a rich table for articles
             table = self._create_articles_table(result.results[:5])
             self.console.print(table)
@@ -246,9 +248,9 @@ class WikipediaDisplay(RichConsoleDisplay):
             if len(result.results) > 5:
                 remaining = len(result.results) - 5
                 self.console.print(f"\n[dim]... and {remaining} more articles[/dim]")
-        else:
-            # Fallback to standard display
-            super().display_result(result, verbose)
+        
+        # Always show base display as well for stats
+        super().display_result(result, verbose)
     
     def _create_articles_table(self, articles: List[WikipediaArticle]) -> Table:
         """Create a rich table for Wikipedia articles."""
@@ -299,31 +301,29 @@ class AggregationDisplay(RichConsoleDisplay):
         """Create a panel for aggregation data."""
         content = Text()
         
-        if isinstance(data, dict):
-            # Handle bucket aggregations
-            if 'buckets' in data:
-                content.append(f"📊 {name.replace('_', ' ').title()}\n\n", style="bold yellow")
-                for bucket in data['buckets'][:10]:
-                    key = bucket.get('key', 'Unknown')
-                    count = bucket.get('doc_count', 0)
-                    content.append(f"  {key}: ", style="cyan")
-                    content.append(f"{count:,}\n")
-            # Handle stats aggregations
-            elif any(k in data for k in ['min', 'max', 'avg']):
-                content.append(f"📈 {name.replace('_', ' ').title()} Statistics\n\n", style="bold yellow")
-                if 'min' in data:
-                    content.append(f"  Min: ${data['min']:,.0f}\n")
-                if 'max' in data:
-                    content.append(f"  Max: ${data['max']:,.0f}\n")
-                if 'avg' in data:
-                    content.append(f"  Avg: ${data['avg']:,.0f}\n")
-            else:
-                # Generic dict display
-                content.append(f"{name.replace('_', ' ').title()}\n", style="bold yellow")
-                for key, value in data.items():
-                    content.append(f"  {key}: {value}\n")
+        # Aggregation data is always a dict in Elasticsearch responses
+        # Handle bucket aggregations
+        if 'buckets' in data:
+            content.append(f"📊 {name.replace('_', ' ').title()}\n\n", style="bold yellow")
+            for bucket in data['buckets'][:10]:
+                key = bucket.get('key', 'Unknown')
+                count = bucket.get('doc_count', 0)
+                content.append(f"  {key}: ", style="cyan")
+                content.append(f"{count:,}\n")
+        # Handle stats aggregations
+        elif any(k in data for k in ['min', 'max', 'avg']):
+            content.append(f"📈 {name.replace('_', ' ').title()} Statistics\n\n", style="bold yellow")
+            if 'min' in data:
+                content.append(f"  Min: ${data['min']:,.0f}\n")
+            if 'max' in data:
+                content.append(f"  Max: ${data['max']:,.0f}\n")
+            if 'avg' in data:
+                content.append(f"  Avg: ${data['avg']:,.0f}\n")
         else:
-            content.append(f"{name}: {data}")
+            # Generic dict display
+            content.append(f"{name.replace('_', ' ').title()}\n", style="bold yellow")
+            for key, value in data.items():
+                content.append(f"  {key}: {value}\n")
         
         return Panel(
             content,
@@ -331,6 +331,21 @@ class AggregationDisplay(RichConsoleDisplay):
             box=box.ROUNDED,
             padding=(1, 2)
         )
+
+
+class LocationUnderstandingDisplay(RichConsoleDisplay):
+    """
+    Location understanding display.
+    
+    Display for location extraction and understanding demos.
+    """
+    
+    def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
+        """Display location understanding results."""
+        # LocationUnderstandingDisplay is only used for Demo 11
+        # Just use the result's own display method
+        output = result.display(verbose=verbose)
+        self.console.print(output)
 
 
 class NaturalLanguageDisplay(RichConsoleDisplay):
@@ -356,13 +371,9 @@ class NaturalLanguageDisplay(RichConsoleDisplay):
     
     def display_result(self, result: BaseQueryResult, verbose: bool = False) -> None:
         """Display results from natural language queries."""
-        # Natural language demos typically handle their own display
-        # Just ensure the result is shown
-        if hasattr(result, 'display'):
-            output = result.display(verbose=verbose)
-            self.console.print(output)
-        else:
-            super().display_result(result, verbose)
+        # All query results have a display method from BaseQueryResult
+        output = result.display(verbose=verbose)
+        self.console.print(output)
 
 
 # Factory function to get the appropriate display strategy
@@ -384,6 +395,7 @@ def get_display_strategy(strategy_type: str) -> DisplayStrategy:
         'plain': PlainTextDisplay,
         'property': PropertyTableDisplay,
         'location': LocationAwareDisplay,
+        'location_understanding': LocationUnderstandingDisplay,
         'wikipedia': WikipediaDisplay,
         'aggregation': AggregationDisplay,
         'natural_language': NaturalLanguageDisplay

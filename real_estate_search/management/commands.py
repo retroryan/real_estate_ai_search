@@ -25,6 +25,8 @@ from .index_operations import IndexOperations
 from .validation import ValidationService
 from .demo_runner import DemoRunner
 from .cli_output import CLIOutput
+from .demo_metadata import get_demo_metadata, list_all_demos
+from .display_strategies import get_display_strategy
 
 
 class BaseCommand(ABC):
@@ -253,52 +255,41 @@ class DemoCommand(BaseCommand):
                     message="No demo number specified"
                 )
             
-            # For demos 1-3, PropertyDemoRunner handles all display, so skip the header
-            demos_with_own_display = {1, 2, 3}  # These use PropertyDemoRunner
+            # Get demo metadata
+            demo_metadata = get_demo_metadata(self.args.demo_number)
+            if not demo_metadata:
+                print(f"Demo {self.args.demo_number} not found")
+                return OperationStatus(
+                    operation="demo",
+                    success=False,
+                    message=f"Demo {self.args.demo_number} not found"
+                )
             
-            if self.args.demo_number not in demos_with_own_display:
-                # Print header and special description FIRST
-                from rich.console import Console
-                from rich.panel import Panel
-                from rich.text import Text
-                from rich import box
+            # Get the appropriate display strategy
+            display_strategy = get_display_strategy(demo_metadata.display_strategy_type)
+            
+            # Display header if the demo doesn't handle its own display
+            if not demo_metadata.handles_own_display:
+                # Get special description if available
+                special_descriptions = self.demo_runner.get_demo_descriptions()
+                special_desc = special_descriptions.get(self.args.demo_number)
                 
-                console = Console()
-                header_text = Text()
-                header_text.append(f"Demo {self.args.demo_number}: ", style="bold cyan")
-                header_text.append(self.demo_runner.demo_registry[self.args.demo_number].name, style="bold yellow")
-                
-                console.print("\n")
-                console.print(Panel(
-                    header_text,
-                    title="[bold magenta]🚀 Running Demo[/bold magenta]",
-                    border_style="bright_blue",
-                    box=box.DOUBLE,
-                    padding=(1, 2)
-                ))
+                display_strategy.display_header(
+                    demo_metadata.name,
+                    demo_metadata.number,
+                    special_desc
+                )
             
-            # Get and print special description if available
-            special_descriptions = self.demo_runner.get_demo_descriptions()
-            special_desc = special_descriptions.get(self.args.demo_number)
-            if special_desc and self.args.demo_number not in demos_with_own_display:
-                console.print(Panel(
-                    special_desc,
-                    title="[bold green]📝 Description[/bold green]",
-                    border_style="green",
-                    box=box.ROUNDED,
-                    padding=(1, 2)
-                ))
-            
-            # Now run the demo (which will print its own output)
+            # Get the demo function
             query_func = self.demo_runner._get_demo_function(self.args.demo_number)
             
             try:
-                # Execute the demo with the actual Elasticsearch client
+                # Execute the demo
                 full_result = query_func(self.es_client.client)
                 
-                # Handle demos that return a list of results (demo 8, 15, and 27)
-                if self.args.demo_number in [8, 15, 27]:
-                    # These demos handle their own display internally
+                # Display the result using the strategy
+                if demo_metadata.handles_own_display:
+                    # Demos that handle their own display (like natural language examples)
                     # Just check if we got results
                     if full_result:
                         return OperationStatus(
@@ -313,17 +304,18 @@ class DemoCommand(BaseCommand):
                             message=f"Demo {self.args.demo_number} returned no results"
                         )
                 else:
-                    # All other demo results inherit from BaseQueryResult and have display method
+                    # Use the display strategy to show results
                     if full_result:
-                        print(full_result.display(verbose=self.args.verbose))
-                
+                        display_strategy.display_result(full_result, verbose=self.args.verbose)
+                    
                     return OperationStatus(
                         operation="demo",
                         success=True,
                         message=f"Demo {self.args.demo_number} executed successfully"
                     )
+                    
             except Exception as e:
-                print(f"✗ Error executing demo: {str(e)}")
+                display_strategy.display_error(e)
                 return OperationStatus(
                     operation="demo",
                     success=False,
