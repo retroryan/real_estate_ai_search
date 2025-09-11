@@ -15,7 +15,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 
-from .result_models import MixedEntityResult
+from ..models.results import MixedEntityResult
 from ..models import WikipediaArticle
 from ..models import PropertyListing
 from ..converters import PropertyConverter
@@ -304,7 +304,7 @@ def demo_simplified_relationships(es_client: Elasticsearch) -> MixedEntityResult
         es_client: Elasticsearch client
         
     Returns:
-        DemoQueryResult with comparison data
+        BaseQueryResult with comparison data
     """
     console.print("\n[bold cyan]Demo 10: Property Relationships via Denormalized Index[/bold cyan]")
     console.print("=" * 70)

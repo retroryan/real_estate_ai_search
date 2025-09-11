@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 from real_estate_search.models import PropertyListing
-from real_estate_search.demo_queries.es_models import ESNeighborhood
+from real_estate_search.models.neighborhood import Neighborhood
 
 
 class PropertyDisplayFormatter:
@@ -91,30 +91,30 @@ class NeighborhoodDisplayFormatter:
     """Format neighborhood data for user display."""
     
     @staticmethod
-    def format_name(neighborhood: ESNeighborhood) -> str:
+    def format_name(neighborhood: Neighborhood) -> str:
         """Format neighborhood name with location."""
         if neighborhood.city:
             return f"{neighborhood.name}, {neighborhood.city}"
         return neighborhood.name
     
     @staticmethod
-    def format_stats(neighborhood: ESNeighborhood) -> Dict[str, str]:
+    def format_stats(neighborhood: Neighborhood) -> Dict[str, str]:
         """Format neighborhood statistics for display."""
         stats = {}
         
-        if neighborhood.population:
-            stats["Population"] = f"{neighborhood.population:,}"
+        if neighborhood.demographics and neighborhood.demographics.population:
+            stats["Population"] = f"{neighborhood.demographics.population:,}"
         
         if neighborhood.walkability_score:
             stats["Walkability"] = f"{neighborhood.walkability_score:.1f}/100"
         
-        if neighborhood.school_rating:
-            stats["School Rating"] = f"{neighborhood.school_rating:.1f}/10"
+        if neighborhood.school_ratings and neighborhood.school_ratings.overall:
+            stats["School Rating"] = f"{neighborhood.school_ratings.overall:.1f}/10"
         
         return stats
     
     @staticmethod
-    def format_for_display(neighborhood: ESNeighborhood) -> Dict[str, Any]:
+    def format_for_display(neighborhood: Neighborhood) -> Dict[str, Any]:
         """Format complete neighborhood for display."""
         return {
             "name": NeighborhoodDisplayFormatter.format_name(neighborhood),

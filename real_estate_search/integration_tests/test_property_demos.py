@@ -19,7 +19,7 @@ from real_estate_search.demo_queries.property import (
     PropertyDisplayService,
     PropertyDemoRunner
 )
-from real_estate_search.demo_queries.result_models import PropertySearchResult, AggregationSearchResult
+from real_estate_search.models.results import PropertySearchResult, AggregationSearchResult
 
 
 @pytest.fixture

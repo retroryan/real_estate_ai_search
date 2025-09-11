@@ -10,8 +10,8 @@ from elasticsearch import Elasticsearch
 import logging
 from pydantic import BaseModel
 
-from ..base_models import SearchRequest, SearchResponse
-from ..result_models import PropertySearchResult, AggregationSearchResult
+from ...models.search import SearchRequest, SearchResponse
+from ...models.results import PropertySearchResult, AggregationSearchResult
 from ..display_formatter import PropertyDisplayFormatter
 from ...models import PropertyListing
 

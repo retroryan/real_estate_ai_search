@@ -14,9 +14,9 @@ from rich.panel import Panel
 from rich.text import Text
 from rich import box
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from .models import (
-    SearchResult,
-    SearchHit,
+from ...models.search.wikipedia import (
+    WikipediaSearchResult as SearchResult,
+    WikipediaSearchHit as SearchHit,
     SearchStatistics,
     ArticleExportResult
 )

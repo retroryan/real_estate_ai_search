@@ -3,6 +3,10 @@ CLI output formatting module for consistent display.
 """
 
 from typing import List, Optional, Any
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
 from .models import (
     IndexOperationResult,
     ValidationStatus,
@@ -222,15 +226,40 @@ class CLIOutput:
             verbose: Whether to show verbose output
             full_result: Full result object from demo query
         """
-        print(f"\nRunning Demo {demo_result.demo_number}: {demo_result.demo_name}")
-        print("=" * 60)
+        console = Console()
+        
+        # Create rich formatted header
+        header_text = Text()
+        header_text.append(f"Demo {demo_result.demo_number}: ", style="bold cyan")
+        header_text.append(demo_result.demo_name, style="bold yellow")
+        
+        console.print("\n")
+        console.print(Panel(
+            header_text,
+            title="[bold magenta]🚀 Running Demo[/bold magenta]",
+            border_style="bright_blue",
+            box=box.DOUBLE,
+            padding=(1, 2)
+        ))
         
         if special_description:
-            print(special_description)
-            print("=" * 60)
+            console.print(Panel(
+                special_description,
+                title="[bold green]📝 Description[/bold green]",
+                border_style="green",
+                box=box.ROUNDED,
+                padding=(1, 2)
+            ))
         
         if not demo_result.success:
-            print(f"✗ Error executing demo: {demo_result.error}")
+            error_text = Text()
+            error_text.append("✗ Error executing demo: ", style="bold red")
+            error_text.append(str(demo_result.error), style="red")
+            console.print(Panel(
+                error_text,
+                border_style="red",
+                box=box.ROUNDED
+            ))
         else:
             if full_result:
                 # All demo results inherit from BaseQueryResult and have display method

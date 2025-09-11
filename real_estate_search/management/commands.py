@@ -258,15 +258,36 @@ class DemoCommand(BaseCommand):
             
             if self.args.demo_number not in demos_with_own_display:
                 # Print header and special description FIRST
-                print(f"\nRunning Demo {self.args.demo_number}: {self.demo_runner.demo_registry[self.args.demo_number].name}")
-                print("=" * 60)
+                from rich.console import Console
+                from rich.panel import Panel
+                from rich.text import Text
+                from rich import box
+                
+                console = Console()
+                header_text = Text()
+                header_text.append(f"Demo {self.args.demo_number}: ", style="bold cyan")
+                header_text.append(self.demo_runner.demo_registry[self.args.demo_number].name, style="bold yellow")
+                
+                console.print("\n")
+                console.print(Panel(
+                    header_text,
+                    title="[bold magenta]🚀 Running Demo[/bold magenta]",
+                    border_style="bright_blue",
+                    box=box.DOUBLE,
+                    padding=(1, 2)
+                ))
             
             # Get and print special description if available
             special_descriptions = self.demo_runner.get_demo_descriptions()
             special_desc = special_descriptions.get(self.args.demo_number)
-            if special_desc:
-                print(special_desc)
-                print("=" * 60)
+            if special_desc and self.args.demo_number not in demos_with_own_display:
+                console.print(Panel(
+                    special_desc,
+                    title="[bold green]📝 Description[/bold green]",
+                    border_style="green",
+                    box=box.ROUNDED,
+                    padding=(1, 2)
+                ))
             
             # Now run the demo (which will print its own output)
             query_func = self.demo_runner._get_demo_function(self.args.demo_number)
@@ -275,8 +296,8 @@ class DemoCommand(BaseCommand):
                 # Execute the demo with the actual Elasticsearch client
                 full_result = query_func(self.es_client.client)
                 
-                # Handle demos that return a list of results (demo 8, 12, 15, and 27)
-                if self.args.demo_number in [8, 12, 15, 27]:
+                # Handle demos that return a list of results (demo 8, 15, and 27)
+                if self.args.demo_number in [8, 15, 27]:
                     # These demos handle their own display internally
                     # Just check if we got results
                     if full_result:

@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Optional
 from elasticsearch import Elasticsearch
 from rich.console import Console
-from ..result_models import WikipediaSearchResult
+from ...models.results import WikipediaSearchResult
 from ...models import WikipediaArticle
-from .models import (
+from ...models.search.wikipedia import (
     DemoConfiguration,
-    SearchResult
+    WikipediaSearchResult as SearchResult
 )
 from .query_builder import WikipediaQueryBuilder
 from .search_executor import WikipediaSearchExecutor

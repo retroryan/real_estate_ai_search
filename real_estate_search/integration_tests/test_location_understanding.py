@@ -131,7 +131,7 @@ class TestLocationUnderstandingIntegration:
             result = demo_location_understanding(mock_es_client)
             
             # Verify result is LocationUnderstandingResult
-            from real_estate_search.demo_queries.models import LocationUnderstandingResult
+            from real_estate_search.models.results import LocationUnderstandingResult
             assert isinstance(result, LocationUnderstandingResult)
             assert result.total_hits == 6  # 6 test queries
             assert result.returned_hits == 6

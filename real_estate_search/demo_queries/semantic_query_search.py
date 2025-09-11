@@ -17,9 +17,9 @@ from rich import box
 from rich.text import Text
 from rich.columns import Columns
 
-from .result_models import PropertySearchResult
+from ..models.results import PropertySearchResult
 from ..models import PropertyListing
-from .models import DemoQueryResult
+from ..models.results import BaseQueryResult
 from ..embeddings import QueryEmbeddingService, EmbeddingConfig
 from ..embeddings.exceptions import (
     EmbeddingServiceError, 
@@ -255,7 +255,7 @@ def create_error_result(
 def demo_natural_language_examples(
     es_client: Elasticsearch,
     config: Optional[AppConfig] = None
-) -> List[DemoQueryResult]:
+) -> List[BaseQueryResult]:
     """
     Run multiple natural language search examples.
     
@@ -267,7 +267,7 @@ def demo_natural_language_examples(
         config: Application configuration
         
     Returns:
-        List[DemoQueryResult] containing individual query results
+        List[BaseQueryResult] containing individual query results
     """
     # Early return if no examples configured
     if not EXAMPLE_QUERIES:
@@ -334,8 +334,8 @@ def demo_natural_language_examples(
                     if match_explanation:
                         console.print(f"[bold yellow]Why these match:[/bold yellow] {match_explanation}\n")
                     
-                    # Create DemoQueryResult for this individual query
-                    individual_result = DemoQueryResult(
+                    # Create BaseQueryResult for this individual query
+                    individual_result = BaseQueryResult(
                         query_name=f"Example {i}: {query_description}",
                         query_description=query_text,
                         execution_time_ms=int(total_time_ms),

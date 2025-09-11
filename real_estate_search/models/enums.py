@@ -1,7 +1,9 @@
 """
-Enumerations for property models.
+Consolidated enumerations for all models.
 
-Consolidated enums used across all property-related models.
+Single source of truth for all enums used throughout the application.
+This module consolidates enums from property models, search models,
+and demo queries into one location.
 """
 
 from enum import Enum
@@ -87,3 +89,54 @@ class ParkingType(str, Enum):
                 return aliases[value_lower]
         # Default to NONE for unknown types
         return cls.NONE
+
+
+class IndexName(str, Enum):
+    """Elasticsearch index names used in the system."""
+    PROPERTIES = "properties"
+    NEIGHBORHOODS = "neighborhoods"
+    WIKIPEDIA = "wikipedia"
+    PROPERTY_RELATIONSHIPS = "property_relationships"
+
+
+class EntityType(str, Enum):
+    """Types of entities in the search system."""
+    PROPERTY = "property"
+    NEIGHBORHOOD = "neighborhood"
+    WIKIPEDIA = "wikipedia"
+
+
+class QueryType(str, Enum):
+    """Types of Elasticsearch queries used in demos."""
+    MATCH = "match"
+    TERM = "term"
+    RANGE = "range"
+    BOOL = "bool"
+    FUNCTION_SCORE = "function_score"
+    GEO_DISTANCE = "geo_distance"
+    KNN = "knn"
+    MULTI_MATCH = "multi_match"
+    MATCH_PHRASE = "match_phrase"
+    NESTED = "nested"
+    EXISTS = "exists"
+    PREFIX = "prefix"
+    WILDCARD = "wildcard"
+    FUZZY = "fuzzy"
+
+
+class AggregationType(str, Enum):
+    """Types of Elasticsearch aggregations."""
+    TERMS = "terms"
+    AVG = "avg"
+    SUM = "sum"
+    MIN = "min"
+    MAX = "max"
+    STATS = "stats"
+    EXTENDED_STATS = "extended_stats"
+    HISTOGRAM = "histogram"
+    DATE_HISTOGRAM = "date_histogram"
+    RANGE = "range"
+    GEO_BOUNDS = "geo_bounds"
+    GEO_CENTROID = "geo_centroid"
+    CARDINALITY = "cardinality"
+    PERCENTILES = "percentiles"

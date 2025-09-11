@@ -21,7 +21,7 @@ from rich.progress import Progress, BarColumn, TextColumn
 from rich.table import Table
 from rich.text import Text
 
-from .result_models import AggregationSearchResult
+from ..models.results import AggregationSearchResult
 from ..converters import PropertyConverter
 from ..models import PropertyListing
 

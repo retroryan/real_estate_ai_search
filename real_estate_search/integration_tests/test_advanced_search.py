@@ -24,7 +24,7 @@ from real_estate_search.demo_queries.advanced import (
 )
 from real_estate_search.models.property import PropertyListing
 from real_estate_search.models.address import Address
-from real_estate_search.demo_queries.result_models import (
+from real_estate_search.models.results import (
     PropertySearchResult,
     WikipediaSearchResult,
     MixedEntityResult

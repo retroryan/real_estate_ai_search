@@ -19,8 +19,8 @@ from rich import box
 from rich.layout import Layout
 from rich.align import Align
 
-from .models import DemoQueryResult
-from .rich_listing_models import NeighborhoodModel
+from ..models.results import BaseQueryResult
+from ..models.neighborhood import Neighborhood as NeighborhoodModel
 from ..models import PropertyListing, WikipediaArticle
 from ..html_generators import PropertyListingHTMLGenerator
 
@@ -148,9 +148,9 @@ def create_neighborhood_panel(neighborhood: Optional[NeighborhoodModel]) -> Pane
         content.append(f"{city}, {state}\n\n", style="dim")
     
     # Demographics
-    if neighborhood.population:
+    if neighborhood.demographics and neighborhood.demographics.population:
         content.append(f"Population: ", style="yellow")
-        content.append(f"{neighborhood.population:,}\n")
+        content.append(f"{neighborhood.demographics.population:,}\n")
     
     # Scores
     if neighborhood.walkability_score:
@@ -164,16 +164,16 @@ def create_neighborhood_panel(neighborhood: Optional[NeighborhoodModel]) -> Pane
             style = "red"
         content.append(f"{score}/100\n", style=style)
     
-    if neighborhood.school_rating:
+    if neighborhood.school_ratings and neighborhood.school_ratings.overall:
         content.append(f"School Rating: ", style="yellow")
-        rating = neighborhood.school_rating
-        if rating >= 4:
+        rating = neighborhood.school_ratings.overall
+        if rating >= 7:
             style = "green"
-        elif rating >= 3:
+        elif rating >= 5:
             style = "yellow"
         else:
             style = "red"
-        content.append(f"{rating}/5.0\n", style=style)
+        content.append(f"{rating:.1f}/10\n", style=style)
     
     # Description
     if neighborhood.description:
@@ -265,7 +265,7 @@ def create_description_panel(property_model: PropertyListing) -> Panel:
 def demo_rich_property_listing(
     es_client: Elasticsearch,
     listing_id: Optional[str] = None
-) -> DemoQueryResult:
+) -> BaseQueryResult:
     """
     Demonstrate a rich property listing with all embedded data from a single query.
     
@@ -300,7 +300,7 @@ def demo_rich_property_listing(
     
     if not response['hits']['hits']:
         console.print("[red]No properties found[/red]")
-        return DemoQueryResult(
+        return BaseQueryResult(
             query_name="Rich Property Listing",
             total_hits=0,
             returned_hits=0,
@@ -433,7 +433,7 @@ def demo_rich_property_listing(
             border_style="green"
         ))
     
-    return DemoQueryResult(
+    return BaseQueryResult(
         query_name="Rich Property Listing (Single Query)",
         total_hits=response['hits']['total']['value'],
         returned_hits=1,
@@ -451,6 +451,6 @@ def demo_rich_property_listing(
 
 
 # Convenience function for demo system
-def demo_15(es_client: Elasticsearch, verbose: bool = False) -> DemoQueryResult:
+def demo_15(es_client: Elasticsearch, verbose: bool = False) -> BaseQueryResult:
     """Demo 15: Rich Real Estate Listing with Single Query."""
     return demo_rich_property_listing(es_client)

@@ -6,7 +6,7 @@ query DSL structures without any side effects or dependencies on Elasticsearch c
 """
 
 from typing import List, Dict, Any
-from .models import SearchQuery, HighlightConfig
+from ...models.search.wikipedia import WikipediaSearchQuery as SearchQuery, HighlightConfig
 
 
 class WikipediaQueryBuilder:

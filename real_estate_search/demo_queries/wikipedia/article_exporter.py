@@ -8,10 +8,10 @@ HTML files, including batch processing and file system operations.
 from pathlib import Path
 from typing import List, Dict, Optional
 from elasticsearch import Elasticsearch
-from .models import (
+from ...models.search.wikipedia import (
     ArticleExport,
     ArticleExportResult,
-    SearchResult
+    WikipediaSearchResult as SearchResult
 )
 from ...models.wikipedia import WikipediaArticle
 

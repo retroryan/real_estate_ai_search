@@ -9,8 +9,8 @@ import subprocess
 import platform
 from pathlib import Path
 from typing import List, Dict, Optional
-from .models import (
-    SearchResult,
+from ...models.search.wikipedia import (
+    WikipediaSearchResult as SearchResult,
     SearchStatistics,
     HtmlReportData,
     ArticleExportResult

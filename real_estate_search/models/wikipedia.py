@@ -63,8 +63,8 @@ class WikipediaArticle(BaseModel):
     
     # Search result fields (optional, populated during search)
     score: Optional[float] = Field(None, description="Elasticsearch relevance score")
-    confidence: float = Field(0.0, description="Search result confidence score")  # TODO: Fix proper confidence calculation
-    relationship_type: Optional[str] = Field(None, description="Relationship type to property")  # TODO: Fix proper relationship mapping
+    confidence: float = Field(0.0, description="Search result confidence score")
+    relationship_type: Optional[str] = Field(None, description="Relationship type to property")
     
     model_config = ConfigDict(extra="ignore")
     
@@ -107,11 +107,12 @@ class WikipediaArticle(BaseModel):
         
         # Handle location conversion if present
         if 'location' in source and source['location']:
-            if isinstance(source['location'], dict):
-                source['location'] = {
-                    'lat': source['location'].get('lat'),
-                    'lon': source['location'].get('lon')
-                }
+            # Location from Elasticsearch is always a dict if present
+            loc = source['location']
+            source['location'] = {
+                'lat': loc.get('lat'),
+                'lon': loc.get('lon')
+            }
         
         # Handle datetime fields - they come as strings from ES
         for field in ['content_loaded_at', 'last_updated', 'embedded_at']:

@@ -8,10 +8,10 @@ result processing, and error handling.
 import time
 from typing import Dict, Any, List, Optional
 from elasticsearch import Elasticsearch
-from .models import (
-    SearchQuery,
-    SearchResult,
-    SearchHit
+from ...models.search.wikipedia import (
+    WikipediaSearchQuery as SearchQuery,
+    WikipediaSearchResult as SearchResult,
+    WikipediaSearchHit as SearchHit
 )
 from ...models.wikipedia import WikipediaArticle
 from .query_builder import WikipediaQueryBuilder

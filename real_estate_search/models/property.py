@@ -5,7 +5,7 @@ This is the single, authoritative PropertyListing model that serves as the
 sole source of truth for property data throughout the application.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field, field_serializer
 
@@ -85,7 +85,7 @@ class PropertyListing(BaseModel):
     # === Search Result Metadata ===
     score: Optional[float] = Field(default=None, alias="_score", description="Search relevance score")
     distance_km: Optional[float] = Field(default=None, description="Distance from search center")
-    search_highlights: Optional[Dict[str, List[str]]] = Field(
+    search_highlights: Optional[dict[str, List[str]]] = Field(
         default=None, 
         alias="highlights",
         description="Search result highlights"
@@ -119,12 +119,15 @@ class PropertyListing(BaseModel):
     @classmethod
     def convert_listing_date(cls, v):
         """Ensure listing_date is a string for ES compatibility."""
-        # Try to call isoformat if it exists (datetime object)
-        try:
+        from datetime import datetime, date
+        # Check if it's a datetime or date object
+        if v is None:
+            return ""
+        elif v.__class__.__name__ in ('datetime', 'date'):
             return v.isoformat()
-        except (AttributeError, TypeError):
-            # Not a datetime, return as string
-            return v or ""
+        else:
+            # Already a string or other type
+            return str(v)
     
     # === Display Properties ===
     
@@ -210,13 +213,14 @@ class PropertyListing(BaseModel):
             try:
                 dt = datetime.fromisoformat(self.listing_date.replace('Z', '+00:00'))
                 return dt.strftime("%B %d, %Y")
-            except (ValueError, AttributeError):
+            except ValueError:
+                # Invalid date format, return as-is
                 return self.listing_date
         return "N/A"
     
     # === Elasticsearch Compatibility Methods ===
     
-    def to_elasticsearch(self) -> Dict[str, Any]:
+    def to_elasticsearch(self) -> dict:
         """Convert to Elasticsearch document format."""
         doc = self.model_dump(
             exclude={'score', 'distance_km', 'search_highlights', 'list_date', 'last_sold_date'},
@@ -235,7 +239,7 @@ class PropertyListing(BaseModel):
         return doc
     
     @classmethod
-    def from_elasticsearch(cls, source: Dict[str, Any], score: Optional[float] = None) -> "PropertyListing":
+    def from_elasticsearch(cls, source: dict, score: Optional[float] = None) -> "PropertyListing":
         """Create from Elasticsearch document."""
         # Add score if provided
         if score is not None:
@@ -249,8 +253,8 @@ class PropertyListing(BaseModel):
                     source[date_field] = datetime.fromisoformat(
                         str(source[date_field]).replace('Z', '+00:00')
                     )
-                except (ValueError, AttributeError, TypeError):
-                    # Keep original value if not parseable
+                except ValueError:
+                    # Keep original value if not parseable as date
                     pass
         
         return cls(**source)

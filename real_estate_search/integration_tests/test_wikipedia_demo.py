@@ -29,7 +29,7 @@ from real_estate_search.demo_queries.wikipedia import (
     ArticleExportResult,
     ArticleExport
 )
-from real_estate_search.demo_queries.result_models import WikipediaSearchResult
+from real_estate_search.models.results import WikipediaSearchResult
 
 
 class TestWikipediaDemoRunner:

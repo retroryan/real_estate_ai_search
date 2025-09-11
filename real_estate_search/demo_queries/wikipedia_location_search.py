@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 from elasticsearch import Elasticsearch
 
-from .result_models import WikipediaSearchResult
+from ..models.results import WikipediaSearchResult
 from ..models import WikipediaArticle
 from ..hybrid.location import LocationUnderstandingModule, LocationIntent
 

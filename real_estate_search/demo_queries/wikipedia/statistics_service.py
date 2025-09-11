@@ -6,8 +6,8 @@ including performance statistics and result analysis.
 """
 
 from typing import List, Dict, Set
-from .models import (
-    SearchResult,
+from ...models.search.wikipedia import (
+    WikipediaSearchResult as SearchResult,
     SearchStatistics,
     TopDocument
 )

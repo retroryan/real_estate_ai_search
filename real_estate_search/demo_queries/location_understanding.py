@@ -7,13 +7,13 @@ import time
 from typing import Dict, Any, List
 from elasticsearch import Elasticsearch
 
-from .models import DemoQueryResult, LocationUnderstandingResult
+from ..models.results import BaseQueryResult, LocationUnderstandingResult
 from ..hybrid import LocationUnderstandingModule, LocationIntent
 
 logger = logging.getLogger(__name__)
 
 
-def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
+def demo_location_understanding(es_client: Elasticsearch) -> LocationUnderstandingResult:
     """
     Demo: Extract location information from natural language queries.
     
@@ -29,7 +29,7 @@ def demo_location_understanding(es_client: Elasticsearch) -> DemoQueryResult:
         es_client: Elasticsearch client (not used in this demo)
         
     Returns:
-        DemoQueryResult with location extraction examples
+        BaseQueryResult with location extraction examples
     """
     # Example queries using actual cities in our data
     # Includes various location formats: city only, city+state, abbreviated states

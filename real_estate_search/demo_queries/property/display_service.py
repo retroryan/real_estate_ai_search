@@ -13,7 +13,7 @@ from rich.text import Text
 from rich import box
 import logging
 
-from ..result_models import PropertySearchResult, AggregationSearchResult
+from ...models.results import PropertySearchResult, AggregationSearchResult
 from ...models import PropertyListing
 from ..display_formatter import PropertyDisplayFormatter
 

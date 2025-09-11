@@ -13,7 +13,7 @@ import logging
 from .query_builder import PropertyQueryBuilder
 from .search_executor import PropertySearchExecutor
 from .display_service import PropertyDisplayService
-from ..result_models import PropertySearchResult, AggregationSearchResult
+from ...models.results import PropertySearchResult, AggregationSearchResult
 from ..display_formatter import PropertyDisplayFormatter
 
 logger = logging.getLogger(__name__)

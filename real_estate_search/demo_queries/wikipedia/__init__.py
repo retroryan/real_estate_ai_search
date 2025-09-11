@@ -5,10 +5,10 @@ This module provides a clean, modular architecture for searching Wikipedia artic
 with Elasticsearch, generating reports, and exporting documents.
 """
 
-from .models import (
-    SearchQuery,
-    SearchResult,
-    SearchHit,
+from ...models.search.wikipedia import (
+    WikipediaSearchQuery as SearchQuery,
+    WikipediaSearchResult as SearchResult,
+    WikipediaSearchHit as SearchHit,
     ArticleExport,
     ArticleExportResult,
     SearchStatistics,

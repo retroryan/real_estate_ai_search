@@ -8,7 +8,7 @@ no Elasticsearch client dependencies.
 
 from typing import Dict, Any, Optional, List
 
-from ..base_models import SearchRequest, SourceFilter
+from ...models.search import SearchRequest, SourceFilter
 
 
 class PropertyQueryBuilder:

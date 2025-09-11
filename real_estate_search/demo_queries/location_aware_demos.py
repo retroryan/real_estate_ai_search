@@ -28,7 +28,8 @@ from rich.columns import Columns
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
 
-from .models import DemoQueryResult
+from ..models.results import BaseQueryResult
+from ..models.results.location_aware import LocationAwareSearchResult
 from .demo_utils import format_demo_header
 from .display_formatter import PropertyDisplayFormatter
 from ..hybrid import HybridSearchEngine
@@ -184,7 +185,7 @@ class LocationAwareDisplayFormatter:
     
     @staticmethod
     def display_location_demo_results(
-        result: DemoQueryResult,
+        result: BaseQueryResult,
         example: "LocationAwareSearchExample",
         console: Console = None
     ) -> None:
@@ -299,7 +300,7 @@ LOCATION_SEARCH_EXAMPLES: List[LocationAwareSearchExample] = [
 def demo_location_aware_waterfront_luxury(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> LocationAwareSearchResult:
     """
     Demo: Luxury waterfront properties with city-specific filtering.
     
@@ -313,7 +314,7 @@ def demo_location_aware_waterfront_luxury(
 def demo_location_aware_family_schools(
     es_client: Elasticsearch, 
     size: int = 10
-) -> DemoQueryResult:
+) -> LocationAwareSearchResult:
     """
     Demo: Family-oriented search with school proximity considerations.
     
@@ -327,7 +328,7 @@ def demo_location_aware_family_schools(
 def demo_location_aware_recreation_mountain(
     es_client: Elasticsearch,
     size: int = 10
-) -> DemoQueryResult:
+) -> LocationAwareSearchResult:
     """
     Demo: Recreation-focused property search with mountain access.
     
@@ -342,7 +343,7 @@ def _execute_location_demo(
     es_client: Elasticsearch,
     example: LocationAwareSearchExample,
     size: int
-) -> DemoQueryResult:
+) -> LocationAwareSearchResult:
     """
     Execute a location-aware demo search.
     
@@ -381,7 +382,7 @@ def _execute_location_demo(
         size: Number of results to return
         
     Returns:
-        DemoQueryResult with location-aware search results
+        BaseQueryResult with location-aware search results
     """
     logger.info(f"Executing location-aware demo: '{example.query}'")
     
@@ -428,7 +429,7 @@ def _execute_location_demo(
         es_features.extend(example.location_features)
         es_features.extend(example.property_features)
         
-        return DemoQueryResult(
+        return LocationAwareSearchResult(
             query_name=f"Location-Aware Hybrid: '{example.query}'",
             query_description=example.description,
             execution_time_ms=result.execution_time_ms,
@@ -453,7 +454,7 @@ def demo_location_aware_search_showcase(
     es_client: Elasticsearch,
     show_all_examples: bool = False,
     size: int = 5
-) -> List[DemoQueryResult]:
+) -> List[LocationAwareSearchResult]:
     """
     Showcase multiple location-aware search examples.
     
@@ -466,7 +467,7 @@ def demo_location_aware_search_showcase(
         size: Number of results per demo
         
     Returns:
-        List of DemoQueryResult objects
+        List of BaseQueryResult objects
     """
     logger.info(f"Running location-aware search showcase (show_all={show_all_examples})")
     

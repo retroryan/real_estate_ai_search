@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any
 from elasticsearch import Elasticsearch
 
-from .models import DemoQueryResult
+from ..models.results import BaseQueryResult
 from ..hybrid import HybridSearchEngine, HybridSearchParams
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def demo_hybrid_search(
     es_client: Elasticsearch,
     query: str = "modern kitchen with stainless steel appliances",
     size: int = 10
-) -> DemoQueryResult:
+) -> BaseQueryResult:
     """
     Demo: Hybrid search combining vector and text search with RRF.
     
@@ -29,7 +29,7 @@ def demo_hybrid_search(
         size: Number of results to return
         
     Returns:
-        DemoQueryResult with hybrid search results
+        BaseQueryResult with hybrid search results
     """
     logger.info(f"Running hybrid search demo for query: '{query}'")
     
@@ -48,7 +48,7 @@ def demo_hybrid_search(
     try:
         result = engine.search(params)
         
-        # Convert to DemoQueryResult format
+        # Convert to BaseQueryResult format
         demo_results = []
         for search_result in result.results:
             demo_result = search_result.property_data.copy()
@@ -66,7 +66,7 @@ def demo_hybrid_search(
             }
         }
         
-        return DemoQueryResult(
+        return BaseQueryResult(
             query_name=f"Hybrid Search: '{query}'",
             query_description=f"Combines semantic vector search with text search using RRF for query: '{query}'",
             execution_time_ms=result.execution_time_ms,
