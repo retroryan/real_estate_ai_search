@@ -9,18 +9,12 @@ from .aggregation_queries import (
     demo_neighborhood_stats,
     demo_price_distribution
 )
-from .advanced import (
-    demo_semantic_search,
-    demo_multi_entity_search,
-    demo_wikipedia_search
-)
+# Advanced demos removed - demos 6, 7, 8 deleted
 from .wikipedia import WikipediaDemoRunner
 from .wikipedia_location_search import demo_wikipedia_location_search
 from .demo_single_query_relationships import demo_simplified_relationships
 from .semantic_query_search import (
-    demo_natural_language_search,
-    demo_natural_language_examples,
-    demo_semantic_vs_keyword_comparison
+    demo_natural_language_examples
 )
 from .rich_listing_demo import demo_rich_property_listing
 from .hybrid_search import demo_hybrid_search
@@ -28,14 +22,7 @@ from .location_understanding import demo_location_understanding
 from .location_aware_demos import (
     demo_location_aware_waterfront_luxury,
     demo_location_aware_family_schools,
-    demo_location_aware_urban_modern,
     demo_location_aware_recreation_mountain,
-    demo_location_aware_historic_urban,
-    demo_location_aware_beach_proximity,
-    demo_location_aware_investment_market,
-    demo_location_aware_luxury_urban_views,
-    demo_location_aware_suburban_architecture,
-    demo_location_aware_neighborhood_character,
     demo_location_aware_search_showcase
 )
 
@@ -45,27 +32,15 @@ __all__ = [
     'demo_geo_search',
     'demo_neighborhood_stats',
     'demo_price_distribution',
-    'demo_semantic_search',
-    'demo_multi_entity_search',
-    'demo_wikipedia_search',
     'WikipediaDemoRunner',
     'demo_wikipedia_location_search',
     'demo_simplified_relationships',
-    'demo_natural_language_search',
     'demo_natural_language_examples',
-    'demo_semantic_vs_keyword_comparison',
     'demo_rich_property_listing',
     'demo_hybrid_search',
     'demo_location_understanding',
     'demo_location_aware_waterfront_luxury',
     'demo_location_aware_family_schools',
-    'demo_location_aware_urban_modern',
     'demo_location_aware_recreation_mountain',
-    'demo_location_aware_historic_urban',
-    'demo_location_aware_beach_proximity',
-    'demo_location_aware_investment_market',
-    'demo_location_aware_luxury_urban_views',
-    'demo_location_aware_suburban_architecture',
-    'demo_location_aware_neighborhood_character',
     'demo_location_aware_search_showcase'
 ]

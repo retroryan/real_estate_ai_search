@@ -252,10 +252,10 @@ LOCATION_SEARCH_EXAMPLES: List[LocationAwareSearchExample] = [
         property_features=["Architectural style: modern", "Property type: apartment", "Urban lifestyle features"]
     ),
     LocationAwareSearchExample(
-        query="Investment property in Salinas California",
-        description="Investment-focused search with city and state targeting",
-        location_features=["City extraction: Salinas", "State extraction: California", "Investment market understanding"],
-        property_features=["Investment property search", "Market value assessment", "ROI potential features"]
+        query="Mountain retreat with hiking access near Park City Utah",
+        description="Recreation-focused property search in mountain areas",
+        location_features=["City extraction: Park City", "State extraction: Utah", "Mountain recreation understanding"],
+        property_features=["Recreation property search", "Mountain access features", "Outdoor lifestyle amenities"]
     ),
     LocationAwareSearchExample(
         query="Historic home in San Francisco CA",
@@ -324,20 +324,6 @@ def demo_location_aware_family_schools(
     return _execute_location_demo(es_client, example, size)
 
 
-def demo_location_aware_urban_modern(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Urban neighborhood search with modern architectural preferences.
-    
-    Demonstrates neighborhood-level location extraction combined
-    with architectural style semantic understanding.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[2]
-    return _execute_location_demo(es_client, example, size)
-
-
 def demo_location_aware_recreation_mountain(
     es_client: Elasticsearch,
     size: int = 10
@@ -349,90 +335,6 @@ def demo_location_aware_recreation_mountain(
     in specific recreational markets.
     """
     example = LOCATION_SEARCH_EXAMPLES[3]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_historic_urban(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Historic property search in urban neighborhoods.
-    
-    Demonstrates multi-level location extraction (neighborhood, city, state)
-    with historic architectural feature understanding.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[4]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_beach_proximity(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Beach property search with proximity requirements.
-    
-    Shows proximity-based location understanding combined
-    with coastal lifestyle feature matching.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[5]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_investment_market(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Investment property search with market-specific targeting.
-    
-    Demonstrates business-focused location search with
-    price constraints and market understanding.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[6]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_luxury_urban_views(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Luxury urban property search emphasizing premium views.
-    
-    Shows high-end property location targeting with
-    luxury feature and view preference understanding.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[7]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_suburban_architecture(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Architectural style search in suburban markets.
-    
-    Demonstrates area-type understanding (suburban) with
-    specific architectural style preferences.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[8]
-    return _execute_location_demo(es_client, example, size)
-
-
-def demo_location_aware_neighborhood_character(
-    es_client: Elasticsearch,
-    size: int = 10
-) -> DemoQueryResult:
-    """
-    Demo: Neighborhood character search with architectural details.
-    
-    Shows fine-grained neighborhood understanding combined
-    with specific architectural feature requirements.
-    """
-    example = LOCATION_SEARCH_EXAMPLES[9]
     return _execute_location_demo(es_client, example, size)
 
 
@@ -567,17 +469,20 @@ def demo_location_aware_search_showcase(
     """
     logger.info(f"Running location-aware search showcase (show_all={show_all_examples})")
     
-    # Select examples to run
+    # Select examples to run - only use indices 0, 1, 3 (the remaining demos)
     if show_all_examples:
-        examples = LOCATION_SEARCH_EXAMPLES
-    else:
-        # Curated selection showing variety - indices 0, 1, 3, 8, 9
+        # Only use the examples that have corresponding demo functions
         examples = [
             LOCATION_SEARCH_EXAMPLES[0],  # Luxury waterfront in SF
             LOCATION_SEARCH_EXAMPLES[1],  # Family home in San Jose
-            LOCATION_SEARCH_EXAMPLES[3],  # Investment property in Salinas
-            LOCATION_SEARCH_EXAMPLES[8],  # Condo with amenities in San Jose
-            LOCATION_SEARCH_EXAMPLES[9],  # Modern condo in SF
+            LOCATION_SEARCH_EXAMPLES[3],  # Mountain retreat in Park City (recreation mountain)
+        ]
+    else:
+        # Same curated selection - all available demos
+        examples = [
+            LOCATION_SEARCH_EXAMPLES[0],  # Luxury waterfront in SF
+            LOCATION_SEARCH_EXAMPLES[1],  # Family home in San Jose
+            LOCATION_SEARCH_EXAMPLES[3],  # Mountain retreat in Park City (recreation mountain)
         ]
     
     results = []
@@ -608,7 +513,7 @@ def demo_location_aware_search_showcase(
                 results.append(result)
                 
                 # Save data for summary
-                if hasattr(result, 'results') and result.results:
+                if result.results:
                     top_results = []
                     for prop in result.results[:3]:
                         address = prop.get('address', {})
@@ -676,10 +581,9 @@ def demo_location_aware_search_showcase(
             location = "Not extracted"
             if data.get('location_extracted'):
                 loc = data['location_extracted']
-                if isinstance(loc, dict):
-                    city = loc.get('city', '')
-                    state = loc.get('state', '')
-                    location = f"{city}, {state}" if state else city
+                city = loc.get('city', '')
+                state = loc.get('state', '')
+                location = f"{city}, {state}" if state else city
             
             summary_table.add_row(
                 str(i),
@@ -715,8 +619,8 @@ def demo_location_aware_search_showcase(
     
     # Final statistics
     if results:
-        total_time = sum(r.execution_time_ms for r in results if hasattr(r, 'execution_time_ms'))
-        total_hits = sum(r.total_hits for r in results if hasattr(r, 'total_hits'))
+        total_time = sum(r.execution_time_ms for r in results)
+        total_hits = sum(r.total_hits for r in results)
         avg_time = total_time / len(results) if results else 0
         
         stats_panel = Panel(

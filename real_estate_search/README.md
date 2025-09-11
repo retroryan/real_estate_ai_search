@@ -220,12 +220,12 @@ Execute specific search queries:
 # List all available demos
 python -m real_estate_search.management demo --list
 
-# Run specific demo (1-14)
+# Run specific demo (1-16)
 python -m real_estate_search.management demo 1  # Basic property search
 python -m real_estate_search.management demo 3  # Geo-distance search
-python -m real_estate_search.management demo 6  # Semantic similarity search
-python -m real_estate_search.management demo 9  # Wikipedia full-text search
-python -m real_estate_search.management demo 10 # Property relationships via denormalized index
+python -m real_estate_search.management demo 6  # Wikipedia full-text search
+python -m real_estate_search.management demo 7  # Property relationships via denormalized index
+python -m real_estate_search.management demo 9  # Rich real estate listing
 
 # Run demo with verbose output (shows Elasticsearch query DSL)
 python -m real_estate_search.management demo 2 --verbose

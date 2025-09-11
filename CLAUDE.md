@@ -294,14 +294,14 @@ python -m real_estate_search.management demo 1
 # Geo-distance search
 python -m real_estate_search.management demo 3
 
-# Vector similarity search
+# Wikipedia full-text search
+python -m real_estate_search.management demo 6
+
+# Property relationships via denormalized index
 python -m real_estate_search.management demo 7
 
-# Wikipedia full-text search
-python -m real_estate_search.management demo 10
-
-# Multi-index hybrid search
-python -m real_estate_search.management demo 11
+# Natural language examples
+python -m real_estate_search.management demo 8
 ```
 
 ## Testing and Validation
