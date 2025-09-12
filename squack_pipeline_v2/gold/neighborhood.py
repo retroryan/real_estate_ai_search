@@ -123,6 +123,9 @@ class NeighborhoodGoldEnricher(GoldEnricher):
             n.amenities,
             n.lifestyle_tags,
             
+            -- Historical data (simple annual records)
+            n.historical_data,
+            
             -- Embedding text
             n.embedding_text,
             
