@@ -167,6 +167,20 @@
     },
     "wikipedia_confidence_avg": {
       "type": "float"
+    },
+    "historical_data": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer"
+        },
+        "avg_price": {
+          "type": "float"
+        },
+        "sales_count": {
+          "type": "integer"
+        }
+      }
     }
   }
 }

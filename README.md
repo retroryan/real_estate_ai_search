@@ -140,9 +140,7 @@ For a comprehensive deep-dive into the system architecture, implementation patte
 - **Data Ingestion & Processing**: Scalable pipeline for indexing properties, neighborhoods, and Wikipedia content
 - **Geographic Search**: Intelligent radius search with coordinate-based ranking
 - **Faceted Search**: AI-driven faceted search and dynamic filtering
-- **REST API**: FastAPI with OpenAPI documentation
 - **Type Safety**: Pydantic models with AI validation and comprehensive error handling
-- **Resilience**: Circuit breaker and retry logic for fault tolerance
 
 ---
 
@@ -169,19 +167,6 @@ For a comprehensive deep-dive into the system architecture, implementation patte
 - **Retrieval Testing**: End-to-end RAG pipeline evaluation
 
 ---
-
-### [6. Legacy Spark Pipeline](./squack_pipeline/)
-**Purpose**: Original Spark-based pipeline (now replaced by DuckDB pipeline in squack_pipeline_v2)  
-**Key Features**:
-- **Apache Spark Processing**: Distributed data processing using Spark DataFrames
-- **Multi-Source Ingestion**: Reads from JSON, CSV, and database sources
-- **Embedding Generation**: Integrates with multiple embedding providers
-- **Multi-Store Output**: Writes to Parquet, Neo4j, and Elasticsearch
-- **Parallel Processing**: Leverages Spark's distributed computing capabilities
-- **State Management**: Pipeline recovery and comprehensive metrics
-- **CLI Interface**: Command-line support with YAML configuration
-
-Note: For new deployments, use the DuckDB pipeline (squack_pipeline_v2) which offers better performance for local processing and cleaner architecture.
 
 ## Generative AI Technologies
 
