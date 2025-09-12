@@ -67,7 +67,9 @@ No pre-tokenization or chunking is performed. The embedding provider's API handl
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
+from squack_pipeline_v2.utils.simple_historical import generate_property_historical
 from datetime import datetime
+import json
 
 
 class PropertySilverTransformer(SilverTransformer):
@@ -159,12 +161,21 @@ class PropertySilverTransformer(SilverTransformer):
         # STEP 1: Extract text data from DuckDB for embedding generation
         # Get embedding text data directly from DuckDB without pandas conversion
         # This avoids memory overhead and maintains DuckDB's efficient data handling
-        embedding_rows = transformed.project("listing_id, embedding_text").fetchall()
+        embedding_rows = transformed.project("listing_id, embedding_text, price").fetchall()
         
         # STEP 2: Prepare data for embedding API
         # Extract data into separate lists for batch processing
         listing_ids = [row[0] for row in embedding_rows]  # Property identifiers
         texts = [row[1] for row in embedding_rows]  # Concatenated text for each property
+        prices = [row[2] for row in embedding_rows]  # Current prices for historical generation
+        
+        # STEP 2a: Generate historical data for properties
+        # Generate simple annual historical data (10 years)
+        historical_data_map = {}
+        for lid, price in zip(listing_ids, prices):
+            # Generate 10 years of annual data with 5% appreciation
+            historical_records = generate_property_historical(lid, price)
+            historical_data_map[lid] = historical_records
         
         # STEP 3: Generate embeddings via external provider
         # Generate embeddings using List[str] interface
@@ -175,14 +186,16 @@ class PropertySilverTransformer(SilverTransformer):
         # Create temporary table with embeddings
         current_timestamp = datetime.now()
         
-        # Build VALUES clause for embedding data
+        # Build VALUES clause for embedding data and historical data
         values_clause = []
         for lid, text, embedding in zip(listing_ids, texts, embedding_response.embeddings):
             # Escape single quotes in text
             escaped_text = text.replace("'", "''") if text else ''
             # Format embedding vector as array literal
             embedding_str = '[' + ','.join(str(v) for v in embedding) + ']'
-            values_clause.append(f"('{lid}', '{escaped_text}', {embedding_str}::DOUBLE[], TIMESTAMP '{current_timestamp}')")
+            # Convert historical data to JSON string and escape quotes
+            historical_json = json.dumps(historical_data_map[lid]).replace("'", "''")
+            values_clause.append(f"('{lid}', '{escaped_text}', {embedding_str}::DOUBLE[], '{historical_json}'::JSON, TIMESTAMP '{current_timestamp}')")
         
         # Create final table with embeddings using CTEs - no temporary tables
         conn.execute(f"""
@@ -193,7 +206,7 @@ class PropertySilverTransformer(SilverTransformer):
             embedding_data AS (
                 SELECT * FROM (
                     VALUES {','.join(values_clause)}
-                ) AS t(listing_id, embedding_text, embedding_vector, embedding_generated_at)
+                ) AS t(listing_id, embedding_text, embedding_vector, historical_data, embedding_generated_at)
             )
             SELECT 
                 t.listing_id,
@@ -221,6 +234,7 @@ class PropertySilverTransformer(SilverTransformer):
                 t.buyer_demographics,
                 t.nearby_amenities,
                 t.future_enhancements,
+                e.historical_data,
                 e.embedding_text,
                 e.embedding_vector,
                 e.embedding_generated_at

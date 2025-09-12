@@ -53,7 +53,7 @@ def generate_neighborhood_historical(
         # Create record
         record = {
             "year": year,
-            "avg_price": round(price, 0),
+            "avg_price": float(round(price, 0)),  # Ensure float type for Elasticsearch
             "sales_count": sales_count
         }
         
@@ -105,7 +105,7 @@ def generate_property_historical(
         # Create record
         record = {
             "year": year,
-            "price": round(price, 0)
+            "price": float(round(price, 0))  # Ensure float type for Elasticsearch
         }
         
         records.append(record)
