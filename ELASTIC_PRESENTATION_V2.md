@@ -16,12 +16,25 @@
 
 ---
 
-## Slide 2: Beyond Search - The Modern Elasticsearch Platform
-**Powering Generative AI, Observability, and Security at Scale**
+## Slide 1a: The Elastic Search AI Platform
+**Powering Next-Generation AI Applications with the World's Most Used Vector Database**
 
+- **Unlocking Next-Generation Search:** Enabling conversational real estate search with natural language understanding and intelligent property discovery
+- **Foundation for AI-Powered Experiences:** Elasticsearch natively supports vector embeddings through dense_vector fields, enabling semantic search capabilities that understand intent beyond keywords
 - **Generative AI Foundation:** Native vector search with k-NN, hybrid retrieval for RAG pipelines, and semantic understanding through dense embeddings
+- **Natural Language Understanding:** Transform keyword matching into intent-based search—customers find "comfortable running shoes for marathons" regardless of exact terminology
+- **Vector Database at Scale:** HNSW (Hierarchical Navigable Small World) graphs deliver sub-50ms k-nearest neighbor searches across millions of products
+- **Elasticsearch Relevance Engine™:** Suite of development tools combining BM25, learned sparse encoders, and dense vectors for superior search relevance
+
+*Summary: Elastic's Search AI Platform unifies traditional search with AI-powered capabilities, delivering the world's most deployed vector database for production RAG applications*
+
+---
+
+## Slide 2: Beyond Search - The Modern Elasticsearch Platform
+**Powering Observability and Security at Scale**
+
 - **Observability Platform:** Centralized logging, distributed tracing, metrics aggregation, and real-time alerting for modern cloud-native applications
-- **Security Operations:** SIEM capabilities, threat detection, forensic investigation, and compliance reporting with machine learning anomaly detection
+- **Security Operations:** SIEM (Security Information and Event Management) capabilities, threat detection, forensic investigation, and compliance reporting with machine learning anomaly detection
 - **Unified Data Platform:** Single platform for structured/unstructured data, time-series analytics, and geographic information systems
 - **AI/ML Integration:** Built-in machine learning, natural language processing, and seamless integration with LLMs for intelligent applications
 
@@ -112,49 +125,41 @@ result = bulk(es_client, actions, raise_on_error=False)
 
 ---
 
-## Slide 8: Text Search (BM25)
-**Traditional Keyword Matching with Field Boosting**
+## Slide 26: Index Templates with Embeddings
+**Unified Configuration for AI-Powered Search**
 
-Elasticsearch's BM25 algorithm provides powerful text relevance scoring, enabling precise keyword matching across multiple fields with configurable importance weights.
-
-```python
-{
-    "multi_match": {
-        "query": query_text,
-        "fields": [
-            "description^2.0",
-            "features^1.5",
-            "address.city"
-        ]
-    }
-}
-```
-
-*Key Features:*
-- Field-specific boosting (description 2x, features 1.5x weight)
-- Natural language processing with stemming and stop words
-- Fuzzy matching for typo tolerance
-
----
-
-## Slide 9: Multi-Field Queries with Custom Analyzers
-**Domain-Specific Text Processing**
-
-Custom analyzers optimize search for different data types, using specialized tokenization and normalization for addresses, property features, and descriptions.
+Templates ensure consistent vector field mappings and k-NN settings across indices, enabling scalable semantic search deployments.
 
 ```python
 {
-    "match": {
-        "address.city": "San Francisco"
+  "index_patterns": ["properties*"],
+  "template": {
+    "settings": {
+      "index.knn": true,
+      "index.knn.algo_param.ef_search": 100
     },
-    "analyzer": "address_analyzer"
+    "mappings": {
+      "properties": {
+        "embedding": {
+          "type": "dense_vector",
+          "dims": 1024,
+          "index": true,
+          "similarity": "cosine"
+        },
+        "description": {"type": "text"},
+        "price": {"type": "float"}
+      }
+    }
+  }
 }
 ```
 
-*Analyzer Types:*
-- `address_analyzer`: ASCII folding for international addresses
-- `property_analyzer`: Snowball stemming for descriptions
-- `feature_analyzer`: Keyword tokenization for amenities
+*Benefits:*
+- Automatic k-NN and embedding configuration for new indices
+- Consistent vector dimensions and similarity metrics across deployments
+- HNSW algorithm parameters optimized for production RAG applications
+- Version-controlled AI search capabilities alongside traditional mappings
+- Ensures compatibility between embedding generation and search operations
 
 ---
 
@@ -216,30 +221,6 @@ Reciprocal Rank Fusion merges keyword precision with semantic understanding, del
 
 ---
 
-## Slide 12: Geographic Search
-**Location-Based Property Discovery**
-
-Geo-distance queries enable radius searches around points of interest, supporting location-aware property discovery with precise distance calculations.
-
-```python
-{
-    "geo_distance": {
-        "distance": "2km",
-        "address.location": {
-            "lat": 37.7749,
-            "lon": -122.4194
-        }
-    }
-}
-```
-
-*Features:*
-- Radius searches from any coordinate
-- Supports multiple distance units (km, mi, m)
-- Combines with other query types for filtering
-
----
-
 ## Slide 13: Natural Language Query Processing
 **AI-Powered Query Understanding with DSPy**
 
@@ -277,6 +258,8 @@ class LocationExtractionSignature(dspy.Signature):
 ```
 
 *DSPy Processing Pipeline:*
+- **DSPy is for Programmatic LLM Prompt Construction w/ Python:** Declarative framework for building AI systems
+- **DSPy basic construct is like function calling an LLM w/ Input -> Structured Output:** Type-safe signatures for predictable AI behavior
 - **LocationUnderstandingModule:** Uses dspy.Predict for direct extraction
 - **Smart filtering:** Builds Elasticsearch filters from extracted locations
 - **Query cleaning:** Removes location terms while preserving property features
@@ -284,48 +267,71 @@ class LocationExtractionSignature(dspy.Signature):
 
 ---
 
-## Slide 14: Multi-Index Federation
-**Unified Search Across Heterogeneous Data**
+## Slide 31: Elasticsearch Inference API
+**Unified Machine Learning Interface**
 
-Simultaneous searching across properties, neighborhoods, and Wikipedia indices provides comprehensive results from diverse data sources in a single query.
+- **Open Inference API (8.15+):** Unified interface for ELSER, E5, external services (OpenAI, Cohere, Anthropic)
+- **Inference Endpoints:** Auto-scaling ML model endpoints with adaptive allocations (0 to N)
+- **Multiple Task Types:** text_embedding, sparse_embedding, rerank, and NER through consistent API
+- **Built-in Models:** Preconfigured endpoints like `.multilingual-e5-small-elasticsearch` ready to use
+- **Production Features:** Automatic chunking, error handling, ingest pipeline integration
+
+*Summary: Unified, scalable platform for integrating ML models into search applications*
+
+---
+
+## Slide 32: Named Entity Recognition (NER)
+**Structured Information from Unstructured Text**
+
+- **What is NER:** Identifies and classifies entities into ORG, PER, LOC, MISC categories using transformer models
+- **DistilBERT Model:** 66M parameter model fine-tuned on CoNLL-03 achieving ~90.7% F1 score
+- **BIO Tagging:** Begin-Inside-Outside tagging identifies multi-word entities like "San Francisco Bay Area"
+- **Structured Output:** Entity positions, confidence scores, normalized names in dedicated fields
+- **Production Benefits:** Entity-based filtering, faceted search, relationship discovery, automated categorization
+
+*Summary: NER transforms text into structured, searchable entity metadata for precise queries*
+
+---
+
+## Slide 33: Wikipedia NER Processing Flow
+**Real-World Implementation Using Elasticsearch**
+
+- **Model Deployment:** Install DistilBERT via Eland Docker, deploy to ML nodes with adaptive scaling
+- **Inference Pipeline:** Process documents through NER model, extract entities with Painless scripting
+- **Entity Storage:** Dedicated keyword fields for fast aggregations (`ner_organizations`, `ner_locations`, `ner_persons`)
+- **Search Benefits:** Simple keyword searches for entity-based queries instead of complex semantic calculations
+- **Batch Processing:** Bulk operations with pipeline parameter for production-scale document processing
+
+*Summary: NER pipeline transforms Wikipedia text into structured entity metadata at scale*
+
+---
+
+## Optional Section: Additional Query Examples
+
+---
+
+
+## Slide 12: Geographic Search
+**Location-Based Property Discovery**
+
+Geo-distance queries enable radius searches around points of interest, supporting location-aware property discovery with precise distance calculations.
 
 ```python
-GET /properties,neighborhoods,wikipedia/_search
 {
-    "query": {
-        "multi_match": {
-            "query": "historic district"
+    "geo_distance": {
+        "distance": "2km",
+        "address.location": {
+            "lat": 37.7749,
+            "lon": -122.4194
         }
     }
 }
 ```
 
-*Benefits:*
-- Single query spans multiple data types
-- Unified relevance scoring
-- Reduces client-side complexity
-
----
-
-## Slide 15: Index Boosting
-**Consistent Scoring Across Data Types**
-
-Index-specific boosting ensures appropriate weighting when searching across different content types, prioritizing properties over general Wikipedia content.
-
-```python
-{
-    "indices_boost": [
-        {"properties": 1.5}, 
-        {"neighborhoods": 1.2}, 
-        {"wikipedia": 1.0}
-    ]
-}
-```
-
-*Configuration:*
-- Properties get 50% boost for direct relevance
-- Neighborhoods get 20% boost for area context
-- Wikipedia provides supporting information
+*Features:*
+- Radius searches from any coordinate
+- Supports multiple distance units (km, mi, m)
+- Combines with other query types for filtering
 
 ---
 
@@ -392,229 +398,6 @@ Terms aggregations with nested statistics provide comprehensive market analysis,
 
 ---
 
-## Slide 18: Relationship Traversal
-**Graph-Like Navigation Through Pre-computed Networks**
-
-Pre-computed similarity relationships enable instant discovery of related properties, providing recommendation engine capabilities without graph database complexity.
-
-```python
-# During indexing: Calculate cosine similarity between property embeddings
-# Store top-10 similar properties for each listing
-{
-    "query": {
-        "terms": {
-            "listing_id": similar_property_ids  # Pre-computed during indexing
-        }
-    }
-}
-
-# Relationship calculation process:
-# 1. Load all property embeddings from Elasticsearch
-# 2. For each property, calculate cosine_similarity with all others
-# 3. Store top-10 most similar (similarity > 0.8 threshold)
-# 4. Index in property_relationships index for instant retrieval
-```
-
-*Pre-computation Details:*
-- **Similarity metric:** Cosine similarity on 1024-dim embeddings
-- **Computation time:** One-time batch process during index build
-- **Storage:** Denormalized in property_relationships index
-- **Query performance:** Sub-10ms retrieval (no runtime computation)
-- **Update strategy:** Recompute relationships on major data updates
-- **Benefits:** Graph-like traversal without graph database overhead
-
----
-
-## Slide 19: Faceted Search
-**Dynamic Filtering with Real-Time Counts**
-
-Global aggregations with post_filter enable faceted navigation, showing available options and counts while maintaining filter context.
-
-```python
-{
-    "query": {...},
-    "post_filter": {
-        "bool": {
-            "must": filters
-        }
-    },
-    "aggs": {
-        "all_facets": {
-            "global": {},
-            "aggs": {...}
-        }
-    }
-}
-```
-
-*Features:*
-- Post-filter preserves aggregation counts
-- Global scope shows all available options
-- Dynamic UI filter generation
-
----
-
-## Slide 20: Source Filtering
-**Bandwidth Optimization for Large Datasets**
-
-Selective field retrieval reduces network overhead, especially important when excluding large embedding vectors from search results.
-
-```python
-{
-    "_source": ["listing_id", "price", "address"],
-    "stored_fields": ["_none_"]
-}
-```
-
-*Optimizations:*
-- Exclude 1024-dimension vectors (4KB each)
-- Return only display fields
-- 90% reduction in response size
-
----
-
-## Slide 21: Native k-NN Configuration
-**High-Performance Vector Search Settings**
-
-Elasticsearch's native k-NN implementation provides efficient approximate nearest neighbor search for high-dimensional vectors, optimized for RAG applications.
-
-```python
-{
-    "index.knn": true,
-    "index.knn.algo_param.ef_search": 100
-}
-# 1024-dimensional voyage-3 embeddings
-```
-
-*HNSW Algorithm Parameters:*
-- **index.knn:** Enables k-NN functionality on the index
-- **ef_search=100:** Controls search accuracy vs speed trade-off
-  - Higher values (200+): More accurate but slower (explores more graph nodes)
-  - Lower values (50): Faster but may miss some relevant results
-  - Default 100: Good balance for most use cases
-- **How HNSW works:** Hierarchical graph structure with multiple layers, navigates from top layer down to find nearest neighbors, ef_search controls how many neighbors to explore at each layer
-- **Performance:** Sub-100ms search across millions of 1024-dim vectors
-
----
-
-## Slide 22: BM25 Scoring Strategy
-**Optimized Text Relevance with Field Weights**
-
-Best-fields scoring with tie-breaker ensures the most relevant field match wins while still considering other field matches for ranking refinement.
-
-```python
-{
-    "multi_match": {
-        "type": "best_fields",
-        "tie_breaker": 0.3,
-        "fields": ["description^2", "features^1.5"]
-    }
-}
-```
-
-*Scoring Logic:*
-- Best matching field provides base score
-- 30% of other field scores added
-- Field boosts prioritize descriptions
-
----
-
-## Slide 23: RRF Hybrid Architecture
-**Modern Retriever Pattern (8.16+)**
-
-Elasticsearch's retriever framework provides clean abstraction for hybrid search, with native RRF implementation for production-grade fusion.
-
-```python
-{"retriever": {"rrf": {
-    "rank_constant": 60,      # k parameter in RRF formula
-    "rank_window_size": 100   # How many results to consider from each retriever
-}}}
-# RRF Score = Σ(1/(k + rank_i)) for each retriever i
-```
-
-*Detailed Parameter Explanation:*
-- **rank_constant (k=60):** Core RRF parameter controlling score distribution
-  - Formula: score = 1/(60 + rank_position)
-  - Rank 1: score = 1/61 = 0.0164
-  - Rank 10: score = 1/70 = 0.0143
-  - Rank 100: score = 1/160 = 0.0063
-- **rank_window_size=100:** Number of top results from each retriever to consider
-  - Only top 100 from text search and top 100 from vector search are merged
-  - Results beyond position 100 are ignored (even if highly relevant)
-  - Larger windows = more comprehensive but slower
-- **Fusion process:** Each retriever runs independently in parallel, results are collected and assigned RRF scores, final ranking is sum of RRF scores from all retrievers
-- **Performance:** Native C++ implementation, typically adds <10ms overhead
-
----
-
-## Slide 24: Geo-Shape Queries
-**Complex Geographic Boundaries**
-
-Geo-shape queries enable polygon and boundary searches, supporting school districts, neighborhoods, and custom area definitions.
-
-```python
-{"geo_shape": {"address.location": {"shape": polygon,
-                                     "relation": "within"}}}
-```
-
-*Capabilities:*
-- Polygon, circle, and envelope shapes
-- Within, intersects, disjoint relations
-- Efficient spatial indexing
-
----
-
-## Slide 25: Bulk Indexing Pipeline
-**High-Throughput Data Loading**
-
-Optimized bulk operations with retry logic ensure reliable data ingestion, processing millions of documents efficiently.
-
-```python
-bulk(es_client, actions, chunk_size=100, max_retries=3)
-# Processes 100 docs per batch with retry logic
-```
-
-*Features:*
-- Automatic retry on transient failures
-- Configurable batch sizes
-- Non-blocking error handling
-
----
-
-## Slide 26: Index Templates
-**Consistent Index Management**
-
-Templates ensure uniform settings and mappings across indices, simplifying management and preventing configuration drift.
-
-```python
-{"index_patterns": ["properties*"],
- "template": {"settings": {...}, "mappings": {...}}}
-```
-
-*Benefits:*
-- Automatic application to new indices
-- Centralized configuration management
-- Version-controlled index definitions
-
----
-
-## Slide 27: Query Cache Optimization
-**Response Time Improvement**
-
-Query result caching dramatically improves response times for frequently executed searches, essential for user-facing applications.
-
-```python
-{"index.queries.cache.enabled": true,
- "indices.queries.cache.size": "10%"}
-```
-
-*Performance Impact:*
-- Sub-millisecond cached responses
-- 10% heap allocation for cache
-- Automatic invalidation on updates
-
----
-
 ## Slide 28: Nested Aggregations
 **Multi-Dimensional Analytics**
 
@@ -646,6 +429,72 @@ Multi-level aggregations provide drill-down analytics, enabling complex market a
 
 ---
 
+## Slide 9: Multi-Field Queries with Custom Analyzers
+**Domain-Specific Text Processing**
+
+Custom analyzers optimize search for different data types, using specialized tokenization and normalization for addresses, property features, and descriptions.
+
+```python
+{
+    "match": {
+        "address.city": "San Francisco"
+    },
+    "analyzer": "address_analyzer"
+}
+```
+
+*Analyzer Types:*
+- `address_analyzer`: ASCII folding for international addresses
+- `property_analyzer`: Snowball stemming for descriptions
+- `feature_analyzer`: Keyword tokenization for amenities
+
+---
+
+## Slide 14: Multi-Index Federation
+**Unified Search Across Heterogeneous Data**
+
+Simultaneous searching across properties, neighborhoods, and Wikipedia indices provides comprehensive results from diverse data sources in a single query.
+
+```python
+GET /properties,neighborhoods,wikipedia/_search
+{
+    "query": {
+        "multi_match": {
+            "query": "historic district"
+        }
+    }
+}
+```
+
+*Benefits:*
+- Single query spans multiple data types
+- Unified relevance scoring
+- Reduces client-side complexity
+
+---
+
+## Slide 15: Index Boosting
+**Consistent Scoring Across Data Types**
+
+Index-specific boosting ensures appropriate weighting when searching across different content types, prioritizing properties over general Wikipedia content.
+
+```python
+{
+    "indices_boost": [
+        {"properties": 1.5}, 
+        {"neighborhoods": 1.2}, 
+        {"wikipedia": 1.0}
+    ]
+}
+```
+
+*Configuration:*
+- Properties get 50% boost for direct relevance
+- Neighborhoods get 20% boost for area context
+- Wikipedia provides supporting information
+
+---
+
 ## Slide 29: Advanced Source Filtering
 **Selective Field Retrieval**
 
@@ -667,6 +516,37 @@ Includes/excludes patterns provide fine-grained control over returned fields, op
 
 ---
 
+
+## Slide 19: Faceted Search
+**Dynamic Filtering with Real-Time Counts**
+
+Global aggregations with post_filter enable faceted navigation, showing available options and counts while maintaining filter context.
+
+```python
+{
+    "query": {...},
+    "post_filter": {
+        "bool": {
+            "must": filters
+        }
+    },
+    "aggs": {
+        "all_facets": {
+            "global": {},
+            "aggs": {...}
+        }
+    }
+}
+```
+
+*Features:*
+- Post-filter preserves aggregation counts
+- Global scope shows all available options
+- Dynamic UI filter generation
+
+---
+
+
 ## Slide 30: Business Impact & Conclusions
 **Transforming Property Search with AI-Powered Retrieval**
 
@@ -680,44 +560,6 @@ Includes/excludes patterns provide fine-grained control over returned fields, op
 
 ---
 
-## Slide 31: Elasticsearch Inference API
-**Unified Machine Learning Interface**
-
-- **Open Inference API (8.15+):** Unified interface for ELSER, E5, external services (OpenAI, Cohere, Anthropic)
-- **Inference Endpoints:** Auto-scaling ML model endpoints with adaptive allocations (0 to N)
-- **Multiple Task Types:** text_embedding, sparse_embedding, rerank, and NER through consistent API
-- **Built-in Models:** Preconfigured endpoints like `.multilingual-e5-small-elasticsearch` ready to use
-- **Production Features:** Automatic chunking, error handling, ingest pipeline integration
-
-*Summary: Unified, scalable platform for integrating ML models into search applications*
-
----
-
-## Slide 32: Named Entity Recognition (NER)
-**Structured Information from Unstructured Text**
-
-- **What is NER:** Identifies and classifies entities into ORG, PER, LOC, MISC categories using transformer models
-- **DistilBERT Model:** 66M parameter model fine-tuned on CoNLL-03 achieving ~90.7% F1 score
-- **BIO Tagging:** Begin-Inside-Outside tagging identifies multi-word entities like "San Francisco Bay Area"
-- **Structured Output:** Entity positions, confidence scores, normalized names in dedicated fields
-- **Production Benefits:** Entity-based filtering, faceted search, relationship discovery, automated categorization
-
-*Summary: NER transforms text into structured, searchable entity metadata for precise queries*
-
----
-
-## Slide 33: Wikipedia NER Processing Flow
-**Real-World Implementation Using Elasticsearch**
-
-- **Model Deployment:** Install DistilBERT via Eland Docker, deploy to ML nodes with adaptive scaling
-- **Inference Pipeline:** Process documents through NER model, extract entities with Painless scripting
-- **Entity Storage:** Dedicated keyword fields for fast aggregations (`ner_organizations`, `ner_locations`, `ner_persons`)
-- **Search Benefits:** Simple keyword searches for entity-based queries instead of complex semantic calculations
-- **Batch Processing:** Bulk operations with pipeline parameter for production-scale document processing
-
-*Summary: NER pipeline transforms Wikipedia text into structured entity metadata at scale*
-
----
 
 ## End: Thank You
 **Questions & Discussion**

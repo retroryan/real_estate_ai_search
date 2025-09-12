@@ -103,26 +103,8 @@ class Neighborhood(BaseModel):
     score: Optional[float] = Field(None, alias="_score", description="Search relevance score")
     
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    
-    @field_validator('amenities', mode='before')
-    @classmethod
-    def ensure_amenities_list(cls, v):
-        """Ensure amenities is always a list."""
-        if v is None:
-            return []
-        # Check if it's already a list or can be converted
-        if v.__class__.__name__ in ('list', 'tuple', 'set'):
-            return list(v)
-        # For any other type, return empty list
-        return []
-    
-    @field_validator('walkability_score')
-    @classmethod
-    def validate_walkability(cls, v):
-        """Ensure walkability score is in valid range."""
-        if v is not None:
-            return max(0, min(100, int(v)))
-        return v
+
+
     
     @computed_field
     @property
@@ -132,16 +114,3 @@ class Neighborhood(BaseModel):
             return f"{self.name}, {self.city}"
         return self.name
     
-    @computed_field
-    @property
-    def has_good_schools(self) -> bool:
-        """Check if neighborhood has good schools (rating >= 7)."""
-        if self.school_ratings and self.school_ratings.average_rating:
-            return self.school_ratings.average_rating >= 7.0
-        return False
-    
-    @computed_field
-    @property
-    def is_walkable(self) -> bool:
-        """Check if neighborhood is walkable (score >= 70)."""
-        return self.walkability_score is not None and self.walkability_score >= 70
