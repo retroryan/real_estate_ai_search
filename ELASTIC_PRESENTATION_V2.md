@@ -6,7 +6,7 @@
 ## Slide 1: Introduction to Elasticsearch
 **The Evolution from Search Engine to Data Platform**
 
-- **Origins as Search Technology:** Started as a distributed, RESTful search engine built on Apache Lucene for full-text search capabilities
+- **Advanced Query Capabilities:** Compound bool queries with must/should/filter clauses, geo-spatial searches (distance, bounding box, polygon), aggregations with sub-aggregations, and scripted fields for dynamic computation at query time
 - **Scalable Architecture:** Horizontally scalable, schema-free JSON document store with automatic sharding and replication
 - **Real-time Analytics:** Near real-time search and analytics with powerful aggregation framework for complex data analysis
 - **Developer-Friendly:** RESTful APIs, client libraries for all major languages, and intuitive query DSL for rapid development
@@ -59,36 +59,20 @@
 **From Raw Data to Searchable Knowledge Graph**
 
 - **Index Preparation:** Creates four core indices (properties, neighborhoods, wikipedia, relationships) with custom mappings for text, dense vectors, and geo-points using predefined templates
-- **Document Enrichment:** Calculates price per square foot and generates search tags, creates 10-year historical price trends using deterministic algorithms, and embeds neighborhood context directly into property documents
-- **Wikipedia Processing:** Processes complete articles without chunking, generates embeddings from title and summary concatenation, and links articles to neighborhoods for geographic context
-- **Historical Data Generation:** Creates synthetic 10-year price history (2015-2024) with 5% base appreciation, applies property-specific variations using hash-based seeding, and maintains consistent neighborhood-property price relationships
-- **Quality Validation:** Validates data completeness and type correctness, ensures historical data structure integrity, verifies embedding presence for all documents, and confirms Elasticsearch mapping compatibility
+- **Wikipedia Summarization:** Articles are first summarized using a Micro AI Agent with DSPy for relevance scoring and content extraction
+- **Medallion Architecture:** Pipeline loads and processes data using Bronze-Silver-Gold medallion architecture for reliable ETL operations
 
 *Summary: DuckDB-powered medallion architecture transforms synthetic property data and real Wikipedia content into a search-optimized knowledge graph*
-
----
-
-## Slide 5: Data Ingestion Architecture
-**SQUACK Pipeline - Medallion Architecture for Reliable Processing**
-
-- **Bronze Layer:** Raw data ingestion from JSON sources preserving original structure, handles properties, neighborhoods, and Wikipedia articles with fault tolerance
-- **Silver Layer:** Data standardization with consistent formatting, validation rules enforcement, duplicate removal, and field normalization across sources
-- **Gold Layer:** Business logic enrichment calculating derived metrics, geospatial computations for location intelligence, and relationship mapping between entities
-- **Embedding Generation:** Batch processing through Voyage/OpenAI/Gemini APIs, 1024-dimensional vectors for semantic search, with rate limiting and retry logic
-- **Elasticsearch Loading:** Bulk indexing with optimized batch sizes, temporary index settings for maximum throughput, and post-processing for relationship denormalization
-
-*Summary: A robust medallion architecture ensures data quality through progressive refinement from raw ingestion to search-ready documents*
 
 ---
 
 ## Slide 6: Embedding Generation
 **Creating Semantic Search Vectors from Structured Data**
 
-- **Property Embeddings:** Concatenates key property attributes including description, features, address, buyer persona, and amenities into a single text string for embedding generation
-- **Neighborhood Embeddings:** Combines neighborhood description, name, population, median income, and community features using pipe delimiters to create rich semantic representation
-- **Wikipedia Embeddings:** Uses article title combined with DSPy-generated long summary to create embedding text, ensuring semantic relevance to real estate context
-- **Pluggable Provider Architecture:** Supports multiple embedding providers (Voyage AI as primary with 1024-dim vectors, OpenAI text-embedding-3 with 1536-dim, Ollama for local processing with 768-dim)
-- **Batch Processing:** Optimized batch sizes per provider (Voyage: 10 texts, OpenAI: 100 texts, Ollama: 1 text) with automatic retry logic and rate limiting
+- **Property Embeddings:** Concatenates key property attributes into a single text string for embedding generation
+- **Neighborhood Embeddings:** Combines neighborhood features to create rich semantic representation
+- **Wikipedia Embeddings:** Uses DSPy-generated long summary to create embedding text,
+- **Pluggable Provider Architecture:** Supports multiple embedding providers
 
 *Summary: Flexible embedding generation system transforms text aggregations into dense vectors optimized for semantic search across different data types*
 
@@ -97,76 +81,40 @@
 ## Slide 7: Bulk Indexing with Elasticsearch
 **High-Performance Data Loading with Elasticsearch Bulk API**
 
-- **Wikipedia Summarization:** Articles are first summarized using a Micro AI Agent with DSPy for relevance scoring and content extraction
-- **Streaming Architecture:** DuckDB streams results in configurable batches (100 documents default) directly to Elasticsearch without loading entire dataset into memory
-- **Document Transformation:** Pydantic models validate and transform each record before indexing, ensuring type safety and data consistency
-- **Bulk Action Generation:** Each document converted to bulk action with index name, document ID, and source data structured for Elasticsearch's bulk API format
-- **Error Handling:** Non-blocking bulk operations with detailed error logging, validation error tracking, and automatic retry for transient failures
-- **Performance Optimization:** Sequential batch processing with configurable batch sizes (100 docs default), progress monitoring (logs every 1000 documents), and index configured with 0 replicas during loading to reduce write overhead
-
-```python
-# Example from squack_pipeline_v2/writers/elastic/base.py
-actions = []
-for record in batch_data:  # Process batch of 100 documents
-    document = transform(record)  # Pydantic validation
-    doc = document.model_dump(exclude_none=True)
-    action = {
-        "_index": index_name,
-        "_id": doc[id_field],
-        "_source": doc
-    }
-    actions.append(action)
-
-# Bulk index entire batch
-result = bulk(es_client, actions, raise_on_error=False)
-```
+- **Streaming Architecture:** DuckDB streams results in configurable batches to Elasticsearch 
+- **Bulk Action Generation:** Each document converted to bulk action structured for Elasticsearch's bulk API format
+- **Performance Optimization:** Sequential batch processing with configurable batch sizes and index configured with 0 replicas during loading to reduce write overhead
 
 *Summary: Efficient bulk indexing pipeline streams millions of documents from DuckDB to Elasticsearch with validation, error handling, and performance monitoring*
 
 ---
 
 ## Slide 26: Index Templates with Embeddings
-**Unified Configuration for AI-Powered Search**
+**Defining the Embedding Field for Semantic Search**
 
-Templates ensure consistent vector field mappings and k-NN settings across indices, enabling scalable semantic search deployments.
+The properties template defines a dense_vector field for storing embeddings, enabling semantic similarity search capabilities.
 
-```python
+```json
+// From real_estate_search/elasticsearch/templates/properties.json
 {
-  "index_patterns": ["properties*"],
-  "template": {
-    "settings": {
-      "index.knn": true,
-      "index.knn.algo_param.ef_search": 100
-    },
-    "mappings": {
-      "properties": {
-        "embedding": {
-          "type": "dense_vector",
-          "dims": 1024,
-          "index": true,
-          "similarity": "cosine"
-        },
-        "description": {"type": "text"},
-        "price": {"type": "float"}
-      }
-    }
+  "embedding": {
+    "type": "dense_vector",
+    "dims": 1024,
+    "similarity": "cosine"
   }
 }
 ```
 
 *Benefits:*
-- Automatic k-NN and embedding configuration for new indices
-- Consistent vector dimensions and similarity metrics across deployments
-- HNSW algorithm parameters optimized for production RAG applications
-- Version-controlled AI search capabilities alongside traditional mappings
-- Ensures compatibility between embedding generation and search operations
+- Defines embedding field for storing vector representations
+- Enables semantic similarity search using k-NN with HNSW algorithm
 
 ---
 
 ## Slide 10: Vector Search (k-NN)
 **Semantic Similarity Using Dense Embeddings**
 
-Nearest neighbor search enables semantic understanding, finding properties based on meaning rather than exact keywords, powered by 1024-dimensional embeddings.
+Nearest neighbor search enables semantic understanding, finding properties based on meaning rather than exact keywords
 
 ```python
 {
@@ -210,15 +158,7 @@ Reciprocal Rank Fusion merges keyword precision with semantic understanding, del
     }
 }
 ```
-
-*RRF Algorithm & Parameters:*
-- **rank_constant (k):** Controls how much to favor top-ranked results (default 60)
-  - Higher k (100+): More even distribution of scores, less bias toward top results
-  - Lower k (20-40): Heavily favors top-ranked items from each retriever
-  - Formula: score = 1/(k + rank_position)
 - **How it works:** Each retriever produces ranked results, RRF combines using reciprocal rank formula, final score is sum of individual RRF scores
-- Native Elasticsearch 8.16+ implementation for performance
-
 ---
 
 ## Slide 13: Natural Language Query Processing
@@ -260,36 +200,45 @@ class LocationExtractionSignature(dspy.Signature):
 *DSPy Processing Pipeline:*
 - **DSPy is for Programmatic LLM Prompt Construction w/ Python:** Declarative framework for building AI systems
 - **DSPy basic construct is like function calling an LLM w/ Input -> Structured Output:** Type-safe signatures for predictable AI behavior
-- **LocationUnderstandingModule:** Uses dspy.Predict for direct extraction
+- **LocationUnderstandingModule:** Uses dspy.Predict for direct location extraction
 - **Smart filtering:** Builds Elasticsearch filters from extracted locations
 - **Query cleaning:** Removes location terms while preserving property features
-- **Confidence scoring:** Provides extraction accuracy for result ranking
 
 ---
 
-## Slide 13a: MCP Server Architecture
-**Bridging Natural Language to Elasticsearch Through Model Context Protocol**
+## Slide 13a: MCP Service Layer for Agentic Elasticsearch Retrieval
+**Unified MCP interface transforming Elasticsearch RAG into agent-accessible semantic search services**
 
 The MCP (Model Context Protocol) server extends the Elasticsearch foundation to provide AI agents with structured access to the search capabilities, enabling natural language property discovery through a standardized interface.
 
-- **Foundation on Search Services:** Built on top of PropertySearchService, WikipediaSearchService, and NeighborhoodSearchService classes that encapsulate Elasticsearch operations
-- **Natural Language Interface:** Exposes hybrid_search_tool that combines DSPy location extraction, semantic embeddings, and RRF (Reciprocal Rank Fusion) for conversational queries like "Find me a modern home in San Francisco near parks"
-- **Tool Registry Pattern:** Dynamically registers search tools for properties, neighborhoods, and Wikipedia content, providing structured schemas for AI agents to understand available operations
-- **Context Management:** Maintains Elasticsearch client connections and configuration state across tool invocations, ensuring consistent search behavior and efficient resource usage
-- **FastMCP Integration:** Leverages FastMCP framework for standardized tool definitions, automatic validation, and seamless integration with AI assistants like Claude
+- **Foundation on Search Services:** Built on top of Search Service to Encapsulate Elasticsearch operations
+- **Natural Language Interface:** Exposes semantic search for conversational queries like "Find me a modern home in San Francisco near parks"
+- **Tool Registry Pattern:** Dynamically registers search tools for for AI agents to understand available operations
 
 *Summary: MCP server transforms the Elasticsearch RAG pipeline into an AI-accessible service layer, enabling natural language search through standardized Model Context Protocol interfaces*
+
+---
+
+## Slide 13b: Semantic Search Agent with Dynamic Tool Discovery
+**DSPy-powered reasoning engine that discovers and orchestrates real estate search tools at runtime**
+
+The semantic search agent implements a reasoning loop that dynamically discovers MCP tools, thinks through property search requirements, and synthesizes answers through the React (Reasoning + Acting) pattern.
+
+- **Dynamic Tool Discovery:** Connects Mcp Client to MCP servers at runtime to leverage search services via tool calling
+- **React Pattern:** Explicit thought-action-observation loop that reasons about needed information, calls mcp server tools, and observes results iteratively
+- **Extract Agent Synthesis:** Reviews complete history of thoughts and observations to synthesize coherent property listings with pricing and location insights
+
+*Summary: Transforms natural language queries into orchestrated tool executions, reasoning through requirements while adapting to available search capabilities*
 
 ---
 
 ## Slide 31: Elasticsearch Inference API
 **Unified Machine Learning Interface**
 
-- **Open Inference API (8.15+):** Unified interface for ELSER, E5, external services (OpenAI, Cohere, Anthropic)
+- **Open Inference API:** Unified interface for calling external ML/AI services  
 - **Inference Endpoints:** Auto-scaling ML model endpoints with adaptive allocations (0 to N)
 - **Multiple Task Types:** text_embedding, sparse_embedding, rerank, and NER through consistent API
 - **Built-in Models:** Preconfigured endpoints like `.multilingual-e5-small-elasticsearch` ready to use
-- **Production Features:** Automatic chunking, error handling, ingest pipeline integration
 
 *Summary: Unified, scalable platform for integrating ML models into search applications*
 
@@ -299,8 +248,8 @@ The MCP (Model Context Protocol) server extends the Elasticsearch foundation to 
 **Structured Information from Unstructured Text**
 
 - **What is NER:** Identifies and classifies entities into ORG, PER, LOC, MISC categories using transformer models
-- **DistilBERT Model:** 66M parameter model fine-tuned on CoNLL-03 achieving ~90.7% F1 score
-- **BIO Tagging:** Begin-Inside-Outside tagging identifies multi-word entities like "San Francisco Bay Area"
+- **DistilBERT Model:** Small encoder model fine-tuned for NER tasks, balancing performance and efficiency
+- **Entity Extraction:** Extracts entities from Wikipedia articles to enrich search with structured metadata
 - **Structured Output:** Entity positions, confidence scores, normalized names in dedicated fields
 - **Production Benefits:** Entity-based filtering, faceted search, relationship discovery, automated categorization
 
@@ -315,7 +264,6 @@ The MCP (Model Context Protocol) server extends the Elasticsearch foundation to 
 - **Inference Pipeline:** Process documents through NER model, extract entities with Painless scripting
 - **Entity Storage:** Dedicated keyword fields for fast aggregations (`ner_organizations`, `ner_locations`, `ner_persons`)
 - **Search Benefits:** Simple keyword searches for entity-based queries instead of complex semantic calculations
-- **Batch Processing:** Bulk operations with pipeline parameter for production-scale document processing
 
 *Summary: NER pipeline transforms Wikipedia text into structured entity metadata at scale*
 
@@ -324,7 +272,6 @@ The MCP (Model Context Protocol) server extends the Elasticsearch foundation to 
 ## Optional Section: Additional Query Examples
 
 ---
-
 
 ## Slide 12: Geographic Search
 **Location-Based Property Discovery**

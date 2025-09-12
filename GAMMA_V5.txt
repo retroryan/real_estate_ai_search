@@ -1,0 +1,461 @@
+Elasticsearch The Foundation for Modern AI & Search
+
+Building a Real Estate RAG Pipeline with Elasticsearch
+
+---
+
+Introduction to Elasticsearch
+
+- Advanced Query Capabilities: Bool queries, geo-spatial searches, aggregations with sub-aggregations
+- Scalable Architecture: Horizontally scalable JSON document store with automatic sharding
+- Real-time Analytics: Near real-time search with powerful aggregation framework
+- Developer-Friendly: RESTful APIs and intuitive query DSL for rapid development
+- Enterprise Ready: Production-proven at scale with built-in security and monitoring
+
+---
+
+The Elastic Search AI Platform
+
+- Unlocking Next-Generation Search: Conversational real estate search with natural language understanding
+- Foundation for AI-Powered Experiences: Native vector embeddings through dense_vector fields for semantic search
+- Generative AI Foundation: Native k-NN, hybrid retrieval for RAG pipelines, semantic understanding through embeddings
+- Natural Language Understanding: Intent-based search beyond exact keyword matching
+- Vector Database at Scale: HNSW graphs deliver sub-50ms k-nearest neighbor searches across millions of products
+- Elasticsearch Relevance Engine: Development tools combining BM25, learned sparse encoders, and dense vectors
+
+---
+
+Beyond Search The Modern Elasticsearch Platform
+
+- Observability Platform: Centralized logging, distributed tracing, metrics aggregation, real-time alerting
+- Security Operations: SIEM capabilities, threat detection, forensic investigation with ML anomaly detection
+- Unified Data Platform: Single platform for structured/unstructured data and time-series analytics
+- AI/ML Integration: Built-in machine learning and seamless LLM integration
+
+---
+
+Project Overview Real Estate RAG System
+
+- Primary Goal: Create high-quality RAG pipeline for AI-powered property discovery
+- Data Sources: Synthetic properties with 10-year price history, neighborhoods with demographics, Wikipedia context
+- Advanced Search: Natural language queries, geographic searches, historical trend analysis
+- AI Integration: Dense embeddings, hybrid search combining text and vectors, LLM context retrieval
+- Business Value: Production RAG architecture scalable to millions of listings
+
+---
+
+Data Processing Pipeline Flow
+
+- Index Preparation: Four core indices with custom mappings for text, vectors, and geo-points
+- Wikipedia Summarization: Articles summarized using DSPy Micro AI Agent for relevance scoring
+- Medallion Architecture: Bronze-Silver-Gold architecture for reliable ETL operations
+
+---
+
+Embedding Generation
+
+- Property Embeddings: Key attributes concatenated into single text for embedding generation
+- Neighborhood Embeddings: Features combined for rich semantic representation
+- Wikipedia Embeddings: DSPy-generated summaries converted to embeddings
+- Pluggable Provider Architecture: Support for Voyage AI, OpenAI, Gemini, and Ollama
+
+---
+
+Bulk Indexing with Elasticsearch
+
+- Streaming Architecture: DuckDB streams results in configurable batches
+- Bulk Action Generation: Documents converted to Elasticsearch bulk API format
+- Performance Optimization: Sequential batch processing with configurable sizes
+
+---
+
+Index Templates with Embeddings
+
+- Dense Vector Configuration: 1024-dimensional dense_vector field for embeddings
+- Similarity Metrics: Cosine similarity for accurate semantic matching
+- HNSW Algorithm: k-NN search with Hierarchical Navigable Small World graphs
+- Vector Storage: Optimized field mapping for efficient high-dimensional storage
+
+JSON Sample:
+```json
+{
+  "embedding": {
+    "type": "dense_vector",
+    "dims": 1024,
+    "similarity": "cosine"
+  }
+}
+```
+
+---
+
+Vector Search k-NN
+
+- Semantic Understanding: Find properties based on meaning rather than exact keywords
+- Voyage AI Embeddings: Capture semantic meaning for intent-based search
+- Quality Results: 100 candidates ensure optimal result selection
+- Contextual Matching: Discovers similar properties without exact phrase matches
+
+JSON Sample:
+```python
+{
+    "knn": {
+        "field": "embedding_vector",
+        "query_vector": query_embedding,
+        "k": 10,
+        "num_candidates": 100
+    }
+}
+```
+
+---
+
+Hybrid Search RRF
+
+- Reciprocal Rank Fusion: Merges keyword precision with semantic understanding
+- Dual Retrieval Strategy: BM25 for exact matches, vectors for semantic similarity
+- Optimized Ranking: RRF formula combines scores for superior relevance
+- Score Normalization: Balanced relevance from multiple retrievers
+
+JSON Sample:
+```python
+{
+    "retriever": {
+        "rrf": {
+            "retrievers": [
+                {
+                    "standard": {
+                        "query": text_query
+                    }
+                },
+                {
+                    "knn": vector_config
+                }
+            ],
+            "rank_constant": 60
+        }
+    }
+}
+```
+
+---
+
+Natural Language Query Processing
+
+- DSPy Framework: Programmatic LLM prompt construction with Python
+- Location Extraction: Identifies cities, neighborhoods from natural language
+- Query Cleaning: Removes location terms while preserving property features
+- Smart Filtering: Builds Elasticsearch filters from extracted locations
+- Type-Safe Signatures: Structured input-output contracts for predictable AI behavior
+
+JSON Sample:
+```python
+{
+    "bool": {
+        "must": [
+            {
+                "match": {
+                    "address.city": "San Francisco"
+                }
+            },
+            {
+                "multi_match": {
+                    "query": "Modern kitchen near parks"
+                }
+            }
+        ]
+    }
+}
+```
+
+---
+
+MCP Service for Agentic Elasticsearch Retrieval
+
+- Foundation on Search Services: Encapsulates Elasticsearch operations
+- Natural Language Interface: Semantic search for conversational queries
+- Tool Registry Pattern: Dynamic registration for AI agent discovery
+- Standardized Protocol: Transforms RAG pipeline into AI-accessible service
+
+---
+
+Semantic Search Agent with Dynamic Tool Discovery
+
+- Dynamic Tool Discovery: Runtime connection to MCP servers
+- React Pattern: Thought-action-observation loop for iterative reasoning
+- Extract Agent Synthesis: Coherent property listings with pricing insights
+- Adaptive Reasoning: Transforms queries into orchestrated tool executions
+
+---
+
+Elasticsearch Inference API
+
+- Unified Interface: Single API for external ML/AI services
+- Auto-Scaling Endpoints: Adaptive allocations based on demand
+- Multiple Task Types: Text embedding, sparse embedding, rerank, NER
+- Built-in Models: Preconfigured endpoints ready to use
+
+---
+
+Named Entity Recognition NER
+
+- Entity Classification: Identifies ORG, PER, LOC, MISC using transformers
+- DistilBERT Model: Balanced performance and efficiency for NER
+- Metadata Extraction: Enriches search with structured Wikipedia metadata
+- Structured Output: Entity positions, confidence scores, normalized names
+- Production Benefits: Entity filtering, faceted search, relationship discovery
+
+---
+
+Wikipedia NER Processing Flow
+
+- Model Deployment: DistilBERT via Eland Docker with adaptive scaling
+- Inference Pipeline: Process documents through NER with Painless scripting
+- Entity Storage: Dedicated keyword fields for fast aggregations
+- Search Benefits: Simple keyword searches instead of complex semantic calculations
+
+---
+
+Geographic Search
+
+- Location-Based Discovery: Radius searches around points of interest
+- Distance Calculations: Supports kilometers, miles, and meters
+- Coordinate Searches: Query from any latitude/longitude point
+- Query Combination: Seamlessly integrates with other query types
+
+JSON Sample:
+```python
+{
+    "geo_distance": {
+        "distance": "2km",
+        "address.location": {
+            "lat": 37.7749,
+            "lon": -122.4194
+        }
+    }
+}
+```
+
+---
+
+Price Distribution Analytics
+
+- Market Analysis: Histogram aggregations reveal price distributions
+- Nested Metrics: Property characteristics by price range
+- Interval Configuration: Flexible market segmentation
+- Square Footage Correlation: Average square footage per price bracket
+
+JSON Sample:
+```python
+{
+    "aggs": {
+        "price_ranges": {
+            "histogram": {
+                "field": "price",
+                "interval": 100000
+            },
+            "aggs": {
+                "avg_sqft": {
+                    "avg": {
+                        "field": "square_feet"
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+Property Type Analytics
+
+- Statistical Analysis: Comprehensive market analysis by category
+- Pricing Patterns: Trends across houses, condos, and townhomes
+- Volatility Metrics: Standard deviation for price volatility
+- Comparative Analysis: Count, min, max, average, sum per type
+
+JSON Sample:
+```python
+{
+    "aggs": {
+        "by_type": {
+            "terms": {
+                "field": "property_type"
+            },
+            "aggs": {
+                "stats": {
+                    "stats": {
+                        "field": "price"
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+Nested Aggregations
+
+- Multi-Dimensional Analytics: Drill-down analytics for market analysis
+- Neighborhood Statistics: Price statistics grouped by neighborhood
+- Unlimited Depth: Supports complex analytical queries
+- Reporting Capabilities: Multi-dimensional market reports
+
+JSON Sample:
+```python
+{
+    "aggs": {
+        "by_neighborhood": {
+            "terms": {
+                "field": "neighborhood"
+            },
+            "aggs": {
+                "price_stats": {
+                    "stats": {
+                        "field": "price"
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+Multi-Field Queries with Custom Analyzers
+
+- Domain-Specific Processing: Optimized search for different data types
+- Address Analyzer: ASCII folding for international addresses
+- Property Analyzer: Snowball stemming for description variations
+- Feature Analyzer: Keyword tokenization for amenities
+
+JSON Sample:
+```python
+{
+    "match": {
+        "address.city": "San Francisco"
+    },
+    "analyzer": "address_analyzer"
+}
+```
+
+---
+
+Multi-Index Federation
+
+- Unified Search: Query properties, neighborhoods, and Wikipedia simultaneously
+- Heterogeneous Data: Comprehensive results with unified scoring
+- Client Simplification: Single query across multiple data types
+- Cross-Index Relevance: Consistent scoring for meaningful ranking
+
+JSON Sample:
+```python
+GET /properties,neighborhoods,wikipedia/_search
+{
+    "query": {
+        "multi_match": {
+            "query": "historic district"
+        }
+    }
+}
+```
+
+---
+
+Index Boosting
+
+- Weighted Scoring: Appropriate weighting across content types
+- Priority Configuration: Properties get 50% boost for direct relevance
+- Contextual Weighting: Neighborhoods 20% boost, Wikipedia supporting info
+- Consistent Results: Property listings appear prominently
+
+JSON Sample:
+```python
+{
+    "indices_boost": [
+        {"properties": 1.5}, 
+        {"neighborhoods": 1.2}, 
+        {"wikipedia": 1.0}
+    ]
+}
+```
+
+---
+
+Advanced Source Filtering
+
+- Selective Retrieval: Fine-grained control over returned fields
+- Bandwidth Optimization: Excludes large embedding vectors
+- Display Fields: Returns only necessary fields for performance
+- Pattern Selection: Wildcard patterns for flexible field selection
+
+JSON Sample:
+```python
+{
+    "_source": {
+        "includes": ["price", "address"],
+        "excludes": ["embedding_vector"]
+    }
+}
+```
+
+---
+
+Faceted Search
+
+- Dynamic Filtering: Real-time counts with post_filter navigation
+- Count Preservation: Maintains aggregation counts while filtering
+- Available Options: Shows all filter options regardless of selections
+- UI Generation: Dynamic filter interface from data distribution
+
+JSON Sample:
+```python
+{
+    "query": {...},
+    "post_filter": {
+        "bool": {
+            "must": filters
+        }
+    },
+    "aggs": {
+        "all_facets": {
+            "global": {},
+            "aggs": {...}
+        }
+    }
+}
+```
+
+---
+
+Business Impact & Conclusions
+
+- Enhanced User Experience: Natural language search with contextual understanding and personalized recommendations
+- Operational Excellence: Automated pipeline with real-time updates and scalable architecture
+- Competitive Advantage: Semantic search, Wikipedia enrichment, multi-modal capabilities
+- Technical Innovation: Production RAG architecture with hybrid search optimization
+- Future Ready: Foundation for conversational AI, LLM integration, advanced analytics
+
+---
+
+Thank You
+
+Questions & Discussion
+
+Key Takeaways:
+- Elasticsearch powers AI, observability, and security workloads beyond search
+- Medallion architecture ensures high-quality data through progressive refinement
+- Hybrid search combining text and vectors delivers superior relevance
+- Pre-computed relationships enable graph-like traversals at scale
+- Production-ready platform for sophisticated RAG applications
+
+Resources:
+- Project Repository on GitHub
+- Elasticsearch Documentation at elastic.co/docs
+- Demo Queries in demo_queries directory
+
+Building the future of intelligent search with Elasticsearch
