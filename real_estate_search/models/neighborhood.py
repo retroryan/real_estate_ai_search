@@ -8,7 +8,6 @@ Single source of truth for all neighborhood-related data structures.
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
-from .geojson import GeographicBoundaries
 
 
 class Demographics(BaseModel):
@@ -65,8 +64,6 @@ class Neighborhood(BaseModel):
     
     # Geographic data
     location: Optional[List[float]] = Field(None, description="[longitude, latitude]")
-    boundaries: Optional[GeographicBoundaries] = Field(None, description="Geographic boundaries")
-    area_sqmi: Optional[float] = Field(None, ge=0, description="Area in square miles")
     
     # Characteristics
     description: Optional[str] = Field(None, description="Neighborhood description")
@@ -81,7 +78,6 @@ class Neighborhood(BaseModel):
     # Statistics
     demographics: Optional[Demographics] = Field(None, description="Demographic information")
     school_ratings: Optional[SchoolRatings] = Field(None, description="School ratings")
-    crime_rate: Optional[str] = Field(None, description="Crime rate category")
     walkability_score: Optional[int] = Field(None, ge=0, le=100, description="Walk score")
     overall_livability_score: Optional[float] = Field(None, ge=0, le=100, description="Overall livability")
     

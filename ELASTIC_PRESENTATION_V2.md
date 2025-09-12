@@ -267,6 +267,21 @@ class LocationExtractionSignature(dspy.Signature):
 
 ---
 
+## Slide 13a: MCP Server Architecture
+**Bridging Natural Language to Elasticsearch Through Model Context Protocol**
+
+The MCP (Model Context Protocol) server extends the Elasticsearch foundation to provide AI agents with structured access to the search capabilities, enabling natural language property discovery through a standardized interface.
+
+- **Foundation on Search Services:** Built on top of PropertySearchService, WikipediaSearchService, and NeighborhoodSearchService classes that encapsulate Elasticsearch operations
+- **Natural Language Interface:** Exposes hybrid_search_tool that combines DSPy location extraction, semantic embeddings, and RRF (Reciprocal Rank Fusion) for conversational queries like "Find me a modern home in San Francisco near parks"
+- **Tool Registry Pattern:** Dynamically registers search tools for properties, neighborhoods, and Wikipedia content, providing structured schemas for AI agents to understand available operations
+- **Context Management:** Maintains Elasticsearch client connections and configuration state across tool invocations, ensuring consistent search behavior and efficient resource usage
+- **FastMCP Integration:** Leverages FastMCP framework for standardized tool definitions, automatic validation, and seamless integration with AI assistants like Claude
+
+*Summary: MCP server transforms the Elasticsearch RAG pipeline into an AI-accessible service layer, enabling natural language search through standardized Model Context Protocol interfaces*
+
+---
+
 ## Slide 31: Elasticsearch Inference API
 **Unified Machine Learning Interface**
 

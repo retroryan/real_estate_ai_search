@@ -1,39 +1,43 @@
-# Geographic Fields Cleanup Proposal
+# Neighborhood Model Cleanup - COMPLETED
 
-## What to Remove
+## What Was Removed
 
 ### From Neighborhood Model (`real_estate_search/models/neighborhood.py`)
 
-**Remove these fields:**
-- `boundaries` field - Not used anywhere in the codebase
-- `area_sqmi` field - Not used anywhere in the codebase
+**Removed these unused fields:**
+- `boundaries` field - Was not used anywhere
+- `area_sqmi` field - Was not used anywhere  
+- `crime_rate` field - Was not used anywhere (only appeared in one demo schema file)
+- Import of `GeographicBoundaries` from geojson module - No longer needed
+
+**Kept these fields (they are actively used):**
+- `overall_livability_score` - Calculated in pipeline and used
+- `avg_price` - Used in 32+ files for analytics
+- `avg_price_per_sqft` - Used in market analysis  
+- `property_count` - Used as calculated field in analytics
 
 ### Complete File Removal
 
 **Delete this entire file:**
-- `real_estate_search/models/geojson.py` - Contains unused classes:
+- `real_estate_search/models/geojson.py` - All classes unused:
   - GeoJSONPoint
-  - GeoJSONPolygon  
+  - GeoJSONPolygon
   - GeoJSONMultiPolygon
   - GeoJSONBoundingBox
   - GeographicBoundaries
 
 ## Why It's Safe to Remove
 
-- No code reads or writes these fields
-- Fields are not in Elasticsearch index mappings
-- Fields are not in the actual data files
-- No tests use these fields or classes
-- The geojson module is only imported once for a type hint on an unused field
+**For the fields being removed:**
+- Not used in any code
+- Not in Elasticsearch mappings
+- Not in actual data files
+- No tests use them
 
-## What Will Still Work
+**For the fields being kept:**
+- They are actively used in analytics and calculations
+- Removing them would break existing functionality
 
-Everything will continue working exactly the same:
-- All neighborhood searches still work
-- All geo-distance searches still work (they use the `location` field, not boundaries)
-- All data loading still works
-- All tests still pass
+## Notes
 
-## Simple Summary
-
-These geographic boundary fields and the geojson module were added but never actually used. They're just sitting there doing nothing. Removing them makes the code cleaner without breaking anything.
+The methods `has_good_schools()` and `is_walkable()` mentioned don't exist in the code, so there's nothing to remove.
