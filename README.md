@@ -41,8 +41,7 @@ graph TB
     
     subgraph "AI Processing Layer"
         D[DSPy Summarization<br/>Extract Key Concepts]
-        E[LlamaIndex Embeddings<br/>Semantic Vectors]
-        F[Voyage AI Vectors<br/>Domain-Specific]
+        E[Plugable Embeddings<br/>Semantic Vectors]
     end
     
     subgraph "Data Pipeline (DuckDB Medallion Architecture)"
@@ -71,7 +70,6 @@ graph TB
     G --> H
     H --> I
     E --> I
-    F --> I
     I --> J
     I --> K
     I --> L
