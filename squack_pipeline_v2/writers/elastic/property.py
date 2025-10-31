@@ -74,6 +74,9 @@ class PropertyDocument(BaseModel):
     virtual_tour_url: str = ""
     images: List[str] = Field(default_factory=list)
     
+    # Historical data - simple annual records
+    historical_data: List[Dict[str, Any]] = Field(default_factory=list)
+    
     # Embedding fields
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
@@ -156,6 +159,18 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
     if not embedded_at:
         embedded_at = datetime.now()
     
+    # Handle historical_data JSON from DuckDB
+    historical_raw = record.get('historical_data')
+    historical_data = []
+    
+    if historical_raw:
+        try:
+            # DuckDB stores JSON as string, parse it
+            historical_data = json.loads(historical_raw)
+        except (TypeError, json.JSONDecodeError):
+            logger.warning(f"Failed to parse historical_data for {record.get('listing_id', 'unknown')}")
+            historical_data = []
+    
     # Create PropertyDocument - let Pydantic handle validation
     return PropertyDocument(
         listing_id=record.get('listing_id', ''),
@@ -178,6 +193,7 @@ def transform_property(record: Dict[str, Any], embedding_model: str) -> Property
         days_on_market=record.get('days_on_market', 0) or 0,
         virtual_tour_url=record.get('virtual_tour_url', ''),
         images=record.get('images', []) or [],
+        historical_data=historical_data,
         embedding=embedding_list,
         embedding_model=embedding_model,
         embedding_dimension=len(embedding_list),

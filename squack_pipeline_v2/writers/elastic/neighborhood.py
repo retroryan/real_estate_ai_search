@@ -44,6 +44,9 @@ class NeighborhoodDocument(BaseModel):
     demographics: Dict[str, Any] = Field(default_factory=dict)
     wikipedia_correlations: Dict[str, Any] = Field(default_factory=dict)
     
+    # Historical data - simple annual records
+    historical_data: List[Dict[str, Any]] = Field(default_factory=list)
+    
     # Embedding fields
     embedding: List[float] = Field(default_factory=list)
     embedding_model: str = ""
@@ -94,6 +97,23 @@ def transform_neighborhood(record: Dict[str, Any], embedding_model: str) -> Neig
     except (TypeError, json.JSONDecodeError):
         wikipedia_correlations = correlations_raw or {}
     
+    # Handle historical_data JSON from DuckDB
+    historical_raw = record.get('historical_data')
+    historical_data = []
+    
+    if historical_raw:
+        try:
+            # DuckDB stores JSON as string, parse it
+            historical_data = json.loads(historical_raw)
+        except (TypeError, json.JSONDecodeError):
+            # If already parsed, use as-is
+            try:
+                # Check if it's already a list by attempting list operations
+                historical_data = list(historical_raw)
+            except (TypeError, ValueError):
+                logger.warning(f"Failed to parse historical_data for {record.get('neighborhood_id', 'unknown')}")
+                historical_data = []
+    
     # Create NeighborhoodDocument - let Pydantic handle validation
     return NeighborhoodDocument(
         neighborhood_id=record.get('neighborhood_id', ''),
@@ -110,6 +130,7 @@ def transform_neighborhood(record: Dict[str, Any], embedding_model: str) -> Neig
         lifestyle_tags=record.get('lifestyle_tags', []) or [],
         demographics=demographics,
         wikipedia_correlations=wikipedia_correlations,
+        historical_data=historical_data,
         embedding=embedding_list,
         embedding_model=embedding_model,
         embedding_dimension=len(embedding_list),

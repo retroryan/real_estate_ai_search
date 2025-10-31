@@ -67,8 +67,9 @@ TOKENIZATION NOTES:
 
 from squack_pipeline_v2.silver.base import SilverTransformer
 from squack_pipeline_v2.core.logging import log_stage
-from squack_pipeline_v2.utils.state_utils import StateStandardizer
+from squack_pipeline_v2.utils.simple_historical import generate_neighborhood_historical
 from datetime import datetime
+import json
 
 
 class NeighborhoodSilverTransformer(SilverTransformer):
@@ -115,7 +116,6 @@ class NeighborhoodSilverTransformer(SilverTransformer):
         locations = conn.table("silver_locations").set_alias("l")
         
         # Join using Relation API to enrich neighborhoods with county data
-        # Use StateStandardizer for consistent state matching
         enriched = filtered.join(
             locations,
             condition="""
@@ -180,6 +180,14 @@ class NeighborhoodSilverTransformer(SilverTransformer):
         neighborhood_ids = [row[0] for row in embedding_rows]  # Unique neighborhood identifiers
         texts = [row[1] for row in embedding_rows]  # Pipe-delimited text for each neighborhood
         
+        # STEP 2a: Generate historical data for neighborhoods
+        # Generate simple annual historical data (10 years)
+        historical_data_map = {}
+        for nid in neighborhood_ids:
+            # Generate 10 years of annual data with 5% appreciation
+            historical_records = generate_neighborhood_historical(nid)
+            historical_data_map[nid] = historical_records
+        
         # STEP 3: Generate embeddings via external provider API
         # Generate embeddings using List[str] interface
         # Provider performs: tokenization → encoding → dense vector generation
@@ -189,14 +197,16 @@ class NeighborhoodSilverTransformer(SilverTransformer):
         # Create temporary table with embeddings
         current_timestamp = datetime.now()
         
-        # Build VALUES clause for embedding data
+        # Build VALUES clause for embedding data and historical data
         values_clause = []
         for nid, text, embedding in zip(neighborhood_ids, texts, embedding_response.embeddings):
             # Escape single quotes in text
             escaped_text = text.replace("'", "''") if text else ''
             # Format embedding vector as array literal
             embedding_str = '[' + ','.join(str(v) for v in embedding) + ']'
-            values_clause.append(f"('{nid}', '{escaped_text}', {embedding_str}::DOUBLE[], TIMESTAMP '{current_timestamp}')")
+            # Convert historical data to JSON string and escape quotes
+            historical_json = json.dumps(historical_data_map[nid]).replace("'", "''")
+            values_clause.append(f"('{nid}', '{escaped_text}', {embedding_str}::DOUBLE[], '{historical_json}'::JSON, TIMESTAMP '{current_timestamp}')")
         
         # Create final table with embeddings using CTEs - no temporary tables
         conn.execute(f"""
@@ -207,7 +217,7 @@ class NeighborhoodSilverTransformer(SilverTransformer):
             embedding_data AS (
                 SELECT * FROM (
                     VALUES {','.join(values_clause)}
-                ) AS t(neighborhood_id, embedding_text, embedding_vector, embedding_generated_at)
+                ) AS t(neighborhood_id, embedding_text, embedding_vector, historical_data, embedding_generated_at)
             )
             SELECT 
                 t.neighborhood_id,
@@ -228,6 +238,7 @@ class NeighborhoodSilverTransformer(SilverTransformer):
                 t.lifestyle_tags,
                 t.wikipedia_page_id,
                 t.wikipedia_correlations,
+                e.historical_data,
                 e.embedding_text,
                 e.embedding_vector,
                 e.embedding_generated_at

@@ -157,6 +157,17 @@
     },
     "embedded_at": {
       "type": "date"
+    },
+    "historical_data": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer"
+        },
+        "price": {
+          "type": "float"
+        }
+      }
     }
   }
 }

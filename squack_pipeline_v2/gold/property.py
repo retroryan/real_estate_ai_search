@@ -1,7 +1,6 @@
 """Property Gold layer enrichment using DuckDB views."""
 
 from squack_pipeline_v2.gold.base import GoldEnricher
-from squack_pipeline_v2.core.connection import DuckDBConnectionManager
 from squack_pipeline_v2.core.logging import log_stage
 
 
@@ -126,6 +125,9 @@ class PropertyGoldEnricher(GoldEnricher):
             
             -- Embedding text and vectors
             s.embedding_text,
+            
+            -- Historical data (simple annual records)
+            s.historical_data,
             
             -- Business metadata
             CURRENT_TIMESTAMP as gold_processed_at,
